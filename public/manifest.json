@@ -1,0 +1,13 @@
+{
+  "name": "My Portfolio",
+  "short_name": "Portfolio",
+  "description": "个人投资仪表盘",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f7f5",
+  "theme_color": "#2e6b50",
+  "orientation": "any",
+  "icons": [
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

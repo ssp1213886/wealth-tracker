@@ -1,0 +1,16 @@
+name = "wealth-tracker"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+binding = "ASSETS"
+directory = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "wealth-db"
+database_id = ""
+
+[vars]
+AUTH_TOKEN = "your-token-here"
+

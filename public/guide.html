@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用文档 — My Portfolio</title>
+<style>
+  :root{--bg:#faf9f6;--fg:#1a1a1a;--muted:#777771;--accent:#2e6b50;--accent-l:#eaf5ef;--rule:#e6e3db;--surface:#f3f1ed}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;padding:20px 24px 80px;max-width:700px;margin:0 auto;-webkit-font-smoothing:antialiased}
+  h1{font-size:1.6rem;font-weight:620;margin-bottom:4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:.9rem;margin-bottom:32px}
+  h2{font-size:1.1rem;font-weight:600;margin:40px 0 12px;padding-top:20px;border-top:1px solid var(--rule)}
+  h3{font-size:.92rem;font-weight:560;margin:24px 0 8px}
+  p,li{font-size:.88rem;color:#444;margin-bottom:6px}
+  ul{padding-left:20px;margin-bottom:12px}
+  li{margin-bottom:4px}
+  code{background:var(--surface);padding:2px 6px;border-radius:4px;font-size:.82rem;font-family:Menlo,monospace;word-break:break-all}
+  pre{background:var(--surface);padding:12px 16px;border-radius:8px;font-size:.78rem;overflow-x:auto;margin:8px 0;line-height:1.6}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.82rem}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--rule)}
+  th{font-weight:600;color:var(--muted);font-size:.72rem;letter-spacing:.03em;background:var(--surface)}
+  tr:nth-child(even){background:rgba(46,107,80,.03)}
+  .call{background:var(--accent-l);border-left:3px solid var(--accent);padding:12px 16px;margin:16px 0;font-size:.84rem;border-radius:0 6px 6px 0;line-height:1.6}
+  .call strong{color:var(--accent)}
+  a{color:var(--accent)}
+  .back{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-size:.78rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>使用文档</h1>
+<p class="sub">My Portfolio — 个人投资仪表盘</p>
+
+<h2>1. 三大核心模块</h2>
+
+<h3>💼 持仓</h3>
+<ul>
+  <li><strong>账户现金</strong>：记录入金/出金。买入自动扣减，卖出自动增加</li>
+  <li><strong>持仓明细</strong>：各标的总持仓、加权均价、现价、市值、盈亏</li>
+  <li><strong>买卖录入</strong>：手动录入交易（日期、标的、数量、单价），仅支持 VGT / SMH / BTC</li>
+  <li><strong>再平衡</strong>：换仓模式（卖出超配买入欠配）或注资模式（仅买入欠配）</li>
+  <li><strong>目标进度</strong>：当前总资产 / $2,500,000，带进度条</li>
+  <li><strong>高点回撤</strong>：各标的距历史高点跌幅</li>
+</ul>
+
+<h3>📊 模拟</h3>
+<ul>
+  <li>蒙特卡洛路径模拟，预测终值分布</li>
+  <li>中位数、P10/P90、≥$2.5M 概率</li>
+  <li>增长曲线：P50 中值 + P25-P75 渐变填充 + 确定性路径 + 标普对照线</li>
+  <li>历史回测（含 BTC 早期极端值，结果极度乐观，谨慎开启）</li>
+  <li>灵敏度分析：+$100/月 效果、VGT 权重 +5% 效果</li>
+</ul>
+
+<h3>🗺 规划</h3>
+<ul>
+  <li>收入渐进加码：27-47 岁四阶段</li>
+  <li>退出策略：47 岁按回撤条件切换防守组合，最长等到 50 岁</li>
+  <li>提款模拟：输入资产/提取率/回报/通胀 → 年月提取额 + 耗尽时间</li>
+</ul>
+
+<h2>2. 云端同步</h2>
+<p>侧边栏底部「☁️ 云端同步」区域：</p>
+<ul>
+  <li><strong>自动上传</strong>：录入交易、入金出金后 2 秒自动推云端</li>
+  <li><strong>自动下载</strong>：页面打开时从云端拉最新数据合并</li>
+  <li><strong>状态指示</strong>：数据区灰点（上传中→橙，成功→绿，失败→红）；右下角气泡提示</li>
+  <li>线上版自动填 URL 和 Token（<code>ssp540829</code>），本地文件需手动填</li>
+</ul>
+
+<div class="call"><strong>⚠ 多设备冲突</strong>：两设备同时编辑分别上传，后者覆盖前者。建议一台编辑完等同步完成再换设备。</div>
+
+<h2>3. Schwab CSV 导入</h2>
+<ul>
+  <li><strong>拖拽</strong>：嘉信 CSV 文件拖到页面任意位置，绿色边框出现后松手</li>
+  <li><strong>按钮</strong>：侧边栏「CSV」按钮选择文件</li>
+  <li>自动识别 Date / Symbol / Quantity / Price 列（中英文均可）</li>
+  <li>仅导入 VGT / SMH / BTC，其他标的自动跳过</li>
+  <li>不会去重，重复导入会产生重复记录</li>
+</ul>
+
+<h2>4. 数据备份</h2>
+<ul>
+  <li>「📤 导出」→ 下载 JSON 文件（交易 + 资金 + 参数）</li>
+  <li>「📥 导入」→ 选择 JSON 文件恢复</li>
+  <li>勾选「自动备份」→ 每次操作自动下载</li>
+  <li>云端同步是最佳实践，本地备份作为兜底</li>
+</ul>
+
+<h2>5. 移动端</h2>
+<ul>
+  <li>手机浏览器直接打开网址</li>
+  <li>侧边栏收在顶部，点左上角 ☰ 展开</li>
+  <li>表单和按钮最小 40px 点击区域</li>
+  <li>表格左右滑动查看全部列</li>
+</ul>
+
+<h2>6. 暗色模式</h2>
+<p>侧边栏点 🌙/☀ 切换，偏好自动记忆。</p>
+
+<h2>7. 注意事项</h2>
+<table>
+  <tr><td>价格源</td><td>腾讯行情，仅美股时段有实时数据，休市显示 <code>--</code></td></tr>
+  <tr><td>手动设价</td><td>买卖录入区下方可手动设某标的价格</td></tr>
+  <tr><td>模拟参数</td><td>中枢年化 13.8%（VGT 12% + SMH 14% + BTC 18%）</td></tr>
+  <tr><td>历史回测</td><td>BTC 含早期 900% 年份，结果极度乐观</td></tr>
+  <tr><td>隐私</td><td>数据存 Cloudflare D1，Token 控制访问，请勿外传</td></tr>
+  <tr><td>清缓存</td><td>丢失本地数据，云端有备份可下载恢复</td></tr>
+  <tr><td>免费额度</td><td>永久免费，个人使用远达不到上限</td></tr>
+  <tr><td>域名</td><td>部分地区可能访问不稳定，可绑定自定义域名</td></tr>
+</table>
+
+<h2>8. 更新网站</h2>
+<pre>cd C:\Users\ssp\.openclaw-autoclaw\workspace\wealth-server
+npx wrangler deploy</pre>
+<p>部署后 Ctrl+Shift+R 清除 CDN 缓存。</p>
+
+<h2>9. 相关文件</h2>
+<table>
+  <tr><td><code>public/index.html</code></td><td>仪表盘主文件</td></tr>
+  <tr><td><code>src/worker.js</code></td><td>API 后端</td></tr>
+  <tr><td><code>wrangler.toml</code></td><td>部署配置</td></tr>
+  <tr><td><code>wealth-plan.html</code></td><td>20 年财富计划书</td></tr>
+</table>
+
+<div class="back"><a href="/">← 返回仪表盘</a></div>
+</body>
+</html>

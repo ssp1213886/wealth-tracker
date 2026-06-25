@@ -1,0 +1,72 @@
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const auth = request.headers.get('X-Auth-Token');
+
+    // --- CORS ---
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Auth-Token',
+        },
+      });
+    }
+
+    // --- Auth check (skip for static files) ---
+    if (url.pathname.startsWith('/api/')) {
+      if (!auth || auth !== env.AUTH_TOKEN) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: corsHeaders(),
+        });
+      }
+    }
+
+    // --- API: GET /api/sync — load all data ---
+    if (url.pathname === '/api/sync' && request.method === 'GET') {
+      const { results } = await env.DB.prepare('SELECT key, value, updated_at FROM data').all();
+      const data = {};
+      for (const row of results) {
+        try { data[row.key] = JSON.parse(row.value); } catch { data[row.key] = row.value; }
+      }
+      return json({ ok: true, data, ts: Date.now() });
+    }
+
+    // --- API: POST /api/sync — save all data ---
+    if (url.pathname === '/api/sync' && request.method === 'POST') {
+      const body = await request.json();
+      const statements = [];
+      for (const [key, value] of Object.entries(body)) {
+        statements.push(
+          env.DB.prepare(
+            'INSERT OR REPLACE INTO data (key, value, updated_at) VALUES (?, ?, unixepoch())'
+          ).bind(key, JSON.stringify(value))
+        );
+      }
+      if (statements.length > 0) {
+        await env.DB.batch(statements);
+      }
+      return json({ ok: true, saved: statements.length, ts: Date.now() });
+    }
+
+    // --- Fallback: serve static HTML from assets ---
+    try {
+      const asset = await env.ASSETS.fetch(new URL(url.pathname, request.url));
+      if (asset.status !== 404) return asset;
+    } catch (e) {}
+    return new Response('Not Found', { status: 404, headers: corsHeaders() });
+  },
+};
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  };
+}
+
+function json(obj) {
+  return new Response(JSON.stringify(obj), { headers: corsHeaders() });
+}
