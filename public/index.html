@@ -632,7 +632,7 @@ function updateMobStatusBar(){
   var bar=document.getElementById('mobStatusBar');if(!bar)return;
   var vm=document.getElementById('msTotal');if(vm){
     var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});
-    var totalV=trades.reduce(function(s,t){var sp=livePrices[t.symbol]||0;return s+(Math.abs(t.shares)*sp)},0);
+    var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;ETF_SYMS.forEach(function(sym){totalV+=(Math.max(0,bals[sym]||0))*(livePrices[sym]||0)});
     var nc=cashBalance+ts-tb;vm.textContent=fmtFull(totalV+nc);
   }
   var pp=document.getElementById('msPrices');if(pp){
