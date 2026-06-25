@@ -54,7 +54,11 @@ export default {
     // --- Fallback: serve static HTML from assets ---
     try {
       const asset = await env.ASSETS.fetch(new URL(url.pathname, request.url));
-      if (asset.status !== 404) return asset;
+      if (asset.status !== 404) {
+        const h = new Headers(asset.headers);
+        h.set('Cache-Control', 'no-store, max-age=0');
+        return new Response(asset.body, { status: asset.status, headers: h });
+      }
     } catch (e) {}
     return new Response('Not Found', { status: 404, headers: corsHeaders() });
   },
