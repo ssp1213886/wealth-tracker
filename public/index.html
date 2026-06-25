@@ -142,6 +142,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .bb-btn.active .bb-icon{opacity:1;transform:translateY(-1px)}
 .bb-btn::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--accent);border-radius:0 0 3px 3px;transition:width .25s ease}
 .bb-btn.active::before{width:20px}
+
+.mob-status-bar{display:none}
+@media(max-width:800px){.mob-status-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;border-radius:12px;background:var(--card-bg);border:1px solid var(--rule);font-size:.62rem;flex-wrap:wrap}.ms-val{font-family:Inter,var(--font);font-weight:620;font-size:.78rem;color:var(--fg)}.ms-sep{width:1px;height:14px;background:var(--rule)}.ms-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:6px;background:var(--surface);font-family:Inter,var(--font);font-size:.6rem;margin:0 2px}.ms-pill .ms-pos{color:var(--accent)}.ms-pill .ms-neg{color:var(--red)}}
 </style>
 </head>
 <body>
@@ -188,6 +191,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
   <button class="tab-btn" data-tab="sim">📊 模拟</button>
   <button class="tab-btn" data-tab="plan">🗺 规划</button>
 </nav>
+<div class="mob-status-bar" id="mobStatusBar">
+  <span class="ms-val" id="msTotal">$0</span>
+  <span class="ms-sep"></span>
+  <span id="msPrices"></span>
+</div>
+
 
 <section class="tab-panel active" id="tab-holding">
   <div class="metrics" id="holdMetrics">
@@ -352,7 +361,8 @@ function updateSidebar(){
   }
   if(legend&&slices.length)legend.innerHTML=slices.map(function(s,i){return'<span style="display:inline-block;margin:0 3px;"><span style="width:8px;height:8px;border-radius:50%;background:'+DONUT_COLORS[i%3]+';display:inline-block;"></span> '+s.sym+'</span>'}).join('');
   var dcaEl=document.getElementById('sbDCACalendar');if(dcaEl){var buyTrades=trades.filter(function(t){return t.shares>0});var months=new Set();buyTrades.forEach(function(t){months.add(t.date.slice(0,7))});var n=months.size+1;var now=new Date(),next=new Date(now.getFullYear(),now.getMonth()+1,1);dcaEl.textContent='📅 下次定投 '+next.getFullYear()+'年'+(next.getMonth()+1)+'月 · 第'+n+'次'}
-}
+
+  updateMobStatusBar();}
 
 var cachePrice=function(symbol,data){try{var c=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');c[symbol]=data;localStorage.setItem(PRICE_KEY,JSON.stringify(c))}catch(e){console.warn('cachePrice failed',e)}}
 var fetchWithTimeout=function(url,ms){var ctrl=new AbortController();setTimeout(function(){ctrl.abort()},ms||5000);return fetch(url,{mode:'cors',signal:ctrl.signal})}
@@ -613,6 +623,24 @@ function switchTab(tab){
   if(bba)bba.classList.add('active');
   if(tab==='sim')setTimeout(updateAll,100);
   if(tab==='holdings'||tab==='holding')updatePortfolio();
+}
+
+
+function updateMobStatusBar(){
+  var bar=document.getElementById('mobStatusBar');if(!bar)return;
+  var vm=document.getElementById('msTotal');if(vm){
+    var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});
+    var totalV=trades.reduce(function(s,t){var sp=livePrices[t.symbol]||0;return s+(Math.abs(t.shares)*sp)},0);
+    var nc=cashBalance+ts-tb;vm.textContent=fmtFull(totalV+nc);
+  }
+  var pp=document.getElementById('msPrices');if(pp){
+    pp.innerHTML=ETF_SYMS.map(function(sym){
+      var p=livePrices[sym],ch=liveChanges[sym];
+      var chHtml='',chCls='';
+      if(ch!=null&&ch!==0){chCls=ch>0?'ms-pos':'ms-neg';chHtml=' <span class="'+chCls+'">'+(ch>0?'+':'')+ch.toFixed(1)+'%</span>'}
+      return '<span class="ms-pill"><strong>'+sym+'</strong> '+(p?'$'+p.toFixed(2):'--')+chHtml+'</span>';
+    }).join('');
+  }
 }
 
 function initAll(){
