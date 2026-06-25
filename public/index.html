@@ -696,9 +696,8 @@ function updateMobStatusBar(){
       var p=livePrices[sym],ch=liveChanges[sym];
       var chHtml='',chCls='';
       if(ch!=null&&ch!==0){var prev=p-ch;var pct=prev>0?ch/prev*100:0;chCls=ch>0?'ms-pos':'ms-neg';chHtml=' <span class="'+chCls+'">'+(ch>0?'↑':'↓')+Math.abs(pct).toFixed(1)+'%</span>'}
-      var dir=ch>0?'↑':'↓';return '<span class="ms-pill" style="border-left:2px solid '+(ch>=0?'var(--accent)':'var(--red)')+';"><strong>'+sym+'</strong> '+(p?'$'+p.toFixed(2):'--')+'<small style="color:'+(ch>=0?'var(--accent)':'var(--red)')+';margin-left:2px;">'+(ch!==0?dir+' '+(Math.abs(ch*100)).toFixed(1)+'%':'')+'</small></span>';
-    }).join('');
-  }
+      return '<span class="ms-pill"><strong>'+sym+'</strong> '+(p?'$'+p.toFixed(2):'--')+chHtml+'</span>';
+    }).join(''); }
 }
 
 function initAll(){
