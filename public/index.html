@@ -145,7 +145,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .bb-btn.active::before{width:20px}
 
 .mob-status-bar{display:none}
-@media(max-width:800px){.mob-status-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:var(--radius);background:var(--card-bg);border:1px solid var(--rule)}.ms-val{font-family:Inter,var(--font);font-weight:640;font-size:1.4rem;letter-spacing:-.03em;color:var(--fg);line-height:1.1;flex-shrink:0}.ms-sep{width:1px;height:14px;background:var(--rule)}.ms-prices{display:flex;flex-direction:column;gap:3px;text-align:right;flex-shrink:0}.ms-pill{display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:4px;background:var(--surface);font-family:Inter,var(--font);font-size:.58rem;white-space:nowrap}.ms-pill .ms-pos{color:var(--accent)}.ms-pill .ms-neg{color:var(--red)}}
+@media(max-width:800px){.mob-status-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 16px;margin-bottom:10px;border-radius:var(--radius);background:var(--card-bg);border:1px solid var(--rule);position:relative;overflow:hidden}.mob-status-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);border-radius:4px 0 0 4px}.ms-val{font-family:Inter,var(--font);font-weight:680;font-size:2rem;letter-spacing:-.04em;color:var(--fg);line-height:1;flex-shrink:0}.ms-label{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}.ms-left{display:flex;flex-direction:column;align-items:flex-start}.ms-prices{display:flex;flex-direction:column;gap:4px;text-align:right;flex-shrink:0;min-width:0}.ms-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;background:var(--surface);font-family:Inter,var(--font);font-size:.6rem;white-space:nowrap;line-height:1.2}.ms-pill .ms-pos{color:var(--accent)}.ms-pill .ms-neg{color:var(--red)}}
 
 /* ── 主题选择器 ── */
 .theme-controls{display:flex;align-items:center;gap:8px}
@@ -239,7 +239,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 </aside>
 <main class="main">
 <div class="mob-status-bar" id="mobStatusBar">
-  <span class="ms-val" id="msTotal">$0</span>
+  <span class="ms-left"><span class="ms-label">总资产</span><span class="ms-val" id="msTotal">$0</span></span>
   <span class="ms-prices" id="msPrices"></span>
 </div>
 <div class="top-bar"><div style="display:flex;gap:8px;flex-wrap:wrap;"><span style="padding:4px 12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-pill);font-size:.66rem;color:var(--fg);font-weight:500;">2027-2047</span><span style="padding:4px 12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-pill);font-size:.66rem;color:var(--muted);">月投定投</span><span style="padding:4px 12px;background:var(--accent-l);border:1px solid var(--accent);border-radius:var(--radius-pill);font-size:.66rem;color:var(--accent);font-weight:500;">🎯 $2.5M</span></div><button class="btn btn-out btn-sm" id="btnExport" style="font-size:.62rem;">📋 复制链接</button></div>
