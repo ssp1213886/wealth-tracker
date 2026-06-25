@@ -124,7 +124,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .trade-table tbody td:first-child{text-align:left;font-weight:500}
 .trade-table tbody tr:nth-child(even){background:rgba(46,107,80,.03)} .trade-table tbody tr:hover{background:var(--accent-l)}
 .pnl-pos{color:var(--accent);font-weight:560}.pnl-neg{color:var(--red);font-weight:560}
-.price-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border-radius:16px;font-size:.66rem;border:1px solid var(--rule);transition:all .2s}.price-pill:hover{border-color:var(--accent)}.price-pill .pp-sym{font-weight:540;font-family:'Inter',monospace;letter-spacing:.02em;font-size:.68rem}.price-pill .pp-chg{font-size:.56rem}
+.price-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border-radius:16px;font-size:.66rem;border:1px solid var(--rule);transition:all .2s;cursor:pointer;user-select:none}.price-pill:hover{border-color:var(--accent);background:var(--accent-l)}.price-pill:active{transform:scale(.96)}.price-pill .pp-sym{font-weight:540;font-family:'Inter',monospace;letter-spacing:.02em;font-size:.68rem}.price-pill .pp-chg{font-size:.56rem}
 .trade-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;opacity:.4;transition:all .15s;padding:2px 6px;border-radius:50%}
 .trade-del:hover{opacity:1;color:var(--red);background:rgba(217,69,53,.1)}.rb-mode-btn{font-family:var(--font);color:var(--muted);cursor:pointer;transition:all .2s;background:var(--surface)}.rb-mode-btn:hover{color:var(--fg);background:var(--surface)}.rb-mode-btn.active{background:var(--accent);color:#fff}
 /* 侧边栏价格微卡 */
@@ -427,7 +427,7 @@ async function fetchPrice(symbol){
   if(cached[symbol])return{price:cached[symbol].price,source:'缓存',time:cached[symbol].time||cached[symbol].ts};
   return null;
 }
-function pricePill(sym,price,change,source){var dot=source&&source!=='缓存'&&source!=='manual'?'<span class="live-dot"></span>':'';var ch='';if(change!=null){var s2=change>=0?'+':'';ch='<span class="pp-chg" style="color:'+(change>=0?'var(--accent)':'var(--red)')+';">'+s2+change.toFixed(2)+'</span>'}var sl=source?'<small style="color:var(--muted);font-size:.5rem;margin-left:3px;">'+source+'</small>':'';return'<span class="price-pill">'+dot+'<span class="pp-sym">'+sym+'</span><strong>$'+price.toFixed(2)+'</strong>'+ch+sl+'</span>'}
+function pricePill(sym,price,change,source){var dot=source&&source!=='缓存'&&source!=='manual'?'<span class="live-dot"></span>':'';var ch='';if(change!=null){var s2=change>=0?'+':'';ch='<span class="pp-chg" style="color:'+(change>=0?'var(--accent)':'var(--red)')+';">'+s2+change.toFixed(2)+'</span>'}var sl=source?'<small style="color:var(--muted);font-size:.5rem;margin-left:3px;">'+source+'</small>':'';return'<span class="price-pill" data-sym="'+sym+'" data-price="'+price.toFixed(2)+'" style="cursor:pointer">'+dot+'<span class="pp-sym">'+sym+'</span><strong>$'+price.toFixed(2)+'</strong>'+ch+sl+'</span>'}
 async function refreshPrices(){
   var el=document.getElementById('hmPricesCompact');if(el)el.textContent='加载中...';
   var syms=['VGT','SMH','BTC'];
@@ -435,7 +435,7 @@ async function refreshPrices(){
     var d=await fetchPrice(sym);
     if(d&&d.source!=='缓存'){livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source;if(d.change!=null)liveChanges[sym]=d.change;cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
     if(livePrices[sym]){return pricePill(sym,livePrices[sym],liveChanges[sym],'cache')}
-    return '<span class="price-pill"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'
+    return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'
   }));
   if(el)el.innerHTML=results.join('');
   updatePortfolio();updateSidebar();updateSidebarPrices();
@@ -497,7 +497,7 @@ function updatePortfolio(){
   });
   var tc=document.getElementById('hmDrawdown'),ts=document.getElementById('hmDrawdownSub');
   if(ddLines.length>0){tc.textContent='';var worst=ddLines.reduce(function(a,b){return a.dd>b.dd?a:b});tc.innerHTML=ddLines.map(function(d){return '<div style="font-size:.68rem;display:flex;justify-content:space-between;padding:2px 0;"><strong>'+d.sym+'</strong><span style="color:'+(d.dd>0.1?'var(--red)':'var(--accent)')+';">'+(d.dd>0.1?'-'+d.dd.toFixed(1)+'%':d.dd.toFixed(1)+'%')+'</span><span style="font-size:.55rem;color:var(--muted);">高$'+d.peak.toFixed(2)+'</span></div>'}).join('');ts.textContent=''}else{tc.textContent='--';tc.style.color='';ts.textContent='💹 添加价格后显示'}
-  document.getElementById('hmPricesCompact').innerHTML=ETF_SYMS.map(function(sym){return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||''):'<span class="price-pill"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('');
+  document.getElementById('hmPricesCompact').innerHTML=ETF_SYMS.map(function(sym){return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||''):'<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('');
   var ct=document.getElementById('hmPriceTime');if(ct&&!ct.textContent)ct.textContent='更新 '+new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -724,7 +724,7 @@ function initAll(){
   [['rMonthly',state.monthly,'vMonthly',fmt$(state.monthly)],['nMonthly',state.monthly],['rReturn',(state.ret*100).toFixed(1),'vReturn',(state.ret*100).toFixed(1)+'%'],['rYears',state.years,'vYears',state.years],['nYears',state.years],['rInitial',state.initial,'vInitial',fmt$(state.initial)],['nInitial',state.initial],['rRuns',state.runs,'vRuns',state.runs],['rVGT',Math.round(state.vgt*100),'vVGT',Math.round(state.vgt*100)+'%'],['rSMH',Math.round(state.smh*100),'vSMH',Math.round(state.smh*100)+'%']].forEach(function(a){var re=document.getElementById(a[0]),ve=document.getElementById(a[2]);if(re)re.value=a[1];if(ve&&a[3]!==undefined)ve.textContent=a[3]});
   var bd=document.getElementById('vBTC');if(bd)bd.textContent=Math.round(state.btc*100)+'%';
   syncAllocDisp();updateWithdrawal();setTimeout(updateAll,200);
-  updateSidebarPrices();initPortfolio();setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
+  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','','value','pnl','pnlPct'];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
 }
 window.addEventListener('DOMContentLoaded',initAll);
