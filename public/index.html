@@ -679,6 +679,8 @@ function switchTab(tab){
   var bba=document.getElementById('bb'+tab.charAt(0).toUpperCase()+tab.slice(1));
   if(bba)bba.classList.add('active');
   if(tab==='holdings'||tab==='holding')updatePortfolio();
+  if(tab==='sgov')updateSgovPage();
+  if(tab==='log'){renderNotes();renderLogHeatmap()}
 }
 
 
