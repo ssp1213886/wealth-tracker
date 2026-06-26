@@ -30,35 +30,66 @@
 <h1>使用文档</h1>
 <p class="sub">My Portfolio — 个人投资仪表盘</p>
 
-<h2>1. 三大核心模块</h2>
+<h2>1. 页面结构</h2>
+<p>本网站包含 6 个页面，通过顶部 Tab（桌面端）和底部导航（全平台）切换：</p>
 
-<h3>💼 持仓</h3>
+<h3>📊 仪表盘</h3>
 <ul>
-  <li><strong>账户现金</strong>：记录入金/出金。买入自动扣减，卖出自动增加</li>
-  <li><strong>持仓明细</strong>：各标的总持仓、加权均价、现价、市值、盈亏</li>
-  <li><strong>买卖录入</strong>：手动录入交易（日期、标的、数量、单价），仅支持 VGT / SMH / BTC</li>
-  <li><strong>再平衡</strong>：换仓模式（卖出超配买入欠配）或注资模式（仅买入欠配）</li>
-  <li><strong>目标进度</strong>：当前总资产 / $2,500,000，带进度条</li>
-  <li><strong>高点回撤</strong>：各标的距历史高点跌幅</li>
+  <li><strong>总资产指标</strong>：账户现金、持仓市值、浮动盈亏、总盈亏</li>
+  <li><strong>🚦 偏离警报</strong>：实际持仓 vs 目标比例（VGT 50%/SMH 30%/BTC 20%），绿/黄/红灯 + SGOV 池动用建议</li>
+  <li><strong>📋 本月定投</strong>：VGT/SMH/BTC 定投金额 + 本月完成状态</li>
+  <li><strong>🗺 20年旅程</strong>：时间进度条（可配置起始日期和年龄）</li>
+  <li><strong>🎯 目标进度</strong>：$2.5M 目标进度条</li>
+  <li><strong>📉 高点回撤</strong>：各标的距历史交易峰值跌幅</li>
+  <li><strong>🍩 持仓分布</strong>：环形图 + SGOV 池标注</li>
 </ul>
 
-<h3>📊 模拟</h3>
+<h3>🕹️ 操作台</h3>
 <ul>
-  <li>蒙特卡洛路径模拟，预测终值分布</li>
-  <li>中位数、P10/P90、≥$2.5M 概率</li>
-  <li>增长曲线：P50 中值 + P25-P75 渐变填充 + 确定性路径 + 标普对照线</li>
-  <li>历史回测（含 BTC 早期极端值，结果极度乐观，谨慎开启）</li>
-  <li>灵敏度分析：+$100/月 效果、VGT 权重 +5% 效果</li>
+  <li><strong>买卖录入</strong>：手动录入交易（日期、标的、数量、价格），支持 VGT/SMH/BTC/SGOV</li>
+  <li><strong>⚖️ 年度再平衡</strong>：仅 12月31日解锁执行，其他日期可预览计算结果</li>
+</ul>
+
+<h3>🛡️ SGOV 池</h3>
+<ul>
+  <li><strong>SGOV 余额</strong>：净买入金额汇总</li>
+  <li><strong>盾牌监测</strong>：正常监控中 / 极端信号触发</li>
+  <li><strong>₿ BTC 监测</strong>：ATH 回撤 + 恐惧贪婪指数，双条件 AND 触发（回撤 ≥60% 且 恐惧 ≤20）</li>
+  <li><strong>💾 科技股监测</strong>：SMH 距 52 周高回撤，触发条件 ≥40%</li>
+</ul>
+
+<h3>📁 数据</h3>
+<ul>
+  <li><strong>💵 现金管理</strong>：入金/出金 + 余额</li>
+  <li><strong>📊 持仓明细</strong>：标的/持仓/均价/现价/市值/盈亏</li>
+  <li><strong>📋 交易历史</strong>：全部记录 + 标的筛选</li>
+  <li><strong>💵 资金流水</strong>：出入金记录</li>
+  <li><strong>📈 盈亏</strong>：按标的汇总盈亏（默认折叠）</li>
+</ul>
+
+<h3>📓 日志</h3>
+<ul>
+  <li><strong>📝 观察者笔记</strong>：自由书写 + 时间倒序 + 可删除</li>
+  <li><strong>🔥 纪律打卡</strong>：24 个月定投日历 + 连续完成月数统计</li>
 </ul>
 
 <h3>🗺 规划</h3>
 <ul>
-  <li>收入渐进加码：27-47 岁四阶段</li>
-  <li>退出策略：47 岁按回撤条件切换防守组合，最长等到 50 岁</li>
-  <li>提款模拟：输入资产/提取率/回报/通胀 → 年月提取额 + 耗尽时间</li>
+  <li><strong>收入加码</strong>：四阶段年龄自动计算（基于起始年龄配置）</li>
+  <li><strong>退出策略</strong>：47岁按回撤切换防守组合</li>
+  <li><strong>提款模拟</strong>：输入资产/提取率/回报/通胀</li>
 </ul>
 
-<h2>2. 云端同步</h2>
+<h2>2. 侧边栏配置</h2>
+<ul>
+  <li>⚙️ <strong>投资参数</strong>：每月定投总额、起点日期、起始年龄</li>
+  <li>🎨 <strong>配色方案</strong>：5 种主题色</li>
+  <li>🍩<strong>持仓占比</strong>：实时环形图</li>
+  <li>💹<strong>实时价格</strong>：腾讯行情</li>
+  <li>📥<strong>数据同步</strong>：Cloudflare D1 云端 + JSON 导入导出 + CSV 导入</li>
+</ul>
+
+<h2>3. 云端同步</h2>
 <p>侧边栏底部「☁️ 云端同步」区域：</p>
 <ul>
   <li><strong>自动上传</strong>：录入交易、入金出金后 2 秒自动推云端</li>
@@ -69,35 +100,34 @@
 
 <div class="call"><strong>⚠ 多设备冲突</strong>：两设备同时编辑分别上传，后者覆盖前者。建议一台编辑完等同步完成再换设备。</div>
 
-<h2>3. Schwab CSV 导入</h2>
+<h2>4. Schwab CSV 导入</h2>
 <ul>
-  <li><strong>拖拽</strong>：嘉信 CSV 文件拖到页面任意位置，绿色边框出现后松手</li>
+  <li><strong>拖拽</strong>：CSV 文件拖到页面任意位置</li>
   <li><strong>按钮</strong>：侧边栏「CSV」按钮选择文件</li>
-  <li>自动识别 Date / Symbol / Quantity / Price 列（中英文均可）</li>
-  <li>仅导入 VGT / SMH / BTC，其他标的自动跳过</li>
-  <li>不会去重，重复导入会产生重复记录</li>
+  <li>支持买入和卖出记录自动识别</li>
+  <li>导入 VGT / SMH / BTC / SGOV</li>
 </ul>
 
-<h2>4. 数据备份</h2>
+<h2>5. 数据备份</h2>
 <ul>
-  <li>「📤 导出」→ 下载 JSON 文件（交易 + 资金 + 参数）</li>
-  <li>「📥 导入」→ 选择 JSON 文件恢复</li>
+  <li>「📤 导出」→ 下载 JSON 文件（交易 + 资金 + 参数），Toast 提示数量</li>
+  <li>「📥 导入」→ 选择 JSON 文件恢复，Toast 提示数量</li>
   <li>勾选「自动备份」→ 每次操作自动下载</li>
-  <li>云端同步是最佳实践，本地备份作为兜底</li>
 </ul>
 
-<h2>5. 移动端</h2>
+<h2>6. 移动端</h2>
 <ul>
   <li>手机浏览器直接打开网址</li>
-  <li>侧边栏收在顶部，点左上角 ☰ 展开</li>
+  <li>底部导航 6 个 Tab 切换页面</li>
+  <li>侧边栏点左上 ☰ 展开</li>
   <li>表单和按钮最小 40px 点击区域</li>
-  <li>表格左右滑动查看全部列</li>
 </ul>
 
-<h2>6. 暗色模式</h2>
-<p>侧边栏点 🌙/☀ 切换，偏好自动记忆。</p>
+<h2>7. 暗色模式</h2>
+<p>侧边栏点 🌙/☀ 切换，5 种配色可选，偏好自动记忆。</p>
 
-<h2>7. 注意事项</h2>
+<h2>8. 设计原则</h2>
+<p style="font-style:italic;color:var(--accent);">这个网站是：20年航海日志 / 纪律打卡机 / 情绪分流器。不是：高频交易终端 / 预测分析工具 / 社交炫耀平台。</p>
 <table>
   <tr><td>价格源</td><td>腾讯行情，仅美股时段有实时数据，休市显示 <code>--</code></td></tr>
   <tr><td>手动设价</td><td>买卖录入区下方可手动设某标的价格</td></tr>
