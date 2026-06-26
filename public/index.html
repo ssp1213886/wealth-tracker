@@ -266,10 +266,9 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
     <div class="metric"><div class="m-label">仓位盈亏</div><div class="m-val" id="hmUnreal">$0</div><div class="m-sub" id="hmUnrealPct"></div></div>
     <div class="metric"><div class="m-label">总盈亏(含已实现)</div><div class="m-val" id="hmPnL">$0</div><div class="m-sub" id="hmPnLPct"></div></div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;" id="dashWidgets">
-    <div class="card" style="padding:14px;"><h3 style="font-size:.68rem;">🚦 偏离警报</h3><div style="font-size:.85rem;font-weight:620;margin:6px 0;" id="devLight">--</div><div style="font-size:.58rem;color:var(--muted);line-height:1.5;" id="devMsg">加载中...</div></div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px;" id="dashWidgets">
     <div class="card" style="padding:14px;"><h3 style="font-size:.68rem;">🗺 20年旅程</h3><div style="font-size:1rem;font-weight:700;font-family:'Inter',var(--font);margin-bottom:6px;" id="roadLabel">--</div><div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;margin-bottom:4px;"><div id="roadBar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .4s;"></div></div><div style="font-size:.52rem;color:var(--muted);display:flex;justify-content:space-between;"><span id="roadStart">2025-01</span><span>20年</span></div></div>
-    <div class="card" style="padding:14px;"><h3 style="font-size:.68rem;">📋 当月定投</h3><div style="font-size:.82rem;font-weight:620;" id="sbDCAStatus">--</div><div style="font-size:.56rem;color:var(--muted);margin-top:3px;" id="sbDCASub">检测中...</div></div>
+    <div class="card" style="padding:14px;"><h3 style="font-size:.68rem;">🚦 偏离警报</h3><div style="font-size:.85rem;font-weight:620;margin:6px 0;" id="devLight">--</div><div style="font-size:.58rem;color:var(--muted);line-height:1.5;" id="devMsg">加载中...</div></div>
   </div>
   <div class="chart-row">
     <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">🎯 目标进度 ($2.5M)</h3>
@@ -604,10 +603,10 @@ function updateSgovAlerts(){
   var btcDD=0,ath=btcAth||livePrices.BTC||0,btcP=livePrices.BTC;if(btcP>0&&ath>0)btcDD=(ath-btcP)/ath*100;
   var fngV=0;var fc=JSON.parse(localStorage.getItem('fng_cache')||'{}');if(fc.v!=null)fngV=fc.v;
   var smhP=livePrices.SMH,smh5=smh52hi||smhP||0,smhDD=0;if(smhP>0&&smh5>0)smhDD=(smh5-smhP)/smh5*100;
-  var btcAlert=btcDD>=60||fngV>0&&fngV<=20,smhAlert=smhDD>=40,triggered=btcAlert||smhAlert;
+  var btcAlert=btcDD>=60&&fngV>0&&fngV<=20,smhAlert=smhDD>=40,triggered=btcAlert||smhAlert;
   var ba=document.getElementById('btcAlertStatus'),sa=document.getElementById('smhAlertStatus');
-  if(ba){if(btcDD>=60)ba.innerHTML='<div class="red-alert">⚠️ BTC 回撤 '+btcDD.toFixed(1)+'% ≥ 60% 警戒线</div>';else if(fngV>0&&fngV<=20)ba.innerHTML='<div class="red-alert">⚠️ 恐惧贪婪指数 ≤ 20</div>';else ba.innerHTML=''}
-  if(sa){if(smhDD>=40)sa.innerHTML='<div class="red-alert">⚠️ SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 40% 警戒线</div>';else sa.innerHTML=''}
+  if(ba){if(btcDD>=60&&fngV>0&&fngV<=20)ba.innerHTML='<div class="red-alert">⚠️ BTC 回撤 '+btcDD.toFixed(1)+'% ≥ 60% 且 恐惧贪婪 ≤ 20</div>';else if(btcDD>=60)ba.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--orange);">回撤 '+btcDD.toFixed(1)+'% ≥ 60%，等待恐惧贪婪 ≤ 20 确认</div>';else if(fngV>0&&fngV<=20)ba.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--orange);">恐惧贪婪 ≤ 20，等待回撤 ≥ 60% 确认</div>';else ba.innerHTML=''}
+  if(sa){if(smhDD>=40)sa.innerHTML='<div class="red-alert">⚠️ SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 40% 警戒线</div>';else sa.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--muted);">当前回撤 '+smhDD.toFixed(1)+'% · 警戒线 40%</div>'}
   var shield=document.getElementById('sgovShield'),icon=document.getElementById('shieldIcon'),txt=document.getElementById('shieldText'),sub=document.getElementById('shieldSub'),buy=document.getElementById('sgovBuyCard');
   if(triggered){if(shield)shield.classList.add('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.innerHTML='<span style="color:var(--red);">⚠️ 极端信号</span>';if(sub)sub.textContent='市场触发极端信号，可执行买入';if(buy)buy.style.display='block'}
   else{if(shield)shield.classList.remove('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.textContent='正常监控中';if(sub)sub.textContent='市场未触发极端信号';if(buy)buy.style.display='none'}
