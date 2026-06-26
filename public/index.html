@@ -237,7 +237,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       </div></div>
     </div>
   </div>
-  <div class="sb-section"><h3>⚙️ 每月定投</h3><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">总额 $</span><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">起点</span><input type="month" id="roadmapStartInput" value="2025-01" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.54rem;color:var(--muted);margin-top:6px;" id="dcaAllocSummary">VGT 50% · SMH 30% · BTC 20%</div></div>
+  <div class="sb-section"><h3>⚙️ 投资参数</h3><div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">每月 $</span><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">起点</span><input type="month" id="roadmapStartInput" value="2025-01" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">起始年龄</span><input type="number" id="roadmapAgeInput" value="27" min="18" max="70" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.54rem;color:var(--muted);margin-top:6px;" id="dcaAllocSummary">VGT 50% · SMH 30% · BTC 20%</div></div>
   <div class="sb-footer-links"><a href="/guide.html">📖 使用文档</a></div>
 </aside>
 <main class="main">
@@ -246,7 +246,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   <span class="ms-prices" id="msPrices"></span>
  <span style="font-size:.45rem;color:var(--accent);opacity:.4;padding-left:14px" id="ver">v5</span>
 </div>
-<div class="top-bar"><div style="display:flex;gap:8px;flex-wrap:wrap;"><span style="padding:4px 12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-pill);font-size:.66rem;color:var(--fg);font-weight:500;">2027-2047</span><span style="padding:4px 12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-pill);font-size:.66rem;color:var(--muted);">月投定投</span><span style="padding:4px 12px;background:var(--accent-l);border:1px solid var(--accent);border-radius:var(--radius-pill);font-size:.66rem;color:var(--accent);font-weight:500;">🎯 $2.5M</span></div><button class="btn btn-out btn-sm" id="btnExport" style="font-size:.62rem;">📋 复制链接</button></div>
+<div class="top-bar"><div style="display:flex;gap:8px;flex-wrap:wrap;"><span style="padding:4px 12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-pill);font-size:.66rem;color:var(--fg);font-weight:500;" id="pillYear">2025-2045</span><span style="padding:4px 12px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius-pill);font-size:.66rem;color:var(--muted);">月投定投</span><span style="padding:4px 12px;background:var(--accent-l);border:1px solid var(--accent);border-radius:var(--radius-pill);font-size:.66rem;color:var(--accent);font-weight:500;">🎯 $2.5M</span></div><button class="btn btn-out btn-sm" id="btnExport" style="font-size:.62rem;">📋 复制链接</button></div>
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="holding">💼 持仓</button>
@@ -292,8 +292,8 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 </section>
 
 <section class="tab-panel" id="tab-plan">
-  <div class="card"><h3>📈 收入渐进加码</h3><div class="timeline"><div class="tl-phase"><div class="tl-year">27-30岁</div><div class="tl-title">起步期</div><div class="tl-amt">$2K-$2.5K</div></div><div class="tl-phase"><div class="tl-year">30-35岁</div><div class="tl-title">增长期</div><div class="tl-amt">$2.5K-$3.5K</div></div><div class="tl-phase"><div class="tl-year">35-42岁</div><div class="tl-title">巅峰期</div><div class="tl-amt">$3.5K-$5K</div></div><div class="tl-phase"><div class="tl-year">42-47岁</div><div class="tl-title">冲刺期</div><div class="tl-amt">$5K+</div></div></div></div>
-  <div class="card"><h3>🚪 退出策略</h3><div class="timeline"><div class="tl-phase"><div class="tl-year">40-47岁</div><div class="tl-title">持续进攻</div></div><div class="tl-phase now"><div class="tl-year">47岁</div><div class="tl-title">检查退出</div></div><div class="tl-phase"><div class="tl-year">47-50岁</div><div class="tl-title">等待窗口</div></div><div class="tl-phase"><div class="tl-year">50岁+</div><div class="tl-title">保守: 60%VOO+30%IEF+10%SGOV</div></div></div></div>
+  <div class="card"><h3>📈 收入渐进加码</h3><div class="timeline"><div class="tl-phase"><div class="tl-year" id="planAge1">27-30岁</div><div class="tl-title">起步期</div><div class="tl-amt">$2K-$2.5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge2">30-35岁</div><div class="tl-title">增长期</div><div class="tl-amt">$2.5K-$3.5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge3">35-42岁</div><div class="tl-title">巅峰期</div><div class="tl-amt">$3.5K-$5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge4">42-47岁</div><div class="tl-title">冲刺期</div><div class="tl-amt">$5K+</div></div></div></div>
+  <div class="card"><h3>🚪 退出策略</h3><div class="timeline"><div class="tl-phase"><div class="tl-year" id="planExit1">40-47岁</div><div class="tl-title">持续进攻</div></div><div class="tl-phase now"><div class="tl-year" id="planExit2">47岁</div><div class="tl-title">检查退出</div></div><div class="tl-phase"><div class="tl-year" id="planExit3">47-50岁</div><div class="tl-title">等待窗口</div></div><div class="tl-phase"><div class="tl-year" id="planExit4">50岁+</div><div class="tl-title">保守: 60%VOO+30%IEF+10%SGOV</div></div></div></div>
   <div class="card"><h3>💰 提款模拟</h3><div class="wd-grid"><div class="wd-item"><label>Portfolio <span class="val" id="vWdPortfolio">$2.27M</span></label><input type="range" id="rWdPortfolio" min="500000" max="5000000" step="10000" value="2270000"></div><div class="wd-item"><label>Rate <span class="val" id="vWdRate">4.0%</span></label><input type="range" id="rWdRate" min="2" max="8" step="0.1" value="4.0"></div><div class="wd-item"><label>Return <span class="val" id="vWdReturn">6%</span></label><input type="range" id="rWdReturn" min="2" max="12" step="0.5" value="6"></div><div class="wd-item"><label>Inflation <span class="val" id="vWdInfl">2.5%</span></label><input type="range" id="rWdInfl" min="0" max="6" step="0.5" value="2.5"></div></div><div class="sc-grid"><div class="sc-card"><div class="sc-label">年提取</div><div class="sc-val" id="wdAnnual">--</div></div><div class="sc-card"><div class="sc-label">月提取</div><div class="sc-val" id="wdMonthly">--</div></div><div class="sc-card"><div class="sc-label">耗尽时间</div><div class="sc-val" id="wdDeplete">--</div></div><div class="sc-card"><div class="sc-label">永续率</div><div class="sc-val" id="wdPerpetual">--</div></div></div></div>
 </section>
 <section class="tab-panel" id="tab-console">
@@ -346,7 +346,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <script>
 var LSKEY='wealth_dashboard_v2',PRICE_KEY='wealth_prices_v2',TRADE_KEY='wealth_trades_v2',CB_KEY='wealth_cash_v2',CLOG_KEY='wealth_cashlog_v2';var cashBalance=0,cashLog=[];
-var state={monthlyDCA:2000,roadmapStart:'2025-01',vgt:0.50,smh:0.30,btc:0.20};
+var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,vgt:0.50,smh:0.30,btc:0.20};
 var trades=[],livePrices={},liveChanges={},liveSources={},tradeIdCounter=0;
 
 function safeNum(n){return isNaN(n)||n===null||n===undefined||!isFinite(n)?0:n}
@@ -469,7 +469,7 @@ function updateDonutChart(rows){var canvas=document.getElementById("chartDonut")
   el.innerHTML=h2;
 }
 
-function loadState(){try{var s=localStorage.getItem(LSKEY);if(s)return JSON.parse(s)}catch(e){}return{monthlyDCA:2000,roadmapStart:'2025-01',vgt:0.50,smh:0.30,btc:0.20}}
+function loadState(){try{var s=localStorage.getItem(LSKEY);if(s)return JSON.parse(s)}catch(e){}return{monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,vgt:0.50,smh:0.30,btc:0.20}}
 function saveState(){try{localStorage.setItem(LSKEY,JSON.stringify(state));autoPushDebounce();localStorage.setItem(LSKEY+'_theme',document.documentElement.dataset.theme)}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足，请导出数据后清理旧记录')}}
 // ---- DCA (定投) ----
 function updateDCA(){var dca=state.monthlyDCA||2000,alloc={VGT:state.vgt,SMH:state.smh,BTC:state.btc},els={},sum=0;ETF_SYMS.forEach(function(s){var amt=dca*alloc[s];sum+=amt;els['dca'+s]=document.getElementById('dca'+s);if(els['dca'+s])els['dca'+s].textContent=fmt$(amt)});var ds=document.getElementById('dcaStatus');if(ds)checkDCAStatus(ds)}
@@ -532,6 +532,8 @@ function updateDashboardWidgets(){
   if(rl)rl.textContent='第 '+yrs.toFixed(1)+' 年 / 20 年 ('+pct.toFixed(1)+'%)';
   if(rb)rb.style.width=pct+'%';
   if(rs2)rs2.textContent=start;
+  var py=document.getElementById('pillYear');if(py){var sy=sd.getFullYear();py.textContent=sy+'-'+(sy+20)}
+  updatePlanAges();
   // 当月定投状态
   var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),dca=state.monthlyDCA||2000;
   var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===ym}),bs={},totalB=0;
@@ -544,6 +546,12 @@ function updateDashboardWidgets(){
   updateConsoleDCA();
   // 再平衡锁定
   updateRebalanceLock();
+}
+// ---- 规划页动态年龄 ----
+function updatePlanAges(){
+  var base=state.roadmapAge||27;
+  var divs=[['planAge1',base,base+3],['planAge2',base+3,base+8],['planAge3',base+8,base+15],['planAge4',base+15,base+20],['planExit1',base+13,base+20],['planExit2',base+20],['planExit3',base+20,base+23],['planExit4',base+23,null]];
+  divs.forEach(function(d){var el=document.getElementById(d[0]);if(!el)return;if(d[2]!=null)el.textContent=d[1]+'-'+d[2]+'岁';else if(d[1])el.textContent=d[1]+'岁+'})
 }
 // ---- 操作台 ----
 function updateConsoleDCA(){
@@ -727,6 +735,7 @@ function initAll(){
   state=loadState();trades=loadTrades();initTradeIds();
   var dcaInput=document.getElementById('monthlyDCAInput');if(dcaInput){dcaInput.value=state.monthlyDCA||2000;dcaInput.addEventListener('change',function(){var v=parseInt(dcaInput.value)||0;v=Math.max(0,Math.min(50000,v));dcaInput.value=v;state.monthlyDCA=v;saveState();updateDCA()})}
   var rsInput=document.getElementById('roadmapStartInput');if(rsInput){rsInput.value=state.roadmapStart||'2025-01';rsInput.addEventListener('change',function(){state.roadmapStart=rsInput.value;saveState();updateDashboardWidgets()})}
+  var raInput=document.getElementById('roadmapAgeInput');if(raInput){raInput.value=state.roadmapAge||27;raInput.addEventListener('change',function(){var v=parseInt(raInput.value)||27;v=Math.max(18,Math.min(70,v));raInput.value=v;state.roadmapAge=v;saveState();updatePlanAges()})}
   updateWithdrawal();updateDCA();updateSgovPage();
   updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});document.getElementById('notesList')?.addEventListener('click',function(e){var btn=e.target.closest('.trade-del');if(!btn||!btn.dataset.noteId)return;var notes=loadNotes().filter(function(n){return n.id!==parseInt(btn.dataset.noteId)});saveNotes(notes);renderNotes();showToast('🗑️ 笔记已删除')});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','','value','pnl','pnlPct'];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
