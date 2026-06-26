@@ -235,6 +235,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       </div></div>
     </div>
   </div>
+  <div class="sb-section"><h3>⚙️ 每月定投</h3><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">总额 $</span><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.54rem;color:var(--muted);margin-top:6px;" id="dcaAllocSummary">VGT 50% · SMH 30% · BTC 20%</div></div>
   <div class="sb-footer-links"><a href="/guide.html">📖 使用文档</a></div>
 </aside>
 <main class="main">
@@ -265,6 +266,15 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       <div style="height:10px;background:var(--surface);border-radius:5px;overflow:hidden;margin-bottom:4px;position:relative;"><div id="prBar" style="height:100%;background:var(--accent);border-radius:5px;width:0%;transition:width .4s;position:relative;"></div><div style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;border-radius:5px;pointer-events:none;"><div style="width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 2.5s ease-in-out infinite;"></div></div></div>
       <div style="font-size:.62rem;color:var(--muted);">距 $2.5M 还差 <span id="prGap" style="color:var(--red);">$2,500,000</span></div>
     </div>
+    <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">📋 本月定投指令</h3>
+      <div id="dcaInstruction" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px;">
+        <div style="padding:10px;background:linear-gradient(135deg,rgba(46,107,80,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(46,107,80,.15);"><div style="font-size:.58rem;color:var(--muted);">VGT 50%</div><div style="font-size:.95rem;font-weight:620;" id="dcaVGT">$1,000</div></div>
+        <div style="padding:10px;background:linear-gradient(135deg,rgba(74,143,212,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(74,143,212,.15);"><div style="font-size:.58rem;color:var(--muted);">SMH 30%</div><div style="font-size:.95rem;font-weight:620;" id="dcaSMH">$600</div></div>
+        <div style="padding:10px;background:linear-gradient(135deg,rgba(194,133,60,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(194,133,60,.15);"><div style="font-size:.58rem;color:var(--muted);">BTC 20%</div><div style="font-size:.95rem;font-weight:620;" id="dcaBTC">$400</div></div>
+      </div>
+      <div style="font-size:.6rem;padding:10px 12px;border-radius:var(--radius-sm);" id="dcaStatus">🔍 本月定投状态检测中...</div>
+    </div>
+    <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">🔥 纪律打卡</h3><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;" id="heatmapGrid"><span style="font-size:.54rem;color:var(--muted);grid-column:1/-1;">加载中...</span></div></div>
     <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">📉 高点回撤</h3>
       <div id="hmDrawdown">--</div><div style="font-size:.62rem;color:var(--muted);" id="hmDrawdownSub">高点 $0 · 当前 $0</div></div>
   </div>
@@ -291,13 +301,13 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   <div class="card"><h3>🚪 退出策略</h3><div class="timeline"><div class="tl-phase"><div class="tl-year">40-47岁</div><div class="tl-title">持续进攻</div></div><div class="tl-phase now"><div class="tl-year">47岁</div><div class="tl-title">检查退出</div></div><div class="tl-phase"><div class="tl-year">47-50岁</div><div class="tl-title">等待窗口</div></div><div class="tl-phase"><div class="tl-year">50岁+</div><div class="tl-title">保守: 60%VOO+30%IEF+10%SGOV</div></div></div></div>
   <div class="card"><h3>💰 提款模拟</h3><div class="wd-grid"><div class="wd-item"><label>Portfolio <span class="val" id="vWdPortfolio">$2.27M</span></label><input type="range" id="rWdPortfolio" min="500000" max="5000000" step="10000" value="2270000"></div><div class="wd-item"><label>Rate <span class="val" id="vWdRate">4.0%</span></label><input type="range" id="rWdRate" min="2" max="8" step="0.1" value="4.0"></div><div class="wd-item"><label>Return <span class="val" id="vWdReturn">6%</span></label><input type="range" id="rWdReturn" min="2" max="12" step="0.5" value="6"></div><div class="wd-item"><label>Inflation <span class="val" id="vWdInfl">2.5%</span></label><input type="range" id="rWdInfl" min="0" max="6" step="0.5" value="2.5"></div></div><div class="sc-grid"><div class="sc-card"><div class="sc-label">年提取</div><div class="sc-val" id="wdAnnual">--</div></div><div class="sc-card"><div class="sc-label">月提取</div><div class="sc-val" id="wdMonthly">--</div></div><div class="sc-card"><div class="sc-label">耗尽时间</div><div class="sc-val" id="wdDeplete">--</div></div><div class="sc-card"><div class="sc-label">永续率</div><div class="sc-val" id="wdPerpetual">--</div></div></div></div>
 </section>
-<div class="sync-toast" id="syncToast"></div><div class="drop-zone-overlay" id="dropOverlay">📁 释放文件导入 Schwab CSV</div><div class="footer">My Portfolio · 个人使用 · 不构成投资建议</div>
+<div class="sync-toast" id="syncToast"></div><div class="drop-zone-overlay" id="dropOverlay">📁 释放文件导入 Schwab CSV</div><div class="footer">My Portfolio · 个人使用 · 不构成投资建议<br><span style="font-size:.56rem;opacity:.7;font-style:italic;">这个网站是：20年航海日志 / 纪律打卡机 / 情绪分流器。不是：高频交易终端 / 预测分析工具 / 社交炫耀平台。</span></div>
 </main></div>
 
 
 <script>
 var LSKEY='wealth_dashboard_v2',PRICE_KEY='wealth_prices_v2',TRADE_KEY='wealth_trades_v2',CB_KEY='wealth_cash_v2',CLOG_KEY='wealth_cashlog_v2';var cashBalance=0,cashLog=[];
-var state={vgt:0.50,smh:0.30,btc:0.20};
+var state={monthlyDCA:2000,vgt:0.50,smh:0.30,btc:0.20};
 var trades=[],livePrices={},liveChanges={},liveSources={},tradeIdCounter=0;
 
 function safeNum(n){return isNaN(n)||n===null||n===undefined||!isFinite(n)?0:n}
@@ -320,7 +330,7 @@ function updateSidebar(){
   }
   if(legend&&slices.length)legend.innerHTML=slices.map(function(s,i){return'<span style="display:inline-block;margin:0 3px;"><span style="width:8px;height:8px;border-radius:50%;background:'+DONUT_COLORS[i%3]+';display:inline-block;"></span> '+s.sym+'</span>'}).join('');
   var dcaEl=document.getElementById('sbDCACalendar');if(dcaEl){var buyTrades=trades.filter(function(t){return t.shares>0});var months=new Set();buyTrades.forEach(function(t){months.add(t.date.slice(0,7))});var n=months.size+1;var now=new Date(),next=new Date(now.getFullYear(),now.getMonth()+1,1);dcaEl.textContent='📅 下次定投 '+next.getFullYear()+'年'+(next.getMonth()+1)+'月 · 第'+n+'次'}
-
+  var dcaSum=document.getElementById('dcaAllocSummary');if(dcaSum){var d=state.monthlyDCA||2000;dcaSum.textContent='VGT '+fmt$(d*state.vgt)+' · SMH '+fmt$(d*state.smh)+' · BTC '+fmt$(d*state.btc)}
   updateMobStatusBar();}
 
 var cachePrice=function(symbol,data){try{var c=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');c[symbol]=data;localStorage.setItem(PRICE_KEY,JSON.stringify(c))}catch(e){console.warn('cachePrice failed',e)}}
@@ -383,8 +393,7 @@ function updatePortfolio(){
     var hid=this.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio()}return}
     var tid=parseInt(this.dataset.id);if(tid){trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio()}
   }});
-  updateDonutChart(rows);updateSidebar();updateSidebarPrices();updateHoldCash();
-  // Progress
+  updateDonutChart(rows);updateSidebar();updateSidebarPrices();updateHoldCash();updateDCA();updateHeatmap();
   var target=2500000,totalAssets=totalValue;var ts2=0,tb2=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts2+=a;else tb2+=a});totalAssets+=cashBalance+ts2-tb2;var pctVal=Math.min(100,totalAssets/target*100),gap=Math.max(0,target-totalAssets);
   document.getElementById('prBar').style.width=pctVal+'%';document.getElementById('prPct').textContent=pctVal.toFixed(1)+'%';document.getElementById('prGap').textContent=fmtFull(gap);document.getElementById('prGap').style.color=gap>0?'var(--red)':'var(--accent)';document.getElementById('prCostInline').textContent=hasPriced?fmtFull(totalAssets):fmtFull(totalAssets);
   // Rebalance alert
@@ -421,8 +430,12 @@ function updateDonutChart(rows){var canvas=document.getElementById("chartDonut")
   el.innerHTML=h2;
 }
 
-function loadState(){try{var s=localStorage.getItem(LSKEY);if(s)return JSON.parse(s)}catch(e){}return{vgt:0.50,smh:0.30,btc:0.20}}
+function loadState(){try{var s=localStorage.getItem(LSKEY);if(s)return JSON.parse(s)}catch(e){}return{monthlyDCA:2000,vgt:0.50,smh:0.30,btc:0.20}}
 function saveState(){try{localStorage.setItem(LSKEY,JSON.stringify(state));autoPushDebounce();localStorage.setItem(LSKEY+'_theme',document.documentElement.dataset.theme)}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足，请导出数据后清理旧记录')}}
+// ---- DCA (定投) ----
+function updateDCA(){var dca=state.monthlyDCA||2000,alloc={VGT:state.vgt,SMH:state.smh,BTC:state.btc},els={},sum=0;ETF_SYMS.forEach(function(s){var amt=dca*alloc[s];sum+=amt;els['dca'+s]=document.getElementById('dca'+s);if(els['dca'+s])els['dca'+s].textContent=fmt$(amt)});var ds=document.getElementById('dcaStatus');if(ds)checkDCAStatus(ds)}
+function checkDCAStatus(el){el=el||document.getElementById('dcaStatus');if(!el)return;var dca=state.monthlyDCA||2000;if(dca<=0){el.innerHTML='<span style="color:var(--muted);">⚙️ 定投总额为 $0，请在侧边栏设置</span>';el.style.background='var(--surface)';return}var n=new Date(),ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===ym});if(!buys.length){el.innerHTML='<span style="color:var(--orange);">⏳ 本月尚未开始定投</span>';el.style.background='linear-gradient(135deg,rgba(204,125,42,.08),transparent)';return}var bySym={};buys.forEach(function(t){bySym[t.symbol]=(bySym[t.symbol]||0)+t.shares*t.price});var v=bySym.VGT||0,m=bySym.SMH||0,b=bySym.BTC||0,total=v+m+b;var targetV=dca*state.vgt,targetM=dca*state.smh,targetB=dca*state.btc;var okV=v>0&&Math.abs(v-targetV)/targetV<0.15,okM=m>0&&Math.abs(m-targetM)/targetM<0.15,okB=b>0&&Math.abs(b-targetB)/targetB<0.15;var okTotal=total>0&&Math.abs(total-dca)/dca<0.10;var complete=okV&&okM&&okB&&okTotal;if(complete){el.innerHTML='<span style="color:var(--accent);font-weight:560;">✅ 本月定投已完成！'+ETF_SYMS.map(function(s){return' '+s}).join('')+'</span>';el.style.background='linear-gradient(135deg,rgba(46,107,80,.08),transparent)'}else{var missing=[];if(!okV)missing.push('VGT('+fmt$(v)+'/'+fmt$(targetV)+')');if(!okM)missing.push('SMH('+fmt$(m)+'/'+fmt$(targetM)+')');if(!okB)missing.push('BTC('+fmt$(b)+'/'+fmt$(targetB)+')');if(dca>0&&!okTotal)missing.push('总额偏差('+fmt$(total)+'/'+fmt$(dca)+')');el.innerHTML='<span style="color:var(--orange);">⏳ 本月进度：已投 '+fmt$(total)+' / 目标 '+fmt$(dca)+' · 偏差：'+missing.join('、')+'</span>';el.style.background='linear-gradient(135deg,rgba(204,125,42,.08),transparent)'}}
+function updateHeatmap(){var container=document.getElementById('heatmapGrid');if(!container)return;var now=new Date(),curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');var months=[];for(var i=11;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.getMonth()+1+'月'})}var dca=state.monthlyDCA||2000;var htm='';months.forEach(function(mt){var mBuys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};mBuys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});var tV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0),pct=tV/dca*100;var bg,icon;if(dca<=0||!mBuys.length){bg='var(--surface)';icon=''}else if(tV>=dca*0.9&&tV<=dca*1.1){bg='var(--accent)';icon=''}else{bg='var(--orange)';icon=''}var isThis=mt.ym===curYM;htm+='<div title="'+mt.ym+'：'+fmt$(tV)+'/'+fmt$(dca)+'" style="padding:6px 4px;text-align:center;border-radius:6px;background:'+bg+';font-size:.54rem;'+(isThis?'border:2px solid var(--accent);':'')+'color:'+(bg==='var(--accent)'?'#fff':(bg==='var(--orange)'?'#fff':'var(--muted)'))+';">'+mt.label+'<br><span style="font-size:.44rem;">'+fmt$(tV)+'</span></div>'});container.innerHTML=htm}
 function loadCash(){try{var s=localStorage.getItem(CB_KEY);return s?parseFloat(s):0}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足');return 0}}function saveCash(){try{localStorage.setItem(CB_KEY,cashBalance.toString());doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足')}}function loadCashLog(){try{var s=localStorage.getItem(CLOG_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}function saveCashLog(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足')}}function renderCashLog(){var b=document.getElementById("cashLogBody");if(!b)return;if(!cashLog.length){b.innerHTML="<tr><td colspan=4 style=\"text-align:center;color:var(--muted);padding:16px;\">📋 暂无记录</td></tr>";return}b.innerHTML=cashLog.slice().reverse().map(function(l){return"<tr><td>"+l.date+"</td><td style=\"color:"+(l.type==="入金"?"var(--accent)":"var(--red)")+";\">"+l.type+"</td><td>"+fmtFull(l.amount)+"</td><td><button class=\"trade-del\" data-clog=\""+l.id+"\">×</button></td></tr>"}).join("")}function loadTrades(){try{var s=localStorage.getItem(TRADE_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}
 function saveTrades(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades));doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足，请导出数据后清理旧记录')}}
 
@@ -453,7 +466,8 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
   if(type==='buy'){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var avail=cashBalance+ts-tb;var cost=shares*price;if(cost>avail){alert('现金不足！\n需要：'+fmtFull(cost)+'\n可用：'+fmtFull(avail));return}}
   var qty=type==='sell'?-shares:shares;
   trades.push({id:tradeIdCounter++,symbol:sym,date:date,shares:qty,price:price,type:type});trades.sort(function(a,b){return a.date.localeCompare(b.date)});
-  saveTrades();updatePortfolio();document.getElementById('tfShares').value='';document.getElementById('tfPrice').value=''
+  saveTrades();updatePortfolio();updateDCA();document.getElementById('tfShares').value='';document.getElementById('tfPrice').value='';
+  showToast('✅ 录入成功','ok')
 });
 
 document.getElementById('btnExport').addEventListener('click',function(){var url=location.origin+location.pathname;navigator.clipboard.writeText(url).then(function(){var b=document.getElementById('btnExport');b.textContent='已复制!';setTimeout(function(){b.textContent='复制链接'},1500)}).catch(function(){alert(url)})});
@@ -525,7 +539,8 @@ function initAll(){
   autoBackup=localStorage.getItem('autoBackup')==='1';var cb=document.getElementById('cbAutoBackup');if(cb){cb.checked=autoBackup;cb.addEventListener('change',function(){autoBackup=this.checked;localStorage.setItem('autoBackup',autoBackup?'1':'0')})}var lbt=localStorage.getItem('lastBackupTime');if(lbt){var d2=new Date(parseInt(lbt));document.getElementById('lastBackupTime').textContent='上次备份 '+d2.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
   try{loadAccent();loadTheme();
   state=loadState();trades=loadTrades();initTradeIds();
-  updateWithdrawal();
+  var dcaInput=document.getElementById('monthlyDCAInput');if(dcaInput){dcaInput.value=state.monthlyDCA||2000;dcaInput.addEventListener('change',function(){var v=parseInt(dcaInput.value)||0;v=Math.max(0,Math.min(50000,v));dcaInput.value=v;state.monthlyDCA=v;saveState();updateDCA()})}
+  updateWithdrawal();updateDCA();updateHeatmap();
   updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','','value','pnl','pnlPct'];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
 }
