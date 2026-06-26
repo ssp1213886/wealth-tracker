@@ -207,6 +207,10 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
     <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--muted);margin-top:6px;"><span>持仓 <strong style="color:var(--fg);font-family:'Inter',var(--font);" id="sbHoldVal">$0</strong></span><span>现金 <strong style="color:var(--fg);font-family:'Inter',var(--font);" id="sbCashVal">$0</strong></span></div>
     <div style="font-size:.52rem;color:var(--accent);margin-top:3px;" id="sbDCACalendar"></div>
   </div>
+  <!-- 仪表盘小组件 -->
+  <div class="sb-section" id="sbDeviation"><h3>🚦 偏离警报</h3><div style="font-size:.72rem;font-weight:620;padding:6px 0;" id="devLight">--</div><div style="font-size:.58rem;color:var(--muted);line-height:1.5;" id="devMsg">加载中...</div></div>
+  <div class="sb-section"><h3>🗺 20年旅程</h3><div style="position:relative;"><div style="font-size:.85rem;font-weight:700;font-family:'Inter',var(--font);margin-bottom:2px;" id="roadLabel">--</div><div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;"><div id="roadBar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .4s;"></div></div><div style="font-size:.52rem;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between;"><span id="roadStart">2025-01</span><span>20年</span></div></div></div>
+  <div class="sb-section"><h3>📋 当月定投</h3><div style="font-size:.74rem;font-weight:620;" id="sbDCAStatus">--</div><div style="font-size:.56rem;color:var(--muted);margin-top:2px;" id="sbDCASub"></div></div>
   <div class="sb-section"><h3>🍩 持仓占比</h3>
     <div style="text-align:center;"><canvas id="sbDonut" width="130" height="130" style="width:130px;height:130px;"></canvas></div>
     <div id="sbDonutLegend" style="font-size:.62rem;color:var(--muted);text-align:center;margin-top:4px;"></div><div id="sbRebalanceAlert" style="display:none;margin-top:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--accent-l);border:1px solid rgba(255,120,80,.2);font-size:.62rem;color:var(--red);text-align:center;line-height:1.6;"></div><div id="sbBalanced" style="display:none;margin-top:6px;font-size:.62rem;color:var(--accent);text-align:center;">OK 已平衡</div>
@@ -235,7 +239,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       </div></div>
     </div>
   </div>
-  <div class="sb-section"><h3>⚙️ 每月定投</h3><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">总额 $</span><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.54rem;color:var(--muted);margin-top:6px;" id="dcaAllocSummary">VGT 50% · SMH 30% · BTC 20%</div></div>
+  <div class="sb-section"><h3>⚙️ 每月定投</h3><div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">总额 $</span><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">起点</span><input type="month" id="roadmapStartInput" value="2025-01" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.54rem;color:var(--muted);margin-top:6px;" id="dcaAllocSummary">VGT 50% · SMH 30% · BTC 20%</div></div>
   <div class="sb-footer-links"><a href="/guide.html">📖 使用文档</a></div>
 </aside>
 <main class="main">
@@ -307,7 +311,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <script>
 var LSKEY='wealth_dashboard_v2',PRICE_KEY='wealth_prices_v2',TRADE_KEY='wealth_trades_v2',CB_KEY='wealth_cash_v2',CLOG_KEY='wealth_cashlog_v2';var cashBalance=0,cashLog=[];
-var state={monthlyDCA:2000,vgt:0.50,smh:0.30,btc:0.20};
+var state={monthlyDCA:2000,roadmapStart:'2025-01',vgt:0.50,smh:0.30,btc:0.20};
 var trades=[],livePrices={},liveChanges={},liveSources={},tradeIdCounter=0;
 
 function safeNum(n){return isNaN(n)||n===null||n===undefined||!isFinite(n)?0:n}
@@ -331,6 +335,7 @@ function updateSidebar(){
   if(legend&&slices.length)legend.innerHTML=slices.map(function(s,i){return'<span style="display:inline-block;margin:0 3px;"><span style="width:8px;height:8px;border-radius:50%;background:'+DONUT_COLORS[i%3]+';display:inline-block;"></span> '+s.sym+'</span>'}).join('');
   var dcaEl=document.getElementById('sbDCACalendar');if(dcaEl){var buyTrades=trades.filter(function(t){return t.shares>0});var months=new Set();buyTrades.forEach(function(t){months.add(t.date.slice(0,7))});var n=months.size+1;var now=new Date(),next=new Date(now.getFullYear(),now.getMonth()+1,1);dcaEl.textContent='📅 下次定投 '+next.getFullYear()+'年'+(next.getMonth()+1)+'月 · 第'+n+'次'}
   var dcaSum=document.getElementById('dcaAllocSummary');if(dcaSum){var d=state.monthlyDCA||2000;dcaSum.textContent='VGT '+fmt$(d*state.vgt)+' · SMH '+fmt$(d*state.smh)+' · BTC '+fmt$(d*state.btc)}
+  updateDashboardWidgets();
   updateMobStatusBar();}
 
 var cachePrice=function(symbol,data){try{var c=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');c[symbol]=data;localStorage.setItem(PRICE_KEY,JSON.stringify(c))}catch(e){console.warn('cachePrice failed',e)}}
@@ -430,12 +435,44 @@ function updateDonutChart(rows){var canvas=document.getElementById("chartDonut")
   el.innerHTML=h2;
 }
 
-function loadState(){try{var s=localStorage.getItem(LSKEY);if(s)return JSON.parse(s)}catch(e){}return{monthlyDCA:2000,vgt:0.50,smh:0.30,btc:0.20}}
+function loadState(){try{var s=localStorage.getItem(LSKEY);if(s)return JSON.parse(s)}catch(e){}return{monthlyDCA:2000,roadmapStart:'2025-01',vgt:0.50,smh:0.30,btc:0.20}}
 function saveState(){try{localStorage.setItem(LSKEY,JSON.stringify(state));autoPushDebounce();localStorage.setItem(LSKEY+'_theme',document.documentElement.dataset.theme)}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足，请导出数据后清理旧记录')}}
 // ---- DCA (定投) ----
 function updateDCA(){var dca=state.monthlyDCA||2000,alloc={VGT:state.vgt,SMH:state.smh,BTC:state.btc},els={},sum=0;ETF_SYMS.forEach(function(s){var amt=dca*alloc[s];sum+=amt;els['dca'+s]=document.getElementById('dca'+s);if(els['dca'+s])els['dca'+s].textContent=fmt$(amt)});var ds=document.getElementById('dcaStatus');if(ds)checkDCAStatus(ds)}
 function checkDCAStatus(el){el=el||document.getElementById('dcaStatus');if(!el)return;var dca=state.monthlyDCA||2000;if(dca<=0){el.innerHTML='<span style="color:var(--muted);">⚙️ 定投总额为 $0，请在侧边栏设置</span>';el.style.background='var(--surface)';return}var n=new Date(),ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===ym});if(!buys.length){el.innerHTML='<span style="color:var(--orange);">⏳ 本月尚未开始定投</span>';el.style.background='linear-gradient(135deg,rgba(204,125,42,.08),transparent)';return}var bySym={};buys.forEach(function(t){bySym[t.symbol]=(bySym[t.symbol]||0)+t.shares*t.price});var v=bySym.VGT||0,m=bySym.SMH||0,b=bySym.BTC||0,total=v+m+b;var targetV=dca*state.vgt,targetM=dca*state.smh,targetB=dca*state.btc;var okV=v>0&&Math.abs(v-targetV)/targetV<0.15,okM=m>0&&Math.abs(m-targetM)/targetM<0.15,okB=b>0&&Math.abs(b-targetB)/targetB<0.15;var okTotal=total>0&&Math.abs(total-dca)/dca<0.10;var complete=okV&&okM&&okB&&okTotal;if(complete){el.innerHTML='<span style="color:var(--accent);font-weight:560;">✅ 本月定投已完成！'+ETF_SYMS.map(function(s){return' '+s}).join('')+'</span>';el.style.background='linear-gradient(135deg,rgba(46,107,80,.08),transparent)'}else{var missing=[];if(!okV)missing.push('VGT('+fmt$(v)+'/'+fmt$(targetV)+')');if(!okM)missing.push('SMH('+fmt$(m)+'/'+fmt$(targetM)+')');if(!okB)missing.push('BTC('+fmt$(b)+'/'+fmt$(targetB)+')');if(dca>0&&!okTotal)missing.push('总额偏差('+fmt$(total)+'/'+fmt$(dca)+')');el.innerHTML='<span style="color:var(--orange);">⏳ 本月进度：已投 '+fmt$(total)+' / 目标 '+fmt$(dca)+' · 偏差：'+missing.join('、')+'</span>';el.style.background='linear-gradient(135deg,rgba(204,125,42,.08),transparent)'}}
 function updateHeatmap(){var container=document.getElementById('heatmapGrid');if(!container)return;var now=new Date(),curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');var months=[];for(var i=11;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.getMonth()+1+'月'})}var dca=state.monthlyDCA||2000;var htm='';months.forEach(function(mt){var mBuys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};mBuys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});var tV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0),pct=tV/dca*100;var bg,icon;if(dca<=0||!mBuys.length){bg='var(--surface)';icon=''}else if(tV>=dca*0.9&&tV<=dca*1.1){bg='var(--accent)';icon=''}else{bg='var(--orange)';icon=''}var isThis=mt.ym===curYM;htm+='<div title="'+mt.ym+'：'+fmt$(tV)+'/'+fmt$(dca)+'" style="padding:6px 4px;text-align:center;border-radius:6px;background:'+bg+';font-size:.54rem;'+(isThis?'border:2px solid var(--accent);':'')+'color:'+(bg==='var(--accent)'?'#fff':(bg==='var(--orange)'?'#fff':'var(--muted)'))+';">'+mt.label+'<br><span style="font-size:.44rem;">'+fmt$(tV)+'</span></div>'});container.innerHTML=htm}
+// ---- 侧边栏小组件 ----
+function updateDashboardWidgets(){
+  // 1. 偏离警报
+  var holdings={},totalV=0;
+  for(var i=0;i<trades.length;i++){var t=trades[i];holdings[t.symbol]=(holdings[t.symbol]||0)+t.shares}
+  var curV=0,curS=0,curB=0;
+  ETF_SYMS.forEach(function(s){var sh=Math.max(0,holdings[s]||0),v=sh*(livePrices[s]||0);if(s==='VGT')curV=v;if(s==='SMH')curS=v;if(s==='BTC')curB=v;totalV+=v});
+  var target={VGT:state.vgt,SMH:state.smh,BTC:state.btc},hasHoldings=totalV>0;
+  var dl=document.getElementById('devLight'),dm=document.getElementById('devMsg');
+  if(!hasHoldings){if(dl)dl.textContent='--';if(dm)dm.textContent='暂无持仓数据';return}
+  var curPct={VGT:curV/totalV,SMH:curS/totalV,BTC:curB/totalV};
+  var maxDev=0;ETF_SYMS.forEach(function(s){var d=Math.abs(curPct[s]-target[s])*100;if(d>maxDev)maxDev=d});
+  var btcPct=curPct.BTC*100;
+  if(btcPct<5||btcPct>50){if(dl)dl.innerHTML='🔴 <span style="color:var(--red);">红灯</span>';if(dl)dl.style.color='var(--red)';if(dm)dm.textContent='极端偏离触发，请执行战略审视'}
+  else if(maxDev>10){if(dl)dl.innerHTML='🟡 <span style="color:var(--orange);">黄灯</span>';if(dl)dl.style.color='var(--orange)';if(dm)dm.textContent='市场分化加剧，安心等待年度再平衡'}
+  else{if(dl)dl.innerHTML='🟢 <span style="color:var(--accent);">绿灯</span>';if(dl)dl.style.color='var(--accent)';if(dm)dm.textContent='一切正常，按计划定投'}
+  // 2. 20年旅程进度
+  var start=state.roadmapStart||'2025-01',sd=new Date(start+'-01'),ed=new Date(sd);ed.setFullYear(ed.getFullYear()+20);
+  var now=new Date(),elapsed=(now-sd)/(ed-sd),pct=Math.min(100,Math.max(0,elapsed*100)),yrs=elapsed*20;
+  var rl=document.getElementById('roadLabel'),rb=document.getElementById('roadBar'),rs2=document.getElementById('roadStart');
+  if(rl)rl.textContent='第 '+(yrs).toFixed(1)+' 年 / 20 年 ('+pct.toFixed(1)+'%)';
+  if(rb)rb.style.width=pct+'%';
+  if(rs2)rs2.textContent=start;
+  // 3. 当月定投状态
+  var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),dca=state.monthlyDCA||2000;
+  var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===ym}),bs={},totalB=0;
+  buys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price;totalB+=t.shares*t.price});
+  var okTotal=totalB>0&&Math.abs(totalB-dca)/dca<0.10,okV=bs.VGT>0&&Math.abs(bs.VGT/totalB-state.vgt)<0.15,okM=bs.SMH>0&&Math.abs(bs.SMH/totalB-state.smh)<0.15,okB=bs.BTC>0&&Math.abs(bs.BTC/totalB-state.btc)<0.15,complete=okTotal&&okV&&okM&&okB;
+  var sd2=document.getElementById('sbDCAStatus'),sub=document.getElementById('sbDCASub');
+  if(complete){if(sd2)sd2.innerHTML='✅ 已完成';if(sd2)sd2.style.color='var(--accent)';var ld=buys[buys.length-1];if(sub)sub.textContent=ld?(ld.date.replace(/-/g,'/').slice(5)):''}
+  else{if(sd2)sd2.innerHTML='⏳ 待执行';if(sd2)sd2.style.color='var(--orange)';if(sub)sub.textContent='本月 '+fmt$(dca)+' 待分配'}
+}
 function loadCash(){try{var s=localStorage.getItem(CB_KEY);return s?parseFloat(s):0}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足');return 0}}function saveCash(){try{localStorage.setItem(CB_KEY,cashBalance.toString());doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足')}}function loadCashLog(){try{var s=localStorage.getItem(CLOG_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}function saveCashLog(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足')}}function renderCashLog(){var b=document.getElementById("cashLogBody");if(!b)return;if(!cashLog.length){b.innerHTML="<tr><td colspan=4 style=\"text-align:center;color:var(--muted);padding:16px;\">📋 暂无记录</td></tr>";return}b.innerHTML=cashLog.slice().reverse().map(function(l){return"<tr><td>"+l.date+"</td><td style=\"color:"+(l.type==="入金"?"var(--accent)":"var(--red)")+";\">"+l.type+"</td><td>"+fmtFull(l.amount)+"</td><td><button class=\"trade-del\" data-clog=\""+l.id+"\">×</button></td></tr>"}).join("")}function loadTrades(){try{var s=localStorage.getItem(TRADE_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}
 function saveTrades(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades));doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足，请导出数据后清理旧记录')}}
 
@@ -540,6 +577,7 @@ function initAll(){
   try{loadAccent();loadTheme();
   state=loadState();trades=loadTrades();initTradeIds();
   var dcaInput=document.getElementById('monthlyDCAInput');if(dcaInput){dcaInput.value=state.monthlyDCA||2000;dcaInput.addEventListener('change',function(){var v=parseInt(dcaInput.value)||0;v=Math.max(0,Math.min(50000,v));dcaInput.value=v;state.monthlyDCA=v;saveState();updateDCA()})}
+  var rsInput=document.getElementById('roadmapStartInput');if(rsInput){rsInput.value=state.roadmapStart||'2025-01';rsInput.addEventListener('change',function(){state.roadmapStart=rsInput.value;saveState();updateDashboardWidgets()})}
   updateWithdrawal();updateDCA();updateHeatmap();
   updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','','value','pnl','pnlPct'];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
