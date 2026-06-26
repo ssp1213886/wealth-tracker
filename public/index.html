@@ -374,7 +374,7 @@ async function fetchPrice(symbol){
   var cached=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');
   try{
     var r=await fetch('https://qt.gtimg.cn/q=us'+symbol.toUpperCase());
-    if(r.ok){var t=await r.text();var m=t.match(/"([^"]+)"/);if(m){var p=m[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0){if(symbol==='SMH'&&hi52>0){var oldHi=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(hi52>oldHi)localStorage.setItem('smh_cur_52hi',hi52.toString());smh52hi=Math.max(smh52hi,hi52)}return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,source:'tencent',time:Date.now()}}}
+    if(r.ok){var t=await r.text();var m=t.match(/"([^"]+)"/);if(m){var p=m[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0)return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,source:'tencent',time:Date.now()}}}
   }catch(e){console.log('Tencent error',e)}
   if(cached[symbol])return{price:cached[symbol].price,source:'缓存',time:cached[symbol].time||cached[symbol].ts};
   return null;
@@ -385,7 +385,7 @@ async function refreshPrices(){
   var syms=['VGT','SMH','BTC'];
   var results=await Promise.all(syms.map(async function(sym){
     var d=await fetchPrice(sym);
-    if(d&&d.source!=='缓存'){livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source;if(d.change!=null)liveChanges[sym]=d.change;cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
+    if(d&&d.source!=='缓存'){livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source;if(d.change!=null)liveChanges[sym]=d.change;if(sym==='SMH'&&d.hi52>0){var o2=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(d.hi52>o2)localStorage.setItem('smh_cur_52hi',d.hi52.toString());smh52hi=Math.max(smh52hi,d.hi52)}cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
     if(livePrices[sym]){return pricePill(sym,livePrices[sym],liveChanges[sym],'cache')}
     return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'
   }));
