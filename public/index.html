@@ -1,4 +1,4 @@
-<!doctype html>
+��﻿<!doctype html>
 <html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -250,7 +250,6 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="holding">💼 持仓</button>
-  <button class="tab-btn" data-tab="console">🕹️ 操作台</button>
   <button class="tab-btn" data-tab="sgov">🛡️ SGOV 池</button>
   <button class="tab-btn" data-tab="data">📁 数据</button>
   <button class="tab-btn" data-tab="log">📓 日志</button>
@@ -315,7 +314,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 </section>
 <section class="tab-panel" id="tab-sgov">
   <div class="card" style="padding:18px;"><h3>🛡️ SGOV 备用金</h3><div style="font-size:1.5rem;font-weight:700;font-family:'Inter',var(--font);margin:8px 0;" id="sgovBalance">$0.00</div><div style="font-size:.6rem;color:var(--muted);" id="sgovDetail">净买入金额 · 短期国债 ETF</div></div>
-  <div class="card" id="sgovShield" style="padding:18px;text-align:center;transition:all .3s;"><div style="font-size:3rem;" id="shieldIcon">🛡️</div><div style="font-size:.82rem;font-weight:620;margin:6px 0;" id="shieldText">警戒中</div><div style="font-size:.58rem;color:var(--muted);" id="shieldSub">市场未触发极端信号</div></div>
+  <div class="card" id="sgovShield" style="padding:18px;text-align:center;transition:all .3s;"><div style="font-size:3rem;" id="shieldIcon">🛡️</div><div style="font-size:.82rem;font-weight:620;margin:6px 0;" id="shieldText">正常监控中</div><div style="font-size:.58rem;color:var(--muted);" id="shieldSub">市场未触发极端信号</div></div>
   <div class="card" style="padding:14px;"><h3>₿ BTC 监测</h3><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);"><span style="font-size:.64rem;color:var(--muted);">距 ATH 回撤</span><span style="font-size:.72rem;font-weight:620;font-family:'Inter',var(--font);" id="btcDrawdown">--</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);margin-bottom:4px;"><span style="font-size:.64rem;color:var(--muted);">恐惧贪婪指数</span><span style="font-size:.72rem;font-weight:620;font-family:'Inter',var(--font);" id="fngValue">--</span></div><div style="font-size:.54rem;color:var(--muted);display:flex;justify-content:space-between;"><span>ATH: <strong id="btcAth" style="color:var(--fg);">--</strong></span><span>警戒: 回撤≥60% 或 恐惧≤20</span></div><div style="margin-top:6px;" id="btcAlertStatus"></div></div>
   <div class="card" style="padding:14px;"><h3>💾 科技股监测</h3><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);margin-bottom:4px;"><span style="font-size:.64rem;color:var(--muted);">SMH 距 52 周高回撤</span><span style="font-size:.72rem;font-weight:620;font-family:'Inter',var(--font);" id="smhDrawdown">--</span></div><div style="font-size:.54rem;color:var(--muted);display:flex;justify-content:space-between;"><span>52周高: <strong id="smh52hi" style="color:var(--fg);">--</strong></span><span>现价: <strong id="smhCur" style="color:var(--fg);">--</strong></span></div><div style="margin-top:6px;" id="smhAlertStatus"></div></div>
   <div class="card" id="sgovBuyCard" style="padding:14px;text-align:center;display:none;"><h3>⚡ 极端信号触发 — 执行买入</h3><div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;"><button class="btn btn-pri" id="btnSgovBuy1" style="font-size:.68rem;">💰 第1份 · <span id="sgovPart1">$2,000</span></button><button class="btn btn-pri" id="btnSgovBuy2" style="font-size:.68rem;">💰 第2份 · <span id="sgovPart2">$4,000</span></button><button class="btn btn-pri" id="btnSgovBuy3" style="font-size:.68rem;">💰 第3份 · <span id="sgovPart3">$6,000</span></button></div><div style="font-size:.56rem;color:var(--muted);margin-top:6px;">按 VGT 50% / SMH 30% / BTC 20% 分配</div></div>
@@ -807,7 +806,6 @@ function doCSVImport(file){
 
 <div class="bottom-bar" id="bottomBar">
   <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings"><span class="bb-icon">💼</span>持仓</button>
-  <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon">🕹️</span>操作台</button>
   <button onclick="switchTab('sgov')" class="bb-btn" id="bbSgov"><span class="bb-icon">🛡️</span>SGOV 池</button>
   <button onclick="switchTab('data')" class="bb-btn" id="bbData"><span class="bb-icon">📁</span>数据</button>
   <button onclick="switchTab('log')" class="bb-btn" id="bbLog"><span class="bb-icon">📓</span>日志</button>
