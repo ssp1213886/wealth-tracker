@@ -100,7 +100,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .tl-phase .tl-desc{font-size:.62rem;color:var(--muted);line-height:1.4}
 .tl-phase .tl-amt{font-size:.76rem;font-weight:600;margin:4px 0}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
-@keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(46,107,80,.4)}50%{opacity:.6;box-shadow:0 0 0 6px rgba(46,107,80,0)}}.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle;animation:pulse 2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(46,107,80,.4)}50%{opacity:.6;box-shadow:0 0 0 6px rgba(46,107,80,0)}}@keyframes redFlash{0%,100%{background:var(--card-bg)}50%{background:rgba(217,69,53,.12)}}.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle;animation:pulse 2s ease-in-out infinite}
 .wd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
 .wd-item label{display:block;font-size:.66rem;color:var(--muted);margin-bottom:4px;font-weight:500}
 .wd-item label .val{float:right;font-weight:540;color:var(--fg)}
@@ -128,6 +128,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .trade-del:hover{opacity:1;color:var(--red);background:rgba(217,69,53,.1)}.rb-mode-btn{font-family:var(--font);color:var(--muted);cursor:pointer;transition:all .2s;background:var(--surface)}.rb-mode-btn:hover{color:var(--fg);background:var(--surface)}.rb-mode-btn.active{background:var(--accent);color:#fff}
 /* 侧边栏价格微卡 */
 #sbLivePrices>div{padding:8px 10px;margin-bottom:3px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--rule);font-size:.62rem;transition:all .25s}#sbLivePrices>div:hover{border-color:var(--accent);background:var(--card-bg)}
+.shield-red{animation:redFlash 1s ease-in-out infinite}.shield-red #shieldIcon{filter:grayscale(0) hue-rotate(-50deg) saturate(3)}.red-alert{background:rgba(217,69,53,.08)!important;border-left:3px solid var(--red)!important;padding:8px 10px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:.6rem;color:var(--red);font-weight:540;animation:redFlash 1s ease-in-out infinite}
 .sync-toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:var(--radius-pill);font-size:.72rem;font-family:var(--font);font-weight:500;z-index:10000;pointer-events:none;opacity:0;transform:translateY(10px);transition:all .35s ease}.sync-toast.show{opacity:1;transform:translateY(0)}.sync-toast.ok{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(46,107,80,.3)}.sync-toast.err{background:var(--red);color:#fff;box-shadow:0 4px 16px rgba(217,69,53,.3)}.drop-zone-overlay{position:fixed;inset:0;z-index:99;background:rgba(46,107,80,.08);border:3px dashed var(--accent);border-radius:16px;margin:20px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--accent);font-weight:600;pointer-events:none;opacity:0;transition:opacity .2s}.drop-zone-overlay.show{opacity:1}.footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);font-size:.62rem;color:var(--muted);text-align:center;letter-spacing:.02em}
 @media(max-width:800px){html,body{height:100dvh;overflow:hidden;overscroll-behavior:none}.main{overflow-y:auto;-webkit-overflow-scrolling:touch;overflow-x:hidden;width:100%;padding:58px 14px 80px;height:calc(100vh - 56px)}.app{height:100vh;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}.chart-wrap{width:100%!important;min-width:0!important}.card>[style*="display:flex"][style*="gap:24px"]{flex-direction:column;align-items:flex-start!important;gap:16px!important}#rebalanceBody>div{flex-wrap:wrap;gap:8px!important}#donutLegend{min-width:0!important;font-size:.6rem!important}.bottom-bar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--card-bg);border-top:1px solid var(--rule);padding:5px 0 env(safe-area-inset-bottom,5px)}input,select,textarea{font-size:16px!important}
   .trade-table,.holdings-table,.trades-table,.cash-table,.hl-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}.holdings-table th,.holdings-table td,.trades-table th,.trades-table td{white-space:nowrap}
@@ -249,8 +250,9 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <nav class="tabs">
   <button class="tab-btn active" data-tab="holding">💼 持仓</button>
-  <button class="tab-btn" data-tab="plan">🗺 规划</button>
   <button class="tab-btn" data-tab="console">🕹️ 操作台</button>
+  <button class="tab-btn" data-tab="sgov">🛡️ SGOV 池</button>
+  <button class="tab-btn" data-tab="plan">🗺 规划</button>
 </nav>
 
 
@@ -290,7 +292,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
     <div id="hmPricesCompact" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:.68rem;">Loading...</div>
     <div style="text-align:right;font-size:.5rem;color:var(--muted);margin-bottom:8px;" id="hmPriceTime"></div>
     <div class="trade-form">
-      <div class="tf-row"><div class="tf-group"><label>类型</label><select id="tfType"><option value="buy">买入</option><option value="sell">卖出</option></select></div><div class="tf-group"><label>标的</label><select id="tfAsset"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC</option></select></div></div>
+      <div class="tf-row"><div class="tf-group"><label>类型</label><select id="tfType"><option value="buy">买入</option><option value="sell">卖出</option></select></div><div class="tf-group"><label>标的</label><select id="tfAsset"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC</option><option value="SGOV">SGOV</option></select></div></div>
       <div class="tf-row tf-row-full"><div class="tf-group"><label>日期</label><input type="date" id="tfDate"></div></div>
       <div class="tf-row"><div class="tf-group"><label>数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div><div class="tf-group"><label>价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div></div>
       <button class="btn btn-pri" id="btnAddTrade">+ 添加交易</button>
@@ -326,6 +328,14 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
     <div id="rebalContent" style="opacity:1;transition:opacity .3s;"><div style="display:flex;align-items:center;gap:4px;margin-bottom:10px;"><div style="display:flex;gap:0;border:1px solid var(--rule);border-radius:var(--radius-sm);overflow:hidden;"><button class="rb-mode-btn active" data-mode="swap" style="border:none;border-radius:0;padding:5px 12px;font-size:.64rem;">换仓</button><button class="rb-mode-btn" data-mode="inject" style="border:none;border-radius:0;padding:5px 12px;font-size:.64rem;">注资</button></div><a class="btn btn-out btn-sm" id="btnRebalanceRecalc" style="font-size:.55rem;padding:4px 8px;">↻ 重算</a></div><div id="rebalanceBody" style="font-size:.68rem;">添加持仓后计算</div></div>
   </div>
 </section>
+<section class="tab-panel" id="tab-sgov">
+  <div class="card" style="padding:18px;"><h3>🛡️ SGOV 备用金</h3><div style="font-size:1.5rem;font-weight:700;font-family:'Inter',var(--font);margin:8px 0;" id="sgovBalance">$0.00</div><div style="font-size:.6rem;color:var(--muted);" id="sgovDetail">净买入金额 · 短期国债 ETF</div></div>
+  <div class="card" id="sgovShield" style="padding:18px;text-align:center;transition:all .3s;"><div style="font-size:3rem;" id="shieldIcon">🛡️</div><div style="font-size:.82rem;font-weight:620;margin:6px 0;" id="shieldText">警戒中</div><div style="font-size:.58rem;color:var(--muted);" id="shieldSub">市场未触发极端信号</div></div>
+  <div class="card" style="padding:14px;"><h3>₿ BTC 监测</h3><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);"><span style="font-size:.64rem;color:var(--muted);">距 ATH 回撤</span><span style="font-size:.72rem;font-weight:620;font-family:'Inter',var(--font);" id="btcDrawdown">--</span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);margin-bottom:4px;"><span style="font-size:.64rem;color:var(--muted);">恐惧贪婪指数</span><span style="font-size:.72rem;font-weight:620;font-family:'Inter',var(--font);" id="fngValue">--</span></div><div style="font-size:.54rem;color:var(--muted);display:flex;justify-content:space-between;"><span>ATH: <strong id="btcAth" style="color:var(--fg);">--</strong></span><span>警戒: 回撤≥60% 或 恐惧≤20</span></div><div style="margin-top:6px;" id="btcAlertStatus"></div></div>
+  <div class="card" style="padding:14px;"><h3>💾 科技股监测</h3><div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule);margin-bottom:4px;"><span style="font-size:.64rem;color:var(--muted);">SMH 距 52 周高回撤</span><span style="font-size:.72rem;font-weight:620;font-family:'Inter',var(--font);" id="smhDrawdown">--</span></div><div style="font-size:.54rem;color:var(--muted);display:flex;justify-content:space-between;"><span>52周高: <strong id="smh52hi" style="color:var(--fg);">--</strong></span><span>现价: <strong id="smhCur" style="color:var(--fg);">--</strong></span></div><div style="margin-top:6px;" id="smhAlertStatus"></div></div>
+  <div class="card" id="sgovBuyCard" style="padding:14px;text-align:center;display:none;"><h3>⚡ 极端信号触发 — 执行买入</h3><div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;"><button class="btn btn-pri" id="btnSgovBuy1" style="font-size:.68rem;">💰 第1份 · <span id="sgovPart1">$2,000</span></button><button class="btn btn-pri" id="btnSgovBuy2" style="font-size:.68rem;">💰 第2份 · <span id="sgovPart2">$4,000</span></button><button class="btn btn-pri" id="btnSgovBuy3" style="font-size:.68rem;">💰 第3份 · <span id="sgovPart3">$6,000</span></button></div><div style="font-size:.56rem;color:var(--muted);margin-top:6px;">按 VGT 50% / SMH 30% / BTC 20% 分配</div></div>
+</section>
+</section>
 <div class="sync-toast" id="syncToast"></div><div class="drop-zone-overlay" id="dropOverlay">📁 释放文件导入 Schwab CSV</div><div class="footer">My Portfolio · 个人使用 · 不构成投资建议<br><span style="font-size:.56rem;opacity:.7;font-style:italic;">这个网站是：20年航海日志 / 纪律打卡机 / 情绪分流器。不是：高频交易终端 / 预测分析工具 / 社交炫耀平台。</span></div>
 </main></div>
 
@@ -339,7 +349,7 @@ function safeNum(n){return isNaN(n)||n===null||n===undefined||!isFinite(n)?0:n}
 function fmt$(n){n=safeNum(n);if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(2)+'M';if(Math.abs(n)>=1e3)return'$'+(n/1e3).toFixed(0)+'K';return'$'+n.toFixed(0)}
 function fmtFull(n){n=safeNum(n);return'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+'%'}
-var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC'},ETF_SYMS=['VGT','SMH','BTC'];
+var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC'],ALL_SYMS=['VGT','SMH','BTC','SGOV'];
 var AD={VGT:{ret:0.12,vol:0.22},SMH:{ret:0.14,vol:0.28},BTC:{ret:0.18,vol:0.65}};
 var DONUT_COLORS=['#2e6b50','#5b9bd5','#c2853c'];
 function calcPortfolio(){var vs=safeNum(state.vgt),ss=safeNum(state.smh),bs=safeNum(state.btc),total=vs+ss+bs;if(total<0.001)return{ret:0.05,vol:0.15};var w={v:vs/total,s:ss/total,b:bs/total};return{ret:w.v*AD.VGT.ret+w.s*AD.SMH.ret+w.b*AD.BTC.ret,vol:Math.sqrt(Math.max(0,Math.pow(w.v*AD.VGT.vol,2)+Math.pow(w.s*AD.SMH.vol,2)+Math.pow(w.b*AD.BTC.vol,2)+2*0.75*w.v*AD.VGT.vol*w.s*AD.SMH.vol+2*0.2*(w.v*AD.VGT.vol*w.b*AD.BTC.vol+w.s*AD.SMH.vol*w.b*AD.BTC.vol)))}}
@@ -364,7 +374,7 @@ async function fetchPrice(symbol){
   var cached=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');
   try{
     var r=await fetch('https://qt.gtimg.cn/q=us'+symbol.toUpperCase());
-    if(r.ok){var t=await r.text();var m=t.match(/"([^"]+)"/);if(m){var p=m[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0)return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,source:'tencent',time:Date.now()}}}
+    if(r.ok){var t=await r.text();var m=t.match(/"([^"]+)"/);if(m){var p=m[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0){if(symbol==='SMH'&&hi52>0){var oldHi=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(hi52>oldHi)localStorage.setItem('smh_cur_52hi',hi52.toString());smh52hi=Math.max(smh52hi,hi52)}return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,source:'tencent',time:Date.now()}}}
   }catch(e){console.log('Tencent error',e)}
   if(cached[symbol])return{price:cached[symbol].price,source:'缓存',time:cached[symbol].time||cached[symbol].ts};
   return null;
@@ -380,7 +390,7 @@ async function refreshPrices(){
     return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'
   }));
   if(el)el.innerHTML=results.join('');
-  updatePortfolio();updateSidebar();updateSidebarPrices();
+  updatePortfolio();updateSidebar();updateSidebarPrices();updateSgovPage();
 }
 
 var holdSort={col:'value',asc:false};function sortHoldRows(rows){var c=holdSort.col,a=holdSort.asc;return rows.sort(function(x,y){var vx=c==='sym'?x.sym:c==='value'?x.value||0:c==='pnl'?x.unrealPnL||0:c==='pnlPct'?x.pnlPct||0:0;var vy=c==='sym'?y.sym:c==='value'?y.value||0:c==='pnl'?y.unrealPnL||0:c==='pnlPct'?y.pnlPct||0:0;if(typeof vx==='string')return a?vy.localeCompare(vx):vx.localeCompare(vy);return a?vx-vy:vy-vx})}
@@ -522,6 +532,47 @@ document.getElementById('btnExecDCA').addEventListener('click',function(){
   });
   if(count===ETF_SYMS.length){trades.sort(function(a,b){return a.date.localeCompare(b.date)});saveTrades();initTradeIds();updatePortfolio();showToast('✅ 录入成功');document.getElementById('conDcaStatus').textContent='已完成 ('+date.slice(5)+')'}
 });
+// ---- SGOV 监测 ----
+var btcAth=parseFloat(localStorage.getItem('btc_ath')||'0'),smh52hi=parseFloat(localStorage.getItem('smh_52hi')||'0');
+function updateSgovPage(){
+  // SGOV 余额
+  var sgovNet=0;trades.forEach(function(t){if(t.symbol==='SGOV')sgovNet+=t.shares*t.price});
+  var sb=document.getElementById('sgovBalance');if(sb)sb.textContent=fmtFull(sgovNet);
+  // BTC 监测
+  var btcP=livePrices.BTC,ath=btcAth;
+  if(btcP>0){if(btcP>ath){ath=btcP;btcAth=ath;localStorage.setItem('btc_ath',ath.toString())}var btcDD=ath>0?((ath-btcP)/ath*100):0;
+    var bd=document.getElementById('btcDrawdown'),baTh=document.getElementById('btcAth');
+    if(bd){bd.textContent=btcDD.toFixed(1)+'%';bd.style.color=btcDD>=60?'var(--red)':btcDD>=40?'var(--orange)':'var(--accent)'}
+    if(baTh)baTh.textContent='$'+ath.toLocaleString()}else{var bd2=document.getElementById('btcDrawdown');if(bd2)bd2.textContent='等待数据';var baTh2=document.getElementById('btcAth');if(baTh2)baTh2.textContent='--'}
+  // 恐惧贪婪
+  fetchFearGreed();
+  // SMH 监测
+  var smhP=livePrices.SMH,smh5=smh52hi;
+  if(smhP>0&&liveSources.SMH==='腾讯'){var hi52=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(hi52<=0){hi52=smhP}if(smhP>hi52){hi52=smhP;localStorage.setItem('smh_cur_52hi',hi52.toString())}smh52hi=hi52;smh5=hi52}
+  if(smhP>0&&smh5>0){var smhDD=((smh5-smhP)/smh5*100);
+    var sdEl=document.getElementById('smhDrawdown'),shEl=document.getElementById('smh52hi'),scEl=document.getElementById('smhCur');
+    if(sdEl){sdEl.textContent=smhDD.toFixed(1)+'%';sdEl.style.color=smhDD>=40?'var(--red)':smhDD>=25?'var(--orange)':'var(--accent)'}
+    if(shEl)shEl.textContent='$'+smh5.toFixed(2);if(scEl)scEl.textContent='$'+smhP.toFixed(2)}
+  else{var sdEl2=document.getElementById('smhDrawdown');if(sdEl2)sdEl2.textContent='等待数据'}
+  updateSgovAlerts();
+}
+function fetchFearGreed(){var fv=document.getElementById('fngValue');if(!fv)return;
+  fetch('https://api.alternative.me/fng/?limit=1').then(function(r){return r.json()}).then(function(d){if(d&&d.data&&d.data[0]){var v=parseInt(d.data[0].value);fv.textContent=v+' ('+d.data[0].value_classification+')';fv.style.color=v<=20?'var(--red)':v<=40?'var(--orange)':v>=75?'var(--accent)':'var(--fg)';localStorage.setItem('fng_cache',JSON.stringify({v:v,cls:d.data[0].value_classification,ts:Date.now()}))}}).catch(function(){var c=JSON.parse(localStorage.getItem('fng_cache')||'{}');if(c.v!=null){fv.textContent=c.v+' ('+(c.cls||'')+')';fv.style.color=c.v<=20?'var(--red)':c.v<=40?'var(--orange)':c.v>=75?'var(--accent)':'var(--fg)';fv.title='缓存 ('+new Date(c.ts).toLocaleTimeString()+')'}})}
+function updateSgovAlerts(){
+  var btcDD=0,ath=btcAth,btcP=livePrices.BTC;if(btcP>0&&ath>0)btcDD=(ath-btcP)/ath*100;
+  var fngV=0;var fc=JSON.parse(localStorage.getItem('fng_cache')||'{}');if(fc.v!=null)fngV=fc.v;
+  var smhP=livePrices.SMH,smhDD=0;if(smhP>0&&smh52hi>0)smhDD=(smh52hi-smhP)/smh52hi*100;
+  var btcAlert=btcDD>=60||fngV>0&&fngV<=20,smhAlert=smhDD>=40,triggered=btcAlert||smhAlert;
+  var ba=document.getElementById('btcAlertStatus'),sa=document.getElementById('smhAlertStatus');
+  if(ba){if(btcDD>=60)ba.innerHTML='<div class="red-alert">⚠️ BTC 回撤 '+btcDD.toFixed(1)+'% ≥ 60% 警戒线</div>';else if(fngV>0&&fngV<=20)ba.innerHTML='<div class="red-alert">⚠️ 恐惧贪婪指数 ≤ 20</div>';else ba.innerHTML=''}
+  if(sa){if(smhDD>=40)sa.innerHTML='<div class="red-alert">⚠️ SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 40% 警戒线</div>';else sa.innerHTML=''}
+  var shield=document.getElementById('sgovShield'),icon=document.getElementById('shieldIcon'),txt=document.getElementById('shieldText'),sub=document.getElementById('shieldSub'),buy=document.getElementById('sgovBuyCard');
+  if(triggered){if(shield)shield.classList.add('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.innerHTML='<span style="color:var(--red);">⚠️ 极端信号</span>';if(sub)sub.textContent='市场触发极端信号，可执行买入';if(buy)buy.style.display='block'}
+  else{if(shield)shield.classList.remove('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.textContent='警戒中';if(sub)sub.textContent='市场未触发极端信号';if(buy)buy.style.display='none'}
+  var dca=state.monthlyDCA||2000;[1,2,3].forEach(function(x){var el=document.getElementById('sgovPart'+x);if(el)el.textContent=fmt$(dca*x)})
+}
+[1,2,3].forEach(function(x){document.getElementById('btnSgovBuy'+x).addEventListener('click',function(){var dca=state.monthlyDCA||2000,total=dca*x,date=new Date().toISOString().slice(0,10),a={VGT:state.vgt,SMH:state.smh,BTC:state.btc};var ts=0,tb=0;trades.forEach(function(t){var a2=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a2;else tb+=a2});var avail=cashBalance+ts-tb;if(total>avail){showToast('💵 现金不足！需 '+fmt$(total)+' 可用 '+fmt$(avail),'err');return}var ok=true;ETF_SYMS.forEach(function(s){var amt=total*a[s];if(amt<=0)return;var p=livePrices[s];if(!p||p<=0){showToast('⚠️ 缺少 '+s+' 实时价格','err');ok=false;return}});if(!ok)return;ETF_SYMS.forEach(function(s){var amt=total*a[s];if(amt<=0)return;var p=livePrices[s];trades.push({id:tradeIdCounter++,symbol:s,date:date,shares:Math.floor(amt/p*1e6)/1e6,price:p,type:'buy'})});trades.sort(function(a,b){return a.date.localeCompare(b.date)});saveTrades();initTradeIds();updatePortfolio();showToast('✅ 已执行第'+x+'份买入 · '+fmt$(total))})});
+// 价格刷新时更新 SMH 52 周高
 function loadCash(){try{var s=localStorage.getItem(CB_KEY);return s?parseFloat(s):0}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足');return 0}}function saveCash(){try{localStorage.setItem(CB_KEY,cashBalance.toString());doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足')}}function loadCashLog(){try{var s=localStorage.getItem(CLOG_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}function saveCashLog(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足')}}function renderCashLog(){var b=document.getElementById("cashLogBody");if(!b)return;if(!cashLog.length){b.innerHTML="<tr><td colspan=4 style=\"text-align:center;color:var(--muted);padding:16px;\">📋 暂无记录</td></tr>";return}b.innerHTML=cashLog.slice().reverse().map(function(l){return"<tr><td>"+l.date+"</td><td style=\"color:"+(l.type==="入金"?"var(--accent)":"var(--red)")+";\">"+l.type+"</td><td>"+fmtFull(l.amount)+"</td><td><button class=\"trade-del\" data-clog=\""+l.id+"\">×</button></td></tr>"}).join("")}function loadTrades(){try{var s=localStorage.getItem(TRADE_KEY);return s?JSON.parse(s):[]}catch(e){return[]}}
 function saveTrades(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades));doAutoBackup();autoPushDebounce()}catch(e){if(e.name==='QuotaExceededError'||(e.message&&e.message.indexOf('quota')>=0))alert('存储空间不足，请导出数据后清理旧记录')}}
 
@@ -540,7 +591,7 @@ document.getElementById('sidebarToggle').addEventListener('click',function(){var
 // Mobile hamburger
 document.getElementById('mobHamburger').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('open');this.textContent=sb.classList.contains('open')?'✕':'☰'});
 // ---- TABS ----
-document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio()})});
+document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='sgov')updateSgovPage()})});
 
 document.getElementById('hmRefresh').addEventListener('click',refreshPrices);
 document.getElementById('hmManualSet').addEventListener('click',function(){var sym=document.getElementById('hmManualSym').value.toUpperCase().trim();var price=parseFloat(document.getElementById('hmManualPrice').value);if(!sym||!price||price<=0||!ETF_SYMS.includes(sym))return;livePrices[sym]=price;liveSources[sym]='手动';cachePrice(sym,{price:price,source:'manual',time:Date.now()});document.getElementById('hmManualSym').value='';document.getElementById('hmManualPrice').value='';updatePortfolio();updateSidebar();updateSidebarPrices()});
@@ -627,7 +678,7 @@ function initAll(){
   state=loadState();trades=loadTrades();initTradeIds();
   var dcaInput=document.getElementById('monthlyDCAInput');if(dcaInput){dcaInput.value=state.monthlyDCA||2000;dcaInput.addEventListener('change',function(){var v=parseInt(dcaInput.value)||0;v=Math.max(0,Math.min(50000,v));dcaInput.value=v;state.monthlyDCA=v;saveState();updateDCA()})}
   var rsInput=document.getElementById('roadmapStartInput');if(rsInput){rsInput.value=state.roadmapStart||'2025-01';rsInput.addEventListener('change',function(){state.roadmapStart=rsInput.value;saveState();updateDashboardWidgets()})}
-  updateWithdrawal();updateDCA();updateHeatmap();
+  updateWithdrawal();updateDCA();updateHeatmap();updateSgovPage();
   updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','','value','pnl','pnlPct'];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
 }
@@ -712,8 +763,9 @@ function doCSVImport(file){
 
 <div class="bottom-bar" id="bottomBar">
   <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings"><span class="bb-icon">💼</span>持仓</button>
-  <button onclick="switchTab('plan')" class="bb-btn" id="bbPlan"><span class="bb-icon">🗺</span>规划</button>
   <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon">🕹️</span>操作台</button>
+  <button onclick="switchTab('sgov')" class="bb-btn" id="bbSgov"><span class="bb-icon">🛡️</span>SGOV 池</button>
+  <button onclick="switchTab('plan')" class="bb-btn" id="bbPlan"><span class="bb-icon">🗺</span>规划</button>
 </div>
 </div>
 
