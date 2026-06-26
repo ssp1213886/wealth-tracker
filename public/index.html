@@ -539,16 +539,19 @@ function updateSgovPage(){
   var sgovNet=0;trades.forEach(function(t){if(t.symbol==='SGOV')sgovNet+=t.shares*t.price});
   var sb=document.getElementById('sgovBalance');if(sb)sb.textContent=fmtFull(sgovNet);
   // BTC 监测
-  var btcP=livePrices.BTC,ath=btcAth;
-  if(btcP>0){if(btcP>ath){ath=btcP;btcAth=ath;localStorage.setItem('btc_ath',ath.toString())}var btcDD=ath>0?((ath-btcP)/ath*100):0;
+  var btcP=livePrices.BTC,ath=btcAth||btcP||0;
+  if(btcP>0){
+    if(ath<=0){ath=btcP;btcAth=btcP;localStorage.setItem('btc_ath',btcP.toString())}
+    if(btcP>ath){ath=btcP;btcAth=btcP;localStorage.setItem('btc_ath',btcP.toString())}
+    var btcDD=ath>0?((ath-btcP)/ath*100):0;
     var bd=document.getElementById('btcDrawdown'),baTh=document.getElementById('btcAth');
     if(bd){bd.textContent=btcDD.toFixed(1)+'%';bd.style.color=btcDD>=60?'var(--red)':btcDD>=40?'var(--orange)':'var(--accent)'}
-    if(baTh)baTh.textContent='$'+ath.toLocaleString()}else{var bd2=document.getElementById('btcDrawdown');if(bd2)bd2.textContent='等待数据';var baTh2=document.getElementById('btcAth');if(baTh2)baTh2.textContent='--'}
+    if(baTh)baTh.textContent='$'+ath.toLocaleString('en-US',{maximumFractionDigits:0})}
+  else{var bd2=document.getElementById('btcDrawdown');if(bd2)bd2.textContent='等待数据';var baTh2=document.getElementById('btcAth');if(baTh2)baTh2.textContent='等待价格'}
   // 恐惧贪婪
   fetchFearGreed();
   // SMH 监测
-  var smhP=livePrices.SMH,smh5=smh52hi;
-  if(smhP>0&&liveSources.SMH==='腾讯'){var hi52=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(hi52<=0){hi52=smhP}if(smhP>hi52){hi52=smhP;localStorage.setItem('smh_cur_52hi',hi52.toString())}smh52hi=hi52;smh5=hi52}
+  var smhP=livePrices.SMH,smh5=smh52hi||smhP||0;
   if(smhP>0&&smh5>0){var smhDD=((smh5-smhP)/smh5*100);
     var sdEl=document.getElementById('smhDrawdown'),shEl=document.getElementById('smh52hi'),scEl=document.getElementById('smhCur');
     if(sdEl){sdEl.textContent=smhDD.toFixed(1)+'%';sdEl.style.color=smhDD>=40?'var(--red)':smhDD>=25?'var(--orange)':'var(--accent)'}
@@ -559,9 +562,9 @@ function updateSgovPage(){
 function fetchFearGreed(){var fv=document.getElementById('fngValue');if(!fv)return;
   fetch('https://api.alternative.me/fng/?limit=1').then(function(r){return r.json()}).then(function(d){if(d&&d.data&&d.data[0]){var v=parseInt(d.data[0].value);fv.textContent=v+' ('+d.data[0].value_classification+')';fv.style.color=v<=20?'var(--red)':v<=40?'var(--orange)':v>=75?'var(--accent)':'var(--fg)';localStorage.setItem('fng_cache',JSON.stringify({v:v,cls:d.data[0].value_classification,ts:Date.now()}))}}).catch(function(){var c=JSON.parse(localStorage.getItem('fng_cache')||'{}');if(c.v!=null){fv.textContent=c.v+' ('+(c.cls||'')+')';fv.style.color=c.v<=20?'var(--red)':c.v<=40?'var(--orange)':c.v>=75?'var(--accent)':'var(--fg)';fv.title='缓存 ('+new Date(c.ts).toLocaleTimeString()+')'}})}
 function updateSgovAlerts(){
-  var btcDD=0,ath=btcAth,btcP=livePrices.BTC;if(btcP>0&&ath>0)btcDD=(ath-btcP)/ath*100;
+  var btcDD=0,ath=btcAth||livePrices.BTC||0,btcP=livePrices.BTC;if(btcP>0&&ath>0)btcDD=(ath-btcP)/ath*100;
   var fngV=0;var fc=JSON.parse(localStorage.getItem('fng_cache')||'{}');if(fc.v!=null)fngV=fc.v;
-  var smhP=livePrices.SMH,smhDD=0;if(smhP>0&&smh52hi>0)smhDD=(smh52hi-smhP)/smh52hi*100;
+  var smhP=livePrices.SMH,smh5=smh52hi||smhP||0,smhDD=0;if(smhP>0&&smh5>0)smhDD=(smh5-smhP)/smh5*100;
   var btcAlert=btcDD>=60||fngV>0&&fngV<=20,smhAlert=smhDD>=40,triggered=btcAlert||smhAlert;
   var ba=document.getElementById('btcAlertStatus'),sa=document.getElementById('smhAlertStatus');
   if(ba){if(btcDD>=60)ba.innerHTML='<div class="red-alert">⚠️ BTC 回撤 '+btcDD.toFixed(1)+'% ≥ 60% 警戒线</div>';else if(fngV>0&&fngV<=20)ba.innerHTML='<div class="red-alert">⚠️ 恐惧贪婪指数 ≤ 20</div>';else ba.innerHTML=''}
