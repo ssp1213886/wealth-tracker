@@ -372,7 +372,7 @@ async function refreshPrices(){
   var syms=['VGT','SMH','BTC','SGOV'];
   var results=await Promise.all(syms.map(async function(sym){
     var d=await fetchPrice(sym);
-    if(d&&d.source!=='缓存'){var oldPrice=livePrices[sym];livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source;if(d.change!=null&&d.change!==0)liveChanges[sym]=d.change;else if(oldPrice&&oldPrice!==d.price){liveChanges[sym]=d.price-oldPrice}if(sym==='SMH'&&d.hi52>0){var o2=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(d.hi52>o2)localStorage.setItem('smh_cur_52hi',d.hi52.toString());smh52hi=Math.max(smh52hi,d.hi52)}cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
+    if(d&&d.source!=='缓存'){var cachedPrice=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');var oldP=cachedPrice[sym]?cachedPrice[sym].price:null;livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source;if(d.change!=null&&d.change!==0){liveChanges[sym]=d.change}else if(oldP&&oldP!==d.price){liveChanges[sym]=d.price-oldP}if(sym==='SMH'&&d.hi52>0){var o2=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(d.hi52>o2)localStorage.setItem('smh_cur_52hi',d.hi52.toString());smh52hi=Math.max(smh52hi,d.hi52)}cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
     if(livePrices[sym]){return pricePill(sym,livePrices[sym],liveChanges[sym],'cache')}
     return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'
   }));
