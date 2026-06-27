@@ -707,7 +707,7 @@ document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('cl
 if(b.dataset.tab==='data')updateDataPage()})});
 
 document.getElementById('hmRefresh').addEventListener('click',refreshPrices);
-document.getElementById('hmManualSet').addEventListener('click',function(){var sym=document.getElementById('hmManualSym').value.toUpperCase().trim();var price=parseFloat(document.getElementById('hmManualPrice').value);if(!sym||!price||price<=0||!ETF_SYMS.includes(sym))return;livePrices[sym]=price;liveSources[sym]='手动';cachePrice(sym,{price:price,source:'manual',time:Date.now()});document.getElementById('hmManualSym').value='';document.getElementById('hmManualPrice').value='';updatePortfolio();updateSidebar();updateSidebarPrices()});
+document.getElementById('hmManualSet').addEventListener('click',function(){var sym=document.getElementById('hmManualSym').value.toUpperCase().trim();var price=parseFloat(document.getElementById('hmManualPrice').value);if(!sym||!price||price<=0||!ETF_SYMS.includes(sym))return;livePrices[sym]=price;liveSources[sym]='手动';cachePrice(sym,{price:price,source:'manual',time:Date.now()});document.getElementById('hmManualSym').value='';document.getElementById('hmManualPrice').value='';updatePortfolio();updateSidebar();updateSidebarPrices();showToast('✅ '+sym+' 价格已设为 $'+price.toFixed(2))});
 
 document.getElementById('btnAddTrade').addEventListener('click',function(){
   var sym=document.getElementById('tfAsset').value,date=document.getElementById('tfDate').value||new Date().toISOString().slice(0,10);
