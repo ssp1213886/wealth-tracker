@@ -54,10 +54,13 @@ npx wrangler dev
 ## 部署
 
 ```powershell
-copy wrangler.example.toml wrangler.toml   # 填入 AUTH_TOKEN
-npx wrangler d1 create portfolio-db         # 仅首次
-npx wrangler d1 execute portfolio-db --file=schema.sql
 npx wrangler deploy
+```
+
+首次部署前需创建 D1 数据库：
+```powershell
+npx wrangler d1 create portfolio-db
+npx wrangler d1 execute portfolio-db --file=schema.sql
 ```
 
 ---
