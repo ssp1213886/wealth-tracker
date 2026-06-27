@@ -515,7 +515,7 @@ function updatePortfolio(){
   var hpp=document.getElementById('hmPnLPct');if(hpp){var s='';if(hasPriced&&totalPct!=null){s+=fmtPnLPctParen(totalPct)+'<br>'}else if(unpriced.length>0){s+='需设价:'+unpriced.join(',')+'<br>'}var uc=totalPnLUnreal||0,rc=totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';hpp.innerHTML=s;}
   // YTD
   var yoy=new Date().getFullYear()+'-01-01',preCost=0,preCash=0,preShares={};
-  trades.forEach(function(t){if(t.date<yoy){preShares[t.symbol]=(preShares[t.symbol]||0)+t.shares;preCost+=t.shares*t.price}});
+  trades.forEach(function(t){if(t.date<yoy&&t.symbol!=='SGOV'){preShares[t.symbol]=(preShares[t.symbol]||0)+t.shares;preCost+=t.shares*t.price}});
   cashLog.forEach(function(l){if(l.date<yoy){preCash+=l.type==='入金'?l.amount:-l.amount}});
   var ytdStart=preCash+preCost,ytdEnd=totalValue+cashBalance,ytdGain=ytdEnd-ytdStart,ytdPct=ytdStart>0?(ytdGain/ytdStart*100):0;
   var hy=document.getElementById('hmYTD');if(hy){hy.textContent=hasPriced?fmtPnLFull(ytdGain):'-';hy.className='m-val '+(hasPriced&&ytdGain>=0?'pnl-pos':'pnl-neg')}
