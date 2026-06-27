@@ -1,3 +1,4 @@
+// [测试工具] Toast修复脚本（已执行），不影响线上运行
 var fs=require('fs');
 var c=fs.readFileSync('public/index.html','utf8');
 // Replace the showToast type check

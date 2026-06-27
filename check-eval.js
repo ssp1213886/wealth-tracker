@@ -1,3 +1,4 @@
+// [测试工具] JS语法校验脚本，不影响线上运行
 var fs=require('fs');
 var h=fs.readFileSync('public/index.html','utf8');
 var s=h.indexOf('<script>');

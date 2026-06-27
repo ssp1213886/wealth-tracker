@@ -1,3 +1,4 @@
+// [测试工具] SGOV修复脚本（已执行），不影响线上运行
 const fs = require('fs');
 const path = 'public/index.html';
 let c = fs.readFileSync(path, 'utf8');
