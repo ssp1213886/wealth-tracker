@@ -1,4 +1,4 @@
-const CACHE="wealth-v3";
-self.addEventListener("install",e=>{self.skipWaiting()});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;e.respondWith(fetch(e.request).then(res=>{if(res&&res.status===200){var r=res.clone();caches.open(CACHE).then(c=>c.put(e.request,r))}return res}).catch(function(){return caches.match(e.request)}))});
+var C="wealth-v4";
+self.addEventListener("install",function(e){self.skipWaiting()});
+self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k)}))}).then(function(){return self.clients.claim()}))});
+self.addEventListener("fetch",function(e){if(e.request.method!=="GET")return;e.respondWith(caches.match(e.request).then(function(cached){return fetch(e.request).then(function(res){if(res.ok){var r=res.clone();caches.open(C).then(function(c){c.put(e.request,r)})}return res}).catch(function(){return cached||new Response("Offline",{status:503})})}))});
