@@ -18,7 +18,7 @@
 [data-theme="dark"]{--bg:#121312;--fg:#e8e8e3;--muted:#7a7a75;--accent:#22b35e;--accent-l:#0f2418;--accent-d:#189445;--rule:#222422;--surface:#181a18;--card-bg:#161716;--blue:#5b9bd5;--orange:#e8880c;--red:#e6352b;--shadow:0 0 0 transparent;--shadow-lg:0 0 0 transparent;--radius:10px;--radius-sm:8px;--radius-pill:18px;--font:"Inter","SF Pro Display","Noto Sans SC","PingFang SC",sans-serif}
 [data-accent="forest"]{--accent:#16994a;--accent-l:#e8f5ed}[data-accent="ocean"]{--accent:#2563eb;--accent-l:#eff4ff}[data-accent="warm"]{--accent:#d97706;--accent-l:#fff7ed}[data-accent="plum"]{--accent:#7c3aed;--accent-l:#f5f3ff}[data-accent="mono"]{--accent:#52525b;--accent-l:#f4f4f5}[data-theme="dark"][data-accent="forest"]{--accent-l:#0f2418}[data-theme="dark"][data-accent="ocean"]{--accent-l:#0c192e}[data-theme="dark"][data-accent="warm"]{--accent-l:#1c1008}[data-theme="dark"][data-accent="plum"]{--accent-l:#15092b}[data-theme="dark"][data-accent="mono"]{--accent-l:#1a1a1c}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;overscroll-behavior:none;touch-action:manipulation;transition:background .25s,color .3s}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;overscroll-behavior:none;touch-action:manipulation;transition:background .25s,color .3s}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--rule);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .app{display:flex;min-height:100vh;background:var(--bg)}
 .sidebar{width:280px;flex-shrink:0;background:var(--card-bg);border-right:1px solid var(--rule);padding:24px 0;overflow-y:auto;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:0;transition:all .3s ease}
 .sidebar.collapsed{width:0;padding:20px 0;border-right-width:0;overflow:hidden}
@@ -237,7 +237,7 @@ input,select,textarea{font-size:16px!important}
 .chart-card{padding:16px;margin-bottom:12px}
 .callout{padding:10px 12px;font-size:.68rem}
 .trade-table tbody tr:nth-child(even),.res-table tbody tr:nth-child(even){background:transparent}
-.trade-table tbody tr:hover,.res-table tbody tr:hover{background:var(--surface)}
+.trade-table tbody tr:hover,.res-table tbody tr:hover{background:var(--accent-l)}
 body{font-size:15px;-webkit-text-size-adjust:100%}
 #logHeatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
 #activityLog>div{padding:10px 12px;margin-bottom:6px;border-radius:10px;background:var(--surface);border:none}
