@@ -22,7 +22,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .app{display:flex;min-height:100vh;background:var(--bg)}
 .sidebar{width:280px;flex-shrink:0;background:var(--card-bg);border-right:1px solid var(--rule);padding:24px 0;overflow-y:auto;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:0;transition:all .3s ease}
 .sidebar.collapsed{width:0;padding:20px 0;border-right-width:0;overflow:hidden}
-.sidebar-toggle{position:fixed;left:276px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--card-bg);border:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--muted);z-index:20;transition:all .35s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow)}
+.sidebar-toggle{position:fixed;left:266px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--card-bg);border:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--muted);z-index:20;transition:all .35s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow)}
 .sidebar-toggle:hover{background:var(--surface);color:var(--fg)}
 .collapsed+.sidebar-toggle,
 .sidebar.collapsed~.sidebar-toggle{left:4px}
@@ -698,7 +698,7 @@ function setAccent(name){var h=document.documentElement;h.dataset.accent=name;do
 document.getElementById('accentDots').addEventListener('click',function(e){var dot=e.target.closest('.accent-dot');if(!dot)return;setAccent(dot.dataset.accent)});
 
 // Sidebar toggle
-document.getElementById('sidebarToggle').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('collapsed');var btn=document.getElementById('sidebarToggle');var arrow=btn.querySelector('.arrow');if(sb.classList.contains('collapsed')){arrow.textContent='▶';btn.style.left='6px';this.title='展开侧边栏'}else{arrow.textContent='◀';btn.style.left='276px';this.title='收起侧边栏'};try{localStorage.setItem(LSKEY+'_sidebar',sb.classList.contains('collapsed')?'1':'0')}catch(e){}});
+document.getElementById('sidebarToggle').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('collapsed');var btn=document.getElementById('sidebarToggle');var arrow=btn.querySelector('.arrow');if(sb.classList.contains('collapsed')){arrow.textContent='▶';btn.style.left='6px';this.title='展开侧边栏'}else{arrow.textContent='◀';btn.style.left='266px';this.title='收起侧边栏'};try{localStorage.setItem(LSKEY+'_sidebar',sb.classList.contains('collapsed')?'1':'0')}catch(e){}});
 (function(){try{if(localStorage.getItem(LSKEY+'_sidebar')==='1'){var sb=document.querySelector('.sidebar');sb.classList.add('collapsed');var a=document.querySelector('.sidebar-toggle .arrow');if(a)a.textContent='▶';var btn=document.getElementById('sidebarToggle');if(btn)btn.style.left='6px'}}catch(e){}})();
 // Mobile hamburger
 document.getElementById('mobHamburger').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('open');this.textContent=sb.classList.contains('open')?'✕':'☰'});
