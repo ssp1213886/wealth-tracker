@@ -302,7 +302,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   </div>
 </section>
 <section class="tab-panel" id="tab-sgov">
-  <div class="card" style="padding:18px;"><h3>🛡️ SGOV 备用金</h3><div style="font-size:1.5rem;font-weight:700;font-family:'Inter',var(--font);margin:8px 0;" id="sgovBalance">$0.00</div><div style="font-size:.6rem;color:var(--muted);" id="sgovDetail">实时市值 · 备用金池</div></div>
+  <div class="card" style="padding:18px;"><h3>🛡️ SGOV 备用金</h3><div style="font-size:1.5rem;font-weight:700;font-family:'Inter',var(--font);margin:8px 0;" id="sgovBalance">$0.00</div><div style="font-size:.6rem;color:var(--muted);" id="sgovDetail">加载中...</div></div>
   <div class="card" id="sgovShield" style="padding:18px;text-align:center;transition:all .3s;"><div style="font-size:3rem;" id="shieldIcon">🛡️</div><div style="font-size:.82rem;font-weight:620;margin:6px 0;" id="shieldText">正常监控中</div><div style="font-size:.58rem;color:var(--muted);" id="shieldSub">市场未触发极端信号</div></div>
   <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">💾 SMH 信号监测</h3>
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:14px;margin:8px 0;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.62rem;color:var(--muted);">距52周高回撤</span><span style="font-size:1.1rem;font-weight:700;font-family:'Inter',var(--font);" id="smhDrawdown">--</span></div><div style="display:flex;justify-content:space-between;margin-top:6px;"><span style="font-size:.5rem;color:var(--muted);">52周高 <strong id="smh52hi" style="color:var(--fg);">--</strong></span><span style="font-size:.5rem;color:var(--muted);">现价 <strong id="smhCur" style="color:var(--fg);">--</strong></span></div></div>
@@ -565,6 +565,7 @@ function updateSgovPage(){
   var sgovShares=0,sgovCost=0;trades.forEach(function(t){if(t.symbol==='SGOV'){sgovShares+=t.shares;sgovCost+=t.shares*t.price}});
   var sgovPrice=livePrices.SGOV||0,sgovVal=sgovPrice>0?sgovShares*sgovPrice:sgovCost;
   var sb=document.getElementById('sgovBalance');if(sb)sb.textContent=fmtFull(sgovVal);
+  var sd=document.getElementById('sgovDetail');if(sd){var pnl=sgovVal-sgovCost,pnlPct=sgovCost>0?(pnl/sgovCost*100):0;sd.innerHTML='成本 '+fmtFull(sgovCost)+' · 盈亏 <span style="color:'+(pnl>=0?'var(--accent)':'var(--red)')+';">'+(pnl>=0?'+':'')+fmtFull(pnl)+' ('+pnlPct.toFixed(2)+'%)</span>'}
   // SMH 监测
   var smhP=livePrices.SMH,smh5=smh52hi||smhP||0;
   if(smhP>0&&smh5>0){var smhDD=((smh5-smhP)/smh5*100);
