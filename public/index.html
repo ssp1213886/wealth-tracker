@@ -212,7 +212,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   </div>
   <div class="sb-section"><h3>🍩 持仓占比</h3>
     <div style="text-align:center;"><canvas id="sbDonut" width="130" height="130" style="width:130px;height:130px;"></canvas></div>
-    <div id="sbDonutLegend" style="font-size:.62rem;color:var(--muted);text-align:center;margin-top:4px;"></div><div id="sbRebalanceAlert" style="display:none;margin-top:8px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--accent-l);border:1px solid rgba(255,120,80,.2);font-size:.62rem;color:var(--red);text-align:center;line-height:1.6;"></div><div id="sbBalanced" style="display:none;margin-top:6px;font-size:.62rem;color:var(--accent);text-align:center;">OK 已平衡</div>
+    <div id="sbDonutLegend" style="font-size:.62rem;color:var(--muted);text-align:center;margin-top:4px;"></div>
   </div>
   <div class="sb-section" style="padding:10px 14px;"><h3>💹 实时价格</h3><div id="sbLivePrices" style="font-size:.6rem;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:.5rem;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div><div class="sb-section"><h3>📥 数据 <span id="syncDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);vertical-align:middle;margin-left:4px;transition:background .3s;"></span></h3>
     <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">
@@ -702,6 +702,7 @@ function updateHoldCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.ab
 
 var doRebalance=function(){var rows=[];var holdings={};for(var i=0;i<trades.length;i++){var t=trades[i];if(!holdings[t.symbol])holdings[t.symbol]={shares:0,cost:0};holdings[t.symbol].shares+=Number(t.shares)}var totalV=0;for(var sym in holdings){var h=holdings[sym];if(h.shares<=0)continue;var v=h.shares*(livePrices[sym]||0);if(v>0){rows.push({sym:sym,shares:h.shares,priced:!!livePrices[sym],value:v});totalV+=v}}updateRebalance(rows,totalV)};
 document.body.addEventListener('click',function(e){var btn=e.target.closest('.rb-mode-btn');if(!btn)return;document.querySelectorAll('.rb-mode-btn').forEach(function(b){b.classList.remove('active')});btn.classList.add('active');rebalanceMode=btn.dataset.mode;doRebalance()});
+document.getElementById('tradeFilterSym')?.addEventListener('change',function(){updateTradeList()});
 document.getElementById('btnRebalanceRecalc').addEventListener('click',doRebalance);
 
 document.getElementById('btnClearTrades').addEventListener('click',function(){if(!trades.length)return;if(!confirm('确定清空全部 '+trades.length+' 条交易记录？'))return;trades=[];saveTrades();updatePortfolio()});
