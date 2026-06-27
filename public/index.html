@@ -577,7 +577,7 @@ function renderLogHeatmap(){
   // Month data
   var months=[];
   for(var i=-11;i<=12;i++){var d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.getMonth()+1+'月',isFuture:false})}
-  months.forEach(function(mt){if(mt.ym>curYM)mt.isFuture=true;var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};buys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});mt.totalV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0);mt.complete=!mt.isFuture&&mt.totalV>=dca*0.85&&mt.totalV<=dca*1.15&&buys.length>0;mt.hasBuy=buys.length>0});
+  months.forEach(function(mt){if(mt.ym>curYM)mt.isFuture=true;var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};buys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});mt.totalV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0);mt.complete=!mt.isFuture&&mt.totalV>=dca*0.7&&buys.length>0;mt.hasBuy=buys.length>0});
   // Streak: count backward from last month
   var streak=0;for(var i=months.length-1;i>=0;i--){var m=months[i];if(m.isFuture)continue;if(m.complete)streak++;else break}
   var sc=document.getElementById('streakCount');if(sc)sc.textContent=streak;
