@@ -448,7 +448,7 @@ function calcPortfolio(){var vs=safeNum(state.vgt),ss=safeNum(state.smh),bs=safe
 function updateSidebar(){
   var holdings={},totalV=0,hasAny=false,slices=[];
   for(var i=0;i<trades.length;i++){var t=trades[i],sym=t.symbol;if(!holdings[sym])holdings[sym]={shares:0};holdings[sym].shares+=Number(t.shares)}
-  for(var sym in holdings){var h=holdings[sym];if(h.shares<=0)continue;var v=h.shares*(livePrices[sym]||0);if(v>0){slices.push({sym:sym,value:v});totalV+=v;hasAny=true}}
+  for(var sym in holdings){var h=holdings[sym];if(h.shares<=0||sym==='SGOV')continue;var v=h.shares*(livePrices[sym]||0);if(v>0){slices.push({sym:sym,value:v});totalV+=v;hasAny=true}}
   var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;document.getElementById('sbValue').textContent=hasAny?fmtFull(totalV+nc):fmtFull(nc);document.getElementById('sbHoldVal').textContent=hasAny?fmtFull(totalV):'';document.getElementById('sbCashVal').textContent=fmtFull(nc);
   var canvas=document.getElementById('sbDonut'),legend=document.getElementById('sbDonutLegend');
   if(canvas){var ctx=canvas.getContext('2d');ctx.clearRect(0,0,130,130);
