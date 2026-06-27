@@ -517,7 +517,7 @@ function updatePortfolio(){
   var yoy=new Date().getFullYear()+'-01-01',preCost=0,preCash=0,preShares={};
   trades.forEach(function(t){if(t.date<yoy){preShares[t.symbol]=(preShares[t.symbol]||0)+t.shares;preCost+=t.shares*t.price}});
   cashLog.forEach(function(l){if(l.date<yoy){preCash+=l.type==='入金'?l.amount:-l.amount}});
-  var ytdStart=preCash+preCost,ytdEnd=totalAssets,ytdGain=ytdEnd-ytdStart,ytdPct=ytdStart>0?(ytdGain/ytdStart*100):0;
+  var ytdStart=preCash+preCost,ytdEnd=totalValue+cashBalance,ytdGain=ytdEnd-ytdStart,ytdPct=ytdStart>0?(ytdGain/ytdStart*100):0;
   var hy=document.getElementById('hmYTD');if(hy){hy.textContent=hasPriced?fmtPnLFull(ytdGain):'-';hy.className='m-val '+(hasPriced&&ytdGain>=0?'pnl-pos':'pnl-neg')}
   var hyp=document.getElementById('hmYTDPct');if(hyp)hyp.textContent=hasPriced?((ytdGain>=0?'+':'')+ytdPct.toFixed(1)+'%'):''
 
