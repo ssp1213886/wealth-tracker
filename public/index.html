@@ -660,7 +660,7 @@ function updateMobStatusBar(){
     pp.innerHTML=ETF_SYMS.map(function(sym){
       var p=livePrices[sym],ch=liveChanges[sym];
       var chHtml='',chCls='';
-      if(ch!=null&&ch!==0){var prev=p-ch;var pct=prev>0?ch/prev*100:0;chCls=ch>0?'ms-pos':'ms-neg';chHtml=' <span class="'+chCls+'">'+(ch>0?'↑':'↓')+Math.abs(pct).toFixed(1)+'%</span>'}
+      if(ch!=null){var prev=p-ch;var pct=prev>0?ch/prev*100:0;chCls=ch>0?'ms-pos':ch<0?'ms-neg':'ms-pos';chHtml=' <span class="'+chCls+'">'+(ch>=0?'↑':'↓')+Math.abs(pct).toFixed(1)+'%</span>'}
       return '<span class="ms-pill" data-sym="'+sym+'" data-price="'+(p||0)+'" style="cursor:pointer"><strong>'+sym+'</strong> '+(p?'$'+p.toFixed(2):'--')+chHtml+'</span>';
     }).join(''); }
 }
