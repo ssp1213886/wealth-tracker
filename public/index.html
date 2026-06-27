@@ -517,9 +517,6 @@ function updatePortfolio(){
   var hb=document.getElementById('holdBody');
   if(hb)hb.innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.sym+'</td><td>'+Math.abs(r.shares).toFixed(2)+'</td><td>$'+r.avgCost.toFixed(2)+'</td><td>'+(r.priced?'$'+r.curPrice.toFixed(2):'<span style="color:orange;">No price</span>')+'</td><td>'+(r.priced?fmtFull(r.value):'<span style="color:orange;">-</span>')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.unrealPnL!=null?fmtPnLFull(r.unrealPnL):'-')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.pnlPct!=null?((r.pnlPct>=0?'+':'')+(r.pnlPct*100).toFixed(1)+'%'):'-')+'</td><td><button class="trade-del" data-hold="'+r.sym+'" title="Clear">X</button></td></tr>'}).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">No holdings</td></tr>';
 
-  var tb=document.getElementById('tradeBody');
-  if(tb)tb.innerHTML=trades.length?trades.map(function(t){var isSell=t.shares<0;return'<tr><td>'+t.date+'</td><td>'+t.symbol+'</td><td style="color:'+(isSell?'var(--red)':'var(--fg)')+';">'+(isSell?'-':'')+Math.abs(t.shares)+'</td><td>$'+t.price.toFixed(2)+'</td><td style="color:'+(isSell?'var(--red)':'var(--fg)')+';">'+(isSell?'-':'')+fmtFull(Math.abs(t.shares*t.price))+'</td><td><button class="trade-del" data-id="'+t.id+'" title="Delete">X</button></td></tr>'}).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No trades</td></tr>';
-
   document.querySelectorAll('.trade-del').forEach(function(b){b.onclick=function(){
     var hid=this.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio()}return}
     var tid=parseInt(this.dataset.id);if(tid){trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio()}
