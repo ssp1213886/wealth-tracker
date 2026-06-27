@@ -96,7 +96,7 @@
   <li><strong>自动上传</strong>：录入交易、入金出金后 2 秒自动推云端</li>
   <li><strong>自动下载</strong>：页面打开时从云端拉最新数据合并</li>
   <li><strong>状态指示</strong>：数据区灰点（上传中→橙，成功→绿，失败→红）；右下角气泡提示</li>
-  <li>线上版自动填 URL 和 Token（<code>ssp540829</code>），本地文件需手动填</li>
+  <li>线上版自动填 URL 和 Token（<code>ssp540829</code>），无需手动配置</li>
 </ul>
 
 <div class="call"><strong>⚠ 多设备冲突</strong>：两设备同时编辑分别上传，后者覆盖前者。建议一台编辑完等同步完成再换设备。</div>
@@ -116,7 +116,14 @@
   <li>勾选「自动备份」→ 每次操作自动下载</li>
 </ul>
 
-<h2>6. 移动端</h2>
+<h2>6. 操作撤销</h2>
+<ul>
+  <li><strong>清空全部交易</strong>：确认后底部弹出「🗑️ 已清空 N 笔交易 · 点击撤销」，5 秒内点击即可恢复</li>
+  <li><strong>清空全部资金流水</strong>：同样支持撤销，恢复后现金余额、数据页同步还原</li>
+  <li>单笔删除和清仓操作暂无撤销（仅反馈 Toast）</li>
+</ul>
+
+<h2>7. 移动端</h2>
 <ul>
   <li>手机浏览器直接打开网址</li>
   <li>底部导航 6 个 Tab 切换页面</li>
@@ -124,10 +131,10 @@
   <li>表单和按钮最小 40px 点击区域</li>
 </ul>
 
-<h2>7. 暗色模式</h2>
-<p>侧边栏点 🌙/☀ 切换，5 种配色可选，偏好自动记忆。</p>
+<h2>8. 暗色模式</h2>
+<p>首次打开自动跟随系统设置。手动切换后记忆偏好，不再跟随系统。侧边栏点 🌙/☀ 切换，5 种配色可选。</p>
 
-<h2>8. 设计原则</h2>
+<h2>9. 设计原则</h2>
 <p style="font-style:italic;color:var(--accent);">这个网站是：20年航海日志 / 纪律打卡机 / 情绪分流器。不是：高频交易终端 / 预测分析工具 / 社交炫耀平台。</p>
 <table>
   <tr><td>价格源</td><td>腾讯行情，仅美股时段有实时数据，休市显示 <code>--</code></td></tr>
@@ -140,12 +147,12 @@
   <tr><td>域名</td><td>部分地区可能访问不稳定，可绑定自定义域名</td></tr>
 </table>
 
-<h2>8. 更新网站</h2>
+<h2>10. 更新网站</h2>
 <pre>cd C:\Users\ssp\.openclaw-autoclaw\workspace\wealth-server
 npx wrangler deploy</pre>
 <p>部署后 Ctrl+Shift+R 清除 CDN 缓存。</p>
 
-<h2>9. 相关文件</h2>
+<h2>11. 相关文件</h2>
 <table>
   <tr><td><code>public/index.html</code></td><td>仪表盘主文件</td></tr>
   <tr><td><code>src/worker.js</code></td><td>API 后端</td></tr>
