@@ -54,13 +54,11 @@ npx wrangler dev
 ## 部署
 
 ```powershell
-npx wrangler deploy
-```
-
-首次部署前需创建 D1 数据库：
-```powershell
-npx wrangler d1 create portfolio-db
-npx wrangler d1 execute portfolio-db --file=schema.sql
+npm install                        # 仅首次
+cp wrangler.example.toml wrangler.toml   # 仅首次，填入 database_id 和 AUTH_TOKEN
+npx wrangler d1 create wealth-db   # 仅首次
+npx wrangler d1 execute wealth-db --file=schema.sql  # 仅首次
+npx wrangler deploy                # 每次更新代码后执行
 ```
 
 ---

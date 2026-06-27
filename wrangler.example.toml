@@ -6,11 +6,21 @@ compatibility_date = "2025-01-01"
 binding = "ASSETS"
 directory = "public"
 
+# 首次部署：取消注释下面三行并 npx wrangler d1 create wealth-db 获取 database_id
 [[d1_databases]]
 binding = "DB"
 database_name = "wealth-db"
-database_id = ""
+database_id = ""  # ← 填入你的 D1 数据库 ID
+
+# 首次部署：npx wrangler d1 execute wealth-db --file=schema.sql 建表
 
 [vars]
-AUTH_TOKEN = "your-token-here"
+AUTH_TOKEN = "your-token-here"  # ← 改成你自己的 Token
+
+# 完整部署流程：
+# 1. npm install
+# 2. cp wrangler.example.toml wrangler.toml 并填入 database_id 和 AUTH_TOKEN
+# 3. npx wrangler d1 create wealth-db（仅首次）
+# 4. npx wrangler d1 execute wealth-db --file=schema.sql（仅首次）
+# 5. npx wrangler deploy
 
