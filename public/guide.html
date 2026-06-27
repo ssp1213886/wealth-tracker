@@ -36,12 +36,13 @@
 <h3>📊 仪表盘</h3>
 <ul>
   <li><strong>总资产指标</strong>：账户现金、持仓市值、浮动盈亏、总盈亏</li>
-  <li><strong>🚦 偏离警报</strong>：实际持仓 vs 目标比例（VGT 50%/SMH 30%/BTC 20%），绿/黄/红灯 + SGOV 池动用建议</li>
-  <li><strong>📋 本月定投</strong>：VGT/SMH/BTC 定投金额 + 本月完成状态</li>
+  <li><strong>🚦 异常检测</strong>：真实持仓 vs 目标比例，左显示偏离状态，右显示 SMH 信号驱动的 SGOV 备用金建议</li>
+  <li><strong>📋 本月定投目标</strong>：VGT/SMH/BTC 动态金额 + ✅完成 / ⏳待执行 状态</li>
   <li><strong>🗺 20年旅程</strong>：时间进度条（可配置起始日期和年龄）</li>
-  <li><strong>🎯 目标进度</strong>：$2.5M 目标进度条</li>
+  <li><strong>🎯 目标进度</strong>：可配置财务目标（默认 $2.5M）进度条</li>
   <li><strong>📉 高点回撤</strong>：各标的距历史交易峰值跌幅</li>
-  <li><strong>🍩 持仓分布</strong>：环形图 + SGOV 池标注</li>
+  <li><strong>📈 仓位盈亏</strong>：按标的汇总 VGT/SMH/BTC 盈亏</li>
+  <li><strong>🍩 持仓分布</strong>：环形图（不含 SGOV）+ SGOV 池标注</li>
 </ul>
 
 <h3>🕹️ 操作台</h3>
@@ -52,10 +53,10 @@
 
 <h3>🛡️ SGOV 池</h3>
 <ul>
-  <li><strong>SGOV 余额</strong>：净买入金额汇总</li>
-  <li><strong>盾牌监测</strong>：正常监控中 / 极端信号触发</li>
-  <li><strong>₿ BTC 监测</strong>：ATH 回撤 + 恐惧贪婪指数，双条件 AND 触发（回撤 ≥60% 且 恐惧 ≤20）</li>
-  <li><strong>💾 科技股监测</strong>：SMH 距 52 周高回撤，触发条件 ≥40%</li>
+  <li><strong>SGOV 余额</strong>：实时市值</li>
+  <li><strong>盾牌监测</strong>：正常监控中 / 出击信号已触发</li>
+  <li><strong>SMH 信号</strong>：距 52 周高回撤 ≥ 40% 触发红色闪烁</li>
+  <li><strong>SGOV 独立</strong>：不参与投资组合占比计算和再平衡</li>
 </ul>
 
 <h3>📁 数据</h3>
