@@ -446,7 +446,7 @@ function fmtFull(n){n=safeNum(n);return'$'+n.toLocaleString('en-US',{minimumFrac
 function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+'%'}
 var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC'],ALL_SYMS=['VGT','SMH','BTC','SGOV'];
 var AD={VGT:{ret:0.12,vol:0.22},SMH:{ret:0.14,vol:0.28},BTC:{ret:0.18,vol:0.65}};
-var DONUT_COLORS=['#2e6b50','#5b9bd5','#c2853c'];
+var DONUT_COLORS=[getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),getComputedStyle(document.documentElement).getPropertyValue('--blue').trim(),getComputedStyle(document.documentElement).getPropertyValue('--orange').trim()];
 function calcPortfolio(){var vs=safeNum(state.vgt),ss=safeNum(state.smh),bs=safeNum(state.btc),total=vs+ss+bs;if(total<0.001)return{ret:0.05,vol:0.15};var w={v:vs/total,s:ss/total,b:bs/total};return{ret:w.v*AD.VGT.ret+w.s*AD.SMH.ret+w.b*AD.BTC.ret,vol:Math.sqrt(Math.max(0,Math.pow(w.v*AD.VGT.vol,2)+Math.pow(w.s*AD.SMH.vol,2)+Math.pow(w.b*AD.BTC.vol,2)+2*0.75*w.v*AD.VGT.vol*w.s*AD.SMH.vol+2*0.2*(w.v*AD.VGT.vol*w.b*AD.BTC.vol+w.s*AD.SMH.vol*w.b*AD.BTC.vol)))}}
 function updateSidebar(){
   var holdings={},totalV=0,hasAny=false,slices=[];
