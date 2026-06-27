@@ -519,7 +519,7 @@ function updatePortfolio(){
   cashLog.forEach(function(l){if(l.date<yoy){preCash+=l.type==='入金'?l.amount:-l.amount}});
   var ytdStart=preCash+preCost,ytdEnd=totalValue+cashBalance,ytdGain=ytdEnd-ytdStart,ytdPct=ytdStart>0?(ytdGain/ytdStart*100):0;
   var hy=document.getElementById('hmYTD');if(hy){hy.textContent=hasPriced?fmtPnLFull(ytdGain):'-';hy.className='m-val '+(hasPriced&&ytdGain>=0?'pnl-pos':'pnl-neg')}
-  var hyp=document.getElementById('hmYTDPct');if(hyp)hyp.textContent=hasPriced?((ytdGain>=0?'+':'')+ytdPct.toFixed(1)+'%'):''
+  var hyp=document.getElementById('hmYTDPct');if(hyp)hyp.textContent=hasPriced?(ytdStart>0?((ytdGain>=0?'+':'')+ytdPct.toFixed(1)+'%'):'(无年初数据)'):''
 
   var hb=document.getElementById('holdBody');
   if(hb)hb.innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.sym+'</td><td>'+Math.abs(r.shares).toFixed(2)+'</td><td>$'+r.avgCost.toFixed(2)+'</td><td>'+(r.priced?'$'+r.curPrice.toFixed(2):'<span style="color:orange;">No price</span>')+'</td><td>'+(r.priced?fmtFull(r.value):'<span style="color:orange;">-</span>')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.unrealPnL!=null?fmtPnLFull(r.unrealPnL):'-')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.pnlPct!=null?((r.pnlPct>=0?'+':'')+(r.pnlPct*100).toFixed(1)+'%'):'-')+'</td><td><button class="trade-del" data-hold="'+r.sym+'" title="Clear">X</button></td></tr>'}).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">No holdings</td></tr>';
