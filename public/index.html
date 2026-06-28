@@ -560,7 +560,6 @@ function saveState(){try{localStorage.setItem(LSKEY,JSON.stringify(state));autoP
 function updateDCA(){var dca=state.monthlyDCA||2000,alloc={VGT:state.vgt,SMH:state.smh,BTC:state.btc},els={},sum=0;ETF_SYMS.forEach(function(s){var amt=dca*alloc[s];sum+=amt;els['dca'+s]=document.getElementById('dca'+s);if(els['dca'+s])els['dca'+s].textContent=fmt$(amt)});var ds=document.getElementById('dcaStatus');if(ds)checkDCAStatus(ds)}
 function checkDCAStatus(el){el=el||document.getElementById('dcaStatus');if(!el)return;var dca=state.monthlyDCA||2000;if(dca<=0){el.innerHTML='<span style="color:var(--muted);">⚙️ 定投总额为 $0，请在侧边栏设置</span>';el.style.background='var(--surface)';return}var n=new Date(),ym=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===ym});if(!buys.length){el.innerHTML='<span style="color:var(--orange);">⏳ 本月尚未开始定投</span>';el.style.background='linear-gradient(135deg,rgba(204,125,42,.08),transparent)';return}var bySym={};buys.forEach(function(t){bySym[t.symbol]=(bySym[t.symbol]||0)+t.shares*t.price});var v=bySym.VGT||0,m=bySym.SMH||0,b=bySym.BTC||0,total=v+m+b;var targetV=dca*state.vgt,targetM=dca*state.smh,targetB=dca*state.btc;var complete=total>=dca*0.9;if(complete){el.innerHTML='✅ 已完成 · 总额 '+fmt$(total)+'/'+fmt$(dca);el.style.background='var(--accent)';el.style.color='#fff'}
   else{if(v+m+b>0){el.innerHTML='⏳ 进行中 · '+fmt$(total)+'/'+fmt$(dca)+' ('+(total/dca*100).toFixed(0)+'%)';el.style.background='var(--orange)';el.style.color='#fff'}else{el.innerHTML='⏳ 本月待执行';el.style.background='rgba(204,125,42,.15)';el.style.color='var(--orange)'}}}
-function updateHeatmap(){var container=document.getElementById('heatmapGrid');if(!container)return;var now=new Date(),curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');var months=[];for(var i=11;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.getMonth()+1+'月'})}var dca=state.monthlyDCA||2000;var htm='';months.forEach(function(mt){var mBuys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};mBuys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});var tV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0),pct=tV/dca*100;var bg,icon;if(dca<=0||!mBuys.length){bg='var(--surface)';icon=''}else if(tV>=dca*0.9&&tV<=dca*1.1){bg='var(--accent)';icon=''}else{bg='var(--orange)';icon=''}var isThis=mt.ym===curYM;htm+='<div title="'+mt.ym+'：'+fmt$(tV)+'/'+fmt$(dca)+'" style="padding:6px 4px;text-align:center;border-radius:6px;background:'+bg+';font-size:.54rem;'+(isThis?'border:2px solid var(--accent);':'')+'color:'+(bg==='var(--accent)'?'#fff':(bg==='var(--orange)'?'#fff':'var(--muted)'))+';">'+mt.label+'<br><span style="font-size:.44rem;">'+fmt$(tV)+'</span></div>'});container.innerHTML=htm}
 // ---- 日志页 ----
 var ACTIVITY_KEY='wealth_activity_v1';
 function addActivity(action,detail){var acts=[];try{acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')}catch(e){}acts.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),action:action,detail:detail||''});if(acts.length>200)acts=acts.slice(-200);localStorage.setItem(ACTIVITY_KEY,JSON.stringify(acts));renderActivity();autoPushDebounce()}
@@ -635,12 +634,6 @@ function updatePlanAges(){
   divs.forEach(function(d){var el=document.getElementById(d[0]);if(!el)return;if(d[2]!=null)el.textContent=d[1]+'-'+d[2]+'岁';else if(d[1])el.textContent=d[1]+'岁+'})
 }
 // ---- 操作台 ----
-function updateConsoleDCA(){
-  var dca=state.monthlyDCA||2000,a={VGT:state.vgt,SMH:state.smh,BTC:state.btc};
-  ETF_SYMS.forEach(function(s){var el=document.getElementById('conDca'+s);if(el)el.textContent=fmt$(dca*a[s])});
-  var ct=document.getElementById('conDcaTotal');if(ct)ct.textContent=fmt$(dca);
-  var cd=document.getElementById('conDcaDate');if(cd&&!cd.value)cd.value=new Date().toISOString().slice(0,10);
-}
 function updateRebalanceLock(){
   var now=new Date(),m=now.getMonth()+1,d=now.getDate(),isDec31=(m===12&&d===31);
   var badge=document.getElementById('rebalLockBadge'),msg=document.getElementById('rebalLockMsg'),content=document.getElementById('rebalContent');
@@ -648,18 +641,6 @@ function updateRebalanceLock(){
   if(isDec31){badge.textContent='🔓 今日解锁';badge.style.background='var(--accent-l)';badge.style.color='var(--accent)';msg.style.display='none';content.style.opacity='1';content.style.pointerEvents='auto'}
   else{var next=new Date(now.getFullYear()+((m===12&&d>31)?1:0),11,31,23,59,59);if(next<=now){next=new Date(now.getFullYear()+1,11,31,23,59,59)}var days=Math.ceil((next-now)/86400000);badge.textContent='🔒 锁定中';badge.style.background='var(--surface)';badge.style.color='var(--muted)';msg.style.display='block';msg.innerHTML='🔒 年度再平衡仅在 <strong>12月31日</strong> 开放使用<br><span style="font-size:.56rem;">距离解锁还有 <strong>'+days+'</strong> 天</span>';msg.style.background='var(--surface)';content.style.opacity='.85';content.style.pointerEvents='auto'}
 }
-var _bDCA=document.getElementById('btnExecDCA');if(_bDCA)_bDCA.addEventListener('click',function(){
-  var dca=state.monthlyDCA||2000,a={VGT:state.vgt,SMH:state.smh,BTC:state.btc},date=document.getElementById('conDcaDate').value||new Date().toISOString().slice(0,10);
-  if(!confirm('确认执行定投？\n总额 '+fmt$(dca)+'\nVGT 50% · SMH 30% · BTC 20%\n日期 '+date+'\n\n将录入3条买入记录'))return;
-  var ts=0,tb=0;trades.forEach(function(t){var a2=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a2;else tb+=a2});var avail=cashBalance+ts-tb;var totalCost=0;
-  ETF_SYMS.forEach(function(s){totalCost+=dca*a[s]});
-  if(totalCost>avail){showToast('💵 现金不足！需 '+fmt$(totalCost)+' 可用 '+fmt$(avail),'err');return}
-  var count=0;ETF_SYMS.forEach(function(s){var amt=dca*a[s];if(amt<=0)return;
-    var p=livePrices[s];if(!p||p<=0){showToast('⚠️ 缺少 '+s+' 实时价格','err');return}
-    trades.push({id:tradeIdCounter++,symbol:s,date:date,shares:Math.floor(amt/p*1e6)/1e6,price:p,type:'buy'});count++
-  });
-  if(count===ETF_SYMS.length){trades.sort(function(a,b){return a.date.localeCompare(b.date)});saveTrades();initTradeIds();updatePortfolio();addActivity('📋 执行定投 '+fmt$(dca)+' · VGT/SMH/BTC');showToast('✅ 录入成功');document.getElementById('conDcaStatus').textContent='已完成 ('+date.slice(5)+')'}
-});
 // ---- SGOV 监测 ----
 var btcAth=parseFloat(localStorage.getItem('btc_ath')||'0'),smh52hi=parseFloat(localStorage.getItem('smh_52hi')||'0');
 function updateSgovPage(){
