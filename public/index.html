@@ -308,7 +308,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <meta http-equiv="cache-control" content="no-store">
 </head>
 <body>
-<input type="text" style="position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true">
+<input type="text" autocomplete="off" style="position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true">
 <button class="mob-hamburger" id="mobHamburger" title="菜单">☰</button>
 <div class="app">
 <aside class="sidebar">
@@ -339,7 +339,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       <div class="sync-panel-header" id="syncPanelHeader"><span>☁️ 云端同步</span><span class="sp-arrow">▼</span></div>
       <div class="sync-panel-body">
       <input id="syncUrl" placeholder="Worker URL" style="width:100%;padding:3px 5px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;margin-bottom:3px;background:var(--card-bg);color:var(--fg);">
-      <input id="syncToken" type="password" placeholder="Token" style="width:100%;padding:3px 5px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;margin-bottom:4px;background:var(--card-bg);color:var(--fg);">
+      <input id="syncToken" type="password" autocomplete="off" placeholder="Token" style="width:100%;padding:3px 5px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;margin-bottom:4px;background:var(--card-bg);color:var(--fg);">
       <div style="display:flex;gap:4px;">
         <button class="btn btn-out btn-sm" id="btnSyncPush" style="flex:1;font-size:.52rem;padding:4px 0;">⬆ 上传</button>
         <button class="btn btn-pri btn-sm" id="btnSyncPull" style="flex:1;font-size:.52rem;padding:4px 0;">⬇ 同步</button>
