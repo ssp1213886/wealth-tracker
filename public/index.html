@@ -622,8 +622,6 @@ function updateDashboardWidgets(){
   var sd2=document.getElementById('sbDCAStatus'),sub=document.getElementById('sbDCASub');
   if(complete){if(sd2)sd2.innerHTML='✅ 已完成';if(sd2)sd2.style.color='var(--accent)';var ld=buys[buys.length-1];if(sub)sub.textContent=ld?(ld.date.replace(/-/g,'/').slice(5)):''}
   else{if(sd2)sd2.innerHTML='⏳ 待执行';if(sd2)sd2.style.color='var(--orange)';if(sub)sub.textContent='本月 '+fmt$(dca)+' 待分配'}
-  // 操作台 DCA 指令
-  updateConsoleDCA();
   // 再平衡锁定
   updateRebalanceLock();
 }
