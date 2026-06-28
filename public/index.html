@@ -339,7 +339,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       <div class="sync-panel-header" id="syncPanelHeader"><span>☁️ 云端同步</span><span class="sp-arrow">▼</span></div>
       <div class="sync-panel-body">
       <input id="syncUrl" placeholder="Worker URL" style="width:100%;padding:3px 5px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;margin-bottom:3px;background:var(--card-bg);color:var(--fg);">
-      <input id="syncToken" type="password" autocomplete="off" placeholder="Token" style="width:100%;padding:3px 5px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;margin-bottom:4px;background:var(--card-bg);color:var(--fg);">
+      <input id="syncToken" type="text" autocomplete="off" placeholder="Token" style="width:100%;padding:3px 5px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;margin-bottom:4px;background:var(--card-bg);color:var(--fg);-webkit-text-security:disc;">
       <div style="display:flex;gap:4px;">
         <button class="btn btn-out btn-sm" id="btnSyncPush" style="flex:1;font-size:.52rem;padding:4px 0;">⬆ 上传</button>
         <button class="btn btn-pri btn-sm" id="btnSyncPull" style="flex:1;font-size:.52rem;padding:4px 0;">⬇ 同步</button>
