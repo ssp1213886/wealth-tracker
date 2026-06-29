@@ -29,50 +29,11 @@ export default {
       const sym = url.searchParams.get('symbol');
       if (!sym) return json({ error: 'Missing symbol' }, 400);
       try {
-        // Fetch intraday (2m) + daily history (1d) in parallel
-        const [rIntra, rDaily] = await Promise.all([
-          fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=2m&range=1d&includePrePost=true', {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-          }),
-          fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=5d', {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-          })
-        ]);
-        const [dIntra, dDaily] = await Promise.all([rIntra.json(), rDaily.json()]);
-        const meta = dIntra?.chart?.result?.[0]?.meta;
-        const quotes = dIntra?.chart?.result?.[0]?.indicators?.quote?.[0];
-        
-        // Previous close: last complete trading day's close
-        const dailyResult = dDaily?.chart?.result?.[0];
-        const dailyCloses = (dailyResult?.indicators?.quote?.[0]?.close || []).filter(v => v != null);
-        const dailyTimestamps = dailyResult?.timestamp || [];
-        let prevClose = meta?.regularMarketPrice;
-        if (dailyCloses.length > 0) {
-          // Use last close; if last candle is today (incomplete), use second-to-last
-          const lastTs = dailyTimestamps[dailyCloses.length - 1] * 1000;
-          const todayStart = new Date().setHours(0,0,0,0);
-          const idx = lastTs >= todayStart && dailyCloses.length >= 2 ? dailyCloses.length - 2 : dailyCloses.length - 1;
-          prevClose = dailyCloses[idx];
-        }
-        
-        // Detect market state from trading periods
-        let marketState = '';
-        if (meta?.currentTradingPeriod) {
-          const now = Math.floor(Date.now() / 1000);
-          const pre = meta.currentTradingPeriod.pre;
-          const post = meta.currentTradingPeriod.post;
-          if (pre && now >= pre.start && now < pre.end) marketState = 'pre';
-          else if (post && now >= post.start && now < post.end) marketState = 'post';
-          else marketState = 'regular';
-        }
-        // Use indicators close for pre/post market price (meta only has regularMarketPrice)
-        let price = meta?.regularMarketPrice;
-        if ((marketState === 'pre' || marketState === 'post') && quotes?.close) {
-          const lastClose = quotes.close.filter(v => v != null);
-          if (lastClose.length > 0) price = lastClose[lastClose.length - 1];
-        }
-        return json({ ok: true, data: dIntra, marketState, price, prevClose,
-          hi52: meta?.fiftyTwoWeekHigh });
+        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=1d', {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const data = await r.json();
+        return json({ ok: true, data });
       } catch (e) {
         return json({ ok: false, error: e.message }, 502);
       }
