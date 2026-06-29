@@ -171,14 +171,39 @@ git push
 
 ---
 
+---
+
+## 📂 代码结构（index.html 内部）
+
+`public/index.html` 内 JS 按功能区段用注释分隔，方便定位：
+
+| 区段 | 内容 |
+|------|------|
+| 格式化工具 | `safeNum` `fmt$` `fmtFull` `fmtPct` |
+| 投资组合计算 | `calcPortfolio` `updateSidebar` |
+| 价格获取 & 缓存 | `fetchPrice` `pricePill` `refreshPrices` `updateMktStatus` |
+| 持仓渲染 | `updatePortfolio` `updateDonutChart` |
+| 数据持久化 | `loadState` `saveState` `loadCash` `saveTrades` |
+| DCA 定投 | `updateDCA` `checkDCAStatus` |
+| 活动日志 | `addActivity` `renderActivity` `renderLogHeatmap` |
+| 数据页 | `updateDataPage` `updateTradeList` `updatePnlSummary` |
+| 提款规划 | `updatePlanAges` `updateWithdrawal` |
+| SGOV 池 | `updateSgovPage` |
+| 主题 & UI | `toggleTheme` `setAccent` `switchTab` `updateMobStatusBar` |
+| 交易操作 | `fillTradeForm` `doRebalance` |
+| Toast 通知 | `showToast` |
+| 云端同步 | `updateSidebarPrices` `autoPush` `autoPull` `syncPush` `syncPull` |
+| CSV 导入 | `parseSchwabCSV` `doCSVImport` |
+| 初始化 & 事件绑定 | `initAll` + 所有 `addEventListener` |
+
 ## 📦 技术栈速览
 
 | 层 | 技术 | 说明 |
 |---|---|---|
 | 前端 | 原生 HTML/CSS/JS | 单个 SPA 文件，无框架 |
-| 后端 | Cloudflare Worker | `src/worker.js` 处理同步请求 |
+| 后端 | Cloudflare Worker | `src/worker.js` 处理同步请求 + Yahoo 价格代理 |
 | 数据库 | Cloudflare D1 | SQLite 兼容，存交易和资金数据 |
-| 行情 | 腾讯 qt.gtimg.cn | 免费实时价格 |
+| 行情 | Yahoo Finance（主）+ 腾讯 qt.gtimg.cn（备） | Worker 代理绕 CORS，前端无感 |
 | 部署 | Wrangler CLI | `npx wrangler deploy` |
 | 代码托管 | GitHub | `ssp1213886/wealth-tracker` |
 
@@ -195,4 +220,4 @@ git push
 
 ---
 
-最后更新：2026-06-27
+最后更新：2026-06-29
