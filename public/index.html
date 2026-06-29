@@ -442,7 +442,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 var LSKEY='wealth_dashboard_v2',PRICE_KEY='wealth_prices_v2',TRADE_KEY='wealth_trades_v2',CB_KEY='wealth_cash_v2',CLOG_KEY='wealth_cashlog_v2';var cashBalance=0,cashLog=[];
 var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:2500000,vgt:0.50,smh:0.30,btc:0.20};
 var trades=[],livePrices={},liveChanges={},liveSources={},tradeIdCounter=0,PRICE_AGE_WARN_MS=5*60*1000;
-var YHOO_MAP={VGT:'VGT',SMH:'SMH',SGOV:'SGOV',BTC:'BTC-USD'};
+var YHOO_MAP={VGT:'VGT',SMH:'SMH',SGOV:'SGOV',BTC:'BTC'};
 
 function safeNum(n){return isNaN(n)||n===null||n===undefined||!isFinite(n)?0:n}
 function fmt$(n){n=safeNum(n);if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(2)+'M';if(Math.abs(n)>=1e3)return'$'+(n/1e3).toFixed(0)+'K';return'$'+n.toLocaleString('en-US',{maximumFractionDigits:0})}
