@@ -33,7 +33,18 @@ export default {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         const data = await r.json();
-        return json({ ok: true, data });
+        // Detect market state from trading periods
+        let marketState = '';
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (meta?.currentTradingPeriod) {
+          const now = Math.floor(Date.now() / 1000);
+          const pre = meta.currentTradingPeriod.pre;
+          const post = meta.currentTradingPeriod.post;
+          if (pre && now >= pre.start && now < pre.end) marketState = 'pre';
+          else if (post && now >= post.start && now < post.end) marketState = 'post';
+          else marketState = 'regular';
+        }
+        return json({ ok: true, data, marketState });
       } catch (e) {
         return json({ ok: false, error: e.message }, 502);
       }
