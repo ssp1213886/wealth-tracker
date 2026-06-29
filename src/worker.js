@@ -29,13 +29,14 @@ export default {
       const sym = url.searchParams.get('symbol');
       if (!sym) return json({ error: 'Missing symbol' }, 400);
       try {
-        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=1d&includePrePost=true', {
+        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=2m&range=1d&includePrePost=true', {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         const data = await r.json();
+        const meta = data?.chart?.result?.[0]?.meta;
+        const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
         // Detect market state from trading periods
         let marketState = '';
-        const meta = data?.chart?.result?.[0]?.meta;
         if (meta?.currentTradingPeriod) {
           const now = Math.floor(Date.now() / 1000);
           const pre = meta.currentTradingPeriod.pre;
@@ -44,7 +45,15 @@ export default {
           else if (post && now >= post.start && now < post.end) marketState = 'post';
           else marketState = 'regular';
         }
-        return json({ ok: true, data, marketState });
+        // Use indicators close for pre/post market price (meta only has regularMarketPrice)
+        let price = meta?.regularMarketPrice;
+        if ((marketState === 'pre' || marketState === 'post') && quotes?.close) {
+          const lastClose = quotes.close.filter(v => v != null);
+          if (lastClose.length > 0) price = lastClose[lastClose.length - 1];
+        }
+        return json({ ok: true, data, marketState, price,
+          prevClose: meta?.chartPreviousClose || meta?.previousClose,
+          hi52: meta?.fiftyTwoWeekHigh });
       } catch (e) {
         return json({ ok: false, error: e.message }, 502);
       }
