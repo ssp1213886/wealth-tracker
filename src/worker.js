@@ -15,12 +15,27 @@ export default {
     }
 
     // --- Auth check (skip for static files) ---
-    if (url.pathname.startsWith('/api/')) {
+    if (url.pathname.startsWith('/api/') && url.pathname !== '/api/price') {
       if (!auth || auth !== env.AUTH_TOKEN) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: corsHeaders(),
         });
+      }
+    }
+
+    // --- API: Price proxy — Yahoo Finance bypass CORS ---
+    if (url.pathname === '/api/price' && request.method === 'GET') {
+      const sym = url.searchParams.get('symbol');
+      if (!sym) return json({ error: 'Missing symbol' }, 400);
+      try {
+        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=1d', {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const data = await r.json();
+        return json({ ok: true, data });
+      } catch (e) {
+        return json({ ok: false, error: e.message }, 502);
       }
     }
 
