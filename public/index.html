@@ -477,7 +477,7 @@ async function refreshPrices(){
   var results=await Promise.all(syms.map(async function(sym){
     var d=await fetchPrice(sym);
     if(d&&d.source!=='缓存'){var cachedPrice=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');var oldP=cachedPrice[sym]?cachedPrice[sym].price:null;livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source==='yahoo'?'Yahoo':d.source;if(d.change!=null&&d.change!==0){liveChanges[sym]=d.change}else if(oldP&&oldP!==d.price){liveChanges[sym]=d.price-oldP}if(sym==='SMH'&&d.hi52>0){var o2=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(d.hi52>o2)localStorage.setItem('smh_cur_52hi',d.hi52.toString());smh52hi=Math.max(smh52hi,d.hi52)}cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source,Date.now()-d.time,d.extLabel||'')}
-    if(livePrices[sym]){return pricePill(sym,livePrices[sym],liveChanges[sym],'cache',0,'')}
+    if(livePrices[sym]){var cp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}'),cAge=cp[sym]&&cp[sym].time?Date.now()-cp[sym].time:3600000;return pricePill(sym,livePrices[sym],liveChanges[sym],'cache',cAge,'')}
     return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'
   }));
   if(el)el.innerHTML=results.join('');
@@ -532,7 +532,7 @@ function updatePortfolio(){
   });
   var tc=document.getElementById('hmDrawdown'),ts=document.getElementById('hmDrawdownSub');
   if(ddLines.length>0){tc.textContent='';var worst=ddLines.reduce(function(a,b){return a.dd>b.dd?a:b});tc.innerHTML=ddLines.map(function(d){return '<div style="font-size:.68rem;display:flex;justify-content:space-between;padding:2px 0;"><strong>'+d.sym+'</strong><span style="color:'+(d.dd>0.1?'var(--red)':'var(--accent)')+';">'+(d.dd>0.1?'-'+d.dd.toFixed(1)+'%':d.dd.toFixed(1)+'%')+'</span><span style="font-size:.55rem;color:var(--muted);">高$'+d.peak.toFixed(2)+'</span></div>'}).join('');ts.textContent=''}else{tc.textContent='--';tc.style.color='';ts.textContent='💹 添加价格后显示'}
-  document.getElementById('hmPricesCompact').innerHTML=ETF_SYMS.map(function(sym){return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||'',0,''):'<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('');
+  document.getElementById('hmPricesCompact').innerHTML=((function(){var cpAge=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');return ETF_SYMS.map(function(sym){var age=cpAge[sym]&&cpAge[sym].time?Date.now()-cpAge[sym].time:0;return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||'',age,''):'<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('')})());
   var ct=document.getElementById('hmPriceTime');if(ct&&!ct.textContent)ct.textContent='更新 '+new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
