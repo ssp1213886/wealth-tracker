@@ -9,15 +9,23 @@
 ```
 wealth-server/
 ├── public/
-│   ├── index.html          ← 网站主文件（唯一需要改的前端文件）
-│   ├── sw.js               ← 离线缓存（Service Worker）
-│   ├── manifest.json       ← PWA 配置
-│   ├── guide.html          ← 使用文档页面
-│   ├── 使用文档.md          ← 使用文档（Markdown）
-│   ├── icon.png            ← PWA 图标
-│   └── icon.svg            ← PWA 图标
+│   ├── index.html          ← 主程序，6 页仪表盘全部逻辑
+│   ├── sw.js               ← Service Worker，PWA 离线缓存
+│   ├── manifest.json       ← PWA 配置（图标、名称、颜色）
+│   ├── guide.html          ← 使用文档网页版
+│   ├── 使用文档.md          ← 使用文档 Markdown 版
+│   └── icon.png            ← 网站图标 + PWA 图标
 ├── src/
-│   └── worker.js           ← Cloudflare Worker 后端（处理同步 API）
+│   └── worker.js           ← Worker 后端（价格代理 + 数据同步）
+├── schema.sql              ← D1 数据库建表语句
+├── wrangler.example.toml   ← 部署配置模板（不含 Token）
+├── package.json            ← 项目信息 + npm 脚本
+├── package-lock.json       ← 锁定依赖版本
+├── .gitignore              ← 排除敏感文件
+├── readme.md               ← 项目首页说明
+├── maintenance.md          ← 本文件：维护指南 + 代码结构速查
+└── check-eval.js           ← 语法检查工具
+```
 ├── schema.sql              ← D1 数据库建表语句
 ├── wrangler.example.toml   ← 部署配置模板（不含真 Token）
 ├── wrangler.toml           ← 实际部署配置（含 Token，已 gitignore）
