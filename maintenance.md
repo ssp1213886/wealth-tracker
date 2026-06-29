@@ -26,13 +26,6 @@ wealth-server/
 ├── maintenance.md          ← 本文件：维护指南 + 代码结构速查
 └── check-eval.js           ← 语法检查工具
 ```
-├── schema.sql              ← D1 数据库建表语句
-├── wrangler.example.toml   ← 部署配置模板（不含真 Token）
-├── wrangler.toml           ← 实际部署配置（含 Token，已 gitignore）
-├── package.json            ← 依赖声明（wrangler）
-├── readme.md               ← 项目说明
-└── .gitignore              ← Git 忽略规则
-```
 
 > **核心文件**：`public/index.html` —— 整个网站是单个 HTML 文件，所有 UI 和逻辑都在里面。
 
@@ -43,7 +36,7 @@ wealth-server/
 1. **克隆仓库**
 ```powershell
 git clone https://github.com/ssp1213886/wealth-tracker.git
-cd wealth-tracker
+cd wealth-server
 ```
 
 2. **安装依赖**
@@ -155,7 +148,7 @@ npx wrangler deploy
 
 1. 检查侧栏「☁️ 云端同步」面板的 URL 和 Token 是否正确
 2. Token 与 `wrangler.toml` 中的 AUTH_TOKEN 必须一致
-3. Token 建议用 `ssp540829`（当前值）
+3. Token 与 `wrangler.toml` 中的 AUTH_TOKEN 必须一致
 
 ### 数据丢了
 
