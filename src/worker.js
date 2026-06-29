@@ -42,9 +42,18 @@ export default {
         const meta = dIntra?.chart?.result?.[0]?.meta;
         const quotes = dIntra?.chart?.result?.[0]?.indicators?.quote?.[0];
         
-        // Previous close from daily history (second-to-last valid close)
-        const dailyCloses = (dDaily?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || []).filter(v => v != null);
-        const prevClose = dailyCloses.length >= 2 ? dailyCloses[dailyCloses.length - 2] : meta?.regularMarketPrice;
+        // Previous close: last complete trading day's close
+        const dailyResult = dDaily?.chart?.result?.[0];
+        const dailyCloses = (dailyResult?.indicators?.quote?.[0]?.close || []).filter(v => v != null);
+        const dailyTimestamps = dailyResult?.timestamp || [];
+        let prevClose = meta?.regularMarketPrice;
+        if (dailyCloses.length > 0) {
+          // Use last close; if last candle is today (incomplete), use second-to-last
+          const lastTs = dailyTimestamps[dailyCloses.length - 1] * 1000;
+          const todayStart = new Date().setHours(0,0,0,0);
+          const idx = lastTs >= todayStart && dailyCloses.length >= 2 ? dailyCloses.length - 2 : dailyCloses.length - 1;
+          prevClose = dailyCloses[idx];
+        }
         
         // Detect market state from trading periods
         let marketState = '';
