@@ -86,7 +86,7 @@
   <li>⚙️ <strong>投资参数</strong>：每月定投总额、起点日期、起始年龄</li>
   <li>🎨 <strong>配色方案</strong>：5 种主题色</li>
   <li>🍩<strong>持仓占比</strong>：实时环形图</li>
-  <li>💹<strong>实时价格</strong>：腾讯行情</li>
+  <li>💹<strong>实时价格</strong>：Yahoo Finance（主）+ 腾讯（备）</li>
   <li>📥<strong>数据同步</strong>：Cloudflare D1 云端 + JSON 导入导出 + CSV 导入</li>
 </ul>
 
@@ -137,7 +137,7 @@
 <h2>9. 设计原则</h2>
 <p style="font-style:italic;color:var(--accent);">这个网站是：20年航海日志 / 纪律打卡机 / 情绪分流器。不是：高频交易终端 / 预测分析工具 / 社交炫耀平台。</p>
 <table>
-  <tr><td>价格源</td><td>腾讯行情，仅美股时段有实时数据，休市显示 <code>--</code></td></tr>
+  <tr><td>价格源</td><td>Yahoo Finance（主，Worker 代理）+ 腾讯（备），盘前/盘后以彩色圆点标注 🟢盘中 🔵盘后 🟠盘前</td></tr>
   <tr><td>手动设价</td><td>买卖录入区下方可手动设某标的价格</td></tr>
   <tr><td>模拟参数</td><td>中枢年化 13.8%（VGT 12% + SMH 14% + BTC 18%）</td></tr>
   <tr><td>历史回测</td><td>BTC 含早期 900% 年份，结果极度乐观</td></tr>
