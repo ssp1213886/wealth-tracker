@@ -1,14 +1,15 @@
 {
   "name": "wealth-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "个人投资仪表盘 — 持仓追踪、实时行情、云端同步",
+  "main": "src/worker.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["portfolio", "investment", "cloudflare-worker"],
+  "author": "ssp1213886",
+  "license": "MIT",
   "devDependencies": {
     "wrangler": "^4.104.0"
   }
