@@ -29,7 +29,7 @@ export default {
       const sym = url.searchParams.get('symbol');
       if (!sym) return json({ error: 'Missing symbol' }, 400);
       try {
-        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=1d', {
+        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=1d&includePrePost=true', {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         const data = await r.json();
