@@ -29,12 +29,23 @@ export default {
       const sym = url.searchParams.get('symbol');
       if (!sym) return json({ error: 'Missing symbol' }, 400);
       try {
-        const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=2m&range=1d&includePrePost=true', {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-        const data = await r.json();
-        const meta = data?.chart?.result?.[0]?.meta;
-        const quotes = data?.chart?.result?.[0]?.indicators?.quote?.[0];
+        // Fetch intraday (2m) + daily history (1d) in parallel
+        const [rIntra, rDaily] = await Promise.all([
+          fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=2m&range=1d&includePrePost=true', {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          }),
+          fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=5d', {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          })
+        ]);
+        const [dIntra, dDaily] = await Promise.all([rIntra.json(), rDaily.json()]);
+        const meta = dIntra?.chart?.result?.[0]?.meta;
+        const quotes = dIntra?.chart?.result?.[0]?.indicators?.quote?.[0];
+        
+        // Previous close from daily history (second-to-last valid close)
+        const dailyCloses = (dDaily?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || []).filter(v => v != null);
+        const prevClose = dailyCloses.length >= 2 ? dailyCloses[dailyCloses.length - 2] : meta?.regularMarketPrice;
+        
         // Detect market state from trading periods
         let marketState = '';
         if (meta?.currentTradingPeriod) {
@@ -51,8 +62,7 @@ export default {
           const lastClose = quotes.close.filter(v => v != null);
           if (lastClose.length > 0) price = lastClose[lastClose.length - 1];
         }
-        return json({ ok: true, data, marketState, price,
-          prevClose: meta?.regularMarketPrice,
+        return json({ ok: true, data: dIntra, marketState, price, prevClose,
           hi52: meta?.fiftyTwoWeekHigh });
       } catch (e) {
         return json({ ok: false, error: e.message }, 502);
