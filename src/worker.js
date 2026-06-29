@@ -52,7 +52,7 @@ export default {
           if (lastClose.length > 0) price = lastClose[lastClose.length - 1];
         }
         return json({ ok: true, data, marketState, price,
-          prevClose: meta?.chartPreviousClose || meta?.previousClose,
+          prevClose: meta?.regularMarketPrice,
           hi52: meta?.fiftyTwoWeekHigh });
       } catch (e) {
         return json({ ok: false, error: e.message }, 502);
