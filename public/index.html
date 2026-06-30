@@ -351,7 +351,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
     </div>
   </div>
   <div class="sb-section"><h3>⚙️ 投资参数</h3><div style="display:flex;gap:6px;align-items:center;margin-bottom:2px;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">📅 每月基准 $</span><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.44rem;color:var(--muted);margin-bottom:2px;line-height:1.4;">本月临时调整在仪表盘 ↑</div><div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">📅 定投起点<input type="month" id="roadmapStartInput" value="2025-01" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">目标 $</span><input type="number" id="targetGoalInput" value="2500000" min="100000" max="10000000" step="100000" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div>
-    <div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">⏳ 起点年龄<input type="number" id="roadmapAgeInput" value="27" min="18" max="70" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div><div style="font-size:.54rem;color:var(--muted);margin-top:6px;" id="dcaAllocSummary">VGT 50% · SMH 30% · BTC 20%</div></div>
+    <div style="display:flex;gap:6px;align-items:center;"><span style="font-size:.6rem;color:var(--muted);white-space:nowrap;">⏳ 起点年龄<input type="number" id="roadmapAgeInput" value="27" min="18" max="70" style="flex:1;padding:6px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.66rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"></div></div>
   <div class="sb-footer-links"><a href="/guide.html">📖 使用文档</a></div>
 </aside>
 <main class="main">
@@ -465,7 +465,7 @@ function updateSidebar(){
   }
   if(legend&&slices.length)legend.innerHTML=slices.map(function(s,i){return'<span style="display:inline-block;margin:0 3px;"><span style="width:8px;height:8px;border-radius:50%;background:'+DONUT_COLORS[i%3]+';display:inline-block;"></span> '+s.sym+'</span>'}).join('');
   var dcaEl=document.getElementById('sbDCACalendar');if(dcaEl){var buyTrades=trades.filter(function(t){return t.shares>0});var months=new Set();buyTrades.forEach(function(t){months.add(t.date.slice(0,7))});var n=months.size+1;var now=new Date(),next=new Date(now.getFullYear(),now.getMonth()+1,1);dcaEl.textContent='📅 下次定投 '+next.getFullYear()+'年'+(next.getMonth()+1)+'月 · 第'+n+'次'}
-  var dcaSum=document.getElementById('dcaAllocSummary');if(dcaSum){var d=state.monthlyDCA||2000;dcaSum.textContent='VGT '+fmt$(d*state.vgt)+' · SMH '+fmt$(d*state.smh)+' · BTC '+fmt$(d*state.btc)}
+  
   updateMobStatusBar();}
 
 /* ===== 价格获取 & 缓存 ===== */
