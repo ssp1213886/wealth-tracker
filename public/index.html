@@ -213,11 +213,11 @@ input,select,textarea{font-size:16px!important}
 
 /* Bottom nav */
 .bottom-bar{display:flex;position:fixed;bottom:12px;left:15px;right:15px;z-index:9999;background:rgba(255,255,255,.78);border:.5px solid rgba(0,0,0,.08);padding:8px 8px env(safe-area-inset-bottom,8px);backdrop-filter:saturate(200%) blur(50px);-webkit-backdrop-filter:saturate(200%) blur(50px);box-shadow:0 4px 20px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.06);border-radius:24px}[data-theme='dark'] .bottom-bar{background:rgba(18,19,18,.78);border:.5px solid rgba(255,255,255,.06);box-shadow:0 4px 20px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3)}
-.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.42rem;transition:background .15s,transform .15s;-webkit-backdrop-filter:none}.bb-btn:active{background:rgba(22,153,74,.18);transform:scale(.92)}transition:transform .12s,background .12s}.bb-btn:active{transform:scale(.78);background:rgba(22,153,74,.12)}font-weight:500;padding:4px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-height:48px;cursor:pointer;position:relative;transition:color .2s}
+.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.42rem;transition:background .15s,transform .15s;-webkit-backdrop-filter:none}transition:transform .12s,background .12s}font-weight:500;padding:4px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-height:48px;cursor:pointer;position:relative;transition:color .2s}
 .bb-btn .bb-icon{font-size:1.5rem;line-height:1;opacity:.45;transition:transform .2s,opacity .2s}
 .bb-btn.active{color:var(--accent);font-weight:600}
 .bb-btn.active .bb-icon{opacity:1;transform:scale(1.08)}
- .bb-btn::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:transparent;transition:background .2s}.bb-btn.active::after{background:var(--accent)}.bb-btn:active{transform:scale(.78);background:rgba(22,153,74,.12)}.bb-btn:active .bb-icon{transform:scale(.82)}
+ .bb-btn::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:transparent;transition:background .2s}.bb-btn.active::after{background:var(--accent)}
 
 /* Sidebar */
 .sidebar{width:85%;max-width:320px;max-height:0;position:fixed;top:0;left:0;z-index:30;border-right:none;border-bottom:1px solid var(--rule);padding:0 12px;overflow-y:auto;background:var(--card-bg);border-radius:0 0 14px 14px;box-shadow:var(--shadow-lg);transition:max-height .3s ease}
@@ -250,7 +250,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 @media(min-width:801px){.mob-hamburger,.bottom-bar{display:none}}
 #donutLegend>div{display:flex!important;align-items:baseline!important;gap:8px!important}#donutLegend>div>span:first-of-type{flex-shrink:0!important}#donutLegend>div>span:nth-child(2){flex:1!important;min-width:40px!important}#donutLegend>div>span:nth-child(3){min-width:40px!important;text-align:right!important}
 
-.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.52rem;font-weight:500;padding:6px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-height:50px;cursor:pointer;transition:background .15s;-webkit-backdrop-filter:none}transition:color .2s,opacity .2s;position:relative;-webkit-tap-highlight-color:transparent;user-select:none}.bb-btn:active{background:rgba(22,153,74,.18);transform:scale(.92)}
+.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.52rem;font-weight:500;padding:6px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-height:50px;cursor:pointer;transition:background .15s;-webkit-backdrop-filter:none}.bb-btn:active{background:rgba(22,153,74,.3);transform:scale(.85);transition:transform .15s,background .15s}transition:color .2s,opacity .2s;position:relative;-webkit-tap-highlight-color:transparent;user-select:none}
 .bb-btn .bb-icon{font-size:1.4rem;line-height:1;opacity:.5;,transition:transform .2s,opacity .2s}
 .bb-btn.active{color:var(--accent);font-weight:700;font-family:var(--font)}
 .bb-btn.active .bb-icon{opacity:1;transform:scale(1.05)}
