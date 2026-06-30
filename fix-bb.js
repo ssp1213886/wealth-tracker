@@ -1,17 +1,13 @@
 var fs=require('fs');
 var c=fs.readFileSync('public/index.html','utf8');
-// Find mobile .bb-btn (position ~28032)
-var i=c.indexOf('.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.52rem');
+// Mobile .bb-btn: find by font-size:.52rem
+var s='.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.52rem';
+var i=c.indexOf(s);
 if(i>0) {
   var old=c.substring(i, c.indexOf('}', i)+1);
-  // Add position:relative and ::after
-  var neo=old.replace('gap:2px;cursor:pointer;transition:transform .12s,background .12s;',
-    'gap:2px;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s,background .12s}' +
-    '.bb-btn::after{content:"";position:absolute;inset:0;margin:auto;width:0;height:0;border-radius:50%;background:rgba(22,153,74,.2);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:width .25s,height .25s;pointer-events:none}' +
-    '.bb-btn:active::after{width:130%;height:130%' + '}');
+  // Remove transition, add glass
+  var neo=old.replace(/transition:[^;]+;?/,'').replace('cursor:pointer;','cursor:pointer;transition:background .15s;-webkit-backdrop-filter:none}') + '.bb-btn:active{background:rgba(22,153,74,.15);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}';
   c=c.replace(old, neo);
   fs.writeFileSync('public/index.html', c);
-  console.log('mobile done');
-} else {
-  console.log('not found');
-}
+  console.log('done');
+} else console.log('not found');
