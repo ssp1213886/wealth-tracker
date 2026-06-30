@@ -658,8 +658,7 @@ function updateSgovPage(){
     var sdEl=document.getElementById('smhDrawdown'),shEl=document.getElementById('smh52hi'),scEl=document.getElementById('smhCur');
     if(sdEl){sdEl.textContent=smhDD.toFixed(1)+'%';sdEl.style.color=smhDD>=25?'var(--red)':smhDD>=20?'var(--orange)':'var(--accent)'}
     if(shEl)shEl.textContent='$'+smh5.toFixed(2);if(scEl)scEl.textContent='$'+smhP.toFixed(2);
-    var trig=smhDD>=40;
-    var sa=document.getElementById('smhAlertStatus');if(sa){if(trig)sa.innerHTML='<div class="red-alert">⚠️ 已触发 · SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 40%</div>';else sa.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--muted);">未触发 · 当前回撤 '+smhDD.toFixed(1)+'%</div>'}
+    var trig=smhDD>=25;var sa=document.getElementById('smhAlertStatus');if(sa){if(trig)sa.innerHTML='<div class="red-alert">⚠️ 已触发 · SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 25%</div>';else sa.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--muted);">未触发 · 当前回撤 '+smhDD.toFixed(1)+'%</div>'}
     var shield=document.getElementById('sgovShield'),icon=document.getElementById('shieldIcon'),txt=document.getElementById('shieldText'),sub=document.getElementById('shieldSub');
     if(trig){if(shield)shield.classList.add('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.innerHTML='<span style="color:var(--red);">出击信号已触发</span>';if(sub)sub.innerHTML='按 50/30/20 比例买入 VGT/SMH/BTC · 注意分批进场'}
     else{if(shield)shield.classList.remove('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.textContent='警戒中';if(sub)sub.textContent='市场未触发极端信号'}
