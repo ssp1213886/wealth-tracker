@@ -189,7 +189,7 @@ git push
 | 活动日志 | `addActivity` `renderActivity` `renderLogHeatmap` |
 | 数据页 | `updateDataPage` `updateTradeList` `updatePnlSummary` |
 | 提款规划 | `updatePlanAges` `updateWithdrawal` |
-| SGOV 池 | `updateSgovPage` |
+| SGOV 池 | `updateSgovPage` 余额+盾牌+SMH监测(≥25%出击/≥20%预警) |
 | 主题 & UI | `toggleTheme` `setAccent` `switchTab` `updateMobStatusBar` |
 | 交易操作 | `fillTradeForm` `doRebalance` |
 | Toast 通知 | `showToast` |
