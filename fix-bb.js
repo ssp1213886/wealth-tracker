@@ -1,12 +1,9 @@
 var fs=require('fs');
 var c=fs.readFileSync('public/index.html','utf8');
-// Mobile .bb-btn: find by font-size:.52rem
-var s='.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.52rem';
-var i=c.indexOf(s);
-if(i>0) {
-  var old=c.substring(i, c.indexOf('}', i)+1);
-  // Remove transition, add glass
-  var neo=old.replace(/transition:[^;]+;?/,'').replace('cursor:pointer;','cursor:pointer;transition:background .15s;-webkit-backdrop-filter:none}') + '.bb-btn:active{background:rgba(22,153,74,.15);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}';
+// Find mobile .bb-btn:active with green glass
+var old='.bb-btn:active{background:rgba(22,153,74,.15);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}';
+var neo='.bb-btn:active{background:rgba(255,255,255,.25);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.08)}';
+if(c.includes(old)) {
   c=c.replace(old, neo);
   fs.writeFileSync('public/index.html', c);
   console.log('done');
