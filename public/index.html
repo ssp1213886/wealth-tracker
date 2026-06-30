@@ -242,7 +242,7 @@ input,select,textarea{font-size:16px!important}
 .trade-table tbody tr:nth-child(even),.res-table tbody tr:nth-child(even){background:transparent}
 .trade-table tbody tr:hover,.res-table tbody tr:hover{background:var(--accent-l)}
 body{font-size:15px;-webkit-text-size-adjust:100%}
-#logHeatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;transition:transform .3s}
+#logHeatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
 #activityLog>div{padding:10px 12px;margin-bottom:6px;border-radius:10px;background:var(--surface);border:none}
 #rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}.sb-overlay.show{opacity:1;pointer-events:auto}
 }
@@ -591,14 +591,14 @@ function renderLogHeatmap(page){var container=document.getElementById('logHeatma
   htm+='<span style="font-size:.52rem;color:var(--muted);font-weight:540;">'+showYear+'</span>';
   if(page<totalPages-1)htm+='<button onclick="renderLogHeatmap('+(page+1)+')" style="border:none;background:var(--surface);color:var(--fg);font-size:.7rem;padding:2px 8px;border-radius:4px;cursor:pointer;">▶</button>';
   else htm+='<span></span>';
-  htm+='</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;">';
-  grid.forEach(function(mt){var bg='transparent',border='1px solid var(--rule)',sz='10px',r='3px';
+  htm+='</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">';
+  grid.forEach(function(mt){var bg='transparent',border='1px solid var(--rule)';
     if(mt.isFuture){bg='transparent';border='1px solid transparent'}
-    else if(!mt.hasBuy){bg='rgba(217,69,53,.12)';border='1px solid rgba(217,69,53,.3)'}
+    else if(!mt.hasBuy){bg='rgba(217,69,53,.15)';border='1px solid rgba(217,69,53,.35)'}
     else if(mt.complete){bg='var(--accent)';border='1px solid var(--accent-d)'}
     else{bg='var(--orange)';border='1px solid #e8880c'}
     var isCur=mt.ym===curYM?' outline:2px solid var(--accent);outline-offset:1px;':'',tt=' title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+'"';
-    htm+='<div'+tt+' style="padding:0;padding-bottom:100%;position:relative;background:'+bg+';border:'+border+';border-radius:3px;'+isCur+'"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.4rem;color:var(--muted);">'+(mt.month===1||mt.month===7?mt.month+'月':'')+'</div></div>'});container.innerHTML=htm+'</div>'}
+    htm+='<div'+tt+' style="padding-bottom:100%;position:relative;background:'+bg+';border:'+border+';border-radius:4px;'+isCur+'"></div>'});container.innerHTML=htm+'</div>'}
 // ---- 数据页 ----
 /* ===== 数据页 ===== */
 function updateDataPage(){var nc=0;var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});nc=cashBalance+ts-tb;var dc=document.getElementById('dataCashBal');if(dc)dc.textContent=fmtFull(nc);var dd=document.getElementById('dataDep');if(dd){var ds=0;cashLog.forEach(function(l){if(l.type==='入金')ds+=l.amount});dd.textContent=fmtFull(ds)}var dl=document.getElementById('dataSel');if(dl){var ss=0;trades.forEach(function(t){if(t.shares<0)ss+=Math.abs(t.shares)*t.price});dl.textContent=fmtFull(ss)}var db=document.getElementById('dataBuy');if(db){var bs=0;trades.forEach(function(t){if(t.shares>0)bs+=t.shares*t.price});db.textContent='-'+fmtFull(bs)}updateTradeList();updatePnlSummary()}
