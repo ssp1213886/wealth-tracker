@@ -220,7 +220,7 @@ input,select,textarea{font-size:16px!important}
  .bb-btn::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:transparent;transition:background .2s}.bb-btn.active::after{background:var(--accent)}.bb-btn:active{transform:scale(.94)}.bb-btn:active .bb-icon{transform:scale(.88)}
 
 /* Sidebar */
-.sidebar{width:100%;max-height:0;position:fixed;top:0;left:0;z-index:30;border-right:none;border-bottom:1px solid var(--rule);padding:0 12px;overflow-y:auto;background:var(--card-bg);border-radius:0 0 14px 14px;box-shadow:var(--shadow-lg);transition:max-height .3s ease}
+.sidebar{width:85%;max-width:320px;max-height:0;position:fixed;top:0;left:0;z-index:30;border-right:none;border-bottom:1px solid var(--rule);padding:0 12px;overflow-y:auto;background:var(--card-bg);border-radius:0 0 14px 14px;box-shadow:var(--shadow-lg);transition:max-height .3s ease}
 .sidebar.open{max-height:85vh;padding:16px}
 .sidebar.collapsed{width:100%;padding:0;border-bottom-width:1px}
 .sidebar-toggle{display:none}
@@ -244,7 +244,7 @@ input,select,textarea{font-size:16px!important}
 body{font-size:15px;-webkit-text-size-adjust:100%}
 #logHeatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
 #activityLog>div{padding:10px 12px;margin-bottom:6px;border-radius:10px;background:var(--surface);border:none}
-#rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}
+#rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}.sb-overlay.show{opacity:1;pointer-events:auto}
 }
 
 @media(min-width:801px){.mob-hamburger,.bottom-bar{display:none}}
@@ -353,6 +353,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   <div class="sb-section"><h3>⚙️ 投资参数</h3><div style="margin-bottom:8px;"><div style="font-size:.5rem;color:var(--muted);margin-bottom:1px;">📅 每月基准 $</div><input type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100" style="width:100%;padding:7px 10px;border:1px solid var(--rule);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--fg);font-family:var(--font);"><div style="font-size:.42rem;color:var(--muted);margin-top:1px;">本月临时调整请在仪表盘操作</div></div><div style="margin-bottom:8px;"><div style="font-size:.5rem;color:var(--muted);margin-bottom:1px;">📅 定投起点</div><input type="month" id="roadmapStartInput" value="2025-01" style="width:100%;padding:7px 10px;border:1px solid var(--rule);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--fg);font-family:var(--font);"></div><div style="margin-bottom:8px;"><div style="font-size:.5rem;color:var(--muted);margin-bottom:1px;">⏳ 起点年龄</div><input type="number" id="roadmapAgeInput" value="27" min="18" max="70" style="width:100%;padding:7px 10px;border:1px solid var(--rule);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--fg);font-family:var(--font);"></div><div style="margin-bottom:4px;"><div style="font-size:.5rem;color:var(--muted);margin-bottom:1px;">🎯 目标 $</div><input type="number" id="targetGoalInput" value="2500000" min="100000" max="10000000" step="100000" style="width:100%;padding:7px 10px;border:1px solid var(--rule);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--fg);font-family:var(--font);"></div></div>
   <div class="sb-footer-links"><a href="/guide.html">📖 使用文档</a></div>
 </aside>
+<div class="sb-overlay" id="sbOverlay"></div>
 <main class="main">
 <div class="mob-status-bar" id="mobStatusBar">
   <span class="ms-left"><span class="ms-label">总资产</span><span class="ms-val" id="msTotal">$0</span></span>
@@ -681,7 +682,8 @@ document.getElementById('accentDots').addEventListener('click',function(e){var d
 document.getElementById('sidebarToggle').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('collapsed');var btn=document.getElementById('sidebarToggle');var arrow=btn.querySelector('.arrow');if(sb.classList.contains('collapsed')){arrow.textContent='▶';btn.style.left='6px';this.title='展开侧边栏'}else{arrow.textContent='◀';btn.style.left='266px';this.title='收起侧边栏'};try{localStorage.setItem(LSKEY+'_sidebar',sb.classList.contains('collapsed')?'1':'0')}catch(e){}});
 (function(){try{if(localStorage.getItem(LSKEY+'_sidebar')==='1'){var sb=document.querySelector('.sidebar');sb.classList.add('collapsed');var a=document.querySelector('.sidebar-toggle .arrow');if(a)a.textContent='▶';var btn=document.getElementById('sidebarToggle');if(btn)btn.style.left='6px'}}catch(e){}})();
 // Mobile hamburger
-document.getElementById('mobHamburger').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('open');this.textContent=sb.classList.contains('open')?'✕':'☰'});
+document.getElementById('mobHamburger').addEventListener('click',function(){var sb=document.querySelector('.sidebar'),ov=document.getElementById('sbOverlay');sb.classList.toggle('open');var isOpen=sb.classList.contains('open');this.textContent=isOpen?'✕':'☰';if(ov)ov.classList.toggle('show',isOpen)});
+ document.getElementById('sbOverlay').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.remove('open');this.classList.remove('show');var hb=document.querySelector('.mob-hamburger');if(hb)hb.textContent='☰'});
 // ---- TABS ----
 document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='sgov')updateSgovPage();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap()}
 if(b.dataset.tab==='data')updateDataPage()})});
