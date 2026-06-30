@@ -247,7 +247,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 #rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}.sb-overlay.show{opacity:1;pointer-events:auto}
 }
 
-@media(min-width:801px){.mob-hamburger,.bottom-bar{display:none}}
+@media(min-width:801px){.mob-hamburger,.bottom-bar{display:none}.sidebar{width:280px!important;max-height:none!important;padding:24px 0!important;position:sticky!important}.sidebar.collapsed{width:280px!important;overflow:visible!important}}
 #donutLegend>div{display:flex!important;align-items:baseline!important;gap:8px!important}#donutLegend>div>span:first-of-type{flex-shrink:0!important}#donutLegend>div>span:nth-child(2){flex:1!important;min-width:40px!important}#donutLegend>div>span:nth-child(3){min-width:40px!important;text-align:right!important}
 
 .bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.52rem;font-weight:500;padding:6px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;flex:1;min-height:50px;cursor:pointer;transition:background .15s;-webkit-backdrop-filter:none}.bb-btn:active{background:rgba(0,0,0,.15);box-shadow:inset 0 2px 6px rgba(0,0,0,.12);border-radius:12px;transform:scale(.95);transition:all .12s}transition:color .2s,opacity .2s;position:relative;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -418,7 +418,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   <div class="card" id="sgovShield" style="padding:18px;text-align:center;transition:all .3s;"><div style="font-size:3rem;" id="shieldIcon">🛡️</div><div style="font-size:.82rem;font-weight:620;margin:6px 0;" id="shieldText">正常监控中</div><div style="font-size:.58rem;color:var(--muted);" id="shieldSub">市场未触发极端信号</div></div>
   <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">💾 SMH 信号监测</h3>
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:14px;margin:8px 0;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.62rem;color:var(--muted);">距52周高回撤</span><span style="font-size:1.1rem;font-weight:700;font-family:'Inter',var(--font);" id="smhDrawdown">--</span></div><div style="display:flex;justify-content:space-between;margin-top:6px;"><span style="font-size:.5rem;color:var(--muted);">52周高 <strong id="smh52hi" style="color:var(--fg);">--</strong></span><span style="font-size:.5rem;color:var(--muted);">现价 <strong id="smhCur" style="color:var(--fg);">--</strong></span></div></div>
-    <div style="font-size:.5rem;color:var(--muted);margin-bottom:4px;">⚡ 触发条件：回撤 ≥ 40% → 出击信号</div>
+    <div style="font-size:.5rem;color:var(--muted);margin-bottom:4px;">⚡ 触发条件：回撤 ≥ 25% → 出击信号</div>
     <div style="margin-top:6px;" id="smhAlertStatus"></div></div>
 </section>
 </section>
@@ -607,7 +607,7 @@ function updateDashboardWidgets(){
   else{if(dl){dl.innerHTML='<span style="color:var(--accent);">🟢 绿灯</span>';dl.style.color=''}if(dm)dm.textContent='一切正常'}
   // SGOV 建议基于 SMH 监测
   var smhP=livePrices.SMH,smh5=smh52hi||smhP||0,smhDD2=smhP>0&&smh5>0?((smh5-smhP)/smh5*100):0;
-  var ds2=document.getElementById('devSgov');if(ds2){if(smhDD2>=40)ds2.textContent='SMH回撤'+smhDD2.toFixed(0)+'% → 出击';else if(smhDD2>=30)ds2.textContent='SMH回撤'+smhDD2.toFixed(0)+'% → 关注';else ds2.textContent='SMH正常 · 无需出击'}
+  var ds2=document.getElementById('devSgov');if(ds2){if(smhDD2>=25)ds2.textContent='SMH回撤'+smhDD2.toFixed(0)+'% → 出击';else if(smhDD2>=15)ds2.textContent='SMH回撤'+smhDD2.toFixed(0)+'% → 关注';else ds2.textContent='SMH正常 · 无需出击'}
   // 20年旅程
   var start=state.roadmapStart||'2025-01',sd=new Date(start+'-01'),ed=new Date(sd);ed.setFullYear(ed.getFullYear()+20);
   var now=new Date(),elapsed=(now-sd)/(ed-sd),pct=Math.min(100,Math.max(0,elapsed*100)),yrs=elapsed*20;
@@ -656,7 +656,7 @@ function updateSgovPage(){
   var smhP=livePrices.SMH,smh5=smh52hi||smhP||0;
   if(smhP>0&&smh5>0){var smhDD=((smh5-smhP)/smh5*100);
     var sdEl=document.getElementById('smhDrawdown'),shEl=document.getElementById('smh52hi'),scEl=document.getElementById('smhCur');
-    if(sdEl){sdEl.textContent=smhDD.toFixed(1)+'%';sdEl.style.color=smhDD>=40?'var(--red)':smhDD>=25?'var(--orange)':'var(--accent)'}
+    if(sdEl){sdEl.textContent=smhDD.toFixed(1)+'%';sdEl.style.color=smhDD>=25?'var(--red)':smhDD>=15?'var(--orange)':'var(--accent)'}
     if(shEl)shEl.textContent='$'+smh5.toFixed(2);if(scEl)scEl.textContent='$'+smhP.toFixed(2);
     var trig=smhDD>=40;
     var sa=document.getElementById('smhAlertStatus');if(sa){if(trig)sa.innerHTML='<div class="red-alert">⚠️ 已触发 · SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 40%</div>';else sa.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--muted);">未触发 · 当前回撤 '+smhDD.toFixed(1)+'%</div>'}
