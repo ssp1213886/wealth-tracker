@@ -242,7 +242,7 @@ input,select,textarea{font-size:16px!important}
 .trade-table tbody tr:nth-child(even),.res-table tbody tr:nth-child(even){background:transparent}
 .trade-table tbody tr:hover,.res-table tbody tr:hover{background:var(--accent-l)}
 body{font-size:15px;-webkit-text-size-adjust:100%}
-#logHeatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+#logHeatmap{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;transition:transform .3s}
 #activityLog>div{padding:10px 12px;margin-bottom:6px;border-radius:10px;background:var(--surface);border:none}
 #rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}.sb-overlay.show{opacity:1;pointer-events:auto}
 }
@@ -566,24 +566,30 @@ var ACTIVITY_KEY='wealth_activity_v1';
 /* ===== 活动日志 ===== */
 function addActivity(action,detail){var acts=[];try{acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')}catch(e){}acts.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),action:action,detail:detail||''});if(acts.length>200)acts=acts.slice(-200);localStorage.setItem(ACTIVITY_KEY,JSON.stringify(acts));renderActivity();autoPushDebounce()}
 function renderActivity(){var el=document.getElementById('activityLog');if(!el)return;var acts=[];try{acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')}catch(e){}if(!acts.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:.6rem;">暂无操作记录</div>';return}el.innerHTML=acts.slice().reverse().map(function(a){var icon=a.action.indexOf('买入')>=0?'🟢':a.action.indexOf('卖出')>=0?'🔴':a.action.indexOf('入金')>=0?'💵':a.action.indexOf('出金')>=0?'💸':'📌';return'<div style="padding:8px 10px;border-bottom:1px solid var(--rule);font-size:.6rem;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:.7rem;flex-shrink:0;">'+icon+'</span><div style="flex:1;min-width:0;"><div style="color:var(--fg);">'+a.action+'</div>'+(a.detail?'<div style="color:var(--muted);font-size:.52rem;">'+a.detail+'</div>':'')+'</div><span style="color:var(--muted);font-size:.5rem;white-space:nowrap;">'+a.date.slice(5)+' '+a.time+'</span><button class="trade-del" data-act="'+a.id+'" style="font-size:.55rem;background:none;border:none;color:var(--muted);cursor:pointer;padding:0 2px;">×</button></div>'}).join('')}
-function renderLogHeatmap(){
-  var container=document.getElementById('logHeatmap');if(!container)return;
+function renderLogHeatmap(page){var container=document.getElementById('logHeatmap');if(!container)return;
+  page=page||0;
   var now=new Date(),dca=getEffectiveDCA(),curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  // Month data
   var months=[];
   for(var i=-11;i<=12;i++){var d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.getMonth()+1+'月',isFuture:false})}
   months.forEach(function(mt){if(mt.ym>curYM)mt.isFuture=true;var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};buys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});mt.totalV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0);mt.complete=!mt.isFuture&&mt.totalV>=dca*0.7&&buys.length>0;mt.hasBuy=buys.length>0});
-  // Streak: count backward from last month
-  var streak=0;for(var i=months.length-1;i>=0;i--){var m=months[i];if(m.isFuture)continue;if(m.complete)streak++;else break}
+  var streak=0;for(var i2=months.length-1;i2>=0;i2--){var m=months[i2];if(m.isFuture)continue;if(m.complete)streak++;else break}
   var sc=document.getElementById('streakCount');if(sc)sc.textContent=streak;
-  // Render
-  var htm='';months.forEach(function(mt){var bg,txt,icon;
+  // Pagination: 12 months per page
+  var perPage=12,totalPages=Math.ceil(months.length/perPage),start=page*perPage,pageMonths=months.slice(start,start+perPage);
+  var arrow='';
+  if(totalPages>1){arrow='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+   if(page>0)arrow+='<button onclick="renderLogHeatmap('+(page-1)+')" style="border:none;background:var(--surface);color:var(--fg);font-size:.7rem;padding:2px 8px;border-radius:4px;cursor:pointer;">◀</button>';
+   else arrow+='<span></span>';
+   arrow+='<span style="font-size:.5rem;color:var(--muted);">'+months[start].ym.slice(0,4)+'年</span>';
+   if(page<totalPages-1)arrow+='<button onclick="renderLogHeatmap('+(page+1)+')" style="border:none;background:var(--surface);color:var(--fg);font-size:.7rem;padding:2px 8px;border-radius:4px;cursor:pointer;">▶</button>';
+   else arrow+='<span></span>';
+   arrow+='</div>'}
+  var htm=arrow+'<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;">';pageMonths.forEach(function(mt){var bg,txt,icon;
     if(mt.isFuture){bg='transparent';txt='var(--rule)';icon=''}
     else if(!mt.hasBuy){bg='rgba(217,69,53,.08)';txt='var(--red)';icon='✕'}
     else if(mt.complete){bg='var(--accent)';txt='#fff';icon='✓'}
     else{bg='var(--orange)';txt='#fff';icon='~'}
-    htm+='<div title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'" style="padding:8px 4px;text-align:center;border-radius:5px;background:'+bg+';border:'+(mt.ym===curYM?'2px solid var(--accent)':'1px solid transparent')+';font-size:.48rem;color:'+txt+';min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:.44rem;">'+mt.label+'</span>'+(icon?'<span style="font-size:.58rem;font-weight:700;">'+icon+'</span>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm
-}
+    htm+='<div title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'" style="padding:8px 4px;text-align:center;border-radius:5px;background:'+bg+';border:'+(mt.ym===curYM?'2px solid var(--accent)':'1px solid transparent')+';font-size:.48rem;color:'+txt+';min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:.44rem;">'+mt.label+'</span>'+(icon?'<span style="font-size:.58rem;font-weight:700;">'+icon+'</span>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm+'</div>'}
 // ---- 数据页 ----
 /* ===== 数据页 ===== */
 function updateDataPage(){var nc=0;var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});nc=cashBalance+ts-tb;var dc=document.getElementById('dataCashBal');if(dc)dc.textContent=fmtFull(nc);var dd=document.getElementById('dataDep');if(dd){var ds=0;cashLog.forEach(function(l){if(l.type==='入金')ds+=l.amount});dd.textContent=fmtFull(ds)}var dl=document.getElementById('dataSel');if(dl){var ss=0;trades.forEach(function(t){if(t.shares<0)ss+=Math.abs(t.shares)*t.price});dl.textContent=fmtFull(ss)}var db=document.getElementById('dataBuy');if(db){var bs=0;trades.forEach(function(t){if(t.shares>0)bs+=t.shares*t.price});db.textContent='-'+fmtFull(bs)}updateTradeList();updatePnlSummary()}
