@@ -7319,7 +7319,7 @@ function renderStrategy(){
     vc.push(getOtm("VGT",vix,dd,"call"));vpO.push(getOtm("VGT",vix,dd,"put"));
     sc.push(getOtm("SMH",vix,dd,"call"));spO.push(getOtm("SMH",vix,dd,"put"));
   }
-  var n=["↗ 强势 ≤5%%","→ 中性 5-12%","↘ 弱势 >12%"];
+  var n=["↗ 回撤 ≤5%","→ 回撤 5-12%","↘ 回撤 >12%"];
   var brake=vix>=30?' <span style="color:var(--red);font-weight:600">刹车 +1%</span>':'';
   
   var h='';
@@ -7420,7 +7420,7 @@ function renderStrategy(){
     vc.push(getOtm("VGT",vix,dd,"call"));vpO.push(getOtm("VGT",vix,dd,"put"));
     sc.push(getOtm("SMH",vix,dd,"call"));spO.push(getOtm("SMH",vix,dd,"put"));
   }
-  var n=["↗ 强势 ≤5%%","→ 中性 5-12%","↘ 弱势 >12%"];
+  var n=["↗ 回撤 ≤5%","→ 回撤 5-12%","↘ 回撤 >12%"];
   var brake=vix>=30?' <span style="color:var(--red);font-weight:600">刹车 +1%</span>':'';
   
   var h='';
