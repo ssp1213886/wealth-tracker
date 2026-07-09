@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f4687a586 --><!-- clean20260709 -->
+<!doctype html><!-- 9f468be4a4 --><!-- clean20260709 -->
 
 
 
@@ -7382,7 +7382,7 @@ function quickFill(sym,type,otmPct){
     var now=new Date().toISOString().slice(0,10);
     var thisMonth=now.slice(0,7);
     var opt=optionTrades;
-    if(!opt||!opt.length){try{opt=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){opt=[]}}
+    if(opt.length===0){try{opt=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){opt=[]}}
     var total=opt.reduce(function(s,o){return s+(o.premium||0)},0);
     var month=opt.filter(function(o){return o.expiry.slice(0,7)===thisMonth||o.expiry>=now}).reduce(function(s,o){return s+(o.premium||0)},0);
     var real=opt.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);
