@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45d575c2 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45dbcc39 --><!-- clean20260709 -->
 
 
 
@@ -7018,7 +7018,7 @@ function checkRollAlerts(){
     var exp=o.expiry;
     if(exp<now)return;
     var daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000);
-    var curP=livePrices[o.sym]||0;
+    var curP=livePrices[o.sym]||(o.sym==="VGT"?vgtPrice:o.sym==="SMH"?smhPrice:0)||0;
     if(curP<=0)return;
     // Already ITM
     var isITM=(o.type==="CALL"&&curP>o.strike)||(o.type==="PUT"&&curP<o.strike);
