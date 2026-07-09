@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45bdbfa2 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45beac89 --><!-- clean20260709 -->
 
 
 
@@ -6913,16 +6913,16 @@ function getOtm(sym,vix,dd,target){
   var isVgt=(sym==='VGT'),trend=getTrend(dd),otm=0,label='';
   var vixBrake=vix>=30?1:0;
   if(target==='call'){
-    if(trend==='up'){otm=isVgt?8:7;label='🟢 Trend UP';}
-    else if(trend==='flat'){otm=isVgt?7:5;label='🟡 Flat';}
-    else{otm=isVgt?10:8;label='🔴 Trend DOWN';}
+    if(trend==='up'){otm=isVgt?8:7;label='🟢 趋势上涨';}
+    else if(trend==='flat'){otm=isVgt?7:5;label='🟡 横盘';}
+    else{otm=isVgt?10:8;label='🔴 趋势下跌';}
     otm+=vixBrake;
   }else{
     var isDiscount=dd>12&&trend!=='down';
-    if(dd<=5){otm=isVgt?12:10;label='🟢 Far PUT';}
-    else if(dd<=12){otm=isVgt?9:8;label='🟡 Std PUT';}
-    else if(isDiscount){otm=isVgt?8:7;label='🟢 Sale PUT';}
-    else{otm=isVgt?9:8;label='🟠 Safe PUT';}
+    if(dd<=5){otm=isVgt?12:10;label='🟢 远PUT';}
+    else if(dd<=12){otm=isVgt?9:8;label='🟡 标准PUT';}
+    else if(isDiscount){otm=isVgt?8:7;label='🟢 折扣PUT';}
+    else{otm=isVgt?9:8;label='🟠 安全PUT';}
     otm+=vixBrake;
   }
   return {otmPct:otm,label:label,vixBrake:vixBrake};
