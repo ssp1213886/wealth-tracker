@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46e8ce01 --><!-- clean20260709 -->
+<!doctype html><!-- 9f46ecfd08 --><!-- clean20260709 -->
 
 
 
@@ -3405,7 +3405,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   <div class="tf-group"><label>&#26631;&#30340;</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
   <div class="tf-group"><label>&#34892;&#26435;&#20215;</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
   <div class="tf-group"><label>&#26435;&#21033;&#37329;</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
-  <div class="tf-group"><label>&#21040;&#26399;&#26085;</label><input id="oexpiry" type="text" placeholder="MM/DD"></div>
+  <div class="tf-group"><label>&#21040;&#26399;&#26085;</label><input id="oexpiry" type="date"></div>
   <div class="tf-group"><label>&#24352;&#25968;</label><input id="ocontracts" type="number" min="1" value="1"></div>
   <div class="tf-group" style="align-self:flex-end"><label>&nbsp;</label><button class="btn btn-pri" id="fbtn" onclick="recordTrade()">&#35760;&#24405;</button></div>
 </div>
@@ -7532,6 +7532,8 @@ function updateAllO(){
  var oc=document.getElementById('oc');if(oc)oc.textContent='$'+(typeof cashBalance!=='undefined'?Math.max(0,cashBalance):0).toFixed(0);
  renderStrategyO();renderHoldings();updatePnLO()}
 
+
+setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
 </script>
 
 
