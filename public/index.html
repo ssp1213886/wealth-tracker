@@ -7538,7 +7538,7 @@ function updateAllO(){if(!livePrices.VGT||!livePrices.SMH){setTimeout(updateAllO
  var vd=document.getElementById('vd'),sd=document.getElementById('sd');
  if(vd){vd.textContent='-'+ddV.toFixed(1)+'%';vd.style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)'}
  if(sd){sd.textContent='-'+ddS.toFixed(1)+'%';sd.style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)'}
- var oc=document.getElementById('oc');if(oc)oc.textContent='$'+(typeof cashBalance!=='undefined'?Math.max(0,cashBalance):0).toFixed(0);
+ var totalCash=typeof cashBalance!=='undefined'?Math.max(0,cashBalance):0;var oc=document.getElementById('oc');if(oc)oc.textContent='$'+totalCash.toFixed(0);var frozen=optionTrades.filter(function(o){return o.type==='PUT'&&o.expiry>=new Date().toISOString().slice(0,10)}).reduce(function(s,o){return s+o.strike*(o.contracts||1)*100},0);var avail=Math.max(0,totalCash-frozen);var oa=document.getElementById('ocAvail');if(oa)oa.textContent='$'+avail.toFixed(0);var of=document.getElementById('ocFrozen');if(of)of.textContent='$'+frozen.toFixed(0);
  renderStrategyO();renderHoldings();updatePnLO()}
 
 
