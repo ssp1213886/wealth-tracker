@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45beac89 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45c16116 --><!-- clean20260709 -->
 
 
 
@@ -6976,7 +6976,7 @@ function renderMatrix(){
   var trend=getTrend(worstDD),cell=getMatrixCell(vix,worstDD);
   var html='';
   // CALL table
-  html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;">CALL OTM</div>';
+  html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;">CALL OTM 方案</div>';
   html+='<table style="border-collapse:collapse;width:100%;font-size:.46rem;margin-bottom:6px;"><tr>';
   ['趋势向上','横盘','趋势向下'].forEach(function(l){html+='<td style="padding:3px 4px;text-align:center;color:var(--muted);">'+l+'</td>';});
   html+='</tr><tr>';
@@ -6987,7 +6987,7 @@ function renderMatrix(){
   });
   html+='</tr></table>';
   // PUT table
-  html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;">PUT OTM</div>';
+  html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;">PUT OTM 方案</div>';
   html+='<table style="border-collapse:collapse;width:100%;font-size:.46rem;margin-bottom:6px;"><tr>';
   ['<5%','5-12%','>12%'].forEach(function(l){html+='<td style="padding:3px 4px;text-align:center;color:var(--muted);">DD '+l+'</td>';});
   html+='</tr><tr>';
