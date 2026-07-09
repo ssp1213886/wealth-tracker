@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46f66f12 --><!-- clean20260709 -->
+<!doctype html><!-- 9f46fb6643 --><!-- clean20260709 -->
 
 
 
@@ -2520,14 +2520,6 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 .status-red{color:var(--red);font-weight:500}
 .status-green{color:var(--fg)}
 
-
-@media(max-width:600px){
-  #tab-option .tf-row{gap:6px}
-  #tab-option .tf-group{min-width:45%!important;flex:1 1 auto}
-  #tab-option .tf-group input,#tab-option .tf-group select{width:100%!important}
-  #tab-option .trade-form{padding:8px 10px!important}
-}
-
 </style>
 
 
@@ -3397,7 +3389,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <section class="tab-panel" id="tab-option">
 
-<div class="card" style="padding:10px 14px;margin-bottom:10px;border:1px solid var(--rule)">
+<div class="card" style="padding:10px 14px;margin-bottom:10px">
 <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.58rem">
 <div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov" style="font-family:Inter,var(--font)">--</span><span id="ot"></span></div>
 <div><b>VGT</b> <span id="vd" style="font-family:Inter,var(--font)">--</span></div>
@@ -3406,7 +3398,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div><b>&#29616;&#37329;</b> <span id="oc" style="font-family:Inter,var(--font)">$0</span></div>
 </div></div>
 
-<div class="card trade-form" style="padding:10px 14px;border:1px solid var(--rule)">
+<div class="card trade-form" style="padding:10px 14px">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#35760;&#24405;&#26399;&#26435;</h3>
 <div class="tf-row" style="flex-wrap:wrap">
   <div class="tf-group"><label>&#31867;&#22411;</label><select id="otype"><option value="CALL">CALL</option><option value="PUT">PUT</option></select></div>
@@ -3419,7 +3411,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 </div>
 </div>
 
-<div class="card" style="padding:10px 14px;border:1px solid var(--rule)">
+<div class="card" style="padding:10px 14px">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#30408;&#20111;&#27719;&#24635;</h3>
 <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
 <div class="metric"><div class="m-label">&#26412;&#26376;&#26435;&#21033;&#37329;</div><div class="m-val pnl-pos" id="mrev" style="font-family:Inter,var(--font)">$0</div></div>
@@ -3428,12 +3420,12 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 </div>
 </div>
 
-<div class="card" style="padding:10px 14px;border:1px solid var(--rule)">
+<div class="card" style="padding:10px 14px">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#31574;&#30053;&#21442;&#32771;</h3>
 <div id="stratref"></div>
 </div>
 
-<div class="card" style="padding:10px 14px;border:1px solid var(--rule)">
+<div class="card" style="padding:10px 14px">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#25345;&#20179;&#28165;&#21333;</h3>
 <table class="trade-table">
 <thead><tr><th>&#26631;&#30340;</th><th>&#31867;&#22411;</th><th>&#34892;&#26435;&#20215;</th><th>&#26435;&#21033;&#37329;</th><th>&#21040;&#26399;</th><th>&#29366;&#24577;</th><th></th></tr></thead>
@@ -5460,7 +5452,7 @@ document.getElementById('mobHamburger').addEventListener('click',function(){var 
 
 
 
-document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='option'){updateCashPage();updateAllO();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap()}
+document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='option')(updateCashPage(),updateAllO());if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap()}
 
 
 
@@ -7542,8 +7534,7 @@ function updateAllO(){if(!livePrices.VGT||!livePrices.SMH){setTimeout(updateAllO
 
 
 setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
-
-}</script>
+</script>
 
 
 
@@ -7745,6 +7736,5 @@ function quickFill(sym,type,otmPct){
   if(fc)fc.style.maxHeight="800px";
   updateAll();
   updateAll();
-  updateAllO();
   updateAllO();
 }
