@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f464d01aa --><!-- clean20260709 -->
+<!doctype html><!-- 9f465043ef --><!-- clean20260709 -->
 
 
 
@@ -6963,16 +6963,16 @@ function buildActionLine(){
   var parts=[],vgtH=holdingsCalc('VGT'),smhH=holdingsCalc('SMH');
   var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});
   var cash=(parseFloat(cashBalance||0)+ts-tb);
-  var livePrices["VGT"]=livePrices.VGT||0,livePrices["SMH"]=livePrices.SMH||0;
+  var vgtPrice=livePrices.VGT||0,smhPrice=livePrices.SMH||0;
   var ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH'),vix=vixPrice||18;
   
   // CALLs: 100% coverage, OTM from table
-  if(vgtH.shares>0){var vcMax=Math.floor(vgtH.shares/100),vcO=getOtm('VGT',vix,ddV,'call');if(vcMax>0)parts.push('VGT:'+vcMax+'CALL@'+(livePrices["VGT"]*(1+vcO.otmPct/100)).toFixed(0)+'('+vcO.otmPct+'%)');}
-  if(smhH.shares>0){var scMax=Math.floor(smhH.shares/100),scO=getOtm('SMH',vix,ddS,'call');if(scMax>0)parts.push('SMH:'+scMax+'CALL@'+(livePrices["SMH"]*(1+scO.otmPct/100)).toFixed(0)+'('+scO.otmPct+'%)');}
+  if(vgtH.shares>0){var vcMax=Math.floor(vgtH.shares/100),vcO=getOtm('VGT',vix,ddV,'call');if(vcMax>0)parts.push('VGT:'+vcMax+'CALL@'+(vgtPrice*(1+vcO.otmPct/100)).toFixed(0)+'('+vcO.otmPct+'%)');}
+  if(smhH.shares>0){var scMax=Math.floor(smhH.shares/100),scO=getOtm('SMH',vix,ddS,'call');if(scMax>0)parts.push('SMH:'+scMax+'CALL@'+(smhPrice*(1+scO.otmPct/100)).toFixed(0)+'('+scO.otmPct+'%)');}
   
   // PUTs: cash-constrained
-  if(livePrices["VGT"]>0&&vix<30){var vpO=getOtm('VGT',vix,ddV,'put'),vpStrike=livePrices["VGT"]*(1-vpO.otmPct/100),vpCash=Math.floor(Math.max(0,cash)/(vpStrike*100));if(vpCash>0){var vpCnt=ddV>5?Math.min(vpCash,Math.ceil(vpCash*(ddV>12?0.8:0.5))):Math.ceil(vpCash*0.25);if(vpCnt>0)parts.push('VGT:'+vpCnt+'PUT@'+vpStrike.toFixed(0)+'('+vpO.otmPct+'%)');}}
-  if(livePrices["SMH"]>0&&vix<30){var spO=getOtm('SMH',vix,ddS,'put'),spStrike=livePrices["SMH"]*(1-spO.otmPct/100),spCash=Math.floor(Math.max(0,cash)/(spStrike*100));if(spCash>0){var spCnt=ddS>5?Math.min(spCash,Math.ceil(spCash*(ddS>12?0.8:0.5))):Math.ceil(spCash*0.25);if(spCnt>0)parts.push('SMH:'+spCnt+'PUT@'+spStrike.toFixed(0)+'('+spO.otmPct+'%)');}}
+  if(vgtPrice>0&&vix<30){var vpO=getOtm('VGT',vix,ddV,'put'),vpStrike=vgtPrice*(1-vpO.otmPct/100),vpCash=Math.floor(Math.max(0,cash)/(vpStrike*100));if(vpCash>0){var vpCnt=ddV>5?Math.min(vpCash,Math.ceil(vpCash*(ddV>12?0.8:0.5))):Math.ceil(vpCash*0.25);if(vpCnt>0)parts.push('VGT:'+vpCnt+'PUT@'+vpStrike.toFixed(0)+'('+vpO.otmPct+'%)');}}
+  if(smhPrice>0&&vix<30){var spO=getOtm('SMH',vix,ddS,'put'),spStrike=smhPrice*(1-spO.otmPct/100),spCash=Math.floor(Math.max(0,cash)/(spStrike*100));if(spCash>0){var spCnt=ddS>5?Math.min(spCash,Math.ceil(spCash*(ddS>12?0.8:0.5))):Math.ceil(spCash*0.25);if(spCnt>0)parts.push('SMH:'+spCnt+'PUT@'+spStrike.toFixed(0)+'('+spO.otmPct+'%)');}}
   
   // Roll alert
   var now=new Date().toISOString().slice(0,10),alertParts=[];
