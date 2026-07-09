@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f4690cf7f --><!-- clean20260709 -->
+<!doctype html><!-- 9f4693e7ac --><!-- clean20260709 -->
 
 
 
@@ -3341,7 +3341,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
       <div><span style="color:var(--muted)">已实现</span> <span id="optPnlRealized" style="font-family:Inter,var(--font);">$0</span></div>
     </div>
   </div>
-<div class="card" style="padding:14px;margin-bottom:12px;"><h3 style="font-size:.74rem;">💰 现金池</h3><div style="font-size:1.3rem;font-weight:620;font-family:Inter,var(--font);" id="cashPoolPct">--</div><div style="font-size:.6rem;color:var(--muted);" id="cashPoolBreakdown">净现金 -- / 持仓 --</div><div style="height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-top:8px;"><div id="cashPoolBar" style="height:100%;background:var(--accent);border-radius:4px;width:0;transition:width .4s;"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.48rem;color:var(--muted);"><span>&lt;10%停PUT</span><span>30%强制买</span></div></div>
+<div class="card" style="padding:14px;margin-bottom:12px;"><h3 style="font-size:.7rem;margin:0 0 4px 0;">💰 现金池</h3><div style="font-size:1.3rem;font-weight:620;font-family:Inter,var(--font);" id="cashPoolPct">--</div><div style="font-size:.6rem;color:var(--muted);" id="cashPoolBreakdown">净现金 -- / 持仓 --</div><div style="height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-top:8px;"><div id="cashPoolBar" style="height:100%;background:var(--accent);border-radius:4px;width:0;transition:width .4s;"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.48rem;color:var(--muted);"><span>&lt;10%停PUT</span><span>30%强制买</span></div></div>
   
 
 
@@ -7377,6 +7377,7 @@ function quickFill(sym,type,otmPct){
   // PnL summary
   var op=document.getElementById("optPnL");if(op){var ot=optionTrades;if(!ot||!ot.length){try{ot=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){ot=[]}}var now=new Date().toISOString().slice(0,10),tot=ot.reduce(function(s,o){return s+(o.premium||0)},0),real=ot.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);op.textContent="权利金 "+fmtFull(tot)+(real>0?"(已实现"+fmtFull(real)+")":"");}
   // PnL card
+  optionTrades=loadOptions();
   var pm=document.getElementById("optPnlMonth"),pt=document.getElementById("optPnlTotal"),pr=document.getElementById("optPnlRealized");
   if(pm||pt||pr){
     var now=new Date().toISOString().slice(0,10);
