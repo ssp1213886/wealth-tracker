@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45e9fc02 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45ec27f4 --><!-- clean20260709 -->
 
 
 
@@ -3331,9 +3331,8 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <section class="tab-panel" id="tab-option">
   
   <div id="rollAlertBanner" style="padding:8px 10px;margin-bottom:8px;border-radius:6px;font-size:.58rem;"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><span id="rollAlertMsg" style="font-weight:600;"></span><div id="rollAlertBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div></div></div>
-
-  <div id="rollBanner" style="padding:6px 10px;margin-bottom:8px;border-radius:6px;font-size:.56rem;display:block;border:1px solid var(--accent);background:rgba(46,107,80,.05);"><span id="rollBannerText"></span><span id="rollBannerBtns" style="margin-left:10px;"></span></div>
-<div class="card" style="padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.62rem;"><div><span style="color:var(--muted);">VIX</span> <strong id="statusVix" style="font-family:Inter,var(--font);">--</strong> <span id="statusVixTag" style="font-size:.5rem;"></span></div><div><span style="color:var(--muted);">VGT DD</span> <strong id="statusVgtDD" style="font-family:Inter,var(--font);">--</strong></div><div><span style="color:var(--muted);">SMH DD</span> <strong id="statusSmhDD" style="font-family:Inter,var(--font);">--</strong></div><div style="flex:1;text-align:right;font-weight:540;" id="statusAction"></div></div>
+<div id="rollBanner" style="padding:6px 10px;margin-bottom:8px;border-radius:6px;font-size:.56rem;display:block;border:1px solid var(--accent);background:rgba(46,107,80,.05);"><span id="rollBannerText"></span><span id="rollBannerBtns" style="margin-left:10px;"></span></div>
+  <div class="card" style="padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.62rem;"><div><span style="color:var(--muted);">VIX</span> <strong id="statusVix" style="font-family:Inter,var(--font);">--</strong> <span id="statusVixTag" style="font-size:.5rem;"></span></div><div><span style="color:var(--muted);">VGT DD</span> <strong id="statusVgtDD" style="font-family:Inter,var(--font);">--</strong></div><div><span style="color:var(--muted);">SMH DD</span> <strong id="statusSmhDD" style="font-family:Inter,var(--font);">--</strong></div><div style="flex:1;text-align:right;font-weight:540;" id="statusAction"></div></div>
   <div class="card collapsible-card" style="padding:8px;margin-bottom:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><h3 style="font-size:.66rem;margin:0;">🧩 VIX × 回撤 决策矩阵</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body" style="margin-top:6px;"><div id="matrixGrid" style="margin-bottom:4px;"></div><div id="matrixSummary" style="padding:5px 8px;border-radius:4px;font-size:.52rem;background:var(--surface);line-height:1.5;"></div></div></div>
   <div class="card collapsible-card" style="padding:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;"><h3 style="font-size:.66rem;margin:0;">📋 期权持仓</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;"><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">标的</label><select id="optSym" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="VGT">VGT</option><option value="SMH">SMH</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">类型</label><select id="optType" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="PUT">PUT</option><option value="CALL">CALL</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">行权价</label><input type="number" id="optStrike" step="any" min="0" placeholder="108" style="width:70px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">到期日</label><input type="date" id="optExpiry" style="width:110px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">权利金</label><input type="number" id="optPremium" step="any" min="0" placeholder="136" style="width:60px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><button class="btn btn-pri btn-sm" id="btnAddOption" style="font-size:.52rem;padding:4px 10px;">+ 录入</button></div><table class="trade-table"><thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>到期日</th><th>状态</th><th>权利金</th><th></th></tr></thead><tbody id="optBody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr></tbody></table></div></div>
 
@@ -3874,7 +3873,7 @@ async function refreshPrices(){
 
 
 
-var holdSort={col:'value',asc:false};function sortHoldRows(rows){var c=holdSort.col,a=holdSort.asc;return rows.sort(function(x,y){var vx=c==='sym'?x.sym:c==='value'?x.value||0:c==='pnl'?x.unrealPnL||0:c==='pnlPct'?x.pnlPct||0:0;var vy=c==='sym'?y.sym:c==='value'?y.value||0:c==='pnl'?y.unrealPnL||0:c==='pnlPct'?y.pnlPct||0:0;if(typof vx==='string')return a?vy.localeCompare(vx):vx.localeCompare(vy);return a?vx-vy:vy-vx})}
+var holdSort={col:'value',asc:false};function sortHoldRows(rows){var c=holdSort.col,a=holdSort.asc;return rows.sort(function(x,y){var vx=c==='sym'?x.sym:c==='value'?x.value||0:c==='pnl'?x.unrealPnL||0:c==='pnlPct'?x.pnlPct||0:0;var vy=c==='sym'?y.sym:c==='value'?y.value||0:c==='pnl'?y.unrealPnL||0:c==='pnlPct'?y.pnlPct||0:0;if(typeof vx==='string')return a?vy.localeCompare(vx):vx.localeCompare(vy);return a?vx-vy:vy-vx})}
 
 
 
@@ -6395,70 +6394,7 @@ function updateSidebarPrices(){var c=JSON.parse(localStorage.getItem(PRICE_KEY)|
 
 
 
-var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg.url||!syncCfg.token)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,2000)}function autoPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}'),activities:JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')};syncPushImpl(data)}function autoPull(){if(!syncCfg.url||!syncCfg.token)return;syncFetch('GET').then(function(r){if(!r.data)return;if(r.data.trades){trades=r.data.trades;saveTradesNoPush()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCashNoPush()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLogNoPush()}if(r.data.activities){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.activities))}if(r.data.state){state=r.data.state;saveStateNoPush()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}initTradeIds();updatePortfolio();updateSidebarPrices();updateSidebar();renderCashLog()}).catch(function(){})}function saveTradesNoPush(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades))}catch(e){}}function saveCashNoPush(){try{localStorage.setItem(CB_KEY,cashBalance.toString())}catch(e){}}function saveCashLogNoPush(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog))}catch(e){}}function saveStateNoPush(){try{localStorage.setItem(LSKEY,JSON.stringify(state))}catch(e){}}function syncPushImpl(data){var dot=document.getElementById('syncDot');if(dot)dot.style.background='var(--orange)';syncFetch('POST',data).then(function(){var el=document.getElementById('syncStatus');if(el){el.textContent='auto '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}if(dot){dot.style.background='var(--accent)';setTimeout(function(){dot.style.background='var(--muted)'},2000)};showToast('已同步到云端','ok')}).catch(function(){if(dot)dot.style.background='var(--red)';showToast('同步失败','err')})} var SYNC_KEY='wealth_sync_cfg';var syncCfg=loadSyncCfg();function loadSyncCfg(){try{return JSON.parse(localStorage.getItem(SYNC_KEY)||'{"url":"","token":""}')}catch(e){return{url:"",token:""}}}function saveSyncCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(syncCfg))}catch(e){}}function syncFetch(method,body){var base=syncCfg.url||location.origin;return fetch(base.replace(/\/$/,'')+'/api/sync',{method:method,headers:{'Content-Type':'application/json','X-Auth-Token':syncCfg.token},body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}function syncPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}')};syncFetch('POST',data).then(function(r){var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}function syncPull(){syncFetch('GET').then(function(r){if(!r.data)throw new Error('空响应');if(r.data.trades){trades=r.data.trades;saveTrades()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCash()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLog()}if(r.data.notes){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.notes))}if(r.data.state){state=r.data.state;saveState()}if(r.data.options){optionTrades=r.data.options;saveOptions();renderOptions();rollCheck()}
-function rollCheck(){
-  var el=document.getElementById("rollBanner");
-  var txt=document.getElementById("rollBannerText");
-  var btn=document.getElementById("rollBannerBtns");
-  if(!el||!txt||!btn)return;
-  optionTrades=loadOptions();
-  if(!optionTrades||!optionTrades.length){
-    txt.textContent="";btn.innerHTML="";
-    el.style.border="1px solid var(--accent)";
-    el.style.background="rgba(46,107,80,.05)";
-    return;
-  }
-  var now=(new Date()).toISOString().slice(0,10);
-  var items=[];
-  for(var i=0;i<optionTrades.length;i++){
-    var o=optionTrades[i];
-    if(!o||!o.expiry||o.expiry<now)continue;
-    var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
-    if(d>5)continue;
-    var p=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
-    if(p<=0)continue;
-    var itm=(o.type=="CALL"&&p>o.strike)||(o.type=="PUT"&&p<o.strike);
-    items.push({i:i,sym:o.sym,type:o.type,strike:o.strike,days:d,itm:itm,price:p});
-  }
-  if(!items.length){
-    txt.textContent="";btn.innerHTML="";
-    el.style.border="1px solid var(--accent)";
-    el.style.background="rgba(46,107,80,.05)";
-    return;
-  }
-  var msgs=[],btns="";
-  var worst=0;
-  for(var j=0;j<items.length;j++){
-    var it=items[j];
-    var s=it.sym+" "+it.type+"@"+it.strike+" "+it.days+"d";
-    if(it.itm&&it.days<=3){worst=Math.max(worst,2);msgs.push(s+" ITM!");}
-    else if(it.itm){worst=Math.max(worst,1);msgs.push(s+" ITM");}
-    else{msgs.push(s);}
-    if(it.itm){
-      btns+="<button onclick=rollIt("+it.i+") style=font-size:.44rem;padding:2px 6px;margin-left:4px;border:none;border-radius:3px;cursor:pointer;color:#fff;"+(it.days<=3?"background:var(--red)":"background:var(--orange)")+">Roll</button>";
-    }
-  }
-  txt.textContent=msgs.join(" | ");
-  btn.innerHTML=btns;
-  el.style.border="1px solid "+(worst>=2?"var(--red)":worst>=1?"var(--orange)":"var(--accent)");
-  el.style.background=worst>=2?"rgba(217,69,53,.08)":worst>=1?"rgba(230,140,50,.06)":"rgba(46,107,80,.05)";
-}
-function rollIt(i){
-  var o=optionTrades[i];if(!o)return;
-  var e=document.getElementById("optType");if(e)e.value=o.type;
-  e=document.getElementById("optSym");if(e)e.value=o.sym;
-  var cur=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0);
-  if(cur>0){
-    var otm=getOtm(o.sym,vixPrice||18,o.sym=="VGT"?getDrawdown("VGT"):getDrawdown("SMH"),o.type.toLowerCase());
-    if(otm){
-      var ns=o.type=="CALL"?cur*(1+otm.otmPct/100):cur*(1-otm.otmPct/100);
-      e=document.getElementById("optStrike");if(e)e.value=ns.toFixed(2);
-    }
-  }
-  e=document.getElementById("optExpiry");if(e){var d=new Date();d.setDate(d.getDate()+30);e.value=d.toISOString().slice(0,10);}
-  var pf=document.getElementById("optPremium");if(pf)pf.focus();
-}
-saveOptions();renderOptions()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)';initTradeIds();updatePortfolio();updateSidebar();updateSidebarPrices();renderCashLog();location.reload()}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}document.getElementById('btnSyncPush').addEventListener('click',syncPush);document.getElementById('btnSyncPull').addEventListener('click',syncPull);document.getElementById('syncUrl').addEventListener('change',function(){syncCfg.url=this.value;saveSyncCfg()});document.getElementById('syncToken').addEventListener('change',function(){syncCfg.token=this.value;saveSyncCfg()});(function(){var el=document.getElementById('syncUrl');if(el){if(syncCfg.url)el.value=syncCfg.url;else{el.value=location.origin;el.placeholder=location.origin;syncCfg.url=location.origin;saveSyncCfg()}}var t2=document.getElementById('syncToken');if(t2&&syncCfg.token)t2.value=syncCfg.token})();
+var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg.url||!syncCfg.token)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,2000)}function autoPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}'),activities:JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')};syncPushImpl(data)}function autoPull(){if(!syncCfg.url||!syncCfg.token)return;syncFetch('GET').then(function(r){if(!r.data)return;if(r.data.trades){trades=r.data.trades;saveTradesNoPush()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCashNoPush()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLogNoPush()}if(r.data.activities){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.activities))}if(r.data.state){state=r.data.state;saveStateNoPush()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}initTradeIds();updatePortfolio();updateSidebarPrices();updateSidebar();renderCashLog()}).catch(function(){})}function saveTradesNoPush(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades))}catch(e){}}function saveCashNoPush(){try{localStorage.setItem(CB_KEY,cashBalance.toString())}catch(e){}}function saveCashLogNoPush(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog))}catch(e){}}function saveStateNoPush(){try{localStorage.setItem(LSKEY,JSON.stringify(state))}catch(e){}}function syncPushImpl(data){var dot=document.getElementById('syncDot');if(dot)dot.style.background='var(--orange)';syncFetch('POST',data).then(function(){var el=document.getElementById('syncStatus');if(el){el.textContent='auto '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}if(dot){dot.style.background='var(--accent)';setTimeout(function(){dot.style.background='var(--muted)'},2000)};showToast('已同步到云端','ok')}).catch(function(){if(dot)dot.style.background='var(--red)';showToast('同步失败','err')})} var SYNC_KEY='wealth_sync_cfg';var syncCfg=loadSyncCfg();function loadSyncCfg(){try{return JSON.parse(localStorage.getItem(SYNC_KEY)||'{"url":"","token":""}')}catch(e){return{url:"",token:""}}}function saveSyncCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(syncCfg))}catch(e){}}function syncFetch(method,body){var base=syncCfg.url||location.origin;return fetch(base.replace(/\/$/,'')+'/api/sync',{method:method,headers:{'Content-Type':'application/json','X-Auth-Token':syncCfg.token},body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}function syncPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}')};syncFetch('POST',data).then(function(r){var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}function syncPull(){syncFetch('GET').then(function(r){if(!r.data)throw new Error('空响应');if(r.data.trades){trades=r.data.trades;saveTrades()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCash()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLog()}if(r.data.notes){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.notes))}if(r.data.state){state=r.data.state;saveState()}if(r.data.options){optionTrades=r.data.options;saveOptions();renderOptions()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)';initTradeIds();updatePortfolio();updateSidebar();updateSidebarPrices();renderCashLog();location.reload()}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}document.getElementById('btnSyncPush').addEventListener('click',syncPush);document.getElementById('btnSyncPull').addEventListener('click',syncPull);document.getElementById('syncUrl').addEventListener('change',function(){syncCfg.url=this.value;saveSyncCfg()});document.getElementById('syncToken').addEventListener('change',function(){syncCfg.token=this.value;saveSyncCfg()});(function(){var el=document.getElementById('syncUrl');if(el){if(syncCfg.url)el.value=syncCfg.url;else{el.value=location.origin;el.placeholder=location.origin;syncCfg.url=location.origin;saveSyncCfg()}}var t2=document.getElementById('syncToken');if(t2&&syncCfg.token)t2.value=syncCfg.token})();
 
 
 
@@ -7214,14 +7150,11 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('optStrike').value='';document.getElementById('optPremium').value='';
   });
   checkRollAlerts();
-  rollCheck();
 });
 
 // Overview card
 var _origUpdateSignals=updateOptionSignals;
 updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementById('ovVix');if(ovV)ovV.textContent=(vixPrice||18).toFixed(1);var nowO=new Date().toISOString().slice(0,10),activeO=optionTrades.filter(function(o){return o.expiry>=nowO}).length;var ovA=document.getElementById('ovActive');if(ovA)ovA.textContent=activeO+' 活跃';var ovP=document.getElementById('ovPremium'),totP=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);if(ovP)ovP.textContent=fmtFull(totP);var ovAct=document.getElementById('ovAction'),act=buildActionLine();if(ovAct)ovAct.textContent=act;}
-
-}
 
 </script>
 
@@ -7350,4 +7283,61 @@ updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementB
 
 
 
+
+
+function rollCheck(){
+  var el=document.getElementById("rollBanner");
+  var txt=document.getElementById("rollBannerText");
+  var btn=document.getElementById("rollBannerBtns");
+  if(!el||!txt||!btn)return;
+  optionTrades=loadOptions();
+  if(!optionTrades||!optionTrades.length){txt.textContent="";btn.innerHTML="";return}
+  var now=(new Date()).toISOString().slice(0,10);
+  var items=[];
+  for(var i=0;i<optionTrades.length;i++){
+    var o=optionTrades[i];
+    if(!o||!o.expiry||o.expiry<now)continue;
+    var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
+    if(d>5)continue;
+    var p=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
+    if(p<=0)continue;
+    var itm=(o.type=="CALL"&&p>o.strike)||(o.type=="PUT"&&p<o.strike);
+    items.push({i:i,sym:o.sym,type:o.type,strike:o.strike,days:d,itm:itm,price:p});
+  }
+  if(!items.length){txt.textContent="";btn.innerHTML="";return}
+  var msgs=[],btnsHTML="";
+  var worst=0;
+  for(var j=0;j<items.length;j++){
+    var it=items[j];
+    var s=it.sym+" "+it.type+"@"+it.strike+" "+it.days+"d";
+    if(it.itm&&it.days<=3){worst=Math.max(worst,2);msgs.push(s+" ITM!");}
+    else if(it.itm){worst=Math.max(worst,1);msgs.push(s+" ITM");}
+    else{msgs.push(s);}
+    if(it.itm){
+      btnsHTML+="<button onclick=rollIt("+it.i+") style=font-size:.44rem;padding:2px 6px;margin-left:4px;border:none;border-radius:3px;cursor:pointer;color:#fff;"+(it.days<=3?"background:var(--red)":"background:var(--orange)")+">Roll</button>";
+    }
+  }
+  txt.textContent=msgs.join(" | ");
+  btn.innerHTML=btnsHTML;
+  el.style.border="1px solid "+(worst>=2?"var(--red)":worst>=1?"var(--orange)":"var(--accent)");
+  el.style.background=worst>=2?"rgba(217,69,53,.08)":worst>=1?"rgba(230,140,50,.06)":"rgba(46,107,80,.05)";
+}
+function rollIt(i){
+  var o=optionTrades[i];if(!o)return;
+  var el=document.getElementById("optType");if(el)el.value=o.type;
+  el=document.getElementById("optSym");if(el)el.value=o.sym;
+  var cur=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0);
+  if(cur>0){
+    var dd=o.sym=="VGT"?getDrawdown("VGT"):getDrawdown("SMH");
+    var otm=getOtm(o.sym,vixPrice||18,dd,o.type.toLowerCase());
+    if(otm){
+      var ns=o.type=="CALL"?cur*(1+otm.otmPct/100):cur*(1-otm.otmPct/100);
+      el=document.getElementById("optStrike");if(el)el.value=ns.toFixed(2);
+    }
+  }
+  el=document.getElementById("optExpiry");
+  if(el){var d=new Date();d.setDate(d.getDate()+30);el.value=d.toISOString().slice(0,10);}
+  var pf=document.getElementById("optPremium");if(pf)pf.focus();
+}
+  rollCheck();
 
