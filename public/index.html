@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46bc0e6a --><!-- clean20260709 -->
+<!doctype html><!-- 9f46c0d3a7 --><!-- clean20260709 -->
 
 
 
@@ -7174,6 +7174,109 @@ updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementB
       ovAct.innerHTML=ovHTML;
     };}
 
+
+optionTrades=loadOptions();
+
+function getDrawdown(sym){var p=sym==='VGT'?vgtPrice:smhPrice,hi=sym==='VGT'?vgt52hi:smh52hi;return hi>0?Math.max(0,(hi-p)/hi*100):0}
+function getTrend(dd){return dd<=5?'up':dd<=12?'flat':'down'}
+function getOtm(sym,vix,dd,target){var isV=sym==='VGT',trend=getTrend(dd),otm=0;if(target==='call'){if(trend==='up')otm=isV?9:7;else if(trend==='flat')otm=isV?7:5;else otm=isV?10:8}else{if(dd<=5)otm=isV?12:10;else if(dd<=12)otm=isV?9:8;else otm=isV?8:7}return{otmPct:otm+(vix>=30?1:0),vixBrake:vix>=30?1:0}}
+function fmtFull(n){n=parseFloat(n)||0;return '$'+n.toFixed(2)}
+
+function renderOptions(){
+  var el=document.getElementById('holdings');if(!el)return;
+  optionTrades=loadOptions();var now=new Date().toISOString().slice(0,10);
+  if(!optionTrades.length){el.innerHTML='<tr><td colspan=6 style="text-align:center;padding:16px;color:var(--muted)">暂无期权持仓</td></tr>';return}
+  var rows=[];
+  for(var i=0;i<optionTrades.length;i++){
+    var o=optionTrades[i],isExpired=o.expiry<now,daysLeft=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
+    var curP=livePrices[o.sym]||0,status='',bg='';
+    if(isExpired){status='已过期';bg='opacity:.35'}
+    else{
+      var itm=(o.type==='CALL'&&curP>o.strike)||(o.type==='PUT'&&curP<o.strike);
+      if(itm&&daysLeft<=3){status='<span style=background:var(--red);color:#fff;padding:2px 6px;border-radius:10px;font-size:.46rem>实值 '+daysLeft+'天</span>';bg=''}
+      else if(itm){status='<span style=color:var(--orange)>'+daysLeft+'天后</span>';bg='background:rgba(230,140,50,.06)'}
+      else if(daysLeft<=5){status='<span style=color:var(--red)>'+daysLeft+'天后</span>';bg=''}
+      else{status='<span style=color:var(--accent)>'+daysLeft+'天</span>'}
+    }
+    rows.push('<tr style='+bg+'><td style=font-weight:600;font-size:.54rem>'+o.sym+'</td><td style=font-size:.54rem;color:'+(o.type==='CALL'?'var(--accent)':'var(--orange)')+'>'+o.type+'</td><td style=font-size:.54rem>$'+o.strike.toFixed(2)+'</td><td style=font-size:.54rem>'+fmtFull(o.premium||0)+'</td><td style=font-size:.5rem;color:var(--muted)>'+o.expiry+'</td><td style=font-size:.5rem>'+status+'</td><td><button onclick=del('+i+') style=font-size:.4rem;padding:2px 6px;background:none;border:1px solid var(--muted);color:var(--muted);border-radius:3px>X</button></td></tr>')
+  }
+  el.innerHTML=rows.join('');
+}
+
+function roll(i){var o=optionTrades[i];if(!o)return;document.getElementById('ft').value=o.type;document.getElementById('fs').value=o.sym;document.getElementById('fc').value=o.contracts||1;var cur=livePrices[o.sym]||0;if(cur>0){var dd=o.sym==='VGT'?getDrawdown('VGT'):getDrawdown('SMH');var otm=getOtm(o.sym,vixPrice||18,dd,o.type.toLowerCase());if(otm){var ns=o.type==='CALL'?cur*(1+otm.otmPct/100):cur*(1-otm.otmPct/100);document.getElementById('fk').value=ns.toFixed(2)}}var d=new Date();d.setDate(d.getDate()+30);document.getElementById('fe').value=d.toISOString().slice(0,10);document.getElementById('fp').focus()}
+function del(i){optionTrades.splice(i,1);saveOptions();updateAll()}
+
+function renderStrategy(){
+  var el=document.getElementById('sr');if(!el)return;
+  var vix=vixPrice||18,ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH');
+  var vp=livePrices.VGT||0,sp=livePrices.SMH||0,hiV=vgt52hi||0,hiS=smh52hi||0;
+  var curV=ddV<=5?0:ddV<=12?1:2,curS=ddS<=5?0:ddS<=12?1:2;
+  
+  // Calculate OTM for all 3 scenarios
+  var vc=[],vpO=[],sc=[],spO=[];
+  for(var s=0;s<3;s++){
+    var dd=s===0?3:s===1?8:15;
+    vc.push(getOtm("VGT",vix,dd,"call"));vpO.push(getOtm("VGT",vix,dd,"put"));
+    sc.push(getOtm("SMH",vix,dd,"call"));spO.push(getOtm("SMH",vix,dd,"put"));
+  }
+  var n=["↗ 上涨 ≤5%","→ 横盘 5-12%","↘ 下跌 >12%"];
+  var brake=vix>=30?' <span style="color:var(--red);font-weight:600">刹车 +1%</span>':'';
+  
+  var h='';
+  h+='<div style="font-size:.6rem;font-weight:600;margin-bottom:6px">策略参考 OTM 矩阵</div>';
+  h+='<div style="font-size:.54rem;margin-bottom:4px"><b>VIX</b> '+vix.toFixed(1)+brake+'</div>';
+  
+  // VGT
+  h+='<div style="margin-bottom:4px"><b>VGT</b> 52W $'+hiV.toFixed(0)+' 现价 $'+vp.toFixed(2)+' 回撤 '+ddV.toFixed(1)+'%</div>';
+  h+='<table><tr><td></td><td style="color:var(--muted)">CALL OTM</td><td style="color:var(--muted)">PUT OTM</td><td style="color:var(--muted)">建议行权价</td></tr>';
+  for(var r=0;r<3;r++){
+    var hl=curV===r?'background:var(--accent);color:#fff;border-radius:3px;':'';
+    var cs=vp>0?'CALL @$'+(vp*(1+vc[r].otmPct/100)).toFixed(0)+' PUT @$'+(vp*(1-vpO[r].otmPct/100)).toFixed(0):'';
+    h+='<tr style='+hl+'><td>'+n[r]+'</td><td>'+vc[r].otmPct+'%</td><td>'+vpO[r].otmPct+'%</td><td>'+cs+'</td></tr>';
+  }
+  h+='</table>';
+  
+  // SMH
+  h+='<div style="margin-top:6px;margin-bottom:4px"><b>SMH</b> 52W $'+hiS.toFixed(0)+' 现价 $'+sp.toFixed(2)+' 回撤 '+ddS.toFixed(1)+'%</div>';
+  h+='<table><tr><td></td><td style="color:var(--muted)">CALL OTM</td><td style="color:var(--muted)">PUT OTM</td><td style="color:var(--muted)">建议行权价</td></tr>';
+  for(var r=0;r<3;r++){
+    var hl=curS===r?'background:var(--accent);color:#fff;border-radius:3px;':'';
+    var cs=sp>0?'CALL @$'+(sp*(1+sc[r].otmPct/100)).toFixed(0)+' PUT @$'+(sp*(1-spO[r].otmPct/100)).toFixed(0):'';
+    h+='<tr style='+hl+'><td>'+n[r]+'</td><td>'+sc[r].otmPct+'%</td><td>'+spO[r].otmPct+'%</td><td>'+cs+'</td></tr>';
+  }
+  h+='</table>';
+  el.innerHTML=h;
+}
+
+function updatePnL(){
+  var opt=[];try{opt=JSON.parse(localStorage.getItem('opt_test')||'[]')}catch(e){}
+  var now=new Date().toISOString().slice(0,10),thisM=now.slice(0,7);
+  var total=opt.reduce(function(s,o){return s+(o.premium||0)},0);
+  var month=opt.filter(function(o){return o.expiry.slice(0,7)===thisM||o.expiry>=now}).reduce(function(s,o){return s+(o.premium||0)},0);
+  var real=opt.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);
+  document.getElementById('pm').textContent=fmtFull(month);
+  document.getElementById('pt').textContent=fmtFull(total);
+  document.getElementById('pr').textContent=fmtFull(real);
+}
+
+function updateAll(){
+  var vix=vixPrice||18,ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH');
+  document.getElementById('ov').textContent=vix.toFixed(1);
+  document.getElementById('ot').innerHTML=vix>25?' <span style="color:var(--red)">高</span>':vix>20?' <span style="color:var(--orange)">波动</span>':' <span style="color:var(--accent)">正常</span>';
+  document.getElementById('vd').textContent='-'+ddV.toFixed(1)+'%';document.getElementById('vd').style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)';
+  document.getElementById('sd').textContent='-'+ddS.toFixed(1)+'%';document.getElementById('sd').style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)';
+  document.getElementById('oc').textContent=fmtFull(Math.max(0,cashBalance||0));
+  renderStrategy();renderOptions();updatePnL();
+}
+
+  var t=document.getElementById('ft').value,s=document.getElementById('fs').value;
+  var k=parseFloat(document.getElementById('fk').value||0),p=parseFloat(document.getElementById('fp').value||0);
+  var e=document.getElementById('fe').value,c=parseInt(document.getElementById('fc').value||1);
+  if(!t||!s||!k||!e||k<=0)return alert('请填写完整');
+  optionTrades.push({sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c});saveOptions();
+  document.getElementById('fk').value='';document.getElementById('fp').value='';updateAll(););
+
+updateAll();
 </script>
 
 
