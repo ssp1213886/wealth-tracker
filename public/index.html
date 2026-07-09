@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45ef9bd9 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45f4e662 --><!-- clean20260709 -->
 
 
 
@@ -7119,7 +7119,7 @@ function updateOptionSignals(){
   var sd1=document.getElementById('statusVgtDD');if(sd1){sd1.textContent=ddV.toFixed(1)+'%'+(ddV>10?'⚠':'');sd1.style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)';sd1.style.fontWeight=ddV>10?'700':'normal';}
   var sd2=document.getElementById('statusSmhDD');if(sd2){sd2.textContent=ddS.toFixed(1)+'%'+(ddS>10?'⚠':'');sd2.style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)';sd2.style.fontWeight=ddS>10?'700':'normal';}
   // Action
-  var sa=document.getElementById('statusAction');if(sa){var action=buildActionLine();var cell=getMatrixCell(vix,Math.max(ddV,ddS));sa.innerHTML='<span style="font-size:.58rem;">'+cell.label+' → '+action+'</span>';sa.style.color=cell.color.indexOf('red')>=0?'var(--red)':cell.color.indexOf('orange')>=0?'var(--orange)':'var(--accent)';}
+  var sa=document.getElementById('statusAction');if(sa){var action=buildActionLine();var cell=getMatrixCell(vix,Math.max(ddV,ddS));var sParts=action.split(' | '),sHTML='<span style="font-size:.58rem;">'+cell.label+' → </span>';for(var si=0;si<sParts.length;si++){var sp=sParts[si];if(sp.indexOf('CALL')>=0||sp.indexOf('PUT')>=0){sHTML+='<button onclick=quickFill("'+sp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[1]+'","'+sp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[3]+'",'+sp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[5]+') style=font-size:.48rem;padding:2px 6px;margin:0 2px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;>'+sp+'</button>'}else{sHTML+='<span style=font-size:.54rem;>'+sp+'</span>'}}sa.innerHTML=sHTML;sa.style.color=cell.color.indexOf('red')>=0?'var(--red)':cell.color.indexOf('orange')>=0?'var(--orange)':'var(--accent)';}
   renderMatrix();updateCashPage();
 }
 function updateCashConstraints(){
