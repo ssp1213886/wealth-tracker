@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45c16116 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45c2624b --><!-- clean20260709 -->
 
 
 
@@ -7024,7 +7024,7 @@ function updateOptionSignals(){
   var vix=vixPrice||18,ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH');
   // Status bar
   var sv=document.getElementById('statusVix');if(sv)sv.textContent=vix.toFixed(1);
-  var st=document.getElementById('statusVixTag');if(st){st.innerHTML=vix>25?' <span style="color:var(--red);">HIGH</span>':vix>20?' <span style="color:var(--orange);">VOL</span>':vix>0?' <span style="color:var(--accent);">OK</span>':';'}
+  var st=document.getElementById('statusVixTag');if(st){st.innerHTML=vix>25?' <span style="color:var(--red);">高</span>':vix>20?' <span style="color:var(--orange);">波动</span>':vix>0?' <span style="color:var(--accent);">正常</span>':';'}
   var sd1=document.getElementById('statusVgtDD');if(sd1){sd1.textContent=ddV.toFixed(1)+'%'+(ddV>10?'⚠':'');sd1.style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)';sd1.style.fontWeight=ddV>10?'700':'normal';}
   var sd2=document.getElementById('statusSmhDD');if(sd2){sd2.textContent=ddS.toFixed(1)+'%'+(ddS>10?'⚠':'');sd2.style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)';sd2.style.fontWeight=ddS>10?'700':'normal';}
   // Action
