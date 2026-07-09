@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f465bf5b0 --><!-- clean20260709 -->
+<!doctype html><!-- 9f4662deab --><!-- clean20260709 -->
 
 
 
@@ -7171,17 +7171,17 @@ function updateOptStrategy(){
   var el=document.getElementById("optStrategy");if(!el)return;
   var vix=vixPrice||18,ddV=getDrawdown("VGT"),ddS=getDrawdown("SMH");
   var tv=ddV<=5?"up":ddV<=12?"flat":"down",ts=ddS<=5?"up":ddS<=12?"flat":"down";
-  var vp=livePrices["VGT"]||0,sp=livePrices["SMH"]||0,hiV=vgt52hi||0,hiS=smh52hi||0;
+  var vp=livePrices["VGT"]||0,sp=livePrices["SMH"]||0;var hiV=vgt52hi||0,hiS=smh52hi||0;
   var vc=getOtm("VGT",vix,ddV,"call"),vpO=getOtm("VGT",vix,ddV,"put");
   var sc=getOtm("SMH",vix,ddS,"call"),spO=getOtm("SMH",vix,ddS,"put");
   var brake=vix>=30?' <span style="color:var(--red)">+1% OTM,P/2</span>':' <span style="color:var(--accent)">ok</span>';
   el.innerHTML="<div><b>VIX</b> "+vix.toFixed(1)+brake+"</div>"
     +"<div><b>VGT</b> 52W $"+hiV.toFixed(0)+" $"+vp.toFixed(2)+" DD "+ddV.toFixed(1)+"% "+tv
-    +" CALL "+vc.otmPct+"% "+"@"+(vp*(1+vc.otmPct/100)).toFixed(0)
-    +" PUT "+vpO.otmPct+"% "+"@"+(vp*(1-vpO.otmPct/100)).toFixed(0)+"</div>"
+    +" CALL "+vc.otmPct+"% "+"@"+((vp||0)*(1+vc.otmPct/100)).toFixed(0)
+    +" PUT "+vpO.otmPct+"% "+"@"+((vp||0)*(1-vpO.otmPct/100)).toFixed(0)+"</div>"
     +"<div><b>SMH</b> 52W $"+hiS.toFixed(0)+" $"+sp.toFixed(2)+" DD "+ddS.toFixed(1)+"% "+ts
-    +" CALL "+sc.otmPct+"% "+"@"+(sp*(1+sc.otmPct/100)).toFixed(0)
-    +" PUT "+spO.otmPct+"% "+"@"+(sp*(1-spO.otmPct/100)).toFixed(0)+"</div>";
+    +" CALL "+sc.otmPct+"% "+"@"+((sp||0)*(1+sc.otmPct/100)).toFixed(0)
+    +" PUT "+spO.otmPct+"% "+"@"+((sp||0)*(1-spO.otmPct/100)).toFixed(0)+"</div>";
 }
 </script>
 
