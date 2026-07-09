@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f4632aa5f --><!-- clean20260709 -->
+<!doctype html><!-- 9f4637941b --><!-- clean20260709 -->
 
 
 
@@ -3359,7 +3359,80 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
     <div id="optHoldings2"></div>
   </div>
 
-id="tab-data">
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="tab-panel" id="tab-log">
+
+
+
+
+
+
+
+  <div class="card collapsible-card collapsed" style="padding:14px;"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3 style="font-size:.74rem;">📜 操作日志</h3><button class="btn btn-out btn-sm" id="btnClearActivity" style="font-size:.45rem;padding:2px 8px;min-height:auto;margin-left:auto;">清空</button></div><div class="collapsible-body" id="activityLog" style="max-height:400px;overflow-y:auto;"><div style="text-align:center;padding:16px;color:var(--muted);font-size:.6rem;">暂无操作记录</div></div></div>
+
+
+
+
+
+
+
+  <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">🔥 纪律打卡</h3>
+
+
+
+
+
+
+
+    <div style="font-size:.66rem;color:var(--muted);margin-bottom:8px;">连续定投 <strong id="streakCount" style="color:var(--accent);">0</strong> 个月</div>
+
+
+
+
+
+
+
+    <div id="logHeatmap"></div>
+
+
+
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+<section class="tab-panel" id="tab-data">
 
 
 
@@ -6970,6 +7043,10 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 // Overview card
+;
+
+
+
 function loadOptions2(){try{return JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){return[]}}
 function saveOptions2(){localStorage.setItem("wealth_options_v2",JSON.stringify(optionTrades))}
 var optionTrades=loadOptions2();
@@ -6977,19 +7054,19 @@ function renderOptions2(){
   var el=document.getElementById("optHoldings2");if(!el)return;
   optionTrades=loadOptions2();
   var now=new Date().toISOString().slice(0,10);
-  if(!optionTrades.length){el.innerHTML="<div style=\"text-align:center;padding:16px;color:var(--muted);\">No options</div>";return}
+  if(!optionTrades.length){el.innerHTML="<div style=\"text-align:center;padding:16px;color:var(--muted);\">暂无期权仓位</div>";return}
   var rows=[];
   for(var i=0;i<optionTrades.length;i++){
     var o=optionTrades[i];
     var isExpired=o.expiry<now,daysLeft=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
     var curP=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
     var status="",bg="",roll="";
-    if(isExpired){status="<span style=color:var(--muted)>Expired</span>";bg="opacity:.4"}
+    if(isExpired){status="<span style=color:var(--muted)>已过期</span>";bg="opacity:.4"}
     else{
       var itm=(o.type=="CALL"&&curP>o.strike)||(o.type=="PUT"&&curP<o.strike);
-      if(itm&&daysLeft<=3){status="<span style=color:var(--red);font-weight:620>! "+daysLeft+"d ITM</span>";bg="background:rgba(217,69,53,.10)";roll="<button onclick=roll2("+i+") style=font-size:.4rem;padding:2px 5px;background:var(--red);color:#fff;border:none;border-radius:2px>Roll</button>"}
-      else if(itm){status="<span style=color:var(--orange)>! "+daysLeft+"d ITM</span>";bg="background:rgba(230,140,50,.06)";roll="<button onclick=roll2("+i+") style=font-size:.4rem;padding:2px 5px;background:var(--orange);color:#fff;border:none;border-radius:2px>Roll</button>"}
-      else if(daysLeft<=5){status="<span style=color:var(--red)>"+daysLeft+"d</span>";bg="background:rgba(217,69,53,.04)"}
+      if(itm&&daysLeft<=3){status="<span style=color:var(--red);font-weight:620>! "+daysLeft+"d 实值</span>";bg="background:rgba(217,69,53,.10)";roll="<button onclick=roll2("+i+") style=font-size:.4rem;padding:2px 5px;background:var(--red);color:#fff;border:none;border-radius:2px>滚动</button>"}
+      else if(itm){status="<span style=color:var(--orange)>! "+daysLeft+"d 实值</span>";bg="background:rgba(230,140,50,.06)";roll="<button onclick=roll2("+i+") style=font-size:.4rem;padding:2px 5px;background:var(--orange);color:#fff;border:none;border-radius:2px>滚动</button>"}
+      else if(daysLeft<=5){status="<span style=color:var(--red)>"+daysLeft+"d 即将到期</span>";bg="background:rgba(217,69,53,.04)"}
       else{status="<span style=color:var(--accent)>"+daysLeft+"d</span>"}
     }
     rows.push("<div style=display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:.54rem;border-radius:4px;margin-bottom:3px;"+bg+">"
@@ -7054,11 +7131,10 @@ function updateOptionPage(){
   var vix=vixPrice||18,ddV=getDrawdown("VGT"),ddS=getDrawdown("SMH");
   var ov=document.getElementById("optVix2");if(ov)ov.textContent=vix.toFixed(1);
   var ot=document.getElementById("optVixTag2");
-  if(ot){ot.innerHTML=vix>25?" <span style=color:var(--red)>HIGH</span>":vix>20?" <span style=color:var(--orange)>VOL</span>":" <span style=color:var(--accent)>OK</span>";}
+  if(ot){ot.innerHTML=vix>25?" <span style=color:var(--red)>高</span>":vix>20?" <span style=color:var(--orange)>波动</span>":" <span style=color:var(--accent)>正常</span>";}
   var vd=document.getElementById("optVgtDD2");if(vd){vd.textContent="-"+ddV.toFixed(1)+"%";vd.style.color=ddV>10?"var(--red)":ddV>5?"var(--orange)":"var(--accent)";}
   var sd=document.getElementById("optSmhDD2");if(sd){sd.textContent="-"+ddS.toFixed(1)+"%";sd.style.color=ddS>10?"var(--red)":ddS>5?"var(--orange)":"var(--accent)";}
   var oc=document.getElementById("optCash2");if(oc)oc.textContent=fmtFull(Math.max(0,cashBalance||0));
-  // Strategy ref
   var sr=document.getElementById("optStrategy2");
   if(sr){
     var vc=getOtm2("VGT",vix,ddV,"call"),vp=getOtm2("VGT",vix,ddV,"put");
@@ -7068,13 +7144,15 @@ function updateOptionPage(){
   }
   renderOptions2();
   var tot=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);
-  var pt=document.getElementById("optPremTotal2");if(pt)pt.textContent=tot>0?" Total "+fmtFull(tot):"";
+  var pt=document.getElementById("optPremTotal2");if(pt)pt.textContent=tot>0?" 已收 "+fmtFull(tot):"";
   // Overview card
   var ovV=document.getElementById("ovVix");if(ovV)ovV.textContent=(vixPrice||18).toFixed(1);
   var no2=new Date().toISOString().slice(0,10),activeO=optionTrades.filter(function(o){return o.expiry>=no2}).length;
-  var ovA=document.getElementById("ovActive");if(ovA)ovA.textContent=activeO;
+  var ovA=document.getElementById("ovActive");if(ovA)ovA.textContent=activeO+" 活跃";
   var ovP=document.getElementById("ovPremium"),totP=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);
   if(ovP)ovP.textContent=fmtFull(totP);
+  var ovR=document.getElementById("ovRealized");
+  if(ovR){var realized=optionTrades.filter(function(o){return o.expiry<no2}).reduce(function(s,o){return s+(o.premium||0)},0);ovR.textContent=realized>0?"(已实现 "+fmtFull(realized)+")":"";}
   var ovCash=document.getElementById("ovCashFill");
   if(ovCash){var nc=Math.max(0,cashBalance||0);var pr=optionTrades.filter(function(o){return o.type=="PUT"&&o.expiry>=no2}).reduce(function(s,o){return s+(o.strike||0)*100*(o.contracts||1)},0);var ap=nc>0?Math.max(10,100-(pr/nc*100)):50;ovCash.style.width=ap+"%";ovCash.style.background=ap<20?"var(--red)":ap<40?"var(--orange)":"var(--accent)";}
 }
