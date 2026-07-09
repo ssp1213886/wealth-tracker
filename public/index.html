@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45f4e662 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45f5b4dc --><!-- clean20260709 -->
 
 
 
@@ -7002,7 +7002,7 @@ function renderMatrix(){
   html+='</tr></table>';
   if(vix>=30)html+='<div style="font-size:.45rem;color:var(--red);text-align:center;">VIX>=30: 刹车+1% OTM, PUT减半</div>';
   el.innerHTML=html;
-  var ms=document.getElementById('matrixSummary');if(ms){var action=buildActionLine();ms.innerHTML='<strong>'+cell.label+' '+cell.action+'</strong> → '+action;}
+  var ms=document.getElementById('matrixSummary');if(ms){var action=buildActionLine();var mParts=action.split(' | '),mHTML='<strong>'+cell.label+'</strong> → ';for(var mi=0;mi<mParts.length;mi++){var mp=mParts[mi];if(mp.indexOf('CALL')>=0||mp.indexOf('PUT')>=0){mHTML+='<button onclick=quickFill("'+mp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[1]+'","'+mp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[3]+'",'+mp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[5]+') style=font-size:.46rem;padding:2px 5px;margin:0 2px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;>'+mp+'</button>'}else{mHTML+='<span style=font-size:.5rem;>'+mp+'</span>'}}ms.innerHTML=mHTML}
 }
 
 
