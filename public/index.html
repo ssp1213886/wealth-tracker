@@ -7478,7 +7478,7 @@ var optionTrades=[];
 (function initOpt(){try{optionTrades=JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')}catch(e){optionTrades=[]}})();
 function saveOpt(){localStorage.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
 
-function getDrawdownO(sym,p){var hi=(sym==='VGT'?livePrices._vgt_hi:livePrices._smh_hi)||p;return hi>0?Math.max(0,(hi-p)/hi*100):0}
+function getDrawdownO(sym,p){var hi=(sym==='VGT'?vgt52hi:smh52hi)||p;return hi>0?Math.max(0,(hi-p)/hi*100):0}
 function getOtmCalc(dd,vix,isCall,isV){var tr=dd<=5?'up':dd<=12?'flat':'down',otm=0;if(isCall){otm=tr==='up'?isV?9:7:tr==='flat'?isV?7:5:isV?10:8}else{otm=dd<=5?isV?12:10:dd<=12?isV?9:8:isV?8:7}return otm+(vix>=30?1:0)}
 
 function renderHoldings(){
@@ -7502,7 +7502,7 @@ function recordTrade(){var t=document.getElementById('otype').value,s=document.g
 function renderStrategyO(){
  var el=document.getElementById('stratref');if(!el)return;
  var vix=(typeof vixPrice!=='undefined'?vixPrice:18),vp=livePrices.VGT||580,sp=livePrices.SMH||540;
- var ddV=getDrawdownO('VGT',vp),ddS=getDrawdownO('SMH',sp),hasV=!!(livePrices._vgt_hi||livePrices._smh_hi),curV=hasV?(ddV<=5?0:ddV<=12?1:2):-1,curS=hasV?(ddS<=5?0:ddS<=12?1:2):-1;
+ var ddV=getDrawdownO('VGT',vp),ddS=getDrawdownO('SMH',sp),hasV=!!(vgt52hi||smh52hi),curV=hasV?(ddV<=5?0:ddV<=12?1:2):-1,curS=hasV?(ddS<=5?0:ddS<=12?1:2):-1;
  var vixtag=vix>=30?'<span class="badge-red" style="font-size:.48rem">\u5239\u8f66+1%</span>':vix>20?'<span class="badge-orange" style="font-size:.48rem">\u6ce2\u52a8</span>':'<span class="badge-green" style="font-size:.48rem">\u6b63\u5e38</span>';
  var ref=[];
  for(var s=0;s<3;s++){var dd=s===0?3:s===1?8:15;ref.push({vC:getOtmCalc(dd,vix,true,true),vP:getOtmCalc(dd,vix,false,true),sC:getOtmCalc(dd,vix,true,false),sP:getOtmCalc(dd,vix,false,false)})}
@@ -7548,7 +7548,7 @@ var optionTrades=[];
 (function initOpt(){try{optionTrades=JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')}catch(e){optionTrades=[]}})();
 function saveOpt(){localStorage.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
 
-function getDrawdownO(sym,p){var hi=(sym==='VGT'?livePrices._vgt_hi:livePrices._smh_hi)||p;return hi>0?Math.max(0,(hi-p)/hi*100):0}
+function getDrawdownO(sym,p){var hi=(sym==='VGT'?vgt52hi:smh52hi)||p;return hi>0?Math.max(0,(hi-p)/hi*100):0}
 function getOtmCalc(dd,vix,isCall,isV){var tr=dd<=5?'up':dd<=12?'flat':'down',otm=0;if(isCall){otm=tr==='up'?isV?9:7:tr==='flat'?isV?7:5:isV?10:8}else{otm=dd<=5?isV?12:10:dd<=12?isV?9:8:isV?8:7}return otm+(vix>=30?1:0)}
 
 function renderHoldings(){
