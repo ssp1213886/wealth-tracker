@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46710b27 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45fa5676 --><!-- clean20260709 -->
 
 
 
@@ -3330,10 +3330,14 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 <section class="tab-panel" id="tab-option">
+  
+  <div id="rollAlertBanner" style="padding:8px 10px;margin-bottom:8px;border-radius:6px;font-size:.58rem;"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><span id="rollAlertMsg" style="font-weight:600;"></span><div id="rollAlertBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div></div></div>
+<div id="rollBanner" style="padding:6px 10px;margin-bottom:8px;border-radius:6px;font-size:.56rem;display:block;border:1px solid var(--accent);background:rgba(46,107,80,.05);"><span id="rollBannerText"></span><span id="rollBannerBtns" style="margin-left:10px;"></span></div>
   <div class="card" style="padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.62rem;"><div><span style="color:var(--muted);">VIX</span> <strong id="statusVix" style="font-family:Inter,var(--font);">--</strong> <span id="statusVixTag" style="font-size:.5rem;"></span></div><div><span style="color:var(--muted);">VGT DD</span> <strong id="statusVgtDD" style="font-family:Inter,var(--font);">--</strong></div><div><span style="color:var(--muted);">SMH DD</span> <strong id="statusSmhDD" style="font-family:Inter,var(--font);">--</strong></div><div style="flex:1;text-align:right;font-weight:540;" id="statusAction"></div></div>
-  <div class="card" style="padding:8px 12px;margin-bottom:8px;font-size:.54rem;line-height:1.8;" id="optStrategy">Loading strategy...</div>
   <div class="card collapsible-card" style="padding:8px;margin-bottom:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><h3 style="font-size:.66rem;margin:0;">🧩 VIX × 回撤 决策矩阵</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body" style="margin-top:6px;"><div id="matrixGrid" style="margin-bottom:4px;"></div><div id="matrixSummary" style="padding:5px 8px;border-radius:4px;font-size:.52rem;background:var(--surface);line-height:1.5;"></div></div></div>
   <div class="card collapsible-card" style="padding:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;"><h3 style="font-size:.66rem;margin:0;">📋 期权持仓</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;"><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">标的</label><select id="optSym" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="VGT">VGT</option><option value="SMH">SMH</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">类型</label><select id="optType" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="PUT">PUT</option><option value="CALL">CALL</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">行权价</label><input type="number" id="optStrike" step="any" min="0" placeholder="108" style="width:70px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">到期日</label><input type="date" id="optExpiry" style="width:110px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">权利金</label><input type="number" id="optPremium" step="any" min="0" placeholder="136" style="width:60px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><button class="btn btn-pri btn-sm" id="btnAddOption" style="font-size:.52rem;padding:4px 10px;">+ 录入</button></div><table class="trade-table"><thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>到期日</th><th>状态</th><th>权利金</th><th></th></tr></thead><tbody id="optBody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr></tbody></table></div></div>
+
+  <div class="card" style="padding:14px;margin-bottom:12px;"><h3 style="font-size:.74rem;">💰 现金池</h3><div style="font-size:1.3rem;font-weight:620;font-family:Inter,var(--font);" id="cashPoolPct">--</div><div style="font-size:.6rem;color:var(--muted);" id="cashPoolBreakdown">净现金 -- / 持仓 --</div><div style="height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-top:8px;"><div id="cashPoolBar" style="height:100%;background:var(--accent);border-radius:4px;width:0;transition:width .4s;"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.48rem;color:var(--muted);"><span>&lt;10%停PUT</span><span>30%强制买</span></div></div>
   
 
 
@@ -7166,29 +7170,134 @@ updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementB
       ovAct.innerHTML=ovHTML;
     };}
 
+</script>
 
-function updateOptStrategy(){
-  var el=document.getElementById("optStrategy");if(!el)return;
-  var vix=vixPrice||18,ddV=0,ddS=0;
-  try{ddV=getDrawdown("VGT")}catch(e){}
-  try{ddS=getDrawdown("SMH")}catch(e){}
-  var tv=ddV<=5?"up":ddV<=12?"flat":"down",ts=ddS<=5?"up":ddS<=12?"flat":"down";
-  var vp=0,sp=0;
-  try{vp=livePrices.VGT||0}catch(e){}
-  try{sp=livePrices.SMH||0}catch(e){}
-  var hiV=vgt52hi||0,hiS=smh52hi||0;
-  var vc={otmPct:7},vpO={otmPct:10},sc={otmPct:5},spO={otmPct:8};
-  try{vc=getOtm("VGT",vix,ddV,"call")}catch(e){}
-  try{vpO=getOtm("VGT",vix,ddV,"put")}catch(e){}
-  try{sc=getOtm("SMH",vix,ddS,"call")}catch(e){}
-  try{spO=getOtm("SMH",vix,ddS,"put")}catch(e){}
-  var brake=vix>=30?' +1%OTM':'';
-  var o="";
-  o+="<div>VIX "+vix.toFixed(1)+brake+"</div>";
-  o+="<div>VGT 52W $"+(hiV||0).toFixed(0)+" $"+(vp||0).toFixed(2)+" DD "+ddV.toFixed(1)+"% "+tv+" CALL "+vc.otmPct+"% PUT "+vpO.otmPct+"%</div>";
-  o+="<div>SMH 52W $"+(hiS||0).toFixed(0)+" $"+(sp||0).toFixed(2)+" DD "+ddS.toFixed(1)+"% "+ts+" CALL "+sc.otmPct+"% PUT "+spO.otmPct+"%</div>";
-  el.innerHTML=o;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="bottom-bar" id="bottomBar">
+
+
+
+
+
+
+
+  <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="6.5" y1="10" x2="6.5" y2="14"/><line x1="17.5" y1="10" x2="17.5" y2="14"/></svg></span>仪表盘</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="12" r="2"/><circle cx="16" cy="7" r="2"/><circle cx="16" cy="17" r="2"/><line x1="10" y1="12" x2="14" y2="7"/><line x1="10" y1="12" x2="14" y2="17"/></svg></span>操作台</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('option')" class="bb-btn" id="bbOption"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>期权</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('data')" class="bb-btn" id="bbData"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></span>数据</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('log')" class="bb-btn" id="bbLog"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></span>日志</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('plan')" class="bb-btn" id="bbPlan"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polygon points="12,3 14,10 21,12 14,14 12,21 10,14 3,12 10,10"/></svg></span>规划</button>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+
+
+
+
+
+
+</html>
+
+
+
+
+
+
+
 
 function rollCheck(){
   var el=document.getElementById("rollBanner");
@@ -7261,5 +7370,4 @@ function quickFill(sym,type,otmPct){
   // Expand form card
   var fc=document.querySelector("#tab-option .collapsible-card:last-of-type .collapsible-body");
   if(fc)fc.style.maxHeight="800px";
-  updateOptStrategy();
 }
