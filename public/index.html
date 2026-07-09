@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45cb6111 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45d08a33 --><!-- clean20260709 -->
 
 
 
@@ -7011,6 +7011,7 @@ function checkRollAlerts(){
   var msg=document.getElementById("rollAlertMsg");
   var btns=document.getElementById("rollAlertBtns");
   if(!banner||!msg||!btns)return;
+  optionTrades=loadOptions();
   var now=new Date().toISOString().slice(0,10);
   var urgent=[],warn=[],itmAlert=[],approaching=[];
   optionTrades.forEach(function(o,i){
