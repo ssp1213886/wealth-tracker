@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f4705b084 --><!-- clean20260709 -->
+<!doctype html><!-- 9f470af643 --><!-- clean20260709 -->
 
 
 
@@ -7496,7 +7496,7 @@ function renderHoldings(){
   rows.push('<tr><td>'+o.sym+'</td><td>'+o.type+'</td><td>$'+o.strike.toFixed(2)+'</td><td>$'+(o.premium||0).toFixed(2)+'</td><td style="font-size:.54rem;color:var(--muted)">'+o.expiry+'</td><td style="font-size:.54rem">'+st+'</td><td><button class="trade-del" onclick="delOpt('+i+')">&#10005;</button></td></tr>')}
  el.innerHTML=rows.join('')}
 
-function delOpt(i){optionTrades.splice(i,1);saveOpt();if(typeof autoPush==="function")autoPushDebounce();updateAllO()}
+function delOpt(i){optionTrades.splice(i,1);saveOpt();if(typeof autoPushDebounce==="function")autoPushDebounce();updateAllO()}
 function recordTrade(){var t=document.getElementById('otype').value,s=document.getElementById('osym').value,k=parseFloat(document.getElementById('ostrike').value||0),p=parseFloat(document.getElementById('opremium').value||0),e=document.getElementById('oexpiry').value,c=parseInt(document.getElementById('ocontracts').value||1);if(!t||!s||!k||!e||k<=0)return;optionTrades.push({sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c});saveOpt();if(typeof autoPushDebounce==="function")autoPushDebounce();document.getElementById('ostrike').value='';document.getElementById('opremium').value='';updateAllO()}
 
 function renderStrategyO(){
@@ -7663,86 +7663,3 @@ setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
 
 
 </html>
-
-
-
-
-
-
-
-
-function rollCheck(){
-  var el=document.getElementById("rollBanner");
-  var txt=document.getElementById("rollBannerText");
-  var btn=document.getElementById("rollBannerBtns");
-  if(!el||!txt||!btn)return;
-  optionTrades=loadOptions();
-  if(!optionTrades||!optionTrades.length){txt.textContent="";btn.innerHTML="";return}
-  var now=(new Date()).toISOString().slice(0,10);
-  var items=[];
-  for(var i=0;i<optionTrades.length;i++){
-    var o=optionTrades[i];
-    if(!o||!o.expiry||o.expiry<now)continue;
-    var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
-    if(d>5)continue;
-    var p=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
-    if(p<=0)continue;
-    var itm=(o.type=="CALL"&&p>o.strike)||(o.type=="PUT"&&p<o.strike);
-    items.push({i:i,sym:o.sym,type:o.type,strike:o.strike,days:d,itm:itm,price:p});
-  }
-  if(!items.length){txt.textContent="";btn.innerHTML="";return}
-  var msgs=[],btnsHTML="";
-  var worst=0;
-  for(var j=0;j<items.length;j++){
-    var it=items[j];
-    var s=it.sym+" "+it.type+"@"+it.strike+" "+it.days+"d";
-    if(it.itm&&it.days<=3){worst=Math.max(worst,2);msgs.push(s+" ITM!");}
-    else if(it.itm){worst=Math.max(worst,1);msgs.push(s+" ITM");}
-    else{msgs.push(s);}
-    if(it.itm){
-      btnsHTML+="<button onclick=rollIt("+it.i+") style=font-size:.44rem;padding:2px 6px;margin-left:4px;border:none;border-radius:3px;cursor:pointer;color:#fff;"+(it.days<=3?"background:var(--red)":"background:var(--orange)")+">Roll</button>";
-    }
-  }
-  txt.textContent=msgs.join(" | ");
-  btn.innerHTML=btnsHTML;
-  el.style.border="1px solid "+(worst>=2?"var(--red)":worst>=1?"var(--orange)":"var(--accent)");
-  el.style.background=worst>=2?"rgba(217,69,53,.08)":worst>=1?"rgba(230,140,50,.06)":"rgba(46,107,80,.05)";
-}
-function rollIt(i){
-  var o=optionTrades[i];if(!o)return;
-  var el=document.getElementById("optType");if(el)el.value=o.type;
-  el=document.getElementById("optSym");if(el)el.value=o.sym;
-  var cur=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0);
-  if(cur>0){
-    var dd=o.sym=="VGT"?getDrawdown("VGT"):getDrawdown("SMH");
-    var otm=getOtm(o.sym,vixPrice||18,dd,o.type.toLowerCase());
-    if(otm){
-      var ns=o.type=="CALL"?cur*(1+otm.otmPct/100):cur*(1-otm.otmPct/100);
-      el=document.getElementById("optStrike");if(el)el.value=ns.toFixed(2);
-    }
-  }
-  el=document.getElementById("optExpiry");
-  if(el){var d=new Date();d.setDate(d.getDate()+30);el.value=d.toISOString().slice(0,10);}
-  var pf=document.getElementById("optPremium");if(pf)pf.focus();
-}
-  rollCheck();
-
-
-function quickFill(sym,type,otmPct){
-  var el=document.getElementById("optSym");if(el)el.value=sym;
-  el=document.getElementById("optType");if(el)el.value=type;
-  var cur=livePrices[sym]||(sym=="VGT"?vgtPrice:sym=="SMH"?smhPrice:0);
-  if(cur>0){
-    var ns=type=="CALL"?cur*(1+otmPct/100):cur*(1-otmPct/100);
-    el=document.getElementById("optStrike");if(el)el.value=ns.toFixed(2);
-  }
-  el=document.getElementById("optExpiry");
-  if(el){var d=new Date();d.setDate(d.getDate()+30);el.value=d.toISOString().slice(0,10);}
-  var pf=document.getElementById("optPremium");if(pf)pf.focus();
-  // Expand form card
-  var fc=document.querySelector("#tab-option .collapsible-card:last-of-type .collapsible-body");
-  if(fc)fc.style.maxHeight="800px";
-  updateAll();
-  updateAll();
-  updateAllO();
-}
