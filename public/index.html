@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46f40a9e --><!-- clean20260709 -->
+<!doctype html><!-- 9f46f66f12 --><!-- clean20260709 -->
 
 
 
@@ -7529,7 +7529,7 @@ function updatePnLO(){
  var me=document.getElementById('mrev'),te=document.getElementById('trev'),re=document.getElementById('rpnl');
  if(me)me.textContent='$'+month.toFixed(2);if(te)te.textContent='$'+total.toFixed(2);if(re)re.textContent='$'+real.toFixed(2)}
 
-function updateAllO(){
+function updateAllO(){if(!livePrices.VGT||!livePrices.SMH){setTimeout(updateAllO,500);return;}
  var vix=typeof vixPrice!=='undefined'?vixPrice:18,vc=document.getElementById('ov'),ot=document.getElementById('ot');
  if(vc)vc.textContent=vix.toFixed(1);
  if(ot)ot.innerHTML=vix>=30?' <span class="badge-red" style="font-size:.48rem">\u9ad8</span>':vix>20?' <span class="badge-orange" style="font-size:.48rem">\u6ce2\u52a8</span>':' <span class="badge-green" style="font-size:.48rem">\u6b63\u5e38</span>';
