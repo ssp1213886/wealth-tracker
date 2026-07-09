@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f469f16d4 --><!-- clean20260709 -->
+<!doctype html><!-- 9f46bc0e6a --><!-- clean20260709 -->
 
 
 
@@ -3334,7 +3334,13 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   <div class="card collapsible-card" style="padding:8px;margin-bottom:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><h3 style="font-size:.66rem;margin:0;">🧩 VIX × 回撤 决策矩阵</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body" style="margin-top:6px;"><div id="matrixGrid" style="margin-bottom:4px;"></div><div id="matrixSummary" style="padding:5px 8px;border-radius:4px;font-size:.52rem;background:var(--surface);line-height:1.5;"></div></div></div>
   <div class="card collapsible-card" style="padding:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;"><h3 style="font-size:.66rem;margin:0;">📋 期权持仓</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;"><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">标的</label><select id="optSym" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="VGT">VGT</option><option value="SMH">SMH</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">类型</label><select id="optType" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="PUT">PUT</option><option value="CALL">CALL</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">行权价</label><input type="number" id="optStrike" step="any" min="0" placeholder="108" style="width:70px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">到期日</label><input type="date" id="optExpiry" style="width:110px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">权利金</label><input type="number" id="optPremium" step="any" min="0" placeholder="136" style="width:60px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><button class="btn btn-pri btn-sm" id="btnAddOption" style="font-size:.52rem;padding:4px 10px;">+ 录入</button></div><table class="trade-table"><thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>到期日</th><th>状态</th><th>权利金</th><th></th></tr></thead><tbody id="optBody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr></tbody></table></div></div>
 
-  <div class="card" <div class="card" id="optPnLCard" style="padding:8px 12px;margin-bottom:10px;"><div style="display:flex;gap:16px;align-items:center;font-size:.56rem;"><div>Month <span id="optPnlMonth" style="font-family:Inter,var(--font);font-weight:600">$0</span></div><div>Total <span id="optPnlTotal" style="font-family:Inter,var(--font);font-weight:600">$0</span></div><div>Realized <span id="optPnlRealized" style="font-family:Inter,var(--font);font-weight:600">$0</span></div></div></div>;font-weight:600">$0</span></div><div><span style="color:var(--muted)">å·²å®ç°</span> <span id="optPnlRealized" style="font-family:Inter,var(--font);font-weight:600">$0</span></div></div></div>
+  <div class="card" id="optPnLCard" style="padding:10px 14px;margin-bottom:10px;">
+    <div style="display:flex;gap:20px;font-size:.6rem;">
+      <div><span style="color:var(--muted)">本月权利金</span> <span id="optPnlMonth" style="font-family:Inter,var(--font);">$0</span></div>
+      <div><span style="color:var(--muted)">累计权利金</span> <span id="optPnlTotal" style="font-family:Inter,var(--font);">$0</span></div>
+      <div><span style="color:var(--muted)">已实现</span> <span id="optPnlRealized" style="font-family:Inter,var(--font);">$0</span></div>
+    </div>
+  </div>
 <div class="card" style="padding:14px;margin-bottom:12px;"><h3 style="font-size:.7rem;margin:0 0 4px 0;">💰 现金池</h3><div style="font-size:1.3rem;font-weight:620;font-family:Inter,var(--font);" id="cashPoolPct">--</div><div style="font-size:.6rem;color:var(--muted);" id="cashPoolBreakdown">净现金 -- / 持仓 --</div><div style="height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-top:8px;"><div id="cashPoolBar" style="height:100%;background:var(--accent);border-radius:4px;width:0;transition:width .4s;"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.48rem;color:var(--muted);"><span>&lt;10%停PUT</span><span>30%强制买</span></div></div>
   
 
@@ -7370,16 +7376,19 @@ function quickFill(sym,type,otmPct){
   if(fc)fc.style.maxHeight="800px";
   // PnL summary
   var op=document.getElementById("optPnL");if(op){var ot=optionTrades;if(!ot||!ot.length){try{ot=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){ot=[]}}var now=new Date().toISOString().slice(0,10),tot=ot.reduce(function(s,o){return s+(o.premium||0)},0),real=ot.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);op.textContent="权利金 "+fmtFull(tot)+(real>0?"(已实现"+fmtFull(real)+")":"");}
-  // PnL card - reads localStorage directly
+  // PnL card
+  var opt=optionTrades;if(!opt||!opt.length){try{opt=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){opt=[]}}
   var pm=document.getElementById("optPnlMonth"),pt=document.getElementById("optPnlTotal"),pr=document.getElementById("optPnlRealized");
   if(pm||pt||pr){
-    var now2=new Date().toISOString().slice(0,10),thisMonth=now2.slice(0,7);
-    var opt2=[];
-    try{opt2=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){}
-    var total2=opt2.reduce(function(s,o){return s+(o.premium||0)},0);
-    var month2=opt2.filter(function(o){return o.expiry.slice(0,7)===thisMonth||o.expiry>=now2}).reduce(function(s,o){return s+(o.premium||0)},0);
-    var real2=opt2.filter(function(o){return o.expiry<now2}).reduce(function(s,o){return s+(o.premium||0)},0);
-    if(pm)pm.textContent=fmtFull(month2);
-    if(pt)pt.textContent=fmtFull(total2);
-    if(pr)pr.textContent=fmtFull(real2);
+    var now=new Date().toISOString().slice(0,10);
+    var thisMonth=now.slice(0,7);
+    var opt=optionTrades;
+    if(opt.length===0){try{opt=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){opt=[]}}
+    var total=opt.reduce(function(s,o){return s+(o.premium||0)},0);
+    var month=opt.filter(function(o){return o.expiry.slice(0,7)===thisMonth||o.expiry>=now}).reduce(function(s,o){return s+(o.premium||0)},0);
+    var real=opt.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);
+    if(pm)pm.textContent=fmtFull(month);
+    if(pt)pt.textContent=fmtFull(total);
+    if(pr)pr.textContent=fmtFull(real);
   }
+}
