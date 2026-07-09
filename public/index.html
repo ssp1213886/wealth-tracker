@@ -2528,6 +2528,8 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   #tab-option .trade-form{padding:8px 10px!important}
 }
 
+
+@media(max-width:600px){#tab-option .pnl-card{display:none}#tab-option #optPnlInline{display:block!important}#tab-option .rec-card{padding:8px 10px!important}#tab-option .strategy-matrix{padding:8px 10px!important}#tab-option .trade-table,#tab-option .otm-table{font-size:.52rem!important}#tab-option .holdings-table thead th,#tab-option .otm-table thead th{font-size:.44rem!important;padding:4px!important}#tab-option .holdings-table tbody td,#tab-option .otm-table tbody td{padding:4px!important;font-size:.48rem!important}#tab-option .badge-red,#tab-option .badge-orange,#tab-option .badge-green{font-size:.44rem!important;padding:1px 5px!important}}
 </style>
 
 
@@ -3404,7 +3406,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div><b>SMH</b> <span id="sd" style="font-family:Inter,var(--font)">--</span></div>
 <div style="flex:1"></div>
 <div><b>&#29616;&#37329;</b> <span id="oc" style="font-family:Inter,var(--font)">$0</span></div>
-</div></div>
+<div id="optPnlInline" style="display:none;padding-top:6px;margin-top:6px;border-top:1px dashed var(--rule);font-size:.54rem;color:var(--muted)">本月 <span id="mrev2" style="font-family:Inter,var(--font);font-weight:600;color:var(--accent)">$0</span> • 累计 <span id="trev2" style="font-family:Inter,var(--font);font-weight:600;color:var(--accent)">$0</span> • 已实现 <span id="rpnl2" style="font-family:Inter,var(--font);font-weight:600;color:var(--accent)">$0</span></div></div></div>
 
 <div class="card trade-form" style="padding:10px 14px;border:1px solid var(--rule)">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#35760;&#24405;&#26399;&#26435;</h3>
@@ -7527,7 +7529,7 @@ function updatePnLO(){
  var month=optionTrades.filter(function(o){return o.expiry>=now&&o.expiry.slice(0,7)===thisM}).reduce(function(s,o){return s+(o.premium||0)},0);
  var real=optionTrades.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);
  var me=document.getElementById('mrev'),te=document.getElementById('trev'),re=document.getElementById('rpnl');
- if(me)me.textContent='$'+month.toFixed(2);if(te)te.textContent='$'+total.toFixed(2);if(re)re.textContent='$'+real.toFixed(2)}
+ if(me)me.textContent='$'+month.toFixed(2);if(te)te.textContent='$'+total.toFixed(2);if(re)re.textContent='$'+real.toFixed(2);var m2=document.getElementById('mrev2'),t2=document.getElementById('trev2'),r2=document.getElementById('rpnl2');if(m2)m2.textContent='$'+month.toFixed(2);if(t2)t2.textContent='$'+total.toFixed(2);if(r2)r2.textContent='$'+real.toFixed(2)}
 
 function updateAllO(){if(!livePrices.VGT||!livePrices.SMH){setTimeout(updateAllO,500);return;}
  var vix=typeof vixPrice!=='undefined'?vixPrice:18,vc=document.getElementById('ov'),ot=document.getElementById('ot');
@@ -7542,6 +7544,7 @@ function updateAllO(){if(!livePrices.VGT||!livePrices.SMH){setTimeout(updateAllO
 
 
 setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
+(function(){var _form=document.querySelector("#tab-option .trade-form");if(!_form)return;var _wrap=document.createElement("div");_wrap.id="optFormWrap";_form.parentNode.insertBefore(_wrap,_form);_wrap.appendChild(_form);var _tgl=document.createElement("button");_tgl.className="btn btn-out btn-sm";_tgl.style.cssText="font-size:.6rem;margin-bottom:6px;display:none";_tgl.id="optFormToggle";_tgl.textContent="+ 记录期权";_form.parentNode.insertBefore(_tgl,_wrap);if(window.innerWidth<=600){_form.style.display="none";_tgl.style.display="inline-block"}_tgl.addEventListener("click",function(){var s=_form.style.display==="none"?"block":"none";_form.style.display=s;_tgl.textContent=s==="block"?"- 收起":"+ 记录期权"});window.addEventListener("resize",function(){if(window.innerWidth<=600){_form.style.display="none";_tgl.style.display="inline-block"}else{_form.style.display="block";_tgl.style.display="none"}})})();
 </script>
 
 
