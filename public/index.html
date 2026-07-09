@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45ec27f4 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45ef9bd9 --><!-- clean20260709 -->
 
 
 
@@ -7154,7 +7154,18 @@ document.addEventListener('DOMContentLoaded',function(){
 
 // Overview card
 var _origUpdateSignals=updateOptionSignals;
-updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementById('ovVix');if(ovV)ovV.textContent=(vixPrice||18).toFixed(1);var nowO=new Date().toISOString().slice(0,10),activeO=optionTrades.filter(function(o){return o.expiry>=nowO}).length;var ovA=document.getElementById('ovActive');if(ovA)ovA.textContent=activeO+' 活跃';var ovP=document.getElementById('ovPremium'),totP=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);if(ovP)ovP.textContent=fmtFull(totP);var ovAct=document.getElementById('ovAction'),act=buildActionLine();if(ovAct)ovAct.textContent=act;}
+updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementById('ovVix');if(ovV)ovV.textContent=(vixPrice||18).toFixed(1);var nowO=new Date().toISOString().slice(0,10),activeO=optionTrades.filter(function(o){return o.expiry>=nowO}).length;var ovA=document.getElementById('ovActive');if(ovA)ovA.textContent=activeO+' 活跃';var ovP=document.getElementById('ovPremium'),totP=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);if(ovP)ovP.textContent=fmtFull(totP);var ovAct=document.getElementById('ovAction'),act=buildActionLine();if(ovAct){
+      var ovParts=act.split(' | '),ovHTML='';
+      for(var oi=0;oi<ovParts.length;oi++){
+        var op=ovParts[oi],omatch=op.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/);
+        if(omatch&&omatch.index===0){
+          ovHTML+='<button onclick=quickFill("'+omatch[1]+'","'+omatch[3]+'",'+omatch[5]+') style=font-size:.44rem;padding:1px 5px;margin:0 2px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;>'+op+'</button>';
+        } else {
+          ovHTML+='<span style=font-size:.5rem;>'+op+'</span>';
+        }
+      }
+      ovAct.innerHTML=ovHTML;
+    };}
 
 </script>
 
@@ -7341,3 +7352,19 @@ function rollIt(i){
 }
   rollCheck();
 
+
+function quickFill(sym,type,otmPct){
+  var el=document.getElementById("optSym");if(el)el.value=sym;
+  el=document.getElementById("optType");if(el)el.value=type;
+  var cur=livePrices[sym]||(sym=="VGT"?vgtPrice:sym=="SMH"?smhPrice:0);
+  if(cur>0){
+    var ns=type=="CALL"?cur*(1+otmPct/100):cur*(1-otmPct/100);
+    el=document.getElementById("optStrike");if(el)el.value=ns.toFixed(2);
+  }
+  el=document.getElementById("optExpiry");
+  if(el){var d=new Date();d.setDate(d.getDate()+30);el.value=d.toISOString().slice(0,10);}
+  var pf=document.getElementById("optPremium");if(pf)pf.focus();
+  // Expand form card
+  var fc=document.querySelector("#tab-option .collapsible-card:last-of-type .collapsible-body");
+  if(fc)fc.style.maxHeight="800px";
+}
