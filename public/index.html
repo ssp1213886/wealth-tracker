@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45b49ff5 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45bbce45 --><!-- clean20260709 -->
 
 
 
@@ -6930,10 +6930,10 @@ function getOtm(sym,vix,dd,target){
 
 function getMatrixCell(vix,dd){
   var trend=getTrend(dd);
-  if(vix>=30)return {color:trend==='up'?'bg-yellow':'bg-orange',label:'🔴',action:trend==='up'?'HI VIX':trend==='down'?'HI/SAFE':'HI VIX'};
-  if(trend==='up')return {color:'bg-green',label:'🟢',action:'UP'};
-  if(trend==='flat')return {color:'bg-yellow',label:'🟡',action:'FLAT'};
-  return {color:'bg-orange',label:'🔴',action:'DOWN'};
+  if(vix>=30)return {color:trend==='up'?'bg-yellow':'bg-orange',label:'🔴',action:trend==='up'?'高VIX':trend==='down'?'高VIX/安全':'高VIX'};
+  if(trend==='up')return {color:'bg-green',label:'🟢',action:'上涨'};
+  if(trend==='flat')return {color:'bg-yellow',label:'🟡',action:'横盘'};
+  return {color:'bg-orange',label:'🔴',action:'下跌'};
 }
 
 function holdingsCalc(sym){
@@ -6997,7 +6997,7 @@ function renderMatrix(){
     html+='<td style="padding:4px;text-align:center;border-radius:3px;'+(isActive?'font-weight:620;background:rgba(46,107,80,.1);border:1px solid var(--accent);':'opacity:.35;')+'">V:'+(o.otmPct||0)+'% S:'+(so.otmPct||0)+'%</td>';
   });
   html+='</tr></table>';
-  if(vix>=30)html+='<div style="font-size:.45rem;color:var(--red);text-align:center;">VIX>=30: brake +1% OTM, PUT/2</div>';
+  if(vix>=30)html+='<div style="font-size:.45rem;color:var(--red);text-align:center;">VIX>=30: 刹车+1% OTM, PUT减半</div>';
   el.innerHTML=html;
   var ms=document.getElementById('matrixSummary');if(ms){var action=buildActionLine();ms.innerHTML='<strong>'+cell.label+' '+cell.action+'</strong> → '+action;}
 }
