@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46e5fbaf --><!-- clean20260709 -->
+<!doctype html><!-- 9f46e8ce01 --><!-- clean20260709 -->
 
 
 
@@ -3388,40 +3388,52 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 <section class="tab-panel" id="tab-option">
-<!-- Market Bar -->
-<div class="card" style="padding:8px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.6rem">
-<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov">--</span><span id="ot"></span></div>
-<div><b>VGT</b> <span id="vd">--</span></div><div><b>SMH</b> <span id="sd">--</span></div>
-<div style="flex:1"></div><div><b>现金</b> <span id="oc">$0</span></div></div>
 
-<!-- Record Form -->
-<div class="card" style="padding:10px 14px"><h3 style="font-size:.7rem;margin-bottom:6px">记录交易</h3>
-<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;font-size:.56rem">
-<div><label>类型</label><br><select id="ft"><option>CALL</option><option>PUT</option></select></div>
-<div><label>标的</label><br><select id="fs"><option>VGT</option><option>SMH</option></select></div>
-<div><label>行权价</label><br><input id="fk" type="number" step="0.01" style="width:80px"></div>
-<div><label>权利金</label><br><input id="fp" type="number" step="0.01" style="width:80px"></div>
-<div><label>到期日</label><br><input id="fe" type="date" style="width:115px"></div>
-<div><label>合约</label><br><input id="fc" type="number" min="1" value="1" style="width:50px"></div>
-<div><button id="fbtn" style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px">记录</button></div></div></div>
+<div class="card" style="padding:10px 14px;margin-bottom:10px">
+<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.58rem">
+<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov" style="font-family:Inter,var(--font)">--</span><span id="ot"></span></div>
+<div><b>VGT</b> <span id="vd" style="font-family:Inter,var(--font)">--</span></div>
+<div><b>SMH</b> <span id="sd" style="font-family:Inter,var(--font)">--</span></div>
+<div style="flex:1"></div>
+<div><b>&#29616;&#37329;</b> <span id="oc" style="font-family:Inter,var(--font)">$0</span></div>
+</div></div>
 
-<!-- P&L -->
-<div class="card" style="padding:8px 12px;display:flex;gap:16px;align-items:center;font-size:.56rem">
-<div>本月 <span id="pm" style="font-family:Inter,monospace;font-weight:600">$0</span></div>
-<div>累计 <span id="pt" style="font-family:Inter,monospace;font-weight:600">$0</span></div>
-<div>已实现 <span id="pr" style="font-family:Inter,monospace;font-weight:600">$0</span></div></div>
+<div class="card trade-form" style="padding:10px 14px">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#35760;&#24405;&#26399;&#26435;</h3>
+<div class="tf-row" style="flex-wrap:wrap">
+  <div class="tf-group"><label>&#31867;&#22411;</label><select id="otype"><option value="CALL">CALL</option><option value="PUT">PUT</option></select></div>
+  <div class="tf-group"><label>&#26631;&#30340;</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
+  <div class="tf-group"><label>&#34892;&#26435;&#20215;</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
+  <div class="tf-group"><label>&#26435;&#21033;&#37329;</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
+  <div class="tf-group"><label>&#21040;&#26399;&#26085;</label><input id="oexpiry" type="text" placeholder="MM/DD"></div>
+  <div class="tf-group"><label>&#24352;&#25968;</label><input id="ocontracts" type="number" min="1" value="1"></div>
+  <div class="tf-group" style="align-self:flex-end"><label>&nbsp;</label><button class="btn btn-pri" id="fbtn" onclick="recordTrade()">&#35760;&#24405;</button></div>
+</div>
+</div>
 
-<!-- Strategy Reference -->
-<div class="card" style="padding:10px 14px" id="sr"></div>
-
-<!-- Holdings -->
 <div class="card" style="padding:10px 14px">
-<h3 style="font-size:.7rem;margin-bottom:6px">持仓</h3>
-<table style="width:100%;border-collapse:collapse">
-<tr><td style="color:var(--muted);font-size:.48rem;padding-bottom:4px">标的</td><td style="color:var(--muted);font-size:.48rem">类型</td><td style="color:var(--muted);font-size:.48rem">行权价</td><td style="color:var(--muted);font-size:.48rem">权利金</td><td style="color:var(--muted);font-size:.48rem">到期日</td><td style="color:var(--muted);font-size:.48rem">状态</td><td></td></tr>
-<tbody id="holdings"></tbody>
-</table></div>
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#30408;&#20111;&#27719;&#24635;</h3>
+<div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+<div class="metric"><div class="m-label">&#26412;&#26376;&#26435;&#21033;&#37329;</div><div class="m-val pnl-pos" id="mrev" style="font-family:Inter,var(--font)">$0</div></div>
+<div class="metric"><div class="m-label">&#32047;&#35745;&#26435;&#21033;&#37329;</div><div class="m-val pnl-pos" id="trev" style="font-family:Inter,var(--font)">$0</div></div>
+<div class="metric"><div class="m-label">&#24050;&#23454;&#29616;</div><div class="m-val pnl-pos" id="rpnl" style="font-family:Inter,var(--font)">$0</div></div>
+</div>
+</div>
+
+<div class="card" style="padding:10px 14px">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#31574;&#30053;&#21442;&#32771;</h3>
+<div id="stratref"></div>
+</div>
+
+<div class="card" style="padding:10px 14px">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#25345;&#20179;&#28165;&#21333;</h3>
+<table class="trade-table">
+<thead><tr><th>&#26631;&#30340;</th><th>&#31867;&#22411;</th><th>&#34892;&#26435;&#20215;</th><th>&#26435;&#21033;&#37329;</th><th>&#21040;&#26399;</th><th>&#29366;&#24577;</th><th></th></tr></thead>
+<tbody id="holdingsBody"></tbody>
+</table>
+</div>
 </section>
+
 
 
 
@@ -7451,6 +7463,75 @@ function updateAll(){
 }
 
 updateAll();
+
+
+/* Option page */
+var optionTrades=[];
+(function initOpt(){try{optionTrades=JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')}catch(e){optionTrades=[]}})();
+function saveOpt(){localStorage.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
+
+function getDrawdownO(sym,p){var hi=(sym==='VGT'?livePrices._vgt_hi:livePrices._smh_hi)||p;return hi>0?Math.max(0,(hi-p)/hi*100):0}
+function getOtmCalc(dd,vix,isCall,isV){var tr=dd<=5?'up':dd<=12?'flat':'down',otm=0;if(isCall){otm=tr==='up'?isV?9:7:tr==='flat'?isV?7:5:isV?10:8}else{otm=dd<=5?isV?12:10:dd<=12?isV?9:8:isV?8:7}return otm+(vix>=30?1:0)}
+
+function renderHoldings(){
+ var el=document.getElementById('holdingsBody');if(!el)return;
+ var now=(new Date()).toISOString().slice(0,10);optionTrades=JSON.parse(localStorage.getItem('wealth_options_v2')||'[]');
+ if(!optionTrades.length){el.innerHTML='<tr><td colspan=7 style="text-align:center;padding:20px;color:var(--muted);font-size:.64rem">'+"\u6682\u65e0\u6301\u4ed3"+'</td></tr>';return}
+ var rows=[];
+ for(var i=0;i<optionTrades.length;i++){var o=optionTrades[i],exp=o.expiry<now,dl=Math.ceil((new Date(o.expiry)-new Date(now))/864e5),st='',curP=livePrices[o.sym]||0;
+  if(exp)st='<span class="trade-del" style="opacity:1;font-size:.52rem">'+"\u5df2\u8fc7\u671f"+'</span>';
+  else{var itm=(o.type==='CALL'&&curP>o.strike)||(o.type==='PUT'&&curP<o.strike);
+   if(itm&&dl<=3)st='<span class="badge-red">'+"\u5b9e\u503c "+dl+"\u5929"+'</span>';
+   else if(itm)st='<span class="badge-orange">'+dl+''+'\u5929\u540e'+'</span>';
+   else if(dl<=5)st='<span class="status-red">'+dl+''+'\u5929\u540e'+'</span>';
+   else st='<span class="status-green">'+dl+''+'\u5929'+'</span>'}
+  rows.push('<tr><td>'+o.sym+'</td><td>'+o.type+'</td><td>$'+o.strike.toFixed(2)+'</td><td>$'+(o.premium||0).toFixed(2)+'</td><td style="font-size:.54rem;color:var(--muted)">'+o.expiry+'</td><td style="font-size:.54rem">'+st+'</td><td><button class="trade-del" onclick="delOpt('+i+')">&#10005;</button></td></tr>')}
+ el.innerHTML=rows.join('')}
+
+function delOpt(i){optionTrades.splice(i,1);saveOpt();updateAllO()}
+function recordTrade(){var t=document.getElementById('otype').value,s=document.getElementById('osym').value,k=parseFloat(document.getElementById('ostrike').value||0),p=parseFloat(document.getElementById('opremium').value||0),e=document.getElementById('oexpiry').value,c=parseInt(document.getElementById('ocontracts').value||1);if(!t||!s||!k||!e||k<=0)return;optionTrades.push({sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c});saveOpt();document.getElementById('ostrike').value='';document.getElementById('opremium').value='';updateAllO()}
+
+function renderStrategyO(){
+ var el=document.getElementById('stratref');if(!el)return;
+ var vix=(typeof vixPrice!=='undefined'?vixPrice:18),vp=livePrices.VGT||580,sp=livePrices.SMH||540;
+ var ddV=getDrawdownO('VGT',vp),ddS=getDrawdownO('SMH',sp),curV=ddV<=5?0:ddV<=12?1:2,curS=ddS<=5?0:ddS<=12?1:2;
+ var vixtag=vix>=30?'<span class="badge-red" style="font-size:.48rem">\u5239\u8f66+1%</span>':vix>20?'<span class="badge-orange" style="font-size:.48rem">\u6ce2\u52a8</span>':'<span class="badge-green" style="font-size:.48rem">\u6b63\u5e38</span>';
+ var ref=[];
+ for(var s=0;s<3;s++){var dd=s===0?3:s===1?8:15;ref.push({vC:getOtmCalc(dd,vix,true,true),vP:getOtmCalc(dd,vix,false,true),sC:getOtmCalc(dd,vix,true,false),sP:getOtmCalc(dd,vix,false,false)})}
+ var n=['\u4e0a\u6da8 \u22645%','\u6a2a\u76d8 5-12%','\u4e0b\u8dcc >12%'];
+ var h='<div style="font-size:.58rem;margin-bottom:4px"><b>VIX</b> <span style="font-family:Inter,var(--font)">'+vix.toFixed(1)+'</span> '+vixtag+'  |  VGT '+ddV.toFixed(1)+'%  SMH '+ddS.toFixed(1)+'%</div>';
+ h+='<table class="trade-table" style="font-size:.58rem"><thead><tr><th></th><th>CALL OTM</th><th>CALL Strike</th><th>PUT OTM</th><th>PUT Strike</th></tr></thead><tbody>';
+ for(var r=0;r<3;r++){var hl=curV===r?' style="background:var(--accent-l);font-weight:550"':'',cs='$',ps='$';
+  if(vp>0){cs+=(vp*(1+ref[r].vC/100)).toFixed(0);ps+=(vp*(1-ref[r].vP/100)).toFixed(0)}else{cs+='--';ps+='--'}
+  h+='<tr'+hl+'><td><b>VGT</b> '+n[r]+'</td><td>'+ref[r].vC+'%</td><td style="font-family:Inter,var(--font)">'+cs+'</td><td>'+ref[r].vP+'%</td><td style="font-family:Inter,var(--font)">'+ps+'</td></tr>'}
+ h+='</tbody></table>';
+ h+='<table class="trade-table" style="font-size:.58rem;margin-top:6px"><thead><tr><th></th><th>CALL OTM</th><th>CALL Strike</th><th>PUT OTM</th><th>PUT Strike</th></tr></thead><tbody>';
+ for(var r=0;r<3;r++){var hl=curS===r?' style="background:var(--accent-l);font-weight:550"':'',cs='$',ps='$';
+  if(sp>0){cs+=(sp*(1+ref[r].sC/100)).toFixed(0);ps+=(sp*(1-ref[r].sP/100)).toFixed(0)}else{cs+='--';ps+='--'}
+  h+='<tr'+hl+'><td><b>SMH</b> '+n[r]+'</td><td>'+ref[r].sC+'%</td><td style="font-family:Inter,var(--font)">'+cs+'</td><td>'+ref[r].sP+'%</td><td style="font-family:Inter,var(--font)">'+ps+'</td></tr>'}
+ h+='</tbody></table>';
+ el.innerHTML=h}
+
+function updatePnLO(){
+ var now=(new Date()).toISOString().slice(0,10),thisM=now.slice(0,7);
+ optionTrades=JSON.parse(localStorage.getItem('wealth_options_v2')||'[]');
+ var total=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);
+ var month=optionTrades.filter(function(o){return o.expiry>=now&&o.expiry.slice(0,7)===thisM}).reduce(function(s,o){return s+(o.premium||0)},0);
+ var real=optionTrades.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);
+ var me=document.getElementById('mrev'),te=document.getElementById('trev'),re=document.getElementById('rpnl');
+ if(me)me.textContent='$'+month.toFixed(2);if(te)te.textContent='$'+total.toFixed(2);if(re)re.textContent='$'+real.toFixed(2)}
+
+function updateAllO(){
+ var vix=typeof vixPrice!=='undefined'?vixPrice:18,vc=document.getElementById('ov'),ot=document.getElementById('ot');
+ if(vc)vc.textContent=vix.toFixed(1);
+ if(ot)ot.innerHTML=vix>=30?' <span class="badge-red" style="font-size:.48rem">\u9ad8</span>':vix>20?' <span class="badge-orange" style="font-size:.48rem">\u6ce2\u52a8</span>':' <span class="badge-green" style="font-size:.48rem">\u6b63\u5e38</span>';
+ var ddV=getDrawdownO('VGT',livePrices.VGT||0),ddS=getDrawdownO('SMH',livePrices.SMH||0);
+ var vd=document.getElementById('vd'),sd=document.getElementById('sd');
+ if(vd){vd.textContent='-'+ddV.toFixed(1)+'%';vd.style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)'}
+ if(sd){sd.textContent='-'+ddS.toFixed(1)+'%';sd.style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)'}
+ var oc=document.getElementById('oc');if(oc)oc.textContent='$'+(typeof cashBalance!=='undefined'?Math.max(0,cashBalance):0).toFixed(0);
+ renderStrategyO();renderHoldings();updatePnLO()}
+
 </script>
 
 
@@ -7653,4 +7734,5 @@ function quickFill(sym,type,otmPct){
   if(fc)fc.style.maxHeight="800px";
   updateAll();
   updateAll();
+  updateAllO();
 }
