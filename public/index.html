@@ -2463,53 +2463,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-/* === Option page === */
-.market-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);margin-bottom:12px;font-size:.68rem}
-.market-bar .m-item{display:flex;align-items:center;gap:4px}
-.market-bar .m-label{color:var(--muted);font-size:.58rem}
-.market-bar .m-val{font-weight:600;font-family:Inter,var(--font)}
-.tag-high{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.56rem;font-weight:600;background:rgba(217,69,53,.12);color:var(--red)}
-.tag-wave{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.56rem;font-weight:600;background:rgba(230,140,50,.12);color:var(--orange,#e68c32)}
-.tag-normal{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.56rem;font-weight:600;background:var(--accent-l);color:var(--accent)}
-.rec-card{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.rec-card h3{font-size:.7rem;font-weight:600;margin-bottom:10px;color:var(--fg)}
-.rec-card .r-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px}
-.rec-card .r-row .r-grp{display:flex;flex-direction:column;gap:3px;min-width:70px}
-.rec-card .r-row .r-grp label{font-size:.52rem;color:var(--muted)}
-.rec-card .r-row .r-grp input,.rec-card .r-row .r-grp select{height:30px;padding:2px 8px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:var(--bg);color:var(--fg);font-family:var(--font);font-size:.66rem}
-.rec-card .r-row .r-grp input:focus,.rec-card .r-row .r-grp select:focus{outline:none;border-color:var(--accent)}
-.rec-card .r-row .r-grp.wide{min-width:100px;flex:1}
-.pnl-card{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.pnl-card h3{font-size:.7rem;font-weight:600;margin-bottom:10px;color:var(--fg)}
-.pnl-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pnl-item{text-align:center}
-.pnl-item .pnl-label{font-size:.52rem;color:var(--muted);margin-bottom:4px}
-.pnl-item .pnl-val{font-size:1.05rem;font-weight:600;font-family:Inter,var(--font)}
-.pnl-item .pnl-pos{color:var(--accent)}
-.pnl-item .pnl-neg{color:var(--red)}
-.strategy-matrix{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.strategy-matrix h3{font-size:.7rem;font-weight:600;margin-bottom:10px;color:var(--fg)}
-.otm-table{width:100%;border-collapse:collapse;font-size:.62rem}
-.otm-table thead th{text-align:right;padding:6px 8px;border-bottom:2px solid var(--accent);font-weight:550;font-size:.58rem;color:var(--muted)}
-.otm-table thead th:first-child{text-align:left}
-.otm-table tbody td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums}
-.otm-table tbody td:first-child{text-align:left;font-weight:550}
-.otm-table tbody tr.active-row{background:var(--accent-l);font-weight:600}
-.otm-table tbody tr:hover{background:var(--surface)}
-.holdings-table{width:100%;border-collapse:collapse;font-size:.64rem}
-.holdings-table thead th{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);font-weight:500;font-size:.52rem;color:var(--muted)}
-.holdings-table thead th:first-child{text-align:left}
-.holdings-table tbody td{text-align:right;padding:8px;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums}
-.holdings-table tbody td:first-child{text-align:left}
-.holdings-table tbody tr:nth-child(even){background:rgba(46,107,80,.03)}
-.holdings-table tbody tr:hover{background:var(--accent-l)}
-.badge-red{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.56rem;font-weight:600;background:rgba(217,69,53,.12);color:var(--red)}
-.badge-orange{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.56rem;font-weight:600;background:rgba(230,140,50,.12);color:var(--orange,#e68c32)}
-.badge-green{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.56rem;font-weight:600;background:var(--accent-l);color:var(--accent)}
-.status-red{color:var(--red);font-weight:500}
-.status-green{color:var(--fg)}
-.action-line{padding:10px 14px;background:var(--accent-l);border-left:4px solid var(--accent);border-radius:var(--radius-sm);margin-bottom:8px;font-size:.66rem;line-height:1.5}
-.danger-zone{border-left-color:var(--red);background:rgba(217,69,53,.06)}
+/* -color:var(--red);background:rgba(217,69,53,.06)}
 .pct-tag{display:inline-block;padding:1px 5px;background:var(--surface);border-radius:3px;font-family:Inter,var(--font);font-size:.6rem;font-weight:550}
 .market-ref{font-size:.58rem;color:var(--muted);margin-top:6px;line-height:1.5}
 .market-ref span{font-weight:550;color:var(--fg)}
@@ -3382,40 +3336,52 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 <section class="tab-panel" id="tab-option">
-<!-- Market Bar -->
-<div class="card" style="padding:8px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.6rem">
-<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov">--</span><span id="ot"></span></div>
-<div><b>VGT</b> <span id="vd">--</span></div><div><b>SMH</b> <span id="sd">--</span></div>
-<div style="flex:1"></div><div><b>现金</b> <span id="oc">$0</span></div></div>
 
-<!-- Record Form -->
-<div class="card" style="padding:10px 14px"><h3 style="font-size:.7rem;margin-bottom:6px">记录交易</h3>
-<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;font-size:.56rem">
-<div><label>类型</label><br><select id="ft"><option>CALL</option><option>PUT</option></select></div>
-<div><label>标的</label><br><select id="fs"><option>VGT</option><option>SMH</option></select></div>
-<div><label>行权价</label><br><input id="fk" type="number" step="0.01" style="width:80px"></div>
-<div><label>权利金</label><br><input id="fp" type="number" step="0.01" style="width:80px"></div>
-<div><label>到期日</label><br><input id="fe" type="date" style="width:115px"></div>
-<div><label>合约</label><br><input id="fc" type="number" min="1" value="1" style="width:50px"></div>
-<div><button id="fbtn" style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px">记录</button></div></div></div>
+<div class="card" style="padding:10px 14px;margin-bottom:10px">
+<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.58rem">
+<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov" style="font-family:Inter,var(--font)">--</span><span id="ot"></span></div>
+<div><b>VGT</b> <span id="vd" style="font-family:Inter,var(--font)">--</span></div>
+<div><b>SMH</b> <span id="sd" style="font-family:Inter,var(--font)">--</span></div>
+<div style="flex:1"></div>
+<div style="text-align:right"><b>现金</b> <span id="oc" style="font-family:Inter,var(--font)">$0</span><div style="font-size:.44rem;color:var(--muted)">可用 <span id="ocAvail">$0</span> • 冻结 <span id="ocFrozen">$0</span></div></div>
+</div></div>
 
-<!-- P&L -->
-<div class="card" style="padding:8px 12px;display:flex;gap:16px;align-items:center;font-size:.56rem">
-<div>本月 <span id="pm" style="font-family:Inter,monospace;font-weight:600">$0</span></div>
-<div>累计 <span id="pt" style="font-family:Inter,monospace;font-weight:600">$0</span></div>
-<div>已实现 <span id="pr" style="font-family:Inter,monospace;font-weight:600">$0</span></div></div>
+<div class="card trade-form" style="padding:10px 14px">
+<h3 style="font-size:.7rem;font-weight:600;margin-bottom:8px;color:var(--fg)">记录期权</h3>
+<div class="tf-row" style="flex-wrap:wrap">
+  <div class="tf-group"><label>类型</label><select id="otype"><option value="CALL">CALL</option><option value="PUT">PUT</option></select></div>
+  <div class="tf-group"><label>标的</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
+  <div class="tf-group"><label>行权价</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
+  <div class="tf-group"><label>权利金</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
+  <div class="tf-group"><label>到期日</label><input id="oexpiry" type="date"></div>
+  <div class="tf-group"><label>张数</label><input id="ocontracts" type="number" min="1" value="1"></div>
+  <div class="tf-group" style="align-self:flex-end"><label>&nbsp;</label><button class="btn btn-pri" id="fbtn" onclick="recordTrade()">记录</button></div>
+</div>
+</div>
 
-<!-- Strategy Reference -->
-<div class="card" style="padding:10px 14px" id="sr"></div>
-
-<!-- Holdings -->
 <div class="card" style="padding:10px 14px">
-<h3 style="font-size:.7rem;margin-bottom:6px">持仓</h3>
-<table style="width:100%;border-collapse:collapse">
-<tr><td style="color:var(--muted);font-size:.48rem;padding-bottom:4px">标的</td><td style="color:var(--muted);font-size:.48rem">类型</td><td style="color:var(--muted);font-size:.48rem">行权价</td><td style="color:var(--muted);font-size:.48rem">权利金</td><td style="color:var(--muted);font-size:.48rem">到期日</td><td style="color:var(--muted);font-size:.48rem">状态</td><td></td></tr>
-<tbody id="holdings"></tbody>
-</table></div>
+<h3 style="font-size:.7rem;font-weight:600;margin-bottom:8px;color:var(--fg)">盈亏汇总</h3>
+<div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+<div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev" style="font-family:Inter,var(--font)">$0</div></div>
+<div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev" style="font-family:Inter,var(--font)">$0</div></div>
+<div class="metric"><div class="m-label">已实现</div><div class="m-val pnl-pos" id="rpnl" style="font-family:Inter,var(--font)">$0</div></div>
+</div>
+</div>
+
+<div class="card" style="padding:10px 14px">
+<h3 style="font-size:.7rem;font-weight:600;margin-bottom:8px;color:var(--fg)">策略参考</h3>
+<div id="stratref"></div>
+</div>
+
+<div class="card" style="padding:10px 14px">
+<h3 style="font-size:.7rem;font-weight:600;margin-bottom:8px;color:var(--fg)">持仓清单</h3>
+<table class="trade-table">
+<thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>权利金</th><th>到期</th><th>状态</th><th></th></tr></thead>
+<tbody id="holdingsBody"></tbody>
+</table>
+</div>
 </section>
+
 
 
 
