@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46802463 --><!-- clean20260709 -->
+<!doctype html><!-- 9f46841b84 --><!-- clean20260709 -->
 
 
 
@@ -7368,5 +7368,5 @@ function quickFill(sym,type,otmPct){
   var fc=document.querySelector("#tab-option .collapsible-card:last-of-type .collapsible-body");
   if(fc)fc.style.maxHeight="800px";
   // PnL summary
-  var op=document.getElementById("optPnL");if(op){var now=new Date().toISOString().slice(0,10),tot=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0),real=optionTrades.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);op.textContent=tot>0?"权利金 总"+fmtFull(tot)+(real>0?"(已实现"+fmtFull(real)+")":""):"";}
+  var op=document.getElementById("optPnL");if(op){var ot=optionTrades;if(!ot||!ot.length){try{ot=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){ot=[]}}var now=new Date().toISOString().slice(0,10),tot=ot.reduce(function(s,o){return s+(o.premium||0)},0),real=ot.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);op.textContent="权利金 "+fmtFull(tot)+(real>0?"(已实现"+fmtFull(real)+")":"");}
 }
