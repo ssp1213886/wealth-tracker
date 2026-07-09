@@ -7015,9 +7015,9 @@ function getOtm(sym,vix,dd,target){
   var isVgt=(sym==='VGT'),trend=getTrend(dd),otm=0,label='';
   var vixBrake=vix>=30?1:0;
   if(target==='call'){
-    if(trend==='up'){otm=isVgt?8:7;label='🟢 趋势上涨';}
-    else if(trend==='flat'){otm=isVgt?7:5;label='🟡 横盘';}
-    else{otm=isVgt?10:8;label='🔴 趋势下跌';}
+    if(trend==='up'){otm=isVgt?8:7;label='🟢 趋势回撤';}
+    else if(trend==='flat'){otm=isVgt?7:5;label='🟡 回撤';}
+    else{otm=isVgt?10:8;label='🔴 趋势回撤';}
     otm+=vixBrake;
   }else{
     var isDiscount=dd>12&&trend!=='down';
@@ -7033,9 +7033,9 @@ function getOtm(sym,vix,dd,target){
 function getMatrixCell(vix,dd){
   var trend=getTrend(dd);
   if(vix>=30)return {color:trend==='up'?'bg-yellow':'bg-orange',label:'🔴',action:trend==='up'?'高VIX':trend==='down'?'高VIX/安全':'高VIX'};
-  if(trend==='up')return {color:'bg-green',label:'🟢',action:'上涨'};
-  if(trend==='flat')return {color:'bg-yellow',label:'🟡',action:'横盘'};
-  return {color:'bg-orange',label:'🔴',action:'下跌'};
+  if(trend==='up')return {color:'bg-green',label:'🟢',action:'回撤'};
+  if(trend==='flat')return {color:'bg-yellow',label:'🟡',action:'回撤'};
+  return {color:'bg-orange',label:'🔴',action:'回撤'};
 }
 
 function holdingsCalc(sym){
@@ -7080,7 +7080,7 @@ function renderMatrix(){
   // CALL table
   html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;">CALL OTM 方案</div>';
   html+='<table style="border-collapse:collapse;width:100%;font-size:.46rem;margin-bottom:6px;"><tr>';
-  ['趋势向上','横盘','趋势向下'].forEach(function(l){html+='<td style="padding:3px 4px;text-align:center;color:var(--muted);">'+l+'</td>';});
+  ['趋势向上','回撤','趋势向下'].forEach(function(l){html+='<td style="padding:3px 4px;text-align:center;color:var(--muted);">'+l+'</td>';});
   html+='</tr><tr>';
   [2,7,15].forEach(function(dd,i){
     var o=getOtm('VGT',vix,dd,'call'),so=getOtm('SMH',vix,dd,'call');
