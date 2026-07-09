@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46c0d3a7 --><!-- clean20260709 -->
+<!doctype html><!-- 9f46c46707 --><!-- clean20260709 -->
 
 
 
@@ -3273,7 +3273,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="card collapsible-card"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>💰 买卖操作录入</h3></div><a class="btn btn-out btn-sm" id="hmRefresh" style="font-size:.64rem;">↻ 刷新</a></div><div class="collapsible-body"><div id="hmPricesCompact" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:.68rem;">Loading...</div><div style="text-align:right;font-size:.5rem;color:var(--muted);margin-bottom:8px;" id="hmPriceTime"></div><span id="mktStatus" style="display:none;font-size:.55rem;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;"></span><div class="trade-form"><div class="tf-row"><div class="tf-group"><label>类型</label><select id="tfType"><option value="buy">买入</option><option value="sell">卖出</option></select></div><div class="tf-group"><label>标的</label><select id="tfAsset"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC</option></select></div></div><div class="tf-row tf-row-full"><div class="tf-group"><label>日期</label><input type="date" id="tfDate"></div></div><div class="tf-row"><div class="tf-group"><label>价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div><div class="tf-group"><label>数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div></div><button class="btn btn-pri" id="btnAddTrade">+ 添加交易</button></div><div class="manual-bar"><span class="manual-label">手动设价</span><input class="manual-input" id="hmManualSym" placeholder="VGT"><input class="manual-input" id="hmManualPrice" type="number" inputmode="decimal" step="any" placeholder="价格"><a class="btn btn-out btn-sm manual-btn" id="hmManualSet">设价</a></div></div></div>
+  <div class="card collapsible-card"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>💰 买卖操作录入</h3></div><a class="btn btn-out btn-sm" id="hmRefresh" style="font-size:.64rem;">↻ 刷新</a></div><div class="collapsible-body"><div id="hmPricesCompact" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:.68rem;">Loading...</div><div style="text-align:right;font-size:.5rem;color:var(--muted);margin-bottom:8px;" id="hmPriceTime"></div><span id="mktStatus" style="display:none;font-size:.55rem;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;"></span><div class="trade-form"><div class="tf-row"><div class="tf-group"><label>类型</label><select id="tfType"><option value="buy">买入</option><option value="sell">卖出</option></select></div><div class="tf-group"><label>标的</label><select id="tfAsset"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC</option><option value="SGOV">SGOV</option></select></div></div><div class="tf-row tf-row-full"><div class="tf-group"><label>日期</label><input type="date" id="tfDate"></div></div><div class="tf-row"><div class="tf-group"><label>价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div><div class="tf-group"><label>数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div></div><button class="btn btn-pri" id="btnAddTrade">+ 添加交易</button></div><div class="manual-bar"><span class="manual-label">手动设价</span><input class="manual-input" id="hmManualSym" placeholder="VGT"><input class="manual-input" id="hmManualPrice" type="number" inputmode="decimal" step="any" placeholder="价格"><a class="btn btn-out btn-sm manual-btn" id="hmManualSet">设价</a></div></div></div>
 
 
 
@@ -3330,27 +3330,41 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 <section class="tab-panel" id="tab-option">
-  <div class="card" style="padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.62rem;"><div><span style="color:var(--muted);">VIX</span> <strong id="statusVix" style="font-family:Inter,var(--font);">--</strong> <span id="statusVixTag" style="font-size:.5rem;"></span></div><div><span style="color:var(--muted);">VGT DD</span> <strong id="statusVgtDD" style="font-family:Inter,var(--font);">--</strong></div><div><span style="color:var(--muted);">SMH DD</span> <strong id="statusSmhDD" style="font-family:Inter,var(--font);">--</strong></div><div style="flex:1;text-align:right;font-weight:540;" id="statusAction"></div></div> <span id="optPnL" style="font-size:.54rem;color:var(--accent);margin-left:8px;"></span>
-  <div class="card collapsible-card" style="padding:8px;margin-bottom:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><h3 style="font-size:.66rem;margin:0;">🧩 VIX × 回撤 决策矩阵</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body" style="margin-top:6px;"><div id="matrixGrid" style="margin-bottom:4px;"></div><div id="matrixSummary" style="padding:5px 8px;border-radius:4px;font-size:.52rem;background:var(--surface);line-height:1.5;"></div></div></div>
-  <div class="card collapsible-card" style="padding:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;"><h3 style="font-size:.66rem;margin:0;">📋 期权持仓</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;"><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">标的</label><select id="optSym" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="VGT">VGT</option><option value="SMH">SMH</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">类型</label><select id="optType" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="PUT">PUT</option><option value="CALL">CALL</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">行权价</label><input type="number" id="optStrike" step="any" min="0" placeholder="108" style="width:70px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">到期日</label><input type="date" id="optExpiry" style="width:110px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">权利金</label><input type="number" id="optPremium" step="any" min="0" placeholder="136" style="width:60px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><button class="btn btn-pri btn-sm" id="btnAddOption" style="font-size:.52rem;padding:4px 10px;">+ 录入</button></div><table class="trade-table"><thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>到期日</th><th>状态</th><th>权利金</th><th></th></tr></thead><tbody id="optBody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr></tbody></table></div></div>
+<!-- Market Bar -->
+<div class="card" style="padding:8px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.6rem">
+<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov">--</span><span id="ot"></span></div>
+<div><b>VGT</b> <span id="vd">--</span></div><div><b>SMH</b> <span id="sd">--</span></div>
+<div style="flex:1"></div><div><b>现金</b> <span id="oc">$0</span></div></div>
 
-  <div class="card" id="optPnLCard" style="padding:10px 14px;margin-bottom:10px;">
-    <div style="display:flex;gap:20px;font-size:.6rem;">
-      <div><span style="color:var(--muted)">本月权利金</span> <span id="optPnlMonth" style="font-family:Inter,var(--font);">$0</span></div>
-      <div><span style="color:var(--muted)">累计权利金</span> <span id="optPnlTotal" style="font-family:Inter,var(--font);">$0</span></div>
-      <div><span style="color:var(--muted)">已实现</span> <span id="optPnlRealized" style="font-family:Inter,var(--font);">$0</span></div>
-    </div>
-  </div>
-<div class="card" style="padding:14px;margin-bottom:12px;"><h3 style="font-size:.7rem;margin:0 0 4px 0;">💰 现金池</h3><div style="font-size:1.3rem;font-weight:620;font-family:Inter,var(--font);" id="cashPoolPct">--</div><div style="font-size:.6rem;color:var(--muted);" id="cashPoolBreakdown">净现金 -- / 持仓 --</div><div style="height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-top:8px;"><div id="cashPoolBar" style="height:100%;background:var(--accent);border-radius:4px;width:0;transition:width .4s;"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.48rem;color:var(--muted);"><span>&lt;10%停PUT</span><span>30%强制买</span></div></div>
-  
+<!-- Record Form -->
+<div class="card" style="padding:10px 14px"><h3 style="font-size:.7rem;margin-bottom:6px">记录交易</h3>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;font-size:.56rem">
+<div><label>类型</label><br><select id="ft"><option>CALL</option><option>PUT</option></select></div>
+<div><label>标的</label><br><select id="fs"><option>VGT</option><option>SMH</option></select></div>
+<div><label>行权价</label><br><input id="fk" type="number" step="0.01" style="width:80px"></div>
+<div><label>权利金</label><br><input id="fp" type="number" step="0.01" style="width:80px"></div>
+<div><label>到期日</label><br><input id="fe" type="date" style="width:115px"></div>
+<div><label>合约</label><br><input id="fc" type="number" min="1" value="1" style="width:50px"></div>
+<div><button id="fbtn" style="padding:4px 12px;background:var(--accent);color:#fff;border:none;border-radius:4px">记录</button></div></div></div>
 
+<!-- P&L -->
+<div class="card" style="padding:8px 12px;display:flex;gap:16px;align-items:center;font-size:.56rem">
+<div>本月 <span id="pm" style="font-family:Inter,monospace;font-weight:600">$0</span></div>
+<div>累计 <span id="pt" style="font-family:Inter,monospace;font-weight:600">$0</span></div>
+<div>已实现 <span id="pr" style="font-family:Inter,monospace;font-weight:600">$0</span></div></div>
 
+<!-- Strategy Reference -->
+<div class="card" style="padding:10px 14px" id="sr"></div>
 
-
-
-
-
+<!-- Holdings -->
+<div class="card" style="padding:10px 14px">
+<h3 style="font-size:.7rem;margin-bottom:6px">持仓</h3>
+<table style="width:100%;border-collapse:collapse">
+<tr><td style="color:var(--muted);font-size:.48rem;padding-bottom:4px">标的</td><td style="color:var(--muted);font-size:.48rem">类型</td><td style="color:var(--muted);font-size:.48rem">行权价</td><td style="color:var(--muted);font-size:.48rem">权利金</td><td style="color:var(--muted);font-size:.48rem">到期日</td><td style="color:var(--muted);font-size:.48rem">状态</td><td></td></tr>
+<tbody id="holdings"></tbody>
+</table></div>
 </section>
+
 
 
 
@@ -3374,7 +3388,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="card collapsible-card" style="padding:14px;"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3 style="font-size:.74rem;">📜 操作日志</h3><button class="btn btn-out btn-sm" id="btnClearActivity" style="font-size:.45rem;padding:2px 8px;min-height:auto;margin-left:auto;">清空</button></div><div class="collapsible-body" id="activityLog" style="max-height:400px;overflow-y:auto;"><div style="text-align:center;padding:16px;color:var(--muted);font-size:.6rem;">暂无操作记录</div></div></div>
+  <div class="card collapsible-card collapsed" style="padding:14px;"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3 style="font-size:.74rem;">📜 操作日志</h3><button class="btn btn-out btn-sm" id="btnClearActivity" style="font-size:.45rem;padding:2px 8px;min-height:auto;margin-left:auto;">清空</button></div><div class="collapsible-body" id="activityLog" style="max-height:400px;overflow-y:auto;"><div style="text-align:center;padding:16px;color:var(--muted);font-size:.6rem;">暂无操作记录</div></div></div>
 
 
 
@@ -3446,7 +3460,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="card collapsible-card"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>📋 交易历史</h3></div><div style="display:flex;gap:4px;align-items:center;"><select id="tradeFilterSym" style="padding:3px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.56rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option><option>SGOV</option></select><button class="btn btn-out btn-sm" id="btnClearTrades" style="font-size:.45rem;padding:2px 8px;min-height:auto;">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>📋 交易历史</h3></div><div style="display:flex;gap:4px;align-items:center;"><select id="tradeFilterSym" style="padding:3px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.56rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option><option>SGOV</option></select><button class="btn btn-out btn-sm" id="btnClearTrades" style="font-size:.45rem;padding:2px 8px;min-height:auto;">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
 
 
 
@@ -3454,7 +3468,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="card collapsible-card"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>💵 资金流水</h3></div><div style="display:flex;gap:4px;align-items:center;"><select id="cashFilter" style="padding:3px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"><option value="">全部</option><option value="入金">入金</option><option value="出金">出金</option></select><button class="btn btn-out btn-sm" id="btnClearCashLog" style="font-size:.45rem;padding:2px 8px;min-height:auto;">清空</button></div></div><div class="collapsible-body"><div style="display:flex;gap:16px;font-size:.56rem;margin-bottom:8px;"><span style="color:var(--accent);">入金 <strong id="cashTotalIn">$0</strong></span><span style="color:var(--red);">出金 <strong id="cashTotalOut">$0</strong></span></div><table class="trade-table"><thead><tr><th>日期</th><th>类型</th><th>金额</th><th></th></tr></thead><tbody id="cashLogBody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>💵 资金流水</h3></div><div style="display:flex;gap:4px;align-items:center;"><select id="cashFilter" style="padding:3px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.52rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"><option value="">全部</option><option value="入金">入金</option><option value="出金">出金</option></select><button class="btn btn-out btn-sm" id="btnClearCashLog" style="font-size:.45rem;padding:2px 8px;min-height:auto;">清空</button></div></div><div class="collapsible-body"><div style="display:flex;gap:16px;font-size:.56rem;margin-bottom:8px;"><span style="color:var(--accent);">入金 <strong id="cashTotalIn">$0</strong></span><span style="color:var(--red);">出金 <strong id="cashTotalOut">$0</strong></span></div><table class="trade-table"><thead><tr><th>日期</th><th>类型</th><th>金额</th><th></th></tr></thead><tbody id="cashLogBody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
 
 
 
@@ -5767,7 +5781,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
 
-  if(tab==='option')updateCashPage();
+  if(tab==='option')updateAll();
 
 
 
@@ -6399,7 +6413,7 @@ function updateSidebarPrices(){var c=JSON.parse(localStorage.getItem(PRICE_KEY)|
 
 
 
-var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg.url||!syncCfg.token)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,2000)}function autoPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}'),activities:JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')};syncPushImpl(data)}function autoPull(){if(!syncCfg.url||!syncCfg.token)return;syncFetch('GET').then(function(r){if(!r.data)return;if(r.data.trades){trades=r.data.trades;saveTradesNoPush()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCashNoPush()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLogNoPush()}if(r.data.activities){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.activities))}if(r.data.state){state=r.data.state;saveStateNoPush()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}initTradeIds();updatePortfolio();updateSidebarPrices();updateSidebar();renderCashLog()}).catch(function(){})}function saveTradesNoPush(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades))}catch(e){}}function saveCashNoPush(){try{localStorage.setItem(CB_KEY,cashBalance.toString())}catch(e){}}function saveCashLogNoPush(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog))}catch(e){}}function saveStateNoPush(){try{localStorage.setItem(LSKEY,JSON.stringify(state))}catch(e){}}function syncPushImpl(data){var dot=document.getElementById('syncDot');if(dot)dot.style.background='var(--orange)';syncFetch('POST',data).then(function(){var el=document.getElementById('syncStatus');if(el){el.textContent='auto '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}if(dot){dot.style.background='var(--accent)';setTimeout(function(){dot.style.background='var(--muted)'},2000)};showToast('已同步到云端','ok')}).catch(function(){if(dot)dot.style.background='var(--red)';showToast('同步失败','err')})} var SYNC_KEY='wealth_sync_cfg';var syncCfg=loadSyncCfg();function loadSyncCfg(){try{return JSON.parse(localStorage.getItem(SYNC_KEY)||'{"url":"","token":""}')}catch(e){return{url:"",token:""}}}function saveSyncCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(syncCfg))}catch(e){}}function syncFetch(method,body){var base=syncCfg.url||location.origin;return fetch(base.replace(/\/$/,'')+'/api/sync',{method:method,headers:{'Content-Type':'application/json','X-Auth-Token':syncCfg.token},body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}function syncPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}')};syncFetch('POST',data).then(function(r){var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}function syncPull(){syncFetch('GET').then(function(r){if(!r.data)throw new Error('空响应');if(r.data.trades){trades=r.data.trades;saveTrades()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCash()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLog()}if(r.data.notes){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.notes))}if(r.data.state){state=r.data.state;saveState()}if(r.data.options){optionTrades=r.data.options;saveOptions();renderOptions()}if(r.data.options){optionTrades=r.data.options;saveOptions();renderOptions()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)';initTradeIds();updatePortfolio();updateSidebar();updateSidebarPrices();renderCashLog();location.reload()}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}document.getElementById('btnSyncPush').addEventListener('click',syncPush);document.getElementById('btnSyncPull').addEventListener('click',syncPull);document.getElementById('syncUrl').addEventListener('change',function(){syncCfg.url=this.value;saveSyncCfg()});document.getElementById('syncToken').addEventListener('change',function(){syncCfg.token=this.value;saveSyncCfg()});(function(){var el=document.getElementById('syncUrl');if(el){if(syncCfg.url)el.value=syncCfg.url;else{el.value=location.origin;el.placeholder=location.origin;syncCfg.url=location.origin;saveSyncCfg()}}var t2=document.getElementById('syncToken');if(t2&&syncCfg.token)t2.value=syncCfg.token})();
+var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg.url||!syncCfg.token)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,2000)}function autoPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}'),activities:JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')};syncPushImpl(data)}function autoPull(){if(!syncCfg.url||!syncCfg.token)return;syncFetch('GET').then(function(r){if(!r.data)return;if(r.data.trades){trades=r.data.trades;saveTradesNoPush()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCashNoPush()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLogNoPush()}if(r.data.activities){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.activities))}if(r.data.state){state=r.data.state;saveStateNoPush()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}initTradeIds();updatePortfolio();updateSidebarPrices();updateSidebar();renderCashLog()}).catch(function(){})}function saveTradesNoPush(){try{localStorage.setItem(TRADE_KEY,JSON.stringify(trades))}catch(e){}}function saveCashNoPush(){try{localStorage.setItem(CB_KEY,cashBalance.toString())}catch(e){}}function saveCashLogNoPush(){try{localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog))}catch(e){}}function saveStateNoPush(){try{localStorage.setItem(LSKEY,JSON.stringify(state))}catch(e){}}function syncPushImpl(data){var dot=document.getElementById('syncDot');if(dot)dot.style.background='var(--orange)';syncFetch('POST',data).then(function(){var el=document.getElementById('syncStatus');if(el){el.textContent='auto '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}if(dot){dot.style.background='var(--accent)';setTimeout(function(){dot.style.background='var(--muted)'},2000)};showToast('已同步到云端','ok')}).catch(function(){if(dot)dot.style.background='var(--red)';showToast('同步失败','err')})} var SYNC_KEY='wealth_sync_cfg';var syncCfg=loadSyncCfg();function loadSyncCfg(){try{return JSON.parse(localStorage.getItem(SYNC_KEY)||'{"url":"","token":""}')}catch(e){return{url:"",token:""}}}function saveSyncCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(syncCfg))}catch(e){}}function syncFetch(method,body){var base=syncCfg.url||location.origin;return fetch(base.replace(/\/$/,'')+'/api/sync',{method:method,headers:{'Content-Type':'application/json','X-Auth-Token':syncCfg.token},body:body?JSON.stringify(body):undefined}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})}function syncPush(){var data={trades:trades,cashBalance:cashBalance,cashLog:cashLog,options:optionTrades,state:state,prices:JSON.parse(localStorage.getItem(PRICE_KEY)||'{}')};syncFetch('POST',data).then(function(r){var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}function syncPull(){syncFetch('GET').then(function(r){if(!r.data)throw new Error('空响应');if(r.data.trades){trades=r.data.trades;saveTrades()}if(r.data.cashBalance!=null){cashBalance=r.data.cashBalance;saveCash()}if(r.data.cashLog){cashLog=r.data.cashLog;saveCashLog()}if(r.data.notes){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(r.data.notes))}if(r.data.state){state=r.data.state;saveState()}if(r.data.options){optionTrades=r.data.options;saveOptions();renderOptions()}if(r.data.prices){var lp=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}localStorage.setItem(PRICE_KEY,JSON.stringify(lp))}var el=document.getElementById('syncStatus');el.textContent='已同步 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)';initTradeIds();updatePortfolio();updateSidebar();updateSidebarPrices();renderCashLog();location.reload()}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)'})}document.getElementById('btnSyncPush').addEventListener('click',syncPush);document.getElementById('btnSyncPull').addEventListener('click',syncPull);document.getElementById('syncUrl').addEventListener('change',function(){syncCfg.url=this.value;saveSyncCfg()});document.getElementById('syncToken').addEventListener('change',function(){syncCfg.token=this.value;saveSyncCfg()});(function(){var el=document.getElementById('syncUrl');if(el){if(syncCfg.url)el.value=syncCfg.url;else{el.value=location.origin;el.placeholder=location.origin;syncCfg.url=location.origin;saveSyncCfg()}}var t2=document.getElementById('syncToken');if(t2&&syncCfg.token)t2.value=syncCfg.token})();
 
 
 
@@ -6957,12 +6971,12 @@ function buildActionLine(){
   var ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH'),vix=vixPrice||18;
   
   // CALLs: 100% coverage, OTM from table
-  if(vgtH.shares>0){var vcMax=Math.floor(vgtH.shares/100),vcO=getOtm('VGT',vix,ddV,'call');if(vcMax>0)parts.push('VGT:'+' CALL @$'+(vgtPrice*(1+vcO.otmPct/100)).toFixed(0)+'('+vcO.otmPct+'%)');}
-  if(smhH.shares>0){var scMax=Math.floor(smhH.shares/100),scO=getOtm('SMH',vix,ddS,'call');if(scMax>0)parts.push('SMH:'+' CALL @$'+(smhPrice*(1+scO.otmPct/100)).toFixed(0)+'('+scO.otmPct+'%)');}
+  if(vgtH.shares>0){var vcMax=Math.floor(vgtH.shares/100),vcO=getOtm('VGT',vix,ddV,'call');if(vcMax>0)parts.push('VGT:'+vcMax+'CALL@'+(vgtPrice*(1+vcO.otmPct/100)).toFixed(0)+'('+vcO.otmPct+'%)');}
+  if(smhH.shares>0){var scMax=Math.floor(smhH.shares/100),scO=getOtm('SMH',vix,ddS,'call');if(scMax>0)parts.push('SMH:'+scMax+'CALL@'+(smhPrice*(1+scO.otmPct/100)).toFixed(0)+'('+scO.otmPct+'%)');}
   
   // PUTs: cash-constrained
-  if(vgtPrice>0&&vix<30){var vpO=getOtm('VGT',vix,ddV,'put'),vpStrike=vgtPrice*(1-vpO.otmPct/100),vpCash=Math.floor(Math.max(0,cash)/(vpStrike*100));if(vpCash>0){var vpCnt=ddV>5?Math.min(vpCash,Math.ceil(vpCash*(ddV>12?0.8:0.5))):Math.ceil(vpCash*0.25);if(vpCnt>0)parts.push('VGT:'+vpCnt+' PUT @$'+vpStrike.toFixed(0)+'('+vpO.otmPct+'%)');}}
-  if(smhPrice>0&&vix<30){var spO=getOtm('SMH',vix,ddS,'put'),spStrike=smhPrice*(1-spO.otmPct/100),spCash=Math.floor(Math.max(0,cash)/(spStrike*100));if(spCash>0){var spCnt=ddS>5?Math.min(spCash,Math.ceil(spCash*(ddS>12?0.8:0.5))):Math.ceil(spCash*0.25);if(spCnt>0)parts.push('SMH:'+spCnt+' PUT @$'+spStrike.toFixed(0)+'('+spO.otmPct+'%)');}}
+  if(vgtPrice>0&&vix<30){var vpO=getOtm('VGT',vix,ddV,'put'),vpStrike=vgtPrice*(1-vpO.otmPct/100),vpCash=Math.floor(Math.max(0,cash)/(vpStrike*100));if(vpCash>0){var vpCnt=ddV>5?Math.min(vpCash,Math.ceil(vpCash*(ddV>12?0.8:0.5))):Math.ceil(vpCash*0.25);if(vpCnt>0)parts.push('VGT:'+vpCnt+'PUT@'+vpStrike.toFixed(0)+'('+vpO.otmPct+'%)');}}
+  if(smhPrice>0&&vix<30){var spO=getOtm('SMH',vix,ddS,'put'),spStrike=smhPrice*(1-spO.otmPct/100),spCash=Math.floor(Math.max(0,cash)/(spStrike*100));if(spCash>0){var spCnt=ddS>5?Math.min(spCash,Math.ceil(spCash*(ddS>12?0.8:0.5))):Math.ceil(spCash*0.25);if(spCnt>0)parts.push('SMH:'+spCnt+'PUT@'+spStrike.toFixed(0)+'('+spO.otmPct+'%)');}}
   
   // Roll alert
   var now=new Date().toISOString().slice(0,10),alertParts=[];
@@ -7139,7 +7153,7 @@ var _origSwitchTab=switchTab;
 switchTab=function(tab){_origSwitchTab(tab);if(tab==='option'){renderOptions();updateOptionSignals()}};
 
 var _origRefreshPrices=refreshPrices;
-refreshPrices=async function(){var r=await _origRefreshPrices.apply(this,arguments);updateOptionSignals();return r;};
+refreshPrices=async function(){var r=await _origRefreshPrices.apply(this,arguments);updateAll();return r;};
 
 // Init
 document.addEventListener('DOMContentLoaded',function(){
@@ -7175,6 +7189,13 @@ updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementB
     };}
 
 
+
+
+
+var optionTrades=[];
+// Option page functions
+function loadOptions(){try{return JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')}catch(e){return[]}}
+function saveOptions(){localStorage.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
 optionTrades=loadOptions();
 
 function getDrawdown(sym){var p=sym==='VGT'?vgtPrice:smhPrice,hi=sym==='VGT'?vgt52hi:smh52hi;return hi>0?Math.max(0,(hi-p)/hi*100):0}
@@ -7249,7 +7270,7 @@ function renderStrategy(){
 }
 
 function updatePnL(){
-  var opt=[];try{opt=JSON.parse(localStorage.getItem('opt_test')||'[]')}catch(e){}
+  var opt=[];try{opt=JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')}catch(e){}
   var now=new Date().toISOString().slice(0,10),thisM=now.slice(0,7);
   var total=opt.reduce(function(s,o){return s+(o.premium||0)},0);
   var month=opt.filter(function(o){return o.expiry.slice(0,7)===thisM||o.expiry>=now}).reduce(function(s,o){return s+(o.premium||0)},0);
@@ -7269,14 +7290,8 @@ function updateAll(){
   renderStrategy();renderOptions();updatePnL();
 }
 
-  var t=document.getElementById('ft').value,s=document.getElementById('fs').value;
-  var k=parseFloat(document.getElementById('fk').value||0),p=parseFloat(document.getElementById('fp').value||0);
-  var e=document.getElementById('fe').value,c=parseInt(document.getElementById('fc').value||1);
-  if(!t||!s||!k||!e||k<=0)return alert('请填写完整');
-  optionTrades.push({sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c});saveOptions();
-  document.getElementById('fk').value='';document.getElementById('fp').value='';updateAll(););
-
 updateAll();
+
 </script>
 
 
@@ -7477,21 +7492,5 @@ function quickFill(sym,type,otmPct){
   // Expand form card
   var fc=document.querySelector("#tab-option .collapsible-card:last-of-type .collapsible-body");
   if(fc)fc.style.maxHeight="800px";
-  // PnL summary
-  var op=document.getElementById("optPnL");if(op){var ot=optionTrades;if(!ot||!ot.length){try{ot=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){ot=[]}}var now=new Date().toISOString().slice(0,10),tot=ot.reduce(function(s,o){return s+(o.premium||0)},0),real=ot.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);op.textContent="权利金 "+fmtFull(tot)+(real>0?"(已实现"+fmtFull(real)+")":"");}
-  // PnL card
-  var opt=optionTrades;if(!opt||!opt.length){try{opt=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){opt=[]}}
-  var pm=document.getElementById("optPnlMonth"),pt=document.getElementById("optPnlTotal"),pr=document.getElementById("optPnlRealized");
-  if(pm||pt||pr){
-    var now=new Date().toISOString().slice(0,10);
-    var thisMonth=now.slice(0,7);
-    var opt=optionTrades;
-    if(opt.length===0){try{opt=JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){opt=[]}}
-    var total=opt.reduce(function(s,o){return s+(o.premium||0)},0);
-    var month=opt.filter(function(o){return o.expiry.slice(0,7)===thisMonth||o.expiry>=now}).reduce(function(s,o){return s+(o.premium||0)},0);
-    var real=opt.filter(function(o){return o.expiry<now}).reduce(function(s,o){return s+(o.premium||0)},0);
-    if(pm)pm.textContent=fmtFull(month);
-    if(pt)pt.textContent=fmtFull(total);
-    if(pr)pr.textContent=fmtFull(real);
-  }
+  updateAll();
 }
