@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f4621acb9 --><!-- clean20260709 -->
+<!doctype html><!-- 9f462a33ed --><!-- clean20260709 -->
 
 
 
@@ -6946,22 +6946,32 @@ function holdingsCalc(sym){
 }
 
 function buildActionLine(){
-  var parts=[],vix=vixPrice||18,ddV=getDrawdown("VGT"),ddS=getDrawdown("SMH");
-  if(vgtPrice>0){var vcO=getOtm("VGT",vix,ddV,"call");parts.push("VGT CALL @"+(vgtPrice*(1+vcO.otmPct/100)).toFixed(0)+" OTM "+vcO.otmPct+"%");}
-  if(smhPrice>0){var scO=getOtm("SMH",vix,ddS,"call");parts.push("SMH CALL @"+(smhPrice*(1+scO.otmPct/100)).toFixed(0)+" OTM "+scO.otmPct+"%");}
-  if(vix<30&&vgtPrice>0){var vpO=getOtm("VGT",vix,ddV,"put");parts.push("VGT PUT @"+(vgtPrice*(1-vpO.otmPct/100)).toFixed(0)+" OTM "+vpO.otmPct+"%");}
-  if(vix<30&&smhPrice>0){var spO=getOtm("SMH",vix,ddS,"put");parts.push("SMH PUT @"+(smhPrice*(1-spO.otmPct/100)).toFixed(0)+" OTM "+spO.otmPct+"%");}
-  var no=new Date().toISOString().slice(0,10);
-  optionTrades.forEach(function(o,i){
-    if(o.expiry<no)return;
-    var cp=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
-    if(cp<=0)return;
-    if((o.type=="CALL"&&cp>o.strike)||(o.type=="PUT"&&cp<o.strike)){
-      var d=Math.ceil((new Date(o.expiry)-new Date(no))/86400000);
-      parts.push((d<=3?"! ":"")+o.sym+" "+o.type+"@"+o.strike+" ITM "+d+"d");
-    }
+  var parts=[],vgtH=holdingsCalc('VGT'),smhH=holdingsCalc('SMH');
+  var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});
+  var cash=(parseFloat(cashBalance||0)+ts-tb);
+  var vgtPrice=livePrices.VGT||0,smhPrice=livePrices.SMH||0;
+  var ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH'),vix=vixPrice||18;
+  
+  // CALLs: 100% coverage, OTM from table
+  if(vgtH.shares>0){var vcMax=Math.floor(vgtH.shares/100),vcO=getOtm('VGT',vix,ddV,'call');if(vcMax>0)parts.push('VGT CALL @'+(vgtPrice*(1+vcO.otmPct/100)).toFixed(0)+'('+vcO.otmPct+'%)');}
+  if(smhH.shares>0){var scMax=Math.floor(smhH.shares/100),scO=getOtm('SMH',vix,ddS,'call');if(scMax>0)parts.push('SMH CALL @'+(smhPrice*(1+scO.otmPct/100)).toFixed(0)+'('+scO.otmPct+'%)');}
+  
+  // PUTs: cash-constrained
+  if(vgtPrice>0&&vix<30){var vpO=getOtm('VGT',vix,ddV,'put'),vpStrike=vgtPrice*(1-vpO.otmPct/100),vpCash=Math.floor(Math.max(0,cash)/(vpStrike*100));if(vpCash>0){var vpCnt=ddV>5?Math.min(vpCash,Math.ceil(vpCash*(ddV>12?0.8:0.5))):Math.ceil(vpCash*0.25);if(vpCnt>0)parts.push('VGT +vpCnt+' PUT @'+vpStrike.toFixed(0)+'('+vpO.otmPct+'%)');}}
+  if(smhPrice>0&&vix<30){var spO=getOtm('SMH',vix,ddS,'put'),spStrike=smhPrice*(1-spO.otmPct/100),spCash=Math.floor(Math.max(0,cash)/(spStrike*100));if(spCash>0){var spCnt=ddS>5?Math.min(spCash,Math.ceil(spCash*(ddS>12?0.8:0.5))):Math.ceil(spCash*0.25);if(spCnt>0)parts.push('SMH +spCnt+' PUT @'+spStrike.toFixed(0)+'('+spO.otmPct+'%)');}}
+  
+  // Roll alert
+  var now=new Date().toISOString().slice(0,10),alertParts=[];
+  optionTrades.forEach(function(o){
+    if(o.type!=='CALL')return;
+    var daysLeft=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
+    var curPrice=livePrices[o.sym]||0;
+    if(daysLeft<=5&&daysLeft>=0&&curPrice>o.strike)
+      alertParts.push('⚠ '+o.sym+' CALL@'+o.strike.toFixed(0)+' ITM('+daysLeft+'d) Roll!');
   });
-  return parts.join(" | ");
+  if(alertParts.length)parts=alertParts.concat(parts);
+  
+  return parts.length?parts.join(' | '):'持仓均衡';
 }
 
 function renderMatrix(){
@@ -7085,61 +7095,279 @@ function rollOption(i){
   var pf=document.getElementById("optPremium");if(pf)pf.focus();
 }
 function renderOptions(){
-  var el=document.getElementById("optBody");
-  if(!el)return;
+  var b=document.getElementById('optBody');if(!b)return;
   optionTrades=loadOptions();
-  var now=(new Date()).toISOString().slice(0,10);
-  if(!optionTrades.length){el.innerHTML="<tr><td colspan=7 style=text-align:center;color:var(--muted);padding:16px;>No options</td></tr>";return;}
-  el.innerHTML=optionTrades.map(function(o,i){
+  var now=new Date().toISOString().slice(0,10);
+  if(!optionTrades.length){b.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr>';return}
+  b.innerHTML=optionTrades.map(function(o,i){
     var exp=o.expiry,isExpired=exp<now,daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000);
-    var curP=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
-    var status="",rowBg="",rollBtn="";
-    if(isExpired){status="<span style=color:var(--muted);>Expired</span>";rowBg="opacity:.4;"}
-    else{
-      var isITM=(o.type=="CALL"&&curP>o.strike)||(o.type=="PUT"&&curP<o.strike);
-      if(isITM&&daysLeft<=3){status="<span style=color:var(--red);font-weight:620;>! "+daysLeft+"d ITM</span>";rowBg="background:rgba(217,69,53,.10);";rollBtn="<button onclick=optRoll("+i+") style=font-size:.44rem;padding:2px 5px;background:var(--red);color:#fff;border:none;border-radius:2px;cursor:pointer;>Roll</button>";}
-      else if(isITM){status="<span style=color:var(--orange);>! "+daysLeft+"d ITM</span>";rowBg="background:rgba(230,140,50,.06);";rollBtn="<button onclick=optRoll("+i+") style=font-size:.44rem;padding:2px 5px;background:var(--orange);color:#fff;border:none;border-radius:2px;cursor:pointer;>Roll</button>";}
-      else if(daysLeft<=5){status="<span style=color:var(--red);>"+daysLeft+"d</span>";rowBg="background:rgba(217,69,53,.04);";}
-      else{status="<span style=color:var(--accent);>"+daysLeft+"d</span>"}
-    }
-    return "<tr style="+rowBg+">"
-      +"<td style=font-weight:600;>"+o.sym+"</td>"
-      +"<td style=color:"+(o.type=="CALL"?"var(--accent)":"var(--orange)")+";font-weight:540;>"+o.type+"</td>"
-      +"<td>"+fmtFull(o.strike)+"</td>"
-      +"<td style=font-family:Inter,var(--font);>"+fmtFull(o.premium||0)+"</td>"
-      +"<td>"+exp+"</td>"
-      +"<td>"+status+rollBtn+"</td>"
-      +"<td><button onclick=deleteOption("+i+") style=font-size:.44rem;padding:1px 5px;background:none;border:1px solid var(--muted);border-radius:2px;cursor:pointer;color:var(--muted);>X</button></td>"
-      +"</tr>";
-  }).join("");
-}
-
+    var curP=livePrices[o.sym]||0,status='',rowStyle='';
+    if(isExpired){status='<span style="color:var(--muted);">已过期</span>';rowStyle='opacity:.5;'}
+    else if(daysLeft<=3){status='<span style="color:var(--red);">'+daysLeft+'d 即将到期</span>';rowStyle='background:rgba(217,69,53,.06);'}
+    else{status='<span style="color:var(--accent);">'+daysLeft+'d</span>'}
+    if(!isExpired&&curP>0){var inMoney=(o.type==='CALL'&&curP>o.strike)||(o.type==='PUT'&&curP<o.strike);
+      if(inMoney)status='<span style="color:var(--red);font-weight:540;">⚠ 实值</span>';}
+    return '<tr style="'+rowStyle+'"><td>'+o.sym+'</td><td>'+o.type+'</td><td>$'+o.strike.toFixed(2)+'</td><td>'+exp+'</td><td>'+status+'</td><td>'+fmtFull(o.premium)+'</td><td><button class="trade-del" onclick="deleteOption('+i+')">✕</button></td></tr>';
+  }).join('')}
 function deleteOption(i){optionTrades.splice(i,1);saveOptions();renderOptions();checkRollAlerts()}
 
 // Signal update
 function updateOptionSignals(){
-  var vix=vixPrice||18,ddV=getDrawdown("VGT"),ddS=getDrawdown("SMH");
-  var sv=document.getElementById("statusVix");if(sv)sv.textContent=vix.toFixed(1);
-  var st=document.getElementById("statusVixTag");
-  if(st){st.innerHTML=vix>25?" <span style=color:var(--red);>HIGH</span>":vix>20?" <span style=color:var(--orange);>VOL</span>":" <span style=color:var(--accent);>OK</span>";}
-  var sd1=document.getElementById("statusVgtDD");if(sd1){sd1.textContent=ddV.toFixed(1)+"%";sd1.style.color=ddV>10?"var(--red)":ddV>5?"var(--orange)":"var(--accent)";}
-  var sd2=document.getElementById("statusSmhDD");if(sd2){sd2.textContent=ddS.toFixed(1)+"%";sd2.style.color=ddS>10?"var(--red)":ddS>5?"var(--orange)":"var(--accent)";}
-  var sa=document.getElementById("statusAction");if(sa){sa.innerHTML="<span style=font-size:.58rem;>"+buildActionLine()+"</span>";}
-  var ms=document.getElementById("matrixSummary");
-  if(ms){
-    var vixBrake=vix>=30?" +1% OTM":"";
-    var tv=ddV<=5?"up":ddV<=12?"flat":"down";
-    var ts=ddS<=5?"up":ddS<=12?"flat":"down";
-    var vc=getOtm("VGT",vix,ddV,"call"),vp=getOtm("VGT",vix,ddV,"put");
-    var sc2=getOtm("SMH",vix,ddS,"call"),sp=getOtm("SMH",vix,ddS,"put");
-    ms.innerHTML="<span style=font-size:.54rem;>VIX "+vix.toFixed(1)+vixBrake+" | VGT "+tv+" CALL "+vc.otmPct+"% PUT "+vp.otmPct+"% | SMH "+ts+" CALL "+sc2.otmPct+"% PUT "+sp.otmPct+"%</span>";
-  }
-  var ovV=document.getElementById("ovVix");if(ovV)ovV.textContent=(vixPrice||18).toFixed(1);
-  var no=new Date().toISOString().slice(0,10),activeO=optionTrades.filter(function(o){return o.expiry>=no}).length;
-  var ovA=document.getElementById("ovActive");if(ovA)ovA.textContent=activeO;
-  var ovP=document.getElementById("ovPremium"),totP=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);
-  if(ovP)ovP.textContent=fmtFull(totP);
-  var ovCash=document.getElementById("ovCashFill");
-  if(ovCash){var nc=Math.max(0,cashBalance||0);var pr=optionTrades.filter(function(o){return o.type=="PUT"&&o.expiry>=no}).reduce(function(s,o){return s+(o.strike||0)*100*(o.contracts||1)},0);var ap=nc>0?Math.max(10,100-(pr/nc*100)):50;ovCash.style.width=ap+"%";ovCash.style.background=ap<20?"var(--red)":ap<40?"var(--orange)":"var(--accent)";}
+  var vix=vixPrice||18,ddV=getDrawdown('VGT'),ddS=getDrawdown('SMH');
+  // Status bar
+  var sv=document.getElementById('statusVix');if(sv)sv.textContent=vix.toFixed(1);
+  var st=document.getElementById('statusVixTag');if(st){st.innerHTML=vix>25?' <span style="color:var(--red);">高</span>':vix>20?' <span style="color:var(--orange);">波动</span>':vix>0?' <span style="color:var(--accent);">正常</span>':';'}
+  var sd1=document.getElementById('statusVgtDD');if(sd1){sd1.textContent=ddV.toFixed(1)+'%'+(ddV>10?'⚠':'');sd1.style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)';sd1.style.fontWeight=ddV>10?'700':'normal';}
+  var sd2=document.getElementById('statusSmhDD');if(sd2){sd2.textContent=ddS.toFixed(1)+'%'+(ddS>10?'⚠':'');sd2.style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)';sd2.style.fontWeight=ddS>10?'700':'normal';}
+  // Action
+  var sa=document.getElementById('statusAction');if(sa){var action=buildActionLine();var cell=getMatrixCell(vix,Math.max(ddV,ddS));var sParts=action.split(' | '),sHTML='<span style="font-size:.58rem;">'+cell.label+' → </span>';for(var si=0;si<sParts.length;si++){var sp=sParts[si];if(sp.indexOf('CALL')>=0||sp.indexOf('PUT')>=0){sHTML+='<button onclick=quickFill("'+sp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[1]+'","'+sp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[3]+'",'+sp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[5]+') style=font-size:.48rem;padding:2px 6px;margin:0 2px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;>'+sp+'</button>'}else{sHTML+='<span style=font-size:.54rem;>'+sp+'</span>'}}sa.innerHTML=sHTML;sa.style.color=cell.color.indexOf('red')>=0?'var(--red)':cell.color.indexOf('orange')>=0?'var(--orange)':'var(--accent)';}
+  renderMatrix();updateCashPage();
+}
+function updateCashConstraints(){
+  var totalV=0;try{totalV=parseFloat((document.getElementById('hmValue')?.textContent||'0').replace(/[^0-9.]/g,''))||0}catch(e){}
+  var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});
+  var cash=(parseFloat(cashBalance||0)+ts-tb),total=cash+totalV,pct=total>0?(cash/total*100):0;
+  var btns=document.querySelectorAll('#btnAddOption');btns.forEach(function(b){b.disabled=pct<10;b.style.opacity=pct<10?'0.4':'1'});
 }
 
+// Hooks
+var _origSwitchTab=switchTab;
+switchTab=function(tab){_origSwitchTab(tab);if(tab==='option'){renderOptions();updateOptionSignals()}};
+
+var _origRefreshPrices=refreshPrices;
+refreshPrices=async function(){var r=await _origRefreshPrices.apply(this,arguments);updateOptionSignals();return r;};
+
+// Init
+document.addEventListener('DOMContentLoaded',function(){
+  renderOptions();
+  var btn=document.getElementById('btnAddOption');
+  if(btn)btn.addEventListener('click',function(){
+    var s=document.getElementById('optSym')?.value||'VGT',t=document.getElementById('optType')?.value||'PUT',
+        k=parseFloat(document.getElementById('optStrike')?.value||0),e=document.getElementById('optExpiry')?.value||'',
+        p=parseFloat(document.getElementById('optPremium')?.value||0);
+    if(!k||!e||k<=0)return;
+    if(t==='PUT'){var ts2=0,tb2=0;trades.forEach(function(t2){var a=Math.abs(t2.shares)*t2.price;if(t2.shares<0)ts2+=a;else tb2+=a});var nc=(parseFloat(cashBalance||0)+ts2-tb2);if(k*100>nc){alert('现金不足! 需要:'+fmtFull(k*100)+' 可用:'+fmtFull(nc));return}}
+    optionTrades=loadOptions();optionTrades.push({sym:s,type:t,strike:k,expiry:e,premium:p,added:new Date().toISOString().slice(0,10)});saveOptions();renderOptions();updateOptionSignals();
+    document.getElementById('optStrike').value='';document.getElementById('optPremium').value='';
+  });
+  checkRollAlerts();
+});
+
+// Overview card
+var _origUpdateSignals=updateOptionSignals;
+updateOptionSignals=function(){_origUpdateSignals();var ovV=document.getElementById('ovVix');if(ovV)ovV.textContent=(vixPrice||18).toFixed(1);var nowO=new Date().toISOString().slice(0,10),activeO=optionTrades.filter(function(o){return o.expiry>=nowO}).length;var ovA=document.getElementById('ovActive');if(ovA)ovA.textContent=activeO+' 活跃';var ovP=document.getElementById('ovPremium'),totP=optionTrades.reduce(function(s,o){return s+(o.premium||0)},0);if(ovP)ovP.textContent=fmtFull(totP);var ovAct=document.getElementById('ovAction'),act=buildActionLine();if(ovAct){
+  var nowO2=new Date().toISOString().slice(0,10);var realized=optionTrades.filter(function(o){return o.expiry<nowO2}).reduce(function(s,o){return s+(o.premium||0)},0);var ovR=document.getElementById("ovRealized");if(ovR)ovR.textContent=realized>0?"(已实现 "+fmtFull(realized)+")":"";
+  var ovCashFill=document.getElementById("ovCashFill");var ovCashLabel=document.getElementById("ovCashLabel");if(ovCashFill&&ovCashLabel){var netCash=Math.max(0,cashBalance||0);var putReserved=optionTrades.filter(function(o){return o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10)}).reduce(function(s,o){return s+o.strike*o.contracts*100},0);var availPct=netCash>0?Math.max(0,(netCash-putReserved)/netCash*100):50;ovCashFill.style.width=availPct+"%";ovCashLabel.textContent=fmtFull(netCash);}
+      var ovParts=act.split(' | '),ovHTML='';
+      for(var oi=0;oi<ovParts.length;oi++){
+        var op=ovParts[oi],omatch=op.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/);
+        if(omatch&&omatch.index===0){
+          ovHTML+='<button onclick=quickFill("'+omatch[1]+'","'+omatch[3]+'",'+omatch[5]+') style=font-size:.44rem;padding:1px 5px;margin:0 2px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;>'+op+'</button>';
+        } else {
+          ovHTML+='<span style=font-size:.5rem;>'+op+'</span>';
+        }
+      }
+      ovAct.innerHTML=ovHTML;
+    };}
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="bottom-bar" id="bottomBar">
+
+
+
+
+
+
+
+  <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="6.5" y1="10" x2="6.5" y2="14"/><line x1="17.5" y1="10" x2="17.5" y2="14"/></svg></span>仪表盘</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="12" r="2"/><circle cx="16" cy="7" r="2"/><circle cx="16" cy="17" r="2"/><line x1="10" y1="12" x2="14" y2="7"/><line x1="10" y1="12" x2="14" y2="17"/></svg></span>操作台</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('option')" class="bb-btn" id="bbOption"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>期权</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('data')" class="bb-btn" id="bbData"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></span>数据</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('log')" class="bb-btn" id="bbLog"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></span>日志</button>
+
+
+
+
+
+
+
+  <button onclick="switchTab('plan')" class="bb-btn" id="bbPlan"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polygon points="12,3 14,10 21,12 14,14 12,21 10,14 3,12 10,10"/></svg></span>规划</button>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+
+
+
+
+
+
+</html>
+
+
+
+
+
+
+
+
+function rollCheck(){
+  var el=document.getElementById("rollBanner");
+  var txt=document.getElementById("rollBannerText");
+  var btn=document.getElementById("rollBannerBtns");
+  if(!el||!txt||!btn)return;
+  optionTrades=loadOptions();
+  if(!optionTrades||!optionTrades.length){txt.textContent="";btn.innerHTML="";return}
+  var now=(new Date()).toISOString().slice(0,10);
+  var items=[];
+  for(var i=0;i<optionTrades.length;i++){
+    var o=optionTrades[i];
+    if(!o||!o.expiry||o.expiry<now)continue;
+    var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
+    if(d>5)continue;
+    var p=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0)||0;
+    if(p<=0)continue;
+    var itm=(o.type=="CALL"&&p>o.strike)||(o.type=="PUT"&&p<o.strike);
+    items.push({i:i,sym:o.sym,type:o.type,strike:o.strike,days:d,itm:itm,price:p});
+  }
+  if(!items.length){txt.textContent="";btn.innerHTML="";return}
+  var msgs=[],btnsHTML="";
+  var worst=0;
+  for(var j=0;j<items.length;j++){
+    var it=items[j];
+    var s=it.sym+" "+it.type+"@"+it.strike+" "+it.days+"d";
+    if(it.itm&&it.days<=3){worst=Math.max(worst,2);msgs.push(s+" ITM!");}
+    else if(it.itm){worst=Math.max(worst,1);msgs.push(s+" ITM");}
+    else{msgs.push(s);}
+    if(it.itm){
+      btnsHTML+="<button onclick=rollIt("+it.i+") style=font-size:.44rem;padding:2px 6px;margin-left:4px;border:none;border-radius:3px;cursor:pointer;color:#fff;"+(it.days<=3?"background:var(--red)":"background:var(--orange)")+">Roll</button>";
+    }
+  }
+  txt.textContent=msgs.join(" | ");
+  btn.innerHTML=btnsHTML;
+  el.style.border="1px solid "+(worst>=2?"var(--red)":worst>=1?"var(--orange)":"var(--accent)");
+  el.style.background=worst>=2?"rgba(217,69,53,.08)":worst>=1?"rgba(230,140,50,.06)":"rgba(46,107,80,.05)";
+}
+function rollIt(i){
+  var o=optionTrades[i];if(!o)return;
+  var el=document.getElementById("optType");if(el)el.value=o.type;
+  el=document.getElementById("optSym");if(el)el.value=o.sym;
+  var cur=livePrices[o.sym]||(o.sym=="VGT"?vgtPrice:o.sym=="SMH"?smhPrice:0);
+  if(cur>0){
+    var dd=o.sym=="VGT"?getDrawdown("VGT"):getDrawdown("SMH");
+    var otm=getOtm(o.sym,vixPrice||18,dd,o.type.toLowerCase());
+    if(otm){
+      var ns=o.type=="CALL"?cur*(1+otm.otmPct/100):cur*(1-otm.otmPct/100);
+      el=document.getElementById("optStrike");if(el)el.value=ns.toFixed(2);
+    }
+  }
+  el=document.getElementById("optExpiry");
+  if(el){var d=new Date();d.setDate(d.getDate()+30);el.value=d.toISOString().slice(0,10);}
+  var pf=document.getElementById("optPremium");if(pf)pf.focus();
+}
+  rollCheck();
+
+
+function quickFill(sym,type,otmPct){
+  var el=document.getElementById("optSym");if(el)el.value=sym;
+  el=document.getElementById("optType");if(el)el.value=type;
+  var cur=livePrices[sym]||(sym=="VGT"?vgtPrice:sym=="SMH"?smhPrice:0);
+  if(cur>0){
+    var ns=type=="CALL"?cur*(1+otmPct/100):cur*(1-otmPct/100);
+    el=document.getElementById("optStrike");if(el)el.value=ns.toFixed(2);
+  }
+  el=document.getElementById("optExpiry");
+  if(el){var d=new Date();d.setDate(d.getDate()+30);el.value=d.toISOString().slice(0,10);}
+  var pf=document.getElementById("optPremium");if(pf)pf.focus();
+  // Expand form card
+  var fc=document.querySelector("#tab-option .collapsible-card:last-of-type .collapsible-body");
+  if(fc)fc.style.maxHeight="800px";
+}
