@@ -71,6 +71,7 @@ export default {
       const asset = await env.ASSETS.fetch(new URL(url.pathname, request.url));
       if (asset.status !== 404) {
         const h = new Headers(asset.headers);
+        h.set('Content-Type', 'text/html; charset=utf-8');
         h.set('Cache-Control', 'no-store, max-age=0');
         return new Response(asset.body, { status: asset.status, headers: h });
       }
