@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46487b9e --><!-- clean20260709 -->
+<!doctype html><!-- 9f464a5511 --><!-- clean20260709 -->
 
 
 
@@ -6999,7 +6999,7 @@ function renderMatrix(){
   else html+="<span style=color:var(--accent)>(\u65e0\u5239\u8f66)</span>";
   html+="</div>";
   // VGT table
-  html+="<div style=margin-bottom:6px><b>VGT</b> 52W\u9ad8 $"+vHi.toFixed(0)+" \u73b0\u4ef7 $"+vgtPrice.toFixed(2)+" \u56de\u64a4 "+ddV.toFixed(1)+"%</div>";
+  html+="<div style=margin-bottom:6px><b>VGT</b> 52W\u9ad8 $"+vHi.toFixed(0)+" \u73b0\u4ef7 $"+livePrices["VGT"].toFixed(2)+" \u56de\u64a4 "+ddV.toFixed(1)+"%</div>";
   html+="<table style=width:100%;border-collapse:collapse;font-size:.5rem;margin-bottom:4px>";
   html+="<tr><td></td><td style=color:var(--muted)><b>CALL OTM</b></td><td style=color:var(--muted)><b>PUT OTM</b></td></tr>";
   for(var r=0;r<3;r++){
@@ -7008,7 +7008,7 @@ function renderMatrix(){
   }
   html+="</table>";
   // SMH table
-  html+="<div style=margin-bottom:4px><b>SMH</b> 52W\u9ad8 $"+sHi.toFixed(0)+" \u73b0\u4ef7 $"+smhPrice.toFixed(2)+" \u56de\u64a4 "+ddS.toFixed(1)+"%</div>";
+  html+="<div style=margin-bottom:4px><b>SMH</b> 52W\u9ad8 $"+sHi.toFixed(0)+" \u73b0\u4ef7 $"+livePrices["SMH"].toFixed(2)+" \u56de\u64a4 "+ddS.toFixed(1)+"%</div>";
   html+="<table style=width:100%;border-collapse:collapse;font-size:.5rem>";
   html+="<tr><td></td><td style=color:var(--muted)><b>CALL OTM</b></td><td style=color:var(--muted)><b>PUT OTM</b></td></tr>";
   for(var r=0;r<3;r++){
