@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f47241210 --><!-- clean20260709 -->
+<!doctype html><!-- 9f4726d04c --><!-- clean20260709 -->
 
 
 
@@ -5850,7 +5850,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
 
-  if(tab==='holdings'||tab==='holding')updatePortfolio();
+  if(tab==='holdings'||tab==='holding')updatePortfolio();var _el=document.getElementById("hmPricesCompact");if(_el)_el.textContent="";
 
 
 
@@ -6266,7 +6266,7 @@ function initAll(){
 
 
 
-  updateWithdrawal();updateDCA();updateCashPage();renderActivity();updateOptionSignals();try{updateAllO()}catch(e){}renderLogHeatmap();if(typeof updatePortfolio==="function")updatePortfolio();
+  updateWithdrawal();updateDCA();updateCashPage();renderActivity();updateOptionSignals();try{updateAllO()}catch(e){}renderLogHeatmap();if(typeof updatePortfolio==="function")updatePortfolio();var _el=document.getElementById("hmPricesCompact");if(_el)_el.textContent="";
 
 
 
