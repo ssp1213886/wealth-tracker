@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f46eeaac9 --><!-- clean20260709 -->
+<!doctype html><!-- 9f46f40a9e --><!-- clean20260709 -->
 
 
 
@@ -5460,7 +5460,7 @@ document.getElementById('mobHamburger').addEventListener('click',function(){var 
 
 
 
-document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='option')updateCashPage();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap()}
+document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='option'){updateCashPage();updateAllO();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap()}
 
 
 
@@ -6268,7 +6268,7 @@ function initAll(){
 
 
 
-  updateWithdrawal();updateDCA();updateCashPage();renderActivity();updateOptionSignals();renderLogHeatmap();
+  updateWithdrawal();updateDCA();updateCashPage();renderActivity();updateOptionSignals();updateAllO();renderLogHeatmap();
 
 
 
@@ -7542,7 +7542,8 @@ function updateAllO(){
 
 
 setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
-</script>
+
+}</script>
 
 
 
@@ -7744,5 +7745,6 @@ function quickFill(sym,type,otmPct){
   if(fc)fc.style.maxHeight="800px";
   updateAll();
   updateAll();
+  updateAllO();
   updateAllO();
 }
