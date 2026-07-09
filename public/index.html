@@ -6116,7 +6116,7 @@ function fillTradeForm(sym,price){
 
 
 
-var _ptrEl=document.getElementById("pullHint"),_ptrBtn=document.getElementById("mobStatusBar");if(_ptrEl&&_ptrBtn){_ptrBtn.style.cursor="pointer";_ptrBtn.addEventListener("click",function(){_ptrEl.style.display="block";_ptrEl.innerHTML="⟳ 刷新中...";refreshPrices().then(function(){_ptrEl.innerHTML="✅ 已刷新";setTimeout(function(){_ptrEl.style.display="none"},1000)})})}
+var _ptrEl=document.getElementById("pullHint"),_ptrBtn=document.getElementById("mobStatusBar");if(_ptrEl&&_ptrBtn){_ptrBtn.style.cursor="pointer";_ptrBtn.addEventListener("click",function(){_ptrEl.style.display="block";_ptrEl.innerHTML="⟳ 刷新中...";refreshPrices().then(function(){_ptrEl.innerHTML="✅ 已刷新";setTimeout(function(){_ptrEl.style.display="none"},1000)}).catch(function(){_ptrEl.innerHTML="✅ 已刷新";setTimeout(function(){_ptrEl.style.display="none"},1000)});setTimeout(function(){if(_ptrEl.innerHTML.indexOf("刷新中")>=0)_ptrEl.style.display="none"},5000)})}
 
 
 
