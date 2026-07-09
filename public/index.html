@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45c89865 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45cb6111 --><!-- clean20260709 -->
 
 
 
@@ -3330,7 +3330,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <section class="tab-panel" id="tab-option">
   
-  <div id="rollAlertBanner" style="display:none;padding:8px 10px;margin-bottom:8px;border-radius:6px;font-size:.58rem;border:1px solid var(--red);background:rgba(217,69,53,.08);"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><span id="rollAlertMsg" style="font-weight:600;"></span><div id="rollAlertBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div></div></div>
+  <div id="rollAlertBanner" style="padding:8px 10px;margin-bottom:8px;border-radius:6px;font-size:.58rem;"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;"><span id="rollAlertMsg" style="font-weight:600;"></span><div id="rollAlertBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div></div></div>
 <div class="card" style="padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.62rem;"><div><span style="color:var(--muted);">VIX</span> <strong id="statusVix" style="font-family:Inter,var(--font);">--</strong> <span id="statusVixTag" style="font-size:.5rem;"></span></div><div><span style="color:var(--muted);">VGT DD</span> <strong id="statusVgtDD" style="font-family:Inter,var(--font);">--</strong></div><div><span style="color:var(--muted);">SMH DD</span> <strong id="statusSmhDD" style="font-family:Inter,var(--font);">--</strong></div><div style="flex:1;text-align:right;font-weight:540;" id="statusAction"></div></div>
   <div class="card collapsible-card" style="padding:8px;margin-bottom:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><h3 style="font-size:.66rem;margin:0;">🧩 VIX × 回撤 决策矩阵</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body" style="margin-top:6px;"><div id="matrixGrid" style="margin-bottom:4px;"></div><div id="matrixSummary" style="padding:5px 8px;border-radius:4px;font-size:.52rem;background:var(--surface);line-height:1.5;"></div></div></div>
   <div class="card collapsible-card" style="padding:10px;"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px;"><h3 style="font-size:.66rem;margin:0;">📋 期权持仓</h3><span style="font-size:.5rem;color:var(--muted);">▼</span></div><div class="collapsible-body"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px;"><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">标的</label><select id="optSym" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="VGT">VGT</option><option value="SMH">SMH</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">类型</label><select id="optType" style="padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"><option value="PUT">PUT</option><option value="CALL">CALL</option></select></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">行权价</label><input type="number" id="optStrike" step="any" min="0" placeholder="108" style="width:70px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">到期日</label><input type="date" id="optExpiry" style="width:110px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><div style="display:flex;flex-direction:column;gap:2px;"><label style="font-size:.5rem;color:var(--muted);">权利金</label><input type="number" id="optPremium" step="any" min="0" placeholder="136" style="width:60px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--card-bg);color:var(--fg);"></div><button class="btn btn-pri btn-sm" id="btnAddOption" style="font-size:.52rem;padding:4px 10px;">+ 录入</button></div><table class="trade-table"><thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>到期日</th><th>状态</th><th>权利金</th><th></th></tr></thead><tbody id="optBody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr></tbody></table></div></div>
@@ -7005,45 +7005,71 @@ function renderMatrix(){
 }
 
 
+
 function checkRollAlerts(){
   var banner=document.getElementById("rollAlertBanner");
   var msg=document.getElementById("rollAlertMsg");
   var btns=document.getElementById("rollAlertBtns");
   if(!banner||!msg||!btns)return;
   var now=new Date().toISOString().slice(0,10);
-  var rolling=[],warning=[],urgent=[];
+  var urgent=[],warn=[],itmAlert=[],approaching=[];
   optionTrades.forEach(function(o,i){
     var exp=o.expiry;
     if(exp<now)return;
     var daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000);
-    if(daysLeft>5)return;
     var curP=livePrices[o.sym]||0;
+    if(curP<=0)return;
+    // Already ITM
     var isITM=(o.type==="CALL"&&curP>o.strike)||(o.type==="PUT"&&curP<o.strike);
-    if(daysLeft<=3&&isITM)urgent.push({o:o,i:i,days:daysLeft});
-    else if(isITM)warning.push({o:o,i:i,days:daysLeft});
-    else rolling.push({o:o,i:i,days:daysLeft});
+    // Approaching strike (within 3%)
+    var pctFromStrike=Math.abs((curP-o.strike)/o.strike*100);
+    var isApproaching=!isITM&&pctFromStrike<3;
+    // Classify
+    if(daysLeft<=3&&isITM)urgent.push({o:o,i:i,days:daysLeft,curP:curP});
+    else if(daysLeft<=5&&isITM)warn.push({o:o,i:i,days:daysLeft,curP:curP});
+    else if(isITM)itmAlert.push({o:o,i:i,days:daysLeft,curP:curP});
+    else if(isApproaching)approaching.push({o:o,i:i,days:daysLeft,curP:curP,pct:pctFromStrike});
   });
-  if(!urgent.length&&!warning.length&&!rolling.length){
-    banner.style.display="none";return;
-  }
-  banner.style.display="block";
   var parts=[],allBtns="";
+  var severity="green",borderColor="var(--accent)",bgColor="rgba(46,107,80,.06)";
+  // Urgent: <=3d ITM
   if(urgent.length){
-    parts.push("⚠ "+urgent.length+"个期权<3天到期且实值，存在行权风险");
+    severity="red";borderColor="var(--red)";bgColor="rgba(217,69,53,.08)";
+    parts.push("\u26a0 "+urgent.length+"个期权<3天到期且实值，存在行权风险");
     urgent.forEach(function(r){
-      allBtns+="<button onclick=\"rollOption("+r.i+")\" style=\"font-size:.48rem;padding:3px 6px;background:var(--red);color:#fff;border:none;border-radius:3px;cursor:pointer;\">滚动 "+r.o.sym+" "+r.o.type+"@"+r.o.strike+" ("+r.days+"d)</button>";
+      allBtns+="<button onclick=\"rollOption("+r.i+")\" style=\"font-size:.48rem;padding:3px 6px;background:var(--red);color:#fff;border:none;border-radius:3px;cursor:pointer;\">\u6eda\u52a8 "+r.o.sym+" "+r.o.type+"@"+r.o.strike+" ("+r.days+"d)</button>";
     });
   }
-  if(warning.length){
-    parts.push(warning.length+"个实值期权5天内到期");
-    warning.forEach(function(r){
-      allBtns+="<button onclick=\"rollOption("+r.i+")\" style=\"font-size:.48rem;padding:3px 6px;background:var(--orange);color:#fff;border:none;border-radius:3px;cursor:pointer;\">滚动 "+r.o.sym+" "+r.o.type+"@"+r.o.strike+" ("+r.days+"d)</button>";
+  // Warning: <=5d ITM
+  if(warn.length){
+    if(severity==="green"){severity="orange";borderColor="var(--orange)";bgColor="rgba(230,140,50,.08)";}
+    parts.push(warn.length+"个实值期权5天内到期");
+    warn.forEach(function(r){
+      allBtns+="<button onclick=\"rollOption("+r.i+")\" style=\"font-size:.48rem;padding:3px 6px;background:var(--orange);color:#fff;border:none;border-radius:3px;cursor:pointer;\">\u6eda\u52a8 "+r.o.sym+" "+r.o.type+"@"+r.o.strike+" ("+r.days+"d)</button>";
     });
   }
-  if(rolling.length)parts.push(rolling.length+"个期权5天内到期");
-  msg.innerHTML=parts.join(" | ");
-  btns.innerHTML=allBtns;
+  // ITM (any days)
+  if(itmAlert.length){
+    if(severity==="green"){severity="yellow";borderColor="var(--orange)";bgColor="rgba(230,140,50,.04)";}
+    parts.push(itmAlert.length+"个期权已处于实值状态("+itmAlert.map(function(r){return r.o.sym+" "+r.o.type+"@"+r.o.strike+" "+r.days+"d"}).join(", ")+")");
+  }
+  // Approaching strike
+  if(approaching.length){
+    if(severity==="green"){severity="yellow";borderColor="var(--orange)";bgColor="rgba(230,140,50,.04)";}
+    parts.push(approaching.length+"个期权接近行权价("+approaching.map(function(r){var dir=r.o.type==="CALL"?"\u2191":"\u2193";return r.o.sym+" "+r.o.type+"@"+r.o.strike+" "+dir+r.pct.toFixed(1)+"%"}).join(", ")+")");
+  }
+  // Apply styles
+  banner.style.border="1px solid "+borderColor;
+  banner.style.background=bgColor;
+  if(!urgent.length&&!warn.length&&!itmAlert.length&&!approaching.length){
+    msg.innerHTML="\u2705 \u6301\u4ed3\u6b63\u5e38\uff0c\u65e0\u63d0\u9192\u4e8b\u9879";
+    btns.innerHTML="";
+  } else {
+    msg.innerHTML=parts.join(" | ");
+    btns.innerHTML=allBtns;
+  }
 }
+
 function rollOption(i){
   var o=optionTrades[i];
   if(!o)return;
