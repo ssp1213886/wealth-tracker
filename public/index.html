@@ -1,4 +1,4 @@
-<!doctype html><!-- 9f45e17478 --><!-- clean20260709 -->
+<!doctype html><!-- 9f45e2f7fd --><!-- clean20260709 -->
 
 
 
@@ -7012,61 +7012,75 @@ function checkRollAlerts(){
   var btns=document.getElementById("rollAlertBtns");
   if(!banner||!msg||!btns)return;
   banner.style.display="block";
-  optionTrades=loadOptions();
-  var now=new Date().toISOString().slice(0,10);
-  var urgent=[],warn=[],itmAlert=[],approaching=[];
-  for(var i=0;i<optionTrades.length;i++){
-    var o=optionTrades[i];
-    var exp=o.expiry;
-    if(exp<now)continue;
-    var daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000);
-    if(daysLeft>5)continue;
-    var curP=livePrices[o.sym]||(o.sym==="VGT"?vgtPrice:o.sym==="SMH"?smhPrice:0)||0;
-    if(curP<=0)continue;
-    var isITM=(o.type==="CALL"&&curP>o.strike)||(o.type==="PUT"&&curP<o.strike);
-    var pctFromStrike=Math.abs((curP-o.strike)/o.strike*100);
-    var isApproaching=!isITM&&pctFromStrike<3;
-    if(daysLeft<=3&&isITM)urgent.push({o:o,i:i,days:daysLeft,curP:curP});
-    else if(daysLeft<=5&&isITM)warn.push({o:o,i:i,days:daysLeft,curP:curP});
-    else if(isITM)itmAlert.push({o:o,i:i,days:daysLeft,curP:curP});
-    else if(isApproaching)approaching.push({o:o,i:i,days:daysLeft,curP:curP,pct:pctFromStrike});
-  }
-  var parts=[],allBtns="";
-  var borderColor="var(--accent)",bgColor="rgba(46,107,80,.06)";
-  if(urgent.length){
-    borderColor="var(--red)";bgColor="rgba(217,69,53,.08)";
-    parts.push(urgent.length+" opt<3d ITM risk");
-    for(var u=0;u<urgent.length;u++){
-      var r=urgent[u];
-      allBtns+='<button onclick="rollOption('+r.i+')" style="font-size:.48rem;padding:3px 6px;background:var(--red);color:#fff;border:none;border-radius:3px;cursor:pointer;">Roll '+r.o.sym+' '+r.o.type+'@'+r.o.strike+' ('+r.days+'d)</button>';
+  try{
+    optionTrades=loadOptions();
+    if(!optionTrades||!optionTrades.length){
+      banner.style.border="1px solid var(--accent)";
+      banner.style.background="rgba(46,107,80,.06)";
+      msg.innerHTML="No options";
+      btns.innerHTML="";
+      return;
     }
-  }
-  if(warn.length){
-    if(borderColor==="var(--accent)"){borderColor="var(--orange)";bgColor="rgba(230,140,50,.08)";}
-    parts.push(warn.length+" opt ITM <=5d");
-    for(var w=0;w<warn.length;w++){
-      var r2=warn[w];
-      allBtns+='<button onclick="rollOption('+r2.i+')" style="font-size:.48rem;padding:3px 6px;background:var(--orange);color:#fff;border:none;border-radius:3px;cursor:pointer;">Roll '+r2.o.sym+' '+r2.o.type+'@'+r2.o.strike+' ('+r2.days+'d)</button>';
+    var now=new Date().toISOString().slice(0,10);
+    var urgent=[],warn=[],itm=[],near=[];
+    for(var i=0;i<optionTrades.length;i++){
+      var o=optionTrades[i];
+      if(!o||!o.expiry)continue;
+      if(o.expiry<now)continue;
+      var daysLeft=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);
+      if(daysLeft>5)continue;
+      var curP=livePrices[o.sym]||(o.sym==="VGT"?vgtPrice:o.sym==="SMH"?smhPrice:0)||0;
+      if(curP<=0)continue;
+      var isITM=(o.type==="CALL"&&curP>o.strike)||(o.type==="PUT"&&curP<o.strike);
+      var pct=Math.abs((curP-o.strike)/o.strike*100);
+      var isNear=!isITM&&pct<3;
+      var item={o:o,i:i,days:daysLeft,curP:curP};
+      if(daysLeft<=3&&isITM)urgent.push(item);
+      else if(daysLeft<=5&&isITM)warn.push(item);
+      else if(isITM)itm.push(item);
+      else if(isNear)item.pct=pct,near.push(item);
     }
-  }
-  if(itmAlert.length){
-    if(borderColor==="var(--accent)"){borderColor="var(--orange)";bgColor="rgba(230,140,50,.04)";}
-    parts.push(itmAlert.length+" opt ITM: "+itmAlert.map(function(r){return r.o.sym+" "+r.o.type+"@"+r.o.strike+" "+r.days+"d"}).join(", "));
-  }
-  if(approaching.length){
-    if(borderColor==="var(--accent)"){borderColor="var(--orange)";bgColor="rgba(230,140,50,.04)";}
-    parts.push(approaching.length+" near strike: "+approaching.map(function(r){var dir=r.o.type==="CALL"?"^":"v";return r.o.sym+" "+r.o.type+"@"+r.o.strike+" "+dir+r.pct.toFixed(1)+"%"}).join(", "));
-  }
-  banner.style.border="1px solid "+borderColor;
-  banner.style.background=bgColor;
-  if(!urgent.length&&!warn.length&&!itmAlert.length&&!approaching.length){
-    msg.innerHTML="OK no alerts";
+    var parts=[],btnsHTML="";
+    var bc="var(--accent)",bg="rgba(46,107,80,.06)";
+    if(urgent.length){
+      bc="var(--red)";bg="rgba(217,69,53,.08)";
+      parts.push(urgent.length+" <3d ITM");
+      for(var u=0;u<urgent.length;u++){
+        var r=urgent[u];
+        btnsHTML+="<button onclick=rollOption("+r.i+") style=font-size:.48rem;padding:3px 6px;background:var(--red);color:#fff;border:none;border-radius:3px;cursor:pointer;>Roll "+r.o.sym+" "+r.o.type+"@"+r.o.strike+" ("+r.days+"d)</button>";
+      }
+    }
+    if(warn.length){
+      if(bc==="var(--accent)"){bc="var(--orange)";bg="rgba(230,140,50,.08)";}
+      parts.push(warn.length+" ITM <=5d");
+      for(var w=0;w<warn.length;w++){
+        var r2=warn[w];
+        btnsHTML+="<button onclick=rollOption("+r2.i+") style=font-size:.48rem;padding:3px 6px;background:var(--orange);color:#fff;border:none;border-radius:3px;cursor:pointer;>Roll "+r2.o.sym+" "+r2.o.type+"@"+r2.o.strike+" ("+r2.days+"d)</button>";
+      }
+    }
+    if(itm.length){
+      if(bc==="var(--accent)"){bc="var(--orange)";bg="rgba(230,140,50,.04)";}
+      parts.push(itm.length+" ITM: "+itm.map(function(r){return r.o.sym+" "+r.o.type+"@"+r.o.strike+" "+r.days+"d"}).join(", "));
+    }
+    if(near.length){
+      if(bc==="var(--accent)"){bc="var(--orange)";bg="rgba(230,140,50,.04)";}
+      parts.push(near.length+" near: "+near.map(function(r){var dir=r.o.type==="CALL"?"^":"v";return r.o.sym+" "+r.o.type+"@"+r.o.strike+" "+dir+r.pct.toFixed(1)+"%"}).join(", "));
+    }
+    banner.style.border="1px solid "+bc;
+    banner.style.background=bg;
+    if(!parts.length){
+      msg.innerHTML="OK no alerts";
+      btns.innerHTML="";
+    }else{
+      msg.innerHTML=parts.join(" | ");
+      btns.innerHTML=btnsHTML;
+    }
+  }catch(e){
+    msg.innerHTML="Err: "+e.message;
     btns.innerHTML="";
-  }else{
-    msg.innerHTML=parts.join(" | ");
-    btns.innerHTML=allBtns;
   }
 }
+
 
 
 function rollOption(i){
