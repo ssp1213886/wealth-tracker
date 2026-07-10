@@ -1471,7 +1471,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <button class="tab-btn" data-tab="sgov">🛡️ SGOV 池</button>
+  <button class="tab-btn" data-tab="option">🛡️ SGOV 池</button>
 
 
 
@@ -1660,43 +1660,42 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-<section class="tab-panel" id="tab-sgov">
+<section class="tab-panel
+<section class="tab-panel" id="tab-option">
+<div class="card" style="padding:10px 14px;margin-bottom:10px;">
+<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.58rem">
+<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov" style="font-family:Inter,var(--font)">--</span><span id="ot"></span></div>
+<div><b>VGT</b> <span id="vd" style="font-family:Inter,var(--font)">--</span></div>
+<div><b>SMH</b> <span id="sd" style="font-family:Inter,var(--font)">--</span></div>
+<div style="flex:1"></div>
+<div><b>现金</b> <span id="oc" style="font-family:Inter,var(--font)">$0</span></div>
+</div></div>
 
+<div class="card trade-form" style="padding:10px 14px;">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">记录期权</h3>
+<div class="tf-row">
+  <div class="tf-group"><label>类型</label><select id="otype"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
+  <div class="tf-group"><label>标的</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
+  <div class="tf-group"><label>行权价</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
+  <div class="tf-group"><label>权利金</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
+  <div class="tf-group"><label>到期日</label><input id="oexpiry" type="date"></div>
+  <div class="tf-group"><label>张数</label><input id="ocontracts" type="number" min="1" value="1"></div>
+  <div class="tf-group" style="align-self:flex-end"><label>&nbsp;</label><button class="btn btn-pri" id="btnAddOption">记录</button></div>
+</div></div>
 
+<div class="card" style="padding:10px 14px;">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">Covered Call 收入</h3>
+<div class="metrics" style="grid-template-columns:repeat(2,1fr)">
+<div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev" style="font-family:Inter,var(--font)">$0</div></div>
+<div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev" style="font-family:Inter,var(--font)">$0</div></div>
+</div></div>
 
-  <div class="card" style="padding:18px;"><h3>🛡️ SGOV 备用金</h3><div style="font-size:1.5rem;font-weight:700;font-family:'Inter',var(--font);margin:8px 0;" id="sgovBalance">$0.00</div><div style="font-size:.6rem;color:var(--muted);" id="sgovDetail">加载中...</div><div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);"><div style="height:5px;background:var(--surface);border-radius:3px;overflow:hidden;margin-bottom:3px;"><div id="sgovTargetBar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .4s;"></div></div><div style="font-size:.52rem;color:var(--muted);display:flex;justify-content:space-between;"><span id="sgovTargetLabel">未设置目标</span><span id="sgovTargetGap"></span></div></div></div>
-
-
-
-  <div class="card" id="sgovShield" style="padding:18px;text-align:center;transition:all .3s;"><div style="font-size:3rem;" id="shieldIcon">🛡️</div><div style="font-size:.82rem;font-weight:620;margin:6px 0;" id="shieldText">正常监控中</div><div style="font-size:.58rem;color:var(--muted);" id="shieldSub">市场未触发极端信号</div></div>
-
-
-
-  <div class="card" style="padding:14px;"><h3 style="font-size:.74rem;">💾 SMH 信号监测</h3>
-
-
-
-    <div style="background:var(--surface);border-radius:var(--radius-sm);padding:14px;margin:8px 0;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:.62rem;color:var(--muted);">距52周高回撤</span><span style="font-size:1.1rem;font-weight:700;font-family:'Inter',var(--font);" id="smhDrawdown">--</span></div><div style="display:flex;justify-content:space-between;margin-top:6px;"><span style="font-size:.5rem;color:var(--muted);">52周高 <strong id="smh52hi" style="color:var(--fg);">--</strong></span><span style="font-size:.5rem;color:var(--muted);">现价 <strong id="smhCur" style="color:var(--fg);">--</strong></span></div></div>
-
-
-
-    <div style="font-size:.5rem;color:var(--muted);margin-bottom:4px;">⚡ 触发条件：回撤 ≥ 25% → 出击信号</div>
-
-
-
-    <div style="margin-top:6px;" id="smhAlertStatus"></div></div>
-
-
-
-</section>
-
-
-
-</section>
-
-
-
-<section class="tab-panel" id="tab-log">
+<div class="card" style="padding:10px 14px;">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">持仓清单</h3>
+<table class="trade-table">
+<thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>权利金</th><th>张数</th><th>到期</th><th>状态</th><th></th></tr></thead>
+<tbody id="holdingsBody"></tbody></table></div>
+</section>" id="tab-log">
 
 
 
@@ -3520,6 +3519,132 @@ function doCSVImport(file){
 
 
 
+
+
+var optionTrades=[];var vixPrice=18,vgt52hi=0,smh52hi=0;
+function loadOptions(){try{return JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){return[]}}
+function saveOptions(){localStorage.setItem("wealth_options_v2",JSON.stringify(optionTrades))}
+optionTrades=loadOptions();
+
+function getDrawdown(sym){var p=sym==="VGT"?livePrices["VGT"]:livePrices["SMH"],hi=sym==="VGT"?vgt52hi:smh52hi;return hi>0?Math.max(0,(hi-p)/hi*100):0}
+function getTrend(dd){return dd<=5?"up":dd<=12?"flat":"down"}
+function getOtm(sym,vix,dd,target){var isV=sym==="VGT",trend=getTrend(dd),otm=0;if(target==="call"){if(trend==="up")otm=isV?9:7;else if(trend==="flat")otm=isV?7:5;else otm=isV?10:8}return{otmPct:otm+(vix>=30?1:0)}}
+
+function updateAllO(){
+ var vix=vixPrice||18,ddV=getDrawdown("VGT"),ddS=getDrawdown("SMH");
+ var vc=document.getElementById("ov"),vt=document.getElementById("ot");
+ if(vc)vc.textContent=vix.toFixed(1);
+ if(vt)vt.innerHTML=vix>25?' <span style="color:var(--red)">高</span>':vix>20?' <span style="color:var(--orange)">波动</span>':' <span style="color:var(--accent)">正常</span>';
+ var vd=document.getElementById("vd"),sd=document.getElementById("sd");
+ if(vd){vd.textContent="-"+ddV.toFixed(1)+"%";vd.style.color=ddV>10?"var(--red)":ddV>5?"var(--orange)":"var(--accent)"}
+ if(sd){sd.textContent="-"+ddS.toFixed(1)+"%";sd.style.color=ddS>10?"var(--red)":ddS>5?"var(--orange)":"var(--accent)"}
+ var oc=document.getElementById("oc");if(oc){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});oc.textContent=fmtFull(cashBalance+ts-tb)}
+ renderOptions();updatePnLO();
+}
+
+function renderOptions(){
+ var el=document.getElementById("holdingsBody");if(!el)return;
+ optionTrades=loadOptions();var now=(new Date()).toISOString().slice(0,10);
+ if(!optionTrades.length){el.innerHTML='<tr><td colspan=8 style="text-align:center;color:var(--muted);padding:16px;">暂无期权持仓</td></tr>';return}
+ el.innerHTML=optionTrades.map(function(o,i){
+  var exp=o.expiry||"",isExpired=exp<now,daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000);
+  var cp=livePrices[o.sym]||0,status="";
+  if(isExpired)status='<span style="color:var(--muted)">已过期</span>';
+  else{var itm=o.type==="CALL"&&cp>o.strike;status=itm?'<span style="color:var(--red)">实值 '+daysLeft+'d</span>':'<span style="color:var(--accent)">'+daysLeft+'d</span>'}
+  return '<tr style="'+(isExpired?'opacity:.5':'')+'"><td style=font-weight:600>'+o.sym+'</td><td style=color:'+(o.type==="CALL"?"var(--accent)":"var(--orange)")+'>'+o.type+'</td><td>
+
+
+
+
+
+
+
+
+
+
+
+<div class="bottom-bar" id="bottomBar">
+
+
+
+  <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="6.5" y1="10" x2="6.5" y2="14"/><line x1="17.5" y1="10" x2="17.5" y2="14"/></svg></span>仪表盘</button>
+
+
+
+  <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="12" r="2"/><circle cx="16" cy="7" r="2"/><circle cx="16" cy="17" r="2"/><line x1="10" y1="12" x2="14" y2="7"/><line x1="10" y1="12" x2="14" y2="17"/></svg></span>操作台</button>
+
+
+
+  <button onclick="switchTab('sgov')" class="bb-btn" id="bbSgov"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2L4 6v6c0 5.5 3.4 10.6 8 11.8 4.6-1.2 8-6.3 8-11.8V6l-8-4z"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="12" y1="8" x2="12" y2="14"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></span>SGOV 池</button>
+
+
+
+  <button onclick="switchTab('data')" class="bb-btn" id="bbData"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></span>数据</button>
+
+
+
+  
+
+
+
+  <button onclick="switchTab('plan')" class="bb-btn" id="bbPlan"><span class="bb-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polygon points="12,3 14,10 21,12 14,14 12,21 10,14 3,12 10,10"/></svg></span>规划</button>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+
+
+</html>
+
+
+
+  var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");if(cc&&cs){var nw=(new Date()).toISOString().slice(0,10);var tm=nw.slice(0,7);var ccTotal=0,ccCount=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===tm){ccTotal+=(o.premium||0)*(o.contracts||1);ccCount++}})}cc.textContent=fmtFull(ccTotal);cs.textContent=ccCount+" 张CALL · 复投核心仓"}
++o.strike.toFixed(2)+'</td><td>'+fmtFull(o.premium||0)+'</td><td>'+(o.contracts||1)+'张</td><td style=color:var(--muted)>'+exp+'</td><td>'+status+'</td><td><button onclick=delOpt('+i+') style=font-size:.4rem;padding:2px 6px;border:1px solid var(--muted);color:var(--muted);border-radius:3px;background:none;cursor:pointer>X</button></td></tr>'
+ }).join("")
+}
+
+function updatePnLO(){
+ var now=(new Date()).toISOString().slice(0,10),thisM=now.slice(0,7);
+ optionTrades=loadOptions();
+ var total=optionTrades.reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);
+ var month=optionTrades.filter(function(o){return o.added&&o.added.slice(0,7)===thisM}).reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);
+ var me=document.getElementById("mrev"),te=document.getElementById("trev");
+ if(me)me.textContent=fmtFull(month);if(te)te.textContent=fmtFull(total)
+}
+
+function delOpt(i){optionTrades.splice(i,1);saveOptions();updateAllO()}
+
+document.getElementById("btnAddOption").addEventListener("click",function(){
+ var t=document.getElementById("otype").value,s=document.getElementById("osym").value,
+     k=parseFloat(document.getElementById("ostrike").value||0),p=parseFloat(document.getElementById("opremium").value||0),
+     e=document.getElementById("oexpiry").value,c=parseInt(document.getElementById("ocontracts").value||1);
+ if(!t||!s||!k||!e||k<=0)return;
+ optionTrades.push({sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:new Date().toISOString().slice(0,10)});
+ saveOptions();
+ document.getElementById("ostrike").value="";document.getElementById("opremium").value="";
+ updateAllO()
+});
+
+var origSwitchTab=switchTab;
+switchTab=function(tab){origSwitchTab(tab);if(tab==="option"){updateAllO()}};
+setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},300);
 
 </script>
 
