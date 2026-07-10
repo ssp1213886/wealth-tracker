@@ -30,6 +30,14 @@
 <h1>使用文档</h1>
 <p class="sub">Wealth Tracker · 个人投资仪表盘 · 最后更新：2026-07-10</p>
 
+<h2>投资策略</h2>
+<p>本工具围绕「永久核心仓 + Covered Call 增强」策略设计：</p>
+<ul>
+  <li><strong>核心仓永远不动</strong>：VGT 50% / SMH 30% / BTC 20%，按月定投</li>
+  <li><strong>Covered Call 收租</strong>：持有正股卖出虚值 CALL，收获权利金</li>
+  <li><strong>权利金复投</strong>：权利金收入按核心仓比例继续买入标的</li>
+  <li><strong>PUT 打折捡漏</strong>：回撤 5-12% 卖 PUT，高位不追</li>
+</ul>
 <h2>1. 页面结构</h2>
 <p>本网站包含 5 个页面，通过顶部 Tab（桌面端）和底部导航（移动端）切换：</p>
 
@@ -80,7 +88,7 @@
 <ul>
   <li><strong>总资产</strong>：总额/持仓/现金 + 期权持仓摘要</li>
   <li><strong>实时价格</strong>：VGT/SMH/BTC 实时行情</li>
-  <li>⚙️ <strong>投资参数</strong>：每月定投总额、起点日期、起始年龄、财务目标</li>
+  <li>⚙️ <strong>投资理念</strong>：每月定投总额、分配比例、财务目标</li>
   <li>🎨 <strong>配色方案</strong>：5 种主题色（森林/海洋/暖阳/梅紫/极简）</li>
   <li>📥 <strong>数据同步</strong>：Cloudflare D1 云端 + JSON 导出 + CSV 导入</li>
 </ul>

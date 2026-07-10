@@ -7648,4 +7648,5 @@ setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
 
 
 
-</html>
+</html
+  var ri=document.getElementById("reinvestHint");if(ri){var nw=(new Date()).toISOString().slice(0,10);var thisM=nw.slice(0,7);var monthPrem=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===thisM)monthPrem+=(o.premium||0)*(o.contracts||1)})}if(monthPrem>0){var vgt=Math.round(monthPrem*state.vgt),smh=Math.round(monthPrem*state.smh),btc=Math.round(monthPrem*state.btc);ri.innerHTML="本月权利金 "+fmtFull(monthPrem)+" → 复投 VGT "+fmt$(vgt)+" / SMH "+fmt$(smh)+" / BTC "+fmt$(btc);ri.style.color="var(--accent)"}else{ri.innerHTML="等待权利金收入";ri.style.color="var(--muted)"}}>

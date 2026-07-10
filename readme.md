@@ -39,6 +39,16 @@ VGT + SMH + BTC 轮动期权策略，Cloudflare Worker + D1 云端同步的 PWA 
 - Schwab CSV 拖拽导入
 - JSON 导入/导出
 
+
+## 投资策略：永久核心仓 + Covered Call
+
+核心思想：永远持有 VGT/SMH/BTC 作为财富发动机，用部分仓位卖 Call 获取额外现金流，权利金继续买入核心资产，让期权成为复利加速器，而不是替代投资。
+
+- **核心仓（永不动）**：VGT 50% / SMH 30% / BTC 20% 按月定投
+- **Covered Call**：持有正股，卖虚值 CALL，收取权利金
+- **权利金复投**：收取的权利金按核心仓比例继续买入 VGT/SMH/BTC
+- **PUT 为打折买入**：仅在回撤 5-12% 时卖 PUT，VIX≥30 减半
+
 ## 技术栈
 
 - 前端：原生 HTML/CSS/JS，单文件 SPA，Inter 字体
