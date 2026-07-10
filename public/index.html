@@ -3217,7 +3217,7 @@ function updateHoldCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.ab
 
 
 
-var doRebalance=function(){var rows=[];var holdings={};for(var i=0;i<trades.length;i++){var t=trades[i];if(!holdings[t.symbol])holdings[t.symbol]={shares:0,cost:0};holdings[t.symbol].shares+=Number(t.shares)}var totalV=0;for(var sym in holdings){var h=holdings[sym];if(h.shares<=0||sym==='SGOV')continue;var v=h.shares*(livePrices[sym]||0);if(v>0){rows.push({sym:sym,shares:h.shares,priced:!!livePrices[sym],value:v});totalV+=v}}updateRebalance(rows,totalV)};
+var doRebalance=function(){var rows=[];var holdings={};for(var i=0;i<trades.length;i++){var t=trades[i];if(!holdings[t.symbol])holdings[t.symbol]={shares:0,cost:0};holdings[t.symbol].shares+=Number(t.shares)}var totalV=0;for(var sym in holdings){var h=holdings[sym];if(h.shares<=0)continue;var v=h.shares*(livePrices[sym]||0);if(v>0){rows.push({sym:sym,shares:h.shares,priced:!!livePrices[sym],value:v});totalV+=v}}updateRebalance(rows,totalV)};
 
 
 
