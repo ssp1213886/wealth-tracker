@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const auth = request.headers.get('X-Auth-Token');
