@@ -1472,7 +1472,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <button class="tab-btn" data-tab="option">📈 期权</button>
+  <button class="tab-btn" data-tab="option">📈 期权·vwb</button>
 
 
 
@@ -1647,6 +1647,9 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 <section class="tab-panel" id="tab-option">
+<div class="card" style="padding:14px 18px;margin-bottom:14px;">
+<h3 style="font-size:.68rem;font-weight:500;margin-bottom:8px;color:var(--muted)">🎯 OTM 行权价参考</h3>
+<div class="metrics" style="grid-template-columns:repeat(2,1fr)"><div class="metric"><div class="m-label">VGT · OTM</div><div style="display:flex;align-items:center;gap:6px;justify-content:center"><button id="otmVgtMinus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">−</button><span id="otmVgtVal" style="font-size:.82rem;font-weight:600;font-family:Inter,var(--font);min-width:40px;text-align:center">7%</span><button id="otmVgtPlus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">+</button></div><div class="m-label" id="otmVgtStrike" style="font-size:.5rem;margin-top:2px">建议行权价 --</div></div><div class="metric"><div class="m-label">SMH · OTM</div><div style="display:flex;align-items:center;gap:6px;justify-content:center"><button id="otmSmhMinus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">−</button><span id="otmSmhVal" style="font-size:.82rem;font-weight:600;font-family:Inter,var(--font);min-width:40px;text-align:center">5%</span><button id="otmSmhPlus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">+</button></div><div class="m-label" id="otmSmhStrike" style="font-size:.5rem;margin-top:2px">建议行权价 --</div></div></div></div>
 <div class="card" style="padding:12px 18px;margin-bottom:14px;"><h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">📊 期权状态</h3><div id="optStatus" style="font-size:.58rem;color:var(--muted);">无活跃持仓</div></div>
 <div class="card" style="padding:10px 14px;margin-bottom:10px;">
 <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
@@ -1654,6 +1657,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div class="metric"><div class="m-label">SMH 持仓</div><div class="m-val" id="vd" style="font-family:Inter,var(--font);font-size:.76rem;">--</div><div class="m-label" id="ocs" style="font-size:.48rem;">--</div></div>
 <div class="metric"><div class="m-label">🔄 可复投</div><div class="m-val pnl-pos" id="ore" style="font-family:Inter,var(--font);font-size:.76rem;">$0</div><div class="m-label" style="font-size:.48rem;">本月权利金</div></div>
 </div></div>
+
 
 <div class="card trade-form" style="padding:10px 14px;">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">记录期权</h3>
@@ -3581,6 +3585,12 @@ try{document.getElementById("hmCorrect").addEventListener("click",function(){var
 try{var __uf=updateFooter||function(){};updateFooter=function(){__uf();var cl=document.getElementById("cashPoolLabel");if(cl){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});cl.textContent=fmtFull(cashBalance+ts-tb)}};}catch(e){}
 var updateSgovPage=function(){};
 setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},500);
+
+var otmSettings={vgt:7,smh:5};
+try{var s2=JSON.parse(localStorage.getItem("otmSettings"));if(s2)otmSettings=s2}catch(e){}
+function updateOtm(){var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?livePrices.SMH||0:0;var v=document.getElementById("otmVgtVal");if(v)v.textContent=otmSettings.vgt+"%";var s=document.getElementById("otmSmhVal");if(s)s.textContent=otmSettings.smh+"%";var ve=document.getElementById("otmVgtStrike");if(ve&&vp>0)ve.textContent="$"+vp.toFixed(0)+" → $"+(vp*(1+otmSettings.vgt/100)).toFixed(0);var se=document.getElementById("otmSmhStrike");if(se&&sp>0)se.textContent="$"+sp.toFixed(0)+" → $"+(sp*(1+otmSettings.smh/100)).toFixed(0);}
+function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";var v2=otmSettings[key]+dir;if(v2<1)v2=1;if(v2>20)v2=20;otmSettings[key]=v2;localStorage.setItem("otmSettings",JSON.stringify(otmSettings));updateOtm();}
+try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adjOtm("VGT",1)};var em=document.getElementById("otmVgtMinus");if(em)em.onclick=function(){adjOtm("VGT",-1)};var sp2=document.getElementById("otmSmhPlus");if(sp2)sp2.onclick=function(){adjOtm("SMH",1)};var sm2=document.getElementById("otmSmhMinus");if(sm2)sm2.onclick=function(){adjOtm("SMH",-1)}}catch(e){}setTimeout(updateOtm,800);
 </script>
 
 
