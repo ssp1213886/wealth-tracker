@@ -1231,7 +1231,6 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 @media(max-width:640px){#tab-option .tf-row{display:flex;flex-direction:column;gap:8px}#tab-option .tf-group{flex:1 1 100%;min-width:0}#tab-option .tf-group input,#tab-option .tf-group select{width:100%}#tab-option .tf-group label{font-size:.55rem}}
-@media(max-width:640px){#tab-option .metrics{grid-template-columns:1fr!important;gap:4px}}
 </style>
 
 
@@ -1473,7 +1472,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <button class="tab-btn" data-tab="option">📈 期权<span id="optBadge" style="background:var(--red);color:#fff;font-size:.42rem;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
+  <button class="tab-btn" data-tab="option">📈 期权·sync<span id="optBadge" style="background:var(--red);color:#fff;font-size:.42rem;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
 
 
 
@@ -1662,21 +1661,17 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div class="metrics" style="grid-template-columns:repeat(2,1fr)"><div class="metric"><div class="m-label">VGT · OTM</div><div style="display:flex;align-items:center;gap:6px;justify-content:center"><button id="otmVgtMinus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">−</button><span id="otmVgtVal" style="font-size:.82rem;font-weight:600;font-family:Inter,var(--font);min-width:40px;text-align:center">7%</span><button id="otmVgtPlus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">+</button></div><div class="m-label" id="otmVgtStrike" style="font-size:.5rem;margin-top:2px">建议行权价 --</div></div><div class="metric"><div class="m-label">SMH · OTM</div><div style="display:flex;align-items:center;gap:6px;justify-content:center"><button id="otmSmhMinus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">−</button><span id="otmSmhVal" style="font-size:.82rem;font-weight:600;font-family:Inter,var(--font);min-width:40px;text-align:center">5%</span><button id="otmSmhPlus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">+</button></div><div class="m-label" id="otmSmhStrike" style="font-size:.5rem;margin-top:2px">建议行权价 --</div></div></div></div>
 
 
-<div <div class="card" style="padding:12px 18px;">
-<h3 style="font-size:.68rem;font-weight:500;margin-bottom:8px;color:var(--muted)">📝 记录期权</h3>
-<div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px">
-<div class="metric"><div class="m-label">类型</div><select id="otype" style="font-size:.6rem;padding:4px 2px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
-<div class="metric"><div class="m-label">标的</div><select id="osym" style="font-size:.6rem;padding:4px 2px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"><option>VGT</option><option>SMH</option></select></div>
-<div class="metric"><div class="m-label">行权价 $</div><input id="ostrike" type="number" step="0.5" placeholder="600" style="font-size:.6rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
-</div>
-<div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px">
-<div class="metric"><div class="m-label">权利金 $</div><input id="opremium" type="number" step="0.01" placeholder="0.50" style="font-size:.6rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
-<div class="metric"><div class="m-label">到期日</div><input id="oexpiry" type="date" style="font-size:.55rem;width:100%;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
-<div class="metric"><div class="m-label">张数</div><input id="ocontracts" type="number" min="1" value="1" style="font-size:.6rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
-</div>
-<div style="text-align:right"><button class="btn btn-pri" id="btnAddOption" style="padding:6px 18px;font-size:.58rem">记录</button></div>
-</div>
-
+<div class="card trade-form" style="padding:10px 14px;">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">记录期权</h3>
+<div class="tf-row">
+  <div class="tf-group"><label>类型</label><select id="otype"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
+  <div class="tf-group"><label>标的</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
+  <div class="tf-group"><label>行权价</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
+  <div class="tf-group"><label>权利金</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
+  <div class="tf-group"><label>到期日</label><input id="oexpiry" type="date"></div>
+  <div class="tf-group"><label>张数</label><input id="ocontracts" type="number" min="1" value="1"></div>
+  <div class="tf-group" style="align-self:flex-end"><label>&nbsp;</label><button class="btn btn-pri" id="btnAddOption">记录</button></div>
+</div></div>
 <div class="card" style="padding:10px 14px;">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">Covered Call 收入</h3>
 <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
