@@ -3567,7 +3567,7 @@ var e=document.getElementById("oexpiry").value;
 var c=parseInt(document.getElementById("ocontracts").value||1);
 if(!t||!s||!k||!e||k<=0)return;
 var premiumTotal=p*(c||1);optionTrades.push({sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:new Date().toISOString().slice(0,10)});
-cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";updateAllO();
+cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();updateSidebar();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";updateAllO();
 var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");
 if(cc&&cs){var nw=(new Date()).toISOString().slice(0,10),tm=nw.slice(0,7),ccTotal=0,ccCount=0;
 optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===tm){ccTotal+=(o.premium||0)*(o.contracts||1);ccCount++}});
