@@ -1,4 +1,6 @@
-var C="wealth-v6";
-self.addEventListener("install",function(e){self.skipWaiting()});
-self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k)}))}).then(function(){return self.clients.claim()}))});
-self.addEventListener("fetch",function(e){if(e.request.method!=="GET")return;e.respondWith(caches.match(e.request).then(function(cached){return fetch(e.request).then(function(res){if(res.ok){var r=res.clone();caches.open(C).then(function(c){c.put(e.request,r)})}return res}).catch(function(){return cached||new Response("Offline",{status:503})})}))});
+﻿// Service Worker v2 - network first
+self.addEventListener('install', function(e) { self.skipWaiting(); });
+self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
+self.addEventListener('fetch', function(e) {
+  e.respondWith(fetch(e.request).catch(function() { return caches.match(e.request); }));
+});
