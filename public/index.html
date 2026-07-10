@@ -1820,7 +1820,7 @@ function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+
 
 
 
-var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC','SGOV'],ALL_SYMS=['VGT','SMH','BTC','SGOV'];
+var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC'],ALL_SYMS=['VGT','SMH','BTC','SGOV'];
 
 
 
@@ -3009,7 +3009,7 @@ function updateMobStatusBar(){
 
 
 
-    var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;ETF_SYMS.forEach(function(sym){totalV+=(Math.max(0,bals[sym]||0))*(livePrices[sym]||0)});
+    var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;ETF_SYMS.forEach(function(sym){totalV+=(Math.max(0,bals[sym]||0))*(livePrices[sym]||0)});if(bals.SGOV&&bals.SGOV>0)totalV+=bals.SGOV*(livePrices.SGOV||0);
 
 
 
