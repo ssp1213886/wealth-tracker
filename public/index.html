@@ -3530,18 +3530,7 @@ var optionTrades=[];
 function loadOpt(){try{return JSON.parse(localStorage.getItem("wealth_options_v2")||"[]")}catch(e){return[]}}
 function saveOpt(){localStorage.setItem("wealth_options_v2",JSON.stringify(optionTrades))}
 optionTrades=loadOpt();
-function updateAllO(){
-var vp=livePrices.VGT||0,sp=livePrices.SMH||0;
-var ddV=vgt52hi>0?Math.max(0,(vgt52hi-vp)/vgt52hi*100):0;
-var ddS=smh52hi>0?Math.max(0,(smh52hi-sp)/smh52hi*100):0;
-var vc=document.getElementById("ov");if(vc)vc.textContent=(vixPrice||18).toFixed(1);
-var vt=document.getElementById("ot");if(vt)vt.innerHTML=vixPrice>25?"<span style=color:var(--red)>高</span>":vixPrice>20?"<span style=color:var(--orange)>波动</span>":"<span style=color:var(--accent)>正常</span>";
-var vd=document.getElementById("vd");if(vd){vd.textContent="-"+ddV.toFixed(1)+"%";vd.style.color=ddV>10?"var(--red)":ddV>5?"var(--orange)":"var(--accent)"}
-var sd=document.getElementById("sd");if(sd){sd.textContent="-"+ddS.toFixed(1)+"%";sd.style.color=ddS>10?"var(--red)":ddS>5?"var(--orange)":"var(--accent)"}
-var oc=document.getElementById("oc");if(oc){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});oc.textContent=fmtFull(cashBalance+ts-tb)}
-renderOpt();updatePnLOpt();
-}
-function renderOpt(){
+function updateAllO(){if(!trades||!trades.forEach||!livePrices)return;var vsh=0,ssh=0;trades.forEach(function(t){if(t.symbol==="VGT")vsh+=t.shares;if(t.symbol==="SMH")ssh+=t.shares});var vc=document.getElementById("ov");if(vc)vc.textContent=vsh+" 股";var cv=document.getElementById("ocv");if(cv){cv.textContent="可卖 "+Math.floor(vsh/100)+" 张CALL"}var vd=document.getElementById("vd");if(vd)vd.textContent=ssh+" 股";var cs=document.getElementById("ocs");if(cs){cs.textContent="可卖 "+Math.floor(ssh/100)+" 张CALL"}var re=document.getElementById("ore");if(re){var now=(new Date()).toISOString().slice(0,10),thisM=now.slice(0,7);optionTrades=loadOpt();var m=optionTrades.filter(function(o){return o.added&&o.added.slice(0,7)===thisM}).reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);re.textContent=fmtFull(m)}renderOpt();updatePnLOpt();}function renderOpt(){
 var el=document.getElementById("holdingsBody");if(!el)return;
 optionTrades=loadOpt();var now=(new Date()).toISOString().slice(0,10);
 if(!optionTrades.length){el.innerHTML="<tr><td colspan=8 style=text-align:center;color:var(--muted);padding:16px>暂无期权持仓</td></tr>";return}
