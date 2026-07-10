@@ -14,7 +14,6 @@ VGT + SMH + BTC 轮动期权策略，Cloudflare Worker + D1 云端同步的 PWA 
 | 操作台 | 股票买卖录入（VGT/SMH/BTC/SGOV）、年度再平衡（换仓/注资） |
 | 期权 | VIX 监测、期权记录（CALL/PUT）、盈亏汇总（本月+累计）、策略 OTM 矩阵、持仓清单（含张数） |
 | 数据 | 现金管理（入金/出金/修正）、持仓明细、交易历史（筛选+排序）、资金流水 |
-| 日志 | 自动操作日志、月度纪律打卡热力图 |
 | 规划 | 收入渐进加码、退出策略、提款模拟 |
 
 ## 侧边栏
@@ -65,7 +64,7 @@ npx wrangler deploy
 
 | 文件 | 作用 |
 |------|------|
-| `public/index.html` | 主程序，6 页仪表盘 |
+| `public/index.html` | 主程序，5 页仪表盘 |
 | `public/guide.html` | 使用文档 |
 | `public/sw.js` | Service Worker |
 | `public/manifest.json` | PWA 配置 |
