@@ -1664,13 +1664,12 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 <section class="tab-panel" id="tab-option">
 <div class="card" style="padding:10px 14px;margin-bottom:10px;">
-<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.58rem">
-<div><span class="rich-dot rich-dot-blue"></span><b>VIX</b> <span id="ov" style="font-family:Inter,var(--font)">--</span><span id="ot"></span></div>
-<div><b>VGT</b> <span id="vd" style="font-family:Inter,var(--font)">--</span></div>
-<div><b>SMH</b> <span id="sd" style="font-family:Inter,var(--font)">--</span></div>
-<div style="flex:1"></div>
-<div><b>现金</b> <span id="oc" style="font-family:Inter,var(--font)">$0</span></div>
+<div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+<div class="metric"><div class="m-label">VGT 持仓</div><div class="m-val" id="ov" style="font-family:Inter,var(--font);font-size:.76rem;">--</div><div class="m-label" id="ocv" style="font-size:.48rem;">--</div></div>
+<div class="metric"><div class="m-label">SMH 持仓</div><div class="m-val" id="vd" style="font-family:Inter,var(--font);font-size:.76rem;">--</div><div class="m-label" id="ocs" style="font-size:.48rem;">--</div></div>
+<div class="metric"><div class="m-label">🔄 可复投</div><div class="m-val pnl-pos" id="ore" style="font-family:Inter,var(--font);font-size:.76rem;">$0</div><div class="m-label" style="font-size:.48rem;">本月权利金</div></div>
 </div></div>
+
 <div class="card trade-form" style="padding:10px 14px;">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">记录期权</h3>
 <div class="tf-row">
