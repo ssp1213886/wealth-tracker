@@ -3139,7 +3139,8 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-    <div class="card" style="padding:14px;"><h3 style="font-size:.68rem;">🗺 20年旅程</h3><div style="font-size:1rem;font-weight:700;font-family:'Inter',var(--font);margin-bottom:6px;" id="roadLabel">--</div><div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;margin-bottom:4px;"><div id="roadBar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .4s;"></div></div><div style="font-size:.52rem;color:var(--muted);display:flex;justify-content:space-between;"><span id="roadStart">2025-01</span><span>20年</span></div></div>
+    <div class="card" style="padding:14px;"><h3 style="font-size:.68rem;">🗺 20年旅程</h3><div style="font-size:1rem;font-weight:700;font-family:'Inter',var(--font);margin-bottom:6px;" id="roadLabel">--</div><div style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;margin-bottom:4px;"><div id="roadBar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .4s;"></div>
+    <div class="card" style="padding:12px;text-align:center;"><h3 style="font-size:.68rem;">💎 Covered Call</h3><div style="font-size:.78rem;font-weight:620;margin:4px 0;" id="ccMonthly">$0</div><div style="font-size:.48rem;color:var(--muted);" id="ccSub">本月权利金</div></div></div><div style="font-size:.52rem;color:var(--muted);display:flex;justify-content:space-between;"><span id="roadStart">2025-01</span><span>20年</span></div></div>
 
 
 
@@ -3387,7 +3388,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div class="card trade-form" style="padding:10px 14px;border:1px solid var(--rule)">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#35760;&#24405;&#26399;&#26435;</h3>
 <div class="tf-row" style="flex-wrap:wrap">
-  <div class="tf-group"><label>&#31867;&#22411;</label><select id="otype"><option value="CALL">CALL</option><option value="PUT">PUT</option></select></div>
+  <div class="tf-group"><label>&#31867;&#22411;</label><select id="otype"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
   <div class="tf-group"><label>&#26631;&#30340;</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
   <div class="tf-group"><label>&#34892;&#26435;&#20215;</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
   <div class="tf-group"><label>&#26435;&#21033;&#37329;</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
@@ -3398,7 +3399,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 </div>
 
 <div class="card" style="padding:10px 14px;border:1px solid var(--rule)">
-<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">&#30408;&#20111;&#27719;&#24635;</h3>
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;letter-spacing:-.005em;color:var(--muted)">Covered Call &#25910;&#20837;</h3>
 <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
 <div class="metric"><div class="m-label">&#26412;&#26376;&#26435;&#21033;&#37329;</div><div class="m-val pnl-pos" id="mrev" style="font-family:Inter,var(--font)">$0</div></div>
 
@@ -7074,7 +7075,7 @@ function renderMatrix(){
   });
   html+='</tr></table>';
   // PUT table
-  html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;">PUT OTM 方案</div>';
+  html+='<div style="font-size:.5rem;color:var(--muted);margin-bottom:2px;font-weight:540;cursor:pointer" onclick="var t=this.nextElementSibling;t.style.display=t.style.display===\'none\'?\'\':\'none\';this.textContent=this.textContent.indexOf(\'▼\')>=0?this.textContent.replace(\'▼\',\'▶\'):this.textContent.replace(\'▶\',\'▼\')">▶ PUT OTM 方案（点击展开）</div><div style="display:none">';
   html+='<table style="border-collapse:collapse;width:100%;font-size:.46rem;margin-bottom:6px;"><tr>';
   ['<5%','5-12%','>12%'].forEach(function(l){html+='<td style="padding:3px 4px;text-align:center;color:var(--muted);">DD '+l+'</td>';});
   html+='</tr><tr>';
@@ -7084,7 +7085,7 @@ function renderMatrix(){
     html+='<td style="padding:4px;text-align:center;border-radius:3px;'+(isActive?'font-weight:620;background:rgba(46,107,80,.1);border:1px solid var(--accent);':'opacity:.35;')+'">V:'+(o.otmPct||0)+'% S:'+(so.otmPct||0)+'%</td>';
   });
   html+='</tr></table>';
-  if(vix>=30)html+='<div style="font-size:.45rem;color:var(--red);text-align:center;">VIX>=30: 刹车+1% OTM, PUT减半</div>';
+  html+='</div>';if(vix>=30)html+='<div style="font-size:.45rem;color:var(--red);text-align:center;">VIX>=30: 刹车+1% OTM, PUT减半</div>';
   el.innerHTML=html;
   var ms=document.getElementById('matrixSummary');if(ms){var action=buildActionLine();var mParts=action.split(' | '),mHTML='<strong>'+cell.label+'</strong> → ';for(var mi=0;mi<mParts.length;mi++){var mp=mParts[mi];if(mp.indexOf('CALL')>=0||mp.indexOf('PUT')>=0){mHTML+='<button onclick=quickFill("'+mp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[1]+'","'+mp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[3]+'",'+mp.match(/(VGT|SMH):(\d+)(CALL|PUT)@([\d.]+)\((\d+)%\)/)[5]+') style=font-size:.46rem;padding:2px 5px;margin:0 2px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer;>'+mp+'</button>'}else{mHTML+='<span style=font-size:.5rem;>'+mp+'</span>'}}ms.innerHTML=mHTML}
 }
@@ -7351,7 +7352,7 @@ function updateAll(){
   document.getElementById('ot').innerHTML=vix>25?' <span style="color:var(--red)">高</span>':vix>20?' <span style="color:var(--orange)">波动</span>':' <span style="color:var(--accent)">正常</span>';
   document.getElementById('vd').textContent='-'+ddV.toFixed(1)+'%';document.getElementById('vd').style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)';
   document.getElementById('sd').textContent='-'+ddS.toFixed(1)+'%';document.getElementById('sd').style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)';
-  document.getElementById('oc').textContent=(function(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;var f=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10))f+=((o.strike||0)*(o.contracts||1)*100)})}return fmtFull(Math.max(0,nc-f))+" | 冻结 "+fmtFull(f)})();
+  document.getElementById('oc').textContent=(function(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;var f=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10))f+=((o.strike||0)*(o.contracts||1)*100)})}return fmtFull(Math.max(0,nc-f))+(f>0?" | 冻结 "+fmtFull(f):"")})();
   renderStrategy();renderOptions();updatePnL();
 }
 
@@ -7452,7 +7453,7 @@ function updateAll(){
   document.getElementById('ot').innerHTML=vix>25?' <span style="color:var(--red)">高</span>':vix>20?' <span style="color:var(--orange)">波动</span>':' <span style="color:var(--accent)">正常</span>';
   document.getElementById('vd').textContent='-'+ddV.toFixed(1)+'%';document.getElementById('vd').style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)';
   document.getElementById('sd').textContent='-'+ddS.toFixed(1)+'%';document.getElementById('sd').style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)';
-  document.getElementById('oc').textContent=(function(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;var f=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10))f+=((o.strike||0)*(o.contracts||1)*100)})}return fmtFull(Math.max(0,nc-f))+" | 冻结 "+fmtFull(f)})();
+  document.getElementById('oc').textContent=(function(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;var f=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10))f+=((o.strike||0)*(o.contracts||1)*100)})}return fmtFull(Math.max(0,nc-f))+(f>0?" | 冻结 "+fmtFull(f):"")})();
   renderStrategy();renderOptions();updatePnL();
 }
 
@@ -7523,7 +7524,7 @@ function updateAllO(){if(!livePrices.VGT||!livePrices.SMH){setTimeout(updateAllO
  var vd=document.getElementById('vd'),sd=document.getElementById('sd');
  if(vd){vd.textContent='-'+ddV.toFixed(1)+'%';vd.style.color=ddV>10?'var(--red)':ddV>5?'var(--orange)':'var(--accent)'}
  if(sd){sd.textContent='-'+ddS.toFixed(1)+'%';sd.style.color=ddS>10?'var(--red)':ddS>5?'var(--orange)':'var(--accent)'}
- var oc=document.getElementById('oc');if(oc)oc.textContent=(function(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;var f=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10))f+=((o.strike||0)*(o.contracts||1)*100)})}return fmtFull(Math.max(0,nc-f))+" | 冻结 "+fmtFull(f)})();
+ var oc=document.getElementById('oc');if(oc)oc.textContent=(function(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;var f=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="PUT"&&o.expiry>=new Date().toISOString().slice(0,10))f+=((o.strike||0)*(o.contracts||1)*100)})}return fmtFull(Math.max(0,nc-f))+(f>0?" | 冻结 "+fmtFull(f):"")})();
  renderStrategyO();renderHoldings();updatePnLO()}
 
 
@@ -7649,4 +7650,5 @@ setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},200);
 
 
 </html
-  var ri=document.getElementById("reinvestHint");if(ri){var nw=(new Date()).toISOString().slice(0,10);var thisM=nw.slice(0,7);var monthPrem=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===thisM)monthPrem+=(o.premium||0)*(o.contracts||1)})}if(monthPrem>0){var vgt=Math.round(monthPrem*state.vgt),smh=Math.round(monthPrem*state.smh),btc=Math.round(monthPrem*state.btc);ri.innerHTML="本月权利金 "+fmtFull(monthPrem)+" → 复投 VGT "+fmt$(vgt)+" / SMH "+fmt$(smh)+" / BTC "+fmt$(btc);ri.style.color="var(--accent)"}else{ri.innerHTML="等待权利金收入";ri.style.color="var(--muted)"}}>
+  var ri=document.getElementById("reinvestHint");if(ri){var nw=(new Date()).toISOString().slice(0,10);var thisM=nw.slice(0,7);var monthPrem=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===thisM)monthPrem+=(o.premium||0)*(o.contracts||1)})}if(monthPrem>0){var vgt=Math.round(monthPrem*state.vgt),smh=Math.round(monthPrem*state.smh),btc=Math.round(monthPrem*state.btc);ri.innerHTML="本月权利金 "+fmtFull(monthPrem)+" → 复投 VGT "+fmt$(vgt)+" / SMH "+fmt$(smh)+" / BTC "+fmt$(btc);ri.style.color="var(--accent)"}else{ri.innerHTML="等待权利金收入";ri.style.color="var(--muted)"}}
+  var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");if(cc&&cs){var nw=(new Date()).toISOString().slice(0,10);var tm=nw.slice(0,7);var ccTotal=0,ccCount=0;if(typeof optionTrades!=="undefined"){optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===tm){ccTotal+=(o.premium||0)*(o.contracts||1);ccCount++}})}cc.textContent=fmtFull(ccTotal);cs.textContent=ccCount+" 张CALL · 复投核心仓"}>
