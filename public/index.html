@@ -1617,7 +1617,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="card collapsible-card"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>💰 买卖操作录入</h3></div><a class="btn btn-out btn-sm" id="hmRefresh" style="font-size:.64rem;">↻ 刷新</a></div><div class="collapsible-body"><div id="hmPricesCompact" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:.68rem;">Loading...</div><div style="text-align:right;font-size:.5rem;color:var(--muted);margin-bottom:8px;" id="hmPriceTime"></div><span id="mktStatus" style="display:none;font-size:.55rem;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;"></span><div class="trade-form"><div class="tf-row"><div class="tf-group"><label>类型</label><select id="tfType"><option value="buy">买入</option><option value="sell">卖出</option></select></div><div class="tf-group"><label>标的</label><select id="tfAsset"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC</option><option value="SGOV">SGOV</option></select></div></div><div class="tf-row tf-row-full"><div class="tf-group"><label>日期</label><input type="date" id="tfDate"></div></div><div class="tf-row"><div class="tf-group"><label>价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div><div class="tf-group"><label>数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div></div><button class="btn btn-pri" id="btnAddTrade">+ 添加交易</button></div><div class="manual-bar"><span class="manual-label">手动设价</span><input class="manual-input" id="hmManualSym" placeholder="VGT"><input class="manual-input" id="hmManualPrice" type="number" inputmode="decimal" step="any" placeholder="价格"><a class="btn btn-out btn-sm manual-btn" id="hmManualSet">设价</a></div></div></div>
+  <div class="card collapsible-card"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>💰 买卖操作录入</h3></div><a class="btn btn-out btn-sm" id="hmRefresh" style="font-size:.64rem;">↻ 刷新</a></div><div class="collapsible-body"><div id="hmPricesCompact" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:.68rem;">Loading...</div><div style="text-align:right;font-size:.5rem;color:var(--muted);margin-bottom:8px;" id="hmPriceTime"></div><span id="mktStatus" style="display:none;font-size:.55rem;padding:1px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;"></span><div class="trade-form"><div class="tf-row"><div class="tf-group"><label>类型</label><select id="tfType"><option value="buy">买入</option><option value="sell">卖出</option></select></div><div class="tf-group"><label>标的</label><select id="tfAsset"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC</option></select></div></div><div class="tf-row tf-row-full"><div class="tf-group"><label>日期</label><input type="date" id="tfDate"></div></div><div class="tf-row"><div class="tf-group"><label>价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div><div class="tf-group"><label>数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div></div><button class="btn btn-pri" id="btnAddTrade">+ 添加交易</button></div><div class="manual-bar"><span class="manual-label">手动设价</span><input class="manual-input" id="hmManualSym" placeholder="VGT"><input class="manual-input" id="hmManualPrice" type="number" inputmode="decimal" step="any" placeholder="价格"><a class="btn btn-out btn-sm manual-btn" id="hmManualSet">设价</a></div></div></div>
 
 
 
@@ -1752,7 +1752,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>📋 交易历史</h3></div><div style="display:flex;gap:4px;align-items:center;"><select id="tradeFilterSym" style="padding:3px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.56rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option><option>SGOV</option></select><button class="btn btn-out btn-sm" id="btnClearTrades" style="font-size:.45rem;padding:2px 8px;min-height:auto;">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>📋 交易历史</h3></div><div style="display:flex;gap:4px;align-items:center;"><select id="tradeFilterSym" style="padding:3px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.56rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option></select><button class="btn btn-out btn-sm" id="btnClearTrades" style="font-size:.45rem;padding:2px 8px;min-height:auto;">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
 
 
 
@@ -1820,7 +1820,7 @@ function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+
 
 
 
-var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC'],ALL_SYMS=['VGT','SMH','BTC','SGOV'];
+var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC'],ALL_SYMS=['VGT','SMH','BTC'];
 
 
 
@@ -3009,7 +3009,7 @@ function updateMobStatusBar(){
 
 
 
-    var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;ETF_SYMS.forEach(function(sym){totalV+=(Math.max(0,bals[sym]||0))*(livePrices[sym]||0)});if(bals.SGOV&&bals.SGOV>0)totalV+=bals.SGOV*(livePrices.SGOV||0);
+    var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;ETF_SYMS.forEach(function(sym){totalV+=(Math.max(0,bals[sym]||0))*(livePrices[sym]||0)});
 
 
 
