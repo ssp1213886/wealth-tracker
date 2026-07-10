@@ -1710,8 +1710,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.bottom-bar{display:flex;position:fixed;bottom:12px;left:15px;right:15px;z-index:9999;background:rgba(255,255,255,.65);border:.5px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.06);backdrop-filter:saturate(300%) blur(60px);-webkit-backdrop-filter:saturate(300%) blur(60px);border-radius:24px}
-.btn,.tab-btn,.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.42rem;position:relative;transition:background .15s,transform .15s;-webkit-backdrop-filter:none}.bb-btn.active{color:var(--accent)}[data-theme='dark'] .bottom-bar{background:rgba(18,19,18,.65);border:.5px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4)}
+.bottom-bar{display:flex;position:fixed;bottom:12px;left:15px;right:15px;z-index:9999;background:rgba(255,255,255,.65);border:.5px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.06);backdrop-filter:saturate(300%) blur(60px);-webkit-backdrop-filter:saturate(300%) blur(60px);border-radius:24px}[data-theme='dark'] .bottom-bar{background:rgba(18,19,18,.65);border:.5px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.4)}
 
 
 
@@ -1775,7 +1774,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.sidebar{width:88%;max-width:340px;max-height:0;position:fixed;top:8px;left:6px;z-index:30;border-right:none;border:none;padding:0 8px;overflow-y:auto;background:var(--card-bg);border-radius:16px;box-shadow:var(--shadow-lg);transition:max-height .3s ease,opacity .3s ease;opacity:0}
+.sidebar{width:85%;max-width:320px;max-height:0;position:fixed;top:0;left:0;z-index:30;border-right:none;border-bottom:1px solid var(--rule);padding:0 12px;overflow-y:auto;background:var(--card-bg);border-radius:0 0 14px 14px;box-shadow:var(--shadow-lg);transition:max-height .3s ease}
 
 
 
@@ -1783,7 +1782,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.sidebar.open{max-height:90vh;padding:12px;opacity:1}
+.sidebar.open{max-height:85vh;padding:16px}
 
 
 
@@ -1807,7 +1806,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.sb-section{padding:12px 14px;margin-bottom:10px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow-sm);transition:box-shadow .2s}
+.sb-section{padding:14px 16px;margin-bottom:8px;background:var(--card-bg);border:1px solid var(--rule);border-radius:10px}
 
 
 
@@ -1831,7 +1830,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.mob-hamburger{display:flex;position:fixed;top:16px;right:12px;z-index:50;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.12);border:none;align-items:center;justify-content:center;font-size:.85rem;cursor:pointer;opacity:.85;color:#fff;-webkit-tap-highlight-color:transparent}.mob-hamburger:active{background:rgba(255,255,255,.25);opacity:1}
+.mob-hamburger{display:flex;position:fixed;top:20px;right:16px;z-index:50;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.12);border:none;align-items:center;justify-content:center;font-size:.85rem;cursor:pointer;opacity:.85;color:#fff;-webkit-tap-highlight-color:transparent}
 
 
 
@@ -1967,7 +1966,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 
 
 
-#rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:29;opacity:0;pointer-events:none;transition:opacity .25s ease;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}.sb-overlay.show{opacity:1;pointer-events:auto}
+#rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}.sb-overlay.show{opacity:1;pointer-events:auto}
 
 
 
