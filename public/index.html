@@ -3559,7 +3559,7 @@ var month=optionTrades.filter(function(o){return o.added&&o.added.slice(0,7)===t
 var me=document.getElementById("mrev"),te=document.getElementById("trev");
 if(me)me.textContent=fmtFull(month);if(te)te.textContent=fmtFull(total)
 }
-function delOpt(i){optionTrades.splice(i,1);saveOpt();updateAllO()}
+function updateOptStatus(){var el=document.getElementById("optStatus");if(!el)return;var now=(new Date()).toISOString().slice(0,10);optionTrades=loadOpt();var active=optionTrades.filter(function(o){return o.expiry>=now&&!o.settled});if(!active.length){el.innerHTML="无活跃持仓";return}el.innerHTML=active.map(function(o){var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);var cp=livePrices[o.sym]||0;var itm=o.type==="CALL"&&cp>o.strike;var cls=itm&&d<=3?"status-danger":itm&&d<=7?"status-warn":"status-safe";var icon=cls==="status-danger"?"🔴":cls==="status-warn"?"🟡":"🟢";var txt=itm?"实值":"虚值";return "<div style=display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--rule)><span>"+icon+"</span><div style=flex:1><b>"+o.sym+"</b> "+o.type+" @$"+o.strike.toFixed(0)+" x"+(o.contracts||1)+"</div><div style=font-size:.55rem;color:"+(cls==="status-danger"?"var(--red)":cls==="status-warn"?"var(--orange)":"var(--accent)")+">"+txt+" · "+d+"天</div></div>";}).join("");}function delOpt(i){optionTrades.splice(i,1);saveOpt();updateAllO()}
 document.getElementById("btnAddOption").addEventListener("click",function(){
 var t=document.getElementById("otype").value;
 var s=document.getElementById("osym").value;
