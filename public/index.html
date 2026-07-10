@@ -3578,7 +3578,7 @@ else{sh.innerHTML=ac.map(function(o){var d=Math.ceil((new Date(o.expiry)-new Dat
 }
 };
 try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return;cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),type:v>0?"修正+":"修正-",amount:v});saveCashLog();document.getElementById("hmCorrectAmt").value="";addActivity("现金修正 "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog();updateCashPage()})}catch(e){}
-var __uf=updateFooter||function(){};updateFooter=function(){__uf();var cl=document.getElementById("cashPoolLabel");if(cl){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});cl.textContent=fmtFull(cashBalance+ts-tb)}};
+try{var __uf=updateFooter||function(){};updateFooter=function(){__uf();var cl=document.getElementById("cashPoolLabel");if(cl){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});cl.textContent=fmtFull(cashBalance+ts-tb)}};}catch(e){}
 var updateSgovPage=function(){};
 setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},500);
 </script>
