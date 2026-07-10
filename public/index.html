@@ -1774,7 +1774,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.sidebar{width:85%;max-width:320px;max-height:0;position:fixed;top:0;left:0;z-index:30;border-right:none;border-bottom:1px solid var(--rule);padding:0 12px;overflow-y:auto;background:var(--card-bg);border-radius:0 0 14px 14px;box-shadow:var(--shadow-lg);transition:max-height .3s ease}
+.sidebar{width:88%;max-width:340px;max-height:0;position:fixed;top:8px;left:6px;z-index:30;border:none;padding:0 8px;overflow-y:auto;background:var(--card-bg);border-radius:16px;box-shadow:var(--shadow-lg);transition:max-height .3s ease,opacity .3s ease;opacity:0}
 
 
 
@@ -1782,7 +1782,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.sidebar.open{max-height:85vh;padding:16px}
+.sidebar.open{max-height:90vh;padding:12px;opacity:1}
 
 
 
@@ -1806,7 +1806,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.sb-section{padding:14px 16px;margin-bottom:8px;background:var(--card-bg);border:1px solid var(--rule);border-radius:10px}
+.sb-section{padding:12px 14px;margin-bottom:10px;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow-sm)}
 
 
 
@@ -1966,7 +1966,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 
 
 
-#rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}.sb-overlay.show{opacity:1;pointer-events:auto}
+#rebalLockMsg{padding:6px 10px;font-size:.54rem;margin-bottom:6px;background:var(--surface)}.trade-table,.res-table{box-shadow:inset -10px 0 6px -6px rgba(0,0,0,.08)}.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:29;opacity:0;pointer-events:none;transition:opacity .25s ease}.sb-overlay.show{opacity:1;pointer-events:auto}
 
 
 
@@ -5763,7 +5763,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
 
-  document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.bb-btn').forEach(function(x){x.classList.remove('active')});var bbid="bb"+tab.charAt(0).toUpperCase()+tab.slice(1);var bb=document.getElementById(bbid);if(bb)bb.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.bb-btn').forEach(function(x){x.classList.remove('active')});var bbid="bb"+tab.charAt(0).toUpperCase()+tab.slice(1);var bb=document.getElementById(bbid);if(bb)bb.classList.add('active');document.querySelectorAll('.bb-btn').forEach(function(x){x.classList.remove('active')});var bbid="bb"+tab.charAt(0).toUpperCase()+tab.slice(1);var bb=document.getElementById(bbid);if(bb)bb.classList.add('active');
 
 
 
