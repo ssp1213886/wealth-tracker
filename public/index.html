@@ -1655,18 +1655,17 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div class="metric"><div class="m-label">🔄 可复投</div><div class="m-val pnl-pos" id="ore" style="font-family:Inter,var(--font);font-size:.76rem;">$0</div><div class="m-label" style="font-size:.48rem;">本月权利金</div></div>
 </div></div>
 
-<div <div class="card" style="padding:14px 18px;">
-<h3 style="font-size:.68rem;font-weight:500;margin-bottom:8px;color:var(--muted)">📝 记录期权</h3>
-<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
-<div style="display:flex;flex-direction:column;gap:2px;min-width:90px;flex:1"><label style="font-size:.55rem;color:var(--muted)">类型</label><select id="otype" style="padding:7px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.62rem;background:var(--card-bg);color:var(--fg)"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
-<div style="display:flex;flex-direction:column;gap:2px;min-width:90px;flex:1"><label style="font-size:.55rem;color:var(--muted)">标的</label><select id="osym" style="padding:7px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.62rem;background:var(--card-bg);color:var(--fg)"><option>VGT</option><option>SMH</option></select></div>
-<div style="display:flex;flex-direction:column;gap:2px;min-width:90px;flex:1"><label style="font-size:.55rem;color:var(--muted)">行权价 $</label><input id="ostrike" type="number" step="0.5" placeholder="600" style="padding:7px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.62rem;background:var(--card-bg);color:var(--fg)"></div>
-<div style="display:flex;flex-direction:column;gap:2px;min-width:90px;flex:1"><label style="font-size:.55rem;color:var(--muted)">权利金 $</label><input id="opremium" type="number" step="0.01" placeholder="0.50" style="padding:7px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.62rem;background:var(--card-bg);color:var(--fg)"></div>
-<div style="display:flex;flex-direction:column;gap:2px;min-width:90px;flex:1"><label style="font-size:.55rem;color:var(--muted)">到期日</label><input id="oexpiry" type="date" style="padding:7px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.62rem;background:var(--card-bg);color:var(--fg)"></div>
-<div style="display:flex;flex-direction:column;gap:2px;min-width:90px;flex:1"><label style="font-size:.55rem;color:var(--muted)">张数</label><input id="ocontracts" type="number" min="1" value="1" style="padding:7px 8px;border:1px solid var(--rule);border-radius:6px;font-size:.62rem;background:var(--card-bg);color:var(--fg)"></div>
-<div style="display:flex;align-items:flex-end;padding-bottom:2px"><button class="btn btn-pri" id="btnAddOption" style="padding:8px 16px;font-size:.62rem">记录</button></div>
+<div class="card trade-form" style="padding:10px 14px;">
+<h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">记录期权</h3>
+<div class="tf-row">
+  <div class="tf-group"><label>类型</label><select id="otype"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
+  <div class="tf-group"><label>标的</label><select id="osym"><option>VGT</option><option>SMH</option></select></div>
+  <div class="tf-group"><label>行权价</label><input id="ostrike" type="number" step="0.5" placeholder="$600"></div>
+  <div class="tf-group"><label>权利金</label><input id="opremium" type="number" step="0.01" placeholder="0.50"></div>
+  <div class="tf-group"><label>到期日</label><input id="oexpiry" type="date"></div>
+  <div class="tf-group"><label>张数</label><input id="ocontracts" type="number" min="1" value="1"></div>
+  <div class="tf-group" style="align-self:flex-end"><label>&nbsp;</label><button class="btn btn-pri" id="btnAddOption">记录</button></div>
 </div></div>
-</div>
 <div class="card" style="padding:10px 14px;">
 <h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">Covered Call 收入</h3>
 <div class="metrics" style="grid-template-columns:repeat(2,1fr)">
