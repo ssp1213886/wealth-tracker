@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 
 
 
@@ -74,11 +74,11 @@
 
 
 
-[data-theme="dark"]{--bg:#121312;--fg:#e8e8e3;--muted:#7a7a75;--accent:#22b35e;--accent-l:#112818;--accent-d:#189445;--rule:#2a2c2a;--surface:#151715;--card-bg:#181a18;--card-bg:#181a18;--blue:#5b9bd5;--orange:#e8880c;--red:#e6352b;--shadow:0 0 0 transparent;--shadow-lg:0 0 0 transparent;--radius:10px;--radius-sm:8px;--radius-pill:18px;--font:"Inter","SF Pro Display","Noto Sans SC","PingFang SC",sans-serif}
+[data-theme="dark"]{--bg:#0d0f0e;--fg:#e6e6e3;--muted:#8a8a84;--accent:#22c55e;--accent-l:#0a1f12;--accent-d:#16a34a;--rule:#242624;--surface:#141714;--card-bg:#1a1d1a;--blue:#4b8de0;--orange:#e8880c;--red:#ef4444;--shadow:0 1px 4px rgba(0,0,0,.3);--shadow-lg:0 4px 16px rgba(0,0,0,.4);--shadow-sm:0 1px 2px rgba(0,0,0,.25);--radius:12px;--radius-sm:8px;--radius-pill:18px;--font:"Inter","SF Pro Display","Noto Sans SC","PingFang SC",sans-serif}
 
 
 
-[data-accent="forest"]{--accent:#16994a;--accent-l:#e8f5ed}[data-accent="ocean"]{--accent:#2563eb;--accent-l:#eff4ff}[data-accent="warm"]{--accent:#d97706;--accent-l:#fff7ed}[data-accent="plum"]{--accent:#7c3aed;--accent-l:#f5f3ff}[data-accent="mono"]{--accent:#52525b;--accent-l:#f4f4f5}[data-theme="dark"][data-accent="forest"]{--accent-l:#0f2418}[data-theme="dark"][data-accent="ocean"]{--accent-l:#0c192e}[data-theme="dark"][data-accent="warm"]{--accent-l:#1c1008}[data-theme="dark"][data-accent="plum"]{--accent-l:#15092b}[data-theme="dark"][data-accent="mono"]{--accent-l:#1a1a1c}
+[data-accent="forest"]{--accent:#16994a;--accent-l:#e8f5ed}[data-accent="ocean"]{--accent:#2563eb;--accent-l:#eff4ff}[data-accent="warm"]{--accent:#d97706;--accent-l:#fff7ed}[data-accent="plum"]{--accent:#7c3aed;--accent-l:#f5f3ff}[data-accent="mono"]{--accent:#52525b;--accent-l:#f4f4f5}[data-theme="dark"][data-accent="forest"]{--accent-l:#0a1f12}[data-theme="dark"][data-accent="ocean"]{--accent-l:#081428}[data-theme="dark"][data-accent="warm"]{--accent-l:#140b05}[data-theme="dark"][data-accent="plum"]{--accent-l:#0e0620}[data-theme="dark"][data-accent="mono"]{--accent-l:#141415}
 
 
 
@@ -182,7 +182,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.btn{padding:7px 14px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:.7rem;font-weight:520;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.01em}
+.btn{padding:7px 14px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:.7rem;font-weight:520;cursor:pointer;transition:transform .15s,box-shadow .15s;white-space:nowrap;letter-spacing:.01em}
 
 
 
@@ -202,7 +202,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.btn-sm{padding:4px 10px;font-size:.66rem}.btn:disabled{opacity:.4;cursor:default;pointer-events:none}
+.btn-sm{padding:4px 10px;font-size:.66rem}.btn-sm:active{transform:scale(.95)}.btn:disabled{opacity:.4;cursor:default;pointer-events:none}.btn:active{transform:scale(.97)}
 
 
 
@@ -234,7 +234,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:22px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 
 
 
@@ -278,7 +278,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.chart-card{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:24px 20px;margin-bottom:18px;box-shadow:none;position:relative;transition:all .25s}
+.chart-card{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:24px 20px;margin-bottom:16px;box-shadow:var(--shadow);position:relative;transition:all .25s}
 
 
 
@@ -310,7 +310,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.card{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:22px 20px;margin-bottom:18px;box-shadow:var(--shadow);transition:all .2s}.card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.card{background:var(--card-bg);border:1px solid var(--rule);border-radius:var(--radius);padding:22px 20px;margin-bottom:16px;box-shadow:var(--shadow);transition:all .25s}.card:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
 
 
 
@@ -322,7 +322,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.card{transition:all .3s cubic-bezier(.25,.8,.25,1)}
+.card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}.chart-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}.card{transition:all .3s cubic-bezier(.25,.8,.25,1)}
 
 
 
@@ -502,7 +502,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 
 
-.pnl-pos{color:var(--accent);font-weight:560}.pnl-neg{color:var(--red);font-weight:560}
+.pnl-pos{color:var(--accent);font-weight:560;transition:color .3s ease}.pnl-neg{color:var(--red);font-weight:560;transition:color .3s ease}
 
 
 
@@ -626,7 +626,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.card{background:var(--card-bg);border:none;border-radius:12px;padding:16px;margin-bottom:12px}
+.card{background:var(--card-bg);border:none;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 
 
 
@@ -634,7 +634,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.chart-card{background:var(--card-bg);border:none;border-radius:12px;padding:16px;margin-bottom:12px}
+.chart-card{background:var(--card-bg);border:none;border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
 
 
 
@@ -650,7 +650,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.metrics{grid-template-columns:repeat(2,1fr);gap:0;border-radius:12px;overflow:hidden;background:var(--card-bg)}
+.metrics{grid-template-columns:repeat(2,1fr);gap:0;border-radius:var(--radius);overflow:hidden;background:var(--card-bg)}
 
 
 
@@ -662,7 +662,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.metric:nth-child(2n){border-left:1px solid var(--rule)}
+.metric:nth-child(2n){border-left:1px solid var(--rule)}.metric:nth-child(odd){border-right:1px solid var(--rule)}
 
 
 
@@ -690,7 +690,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-#dashWidgets>.card{border-radius:12px;margin-bottom:12px;border:none}
+#dashWidgets>.card{border-radius:var(--radius);margin-bottom:12px;border:none}
 
 
 
@@ -706,7 +706,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.chart-row>.card{border-radius:12px;margin-bottom:12px;border:none}
+.chart-row>.card{border-radius:var(--radius);margin-bottom:12px;border:none}
 
 
 
@@ -866,7 +866,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.bb-btn.active{color:var(--accent);font-weight:600}
+.bb-btn.active{color:var(--accent);font-weight:600}.bb-btn:active{transform:scale(.9)}
 
 
 
@@ -954,7 +954,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.chart-card{padding:16px;margin-bottom:12px}
+.chart-card{padding:16px;margin-bottom:12px;border-radius:var(--radius)}
 
 
 
@@ -1038,7 +1038,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 
 
 
-@media(max-width:800px){.mob-status-bar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:24px;position:sticky;top:0;z-index:40;background:var(--bg);margin-bottom:12px;border-radius:0 0 16px 16px;background:var(--accent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);color:#fff}.mob-status-bar::before{display:none}.ms-val{font-family:Inter,var(--font);font-weight:700;font-size:2.2rem;letter-spacing:-.04em;color:#fff;line-height:.95;flex-shrink:0}.ms-label{font-size:.5rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}.ms-left{display:flex;flex-direction:column;align-items:flex-start}.ms-prices{display:flex;flex-direction:column;gap:4px;text-align:right;flex-shrink:0;min-width:0} .ms-pill{display:inline-flex;align-items:center;gap:4px;padding:1px 0;border-radius:0;background:transparent;font-family:Inter,var(--font);font-size:.56rem;white-space:nowrap;line-height:1.2;color:rgba(255,255,255,.7)} .ms-pill .ms-pos{color:#a0ffb8!important}.ms-pill .ms-neg{color:#ffb8b0!important}.ms-pill .ms-pos{color:var(--accent)}.ms-pill .ms-neg{color:var(--red)}}
+@media(max-width:800px){.mob-status-bar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:24px;position:sticky;top:0;z-index:40;background:var(--bg);margin-bottom:12px;border-radius:0 0 16px 16px;background:var(--accent);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);color:#fff}.mob-status-bar::before{display:none}.ms-val{font-family:Inter,var(--font);font-weight:700;font-size:2.2rem;letter-spacing:-.04em;color:#fff;line-height:.95;flex-shrink:0}.ms-label{font-size:.5rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}.ms-left{display:flex;flex-direction:column;align-items:flex-start}.ms-prices{display:flex;flex-direction:column;gap:4px;text-align:right;flex-shrink:0;min-width:0} .ms-pill{display:inline-flex;align-items:center;gap:4px;padding:1px 0;border-radius:4px;background:transparent;font-family:Inter,var(--font);font-size:.56rem;white-space:nowrap;line-height:1.2;color:rgba(255,255,255,.7)} .ms-pill .ms-pos{color:#a0ffb8!important}.ms-pill .ms-neg{color:#ffb8b0!important}.ms-pill .ms-pos{color:var(--accent)}.ms-pill .ms-neg{color:var(--red)}}
 
 
 
@@ -1190,7 +1190,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 
 
 
-.metrics{gap:0;border:1px solid var(--rule);border-radius:var(--radius)}.metric{padding:16px 20px;background:transparent;border-radius:0;border:none;border-bottom:1px solid var(--rule)}.metric:last-child{border-bottom:none}
+.metrics{gap:0;border:1px solid var(--rule);border-radius:var(--radius)}.metric{padding:16px 20px;background:transparent;border-radius:var(--radius);border:none;border-bottom:1px solid var(--rule)}.metric:last-child{border-bottom:none}
 
 
 
@@ -1198,11 +1198,11 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 
 
 
-.card{padding:16px 16px;margin-bottom:0;border:none;border-bottom:1px solid var(--rule);border-radius:0}
+.card{padding:16px 16px;margin-bottom:12px;border:none;border-bottom:1px solid var(--rule);border-radius:var(--radius)}
 
 
 
-.chart-card{padding:16px 16px;margin-bottom:0}
+.chart-card{padding:16px 16px;margin-bottom:12px;border-radius:var(--radius)}
 
 
 
@@ -1232,7 +1232,11 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 @media(max-width:640px){#tab-option .tf-row{display:flex;flex-direction:column;gap:8px}#tab-option .tf-group{flex:1 1 100%;min-width:0}#tab-option .tf-group input,#tab-option .tf-group select{width:100%}#tab-option .tf-group label{font-size:.55rem}}
 @media(max-width:640px){.opt-form-metrics{grid-template-columns:1fr!important;gap:4px}}
-</style>
+
+@media(max-width:800px){
+  .opt-actions{display:inline-flex!important;flex-direction:column!important;gap:4px!important;align-items:stretch!important}
+  .opt-actions button{font-size:.5rem!important;padding:4px 8px!important;min-width:36px!important;margin-left:0!important}
+}</style>
 
 
 
@@ -2165,7 +2169,7 @@ function updatePortfolio(){
 
 
 
-  if(ddLines.length>0){tc.textContent='';var worst=ddLines.reduce(function(a,b){return a.dd>b.dd?a:b});tc.innerHTML=ddLines.map(function(d){return '<div style="font-size:.68rem;display:flex;justify-content:space-between;padding:2px 0;"><strong>'+d.sym+'</strong><span style="color:'+(d.dd>0.1?'var(--red)':'var(--accent)')+';">'+(d.dd>0.1?'-'+d.dd.toFixed(1)+'%':d.dd.toFixed(1)+'%')+'</span><span style="font-size:.55rem;color:var(--muted);">高$'+d.peak.toFixed(2)+'</span></div>'}).join('');ts.textContent=''}else{tc.textContent='--';tc.style.color='';ts.textContent='💹 添加价格后显示'}
+  if(ddLines.length>0){tc.textContent='';var worst=ddLines.reduce(function(a,b){return a.dd>b.dd?a:b});tc.innerHTML=ddLines.map(function(d){var pct=Math.max(0,100-d.dd);var barColor=d.dd>10?'var(--red)':'var(--accent)';return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;"><strong style="min-width:32px;font-size:.64rem;">'+d.sym+'</strong><div style="flex:1;height:5px;background:var(--surface);border-radius:3px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:3px;transition:width .5s ease;"></div></div><span style="font-size:.58rem;font-weight:500;min-width:44px;text-align:right;color:'+(d.dd>10?'var(--red)':'var(--accent)')+';">'+(d.dd>10?'-'+d.dd.toFixed(1)+'%':d.dd.toFixed(1)+'%')+'</span><span style="font-size:.5rem;color:var(--muted);min-width:48px;text-align:right;">高$'+d.peak.toFixed(2)+'</span></div>'}).join('');ts.textContent='回撤深度可视化'}else{tc.textContent='--';tc.style.color='';ts.textContent='💹 添加价格后显示'}
 
 
 
@@ -2185,7 +2189,7 @@ function updatePortfolio(){
 
 
 
-function updateDonutChart(rows){var canvas=document.getElementById("chartDonut"),legend=document.getElementById("donutLegend");if(!canvas)return;var dpr=window.devicePixelRatio||1,size=220;canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+"px";canvas.style.height=size+"px";var ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,size,size);if(!rows.length||rows.every(function(r){return!r.priced})){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">📊 暂无数据</div>";return}var priced=rows.filter(function(r){return r.priced&&r.value>0});if(!priced.length){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">请先设价</div>";return}var total=priced.reduce(function(s,r){return s+r.value},0),cx=size/2,cy=90,r=82,angle=-Math.PI/2;var slices=[];priced.forEach(function(row,i){var slice=row.value/total*2*Math.PI;slices.push({sym:row.sym,value:row.value,pct:row.value/total,color:DONUT_COLORS[i%3]});ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=DONUT_COLORS[i%3];ctx.fill();ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.stroke();angle+=slice});var dark=document.documentElement.dataset.theme==="dark";ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);var grd=ctx.createRadialGradient(cx,cy,45,cx,cy,60);grd.addColorStop(0,dark?"#222522":"#faf9f5");grd.addColorStop(1,dark?"#1a1d1a":"#f0ede5");ctx.fillStyle=grd;ctx.fill();ctx.fillStyle=dark?"#e4e4e0":"#1a1a1a";ctx.font="bold 20px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(fmt$(total),cx,cy-2);ctx.font="10px sans-serif";ctx.fillStyle=dark?"#999":"#777";ctx.fillText("总市值",cx,cy+14);if(!legend)return;var h="";slices.forEach(function(s){h+="<div style=\"display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;border-radius:var(--radius-sm);background:var(--surface);\"><span style=\"width:10px;height:10px;border-radius:50%;background:"+s.color+";flex-shrink:0;\"></span><span style=\"flex:1;margin-left:8px;font-weight:520;font-size:.68rem;\">"+s.sym+"</span><span style=\"font-size:.64rem;color:var(--fg);font-weight:520;\">"+(s.pct*100).toFixed(1)+"%</span><span style=\"font-size:.56rem;color:var(--muted);margin-left:6px;\">"+fmtFull(s.value)+"</span></div>"});var sgovShares1=0;trades.forEach(function(t){if(t.symbol==='SGOV')sgovShares1+=t.shares});var sgovV=(livePrices.SGOV||0)*Math.max(0,sgovShares1);var sl=document.getElementById('sgovPoolLabel');if(sl)sl.textContent='+SGOV 池 '+fmt$(sgovV||0);legend.innerHTML=h}var rebalanceMode="swap";function updateRebalance(rows,totalValue){
+function updateDonutChart(rows){var canvas=document.getElementById("chartDonut"),legend=document.getElementById("donutLegend");if(!canvas)return;var dpr=window.devicePixelRatio||1,size=220;canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+"px";canvas.style.height=size+"px";var ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,size,size);if(!rows.length||rows.every(function(r){return!r.priced})){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">📊 暂无数据</div>";return}var priced=rows.filter(function(r){return r.priced&&r.value>0});if(!priced.length){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">请先设价</div>";return}var total=priced.reduce(function(s,r){return s+r.value},0),cx=size/2,cy=90,r=82,angle=-Math.PI/2;var slices=[];priced.forEach(function(row,i){var slice=row.value/total*2*Math.PI;slices.push({sym:row.sym,value:row.value,pct:row.value/total,color:DONUT_COLORS[i%3]});ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=DONUT_COLORS[i%3];ctx.fill();ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.stroke();angle+=slice});var dark=document.documentElement.dataset.theme==="dark";ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);var grd=ctx.createRadialGradient(cx,cy,45,cx,cy,60);grd.addColorStop(0,dark?"#222522":"#faf9f5");grd.addColorStop(1,dark?"#1a1d1a":"#f0ede5");ctx.fillStyle=grd;ctx.fill();ctx.fillStyle=dark?"#e4e4e0":"#1a1a1a";ctx.font="bold 20px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(fmt$(total),cx,cy-2);ctx.font="10px sans-serif";ctx.fillStyle=dark?"#999":"#777";ctx.fillText("总市值",cx,cy+14);if(!legend)return;var h="";slices.forEach(function(s){h+="<div style=\"display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;border-radius:var(--radius-sm);background:var(--surface);\"><span style=\"width:10px;height:10px;border-radius:50%;background:"+s.color+";flex-shrink:0;\"></span><span style=\"flex:1;margin-left:8px;font-weight:520;font-size:.68rem;\">"+s.sym+"</span><span style=\"font-size:.64rem;color:var(--fg);font-weight:520;\">"+(s.pct*100).toFixed(1)+"%</span><span style=\"font-size:.56rem;color:var(--muted);margin-left:6px;\">"+fmtFull(s.value)+"</span></div>"});var sgovShares1=0;trades.forEach(function(t){if(t.symbol==='SGOV')sgovShares1+=t.shares});var sgovV=(livePrices.SGOV||0)*Math.max(0,sgovShares1);var sl=document.getElementById('sgovPoolLabel');if(sl){if(sgovShares1>0){sl.style.display='';sl.textContent='+SGOV 池 '+fmt$(sgovV||0)}else{sl.style.display='none'}}legend.innerHTML=h}var rebalanceMode="swap";function updateRebalance(rows,totalValue){
 
 
 
@@ -3550,9 +3554,8 @@ optionTrades=loadOpt();var now=(new Date()).toISOString().slice(0,10);
 if(!optionTrades.length){el.innerHTML="<tr><td colspan=8 style=text-align:center;color:var(--muted);padding:16px>暂无期权持仓</td></tr>";return}
 el.innerHTML=optionTrades.map(function(o,i){
 var exp=o.expiry||"",isExpired=exp<now,daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000),cp=livePrices[o.sym]||0,status="";
-if(isExpired){status="<span style=color:var(--muted)>已过期</span>"}
-else{var itm=o.type==="CALL"&&cp>o.strike;status=itm?"<span style=color:var(--blue)>临近行权 "+daysLeft+"d</span>":"<span style=color:var(--accent)>"+daysLeft+"d</span>"}
-return "<tr style="+(isExpired?"opacity:.5":"")+"><td><b>"+o.sym+"</b></td><td style=color:"+(o.type==="CALL"?"var(--accent)":"var(--orange)")+">"+o.type+"</td><td>$"+o.strike.toFixed(2)+"</td><td>"+fmtFull(o.premium||0)+"</td><td>"+(o.contracts||1)+"张</td><td style=color:var(--muted)>"+exp+"</td><td>"+status+"</td><td><button onclick=delOpt("+i+") style=font-size:.4rem;padding:2px 6px;border:1px solid var(--muted);color:var(--muted);border-radius:3px;background:none;cursor:pointer>X</button></td></tr>"
+if(o.settled){status="<span style=color:var(--muted)>已结算</span>";isExpired=true}else if(isExpired){status="<span style=color:var(--muted)>已过期</span>"}else{var itm=o.type==="CALL"&&cp>o.strike;status=itm?"<span style=color:var(--blue)>临近行权 "+daysLeft+"d</span>":"<span style=color:var(--accent)>"+daysLeft+"d</span>"}
+return "<tr style="+(isExpired?"opacity:.5":"")+"><td><b>"+o.sym+"</b></td><td style=color:"+(o.type==="CALL"?"var(--accent)":"var(--orange)")+">"+o.type+"</td><td>$"+o.strike.toFixed(2)+"</td><td>"+fmtFull(o.premium||0)+"</td><td>"+(o.contracts||1)+"张</td><td style=color:var(--muted)>"+exp+"</td><td>"+status+"</td><td><span class=opt-actions><button onclick=delOpt("+i+") style=font-size:.4rem;padding:2px 6px;border:1px solid var(--muted);color:var(--muted);border-radius:3px;background:none;cursor:pointer>X</button>"+(o.type==="CALL"&&!isExpired&&!o.settled?"<button onclick=assignOpt("+i+") style=font-size:.55rem;padding:4px 10px;border:1px solid var(--accent);color:var(--accent);border-radius:4px;background:none;cursor:pointer>行权</button>":"")+(!o.settled&&isExpired?"<button onclick=settleOpt("+i+") style=font-size:.55rem;padding:4px 10px;border:1px solid var(--muted);color:var(--muted);border-radius:4px;background:none;cursor:pointer>结算</button>":"")+"</span></td></tr>"
 ;}).join("")}
 function updatePnLOpt(){
 var now=(new Date()).toISOString().slice(0,10),thisM=now.slice(0,7);
@@ -3562,7 +3565,7 @@ var month=optionTrades.filter(function(o){return o.added&&o.added.slice(0,7)===t
 var me=document.getElementById("mrev"),te=document.getElementById("trev");
 if(me)me.textContent=fmtFull(month);if(te)te.textContent=fmtFull(total)
 }
-function updateOptStatus(){var el=document.getElementById("optStatus");if(!el)return;var now=(new Date()).toISOString().slice(0,10);optionTrades=loadOpt();var active=optionTrades.filter(function(o){return o.expiry>=now&&!o.settled});if(!active.length){el.innerHTML="无活跃持仓";return}el.innerHTML=active.map(function(o){var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);var cp=livePrices[o.sym]||0;var itm=o.type==="CALL"&&cp>o.strike;var icon=itm?"🔵":"🟢";var txt=itm?"临近行权":"虚值";return "<div style=display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--rule)><span>"+icon+"</span><div style=flex:1><b>"+o.sym+"</b> "+o.type+" @$"+o.strike.toFixed(0)+" x"+(o.contracts||1)+"</div><div style=font-size:.55rem;color:"+(itm?"var(--blue)":"var(--accent)")+">"+txt+" · "+d+"天</div></div>";}).join("");}function delOpt(i){optionTrades.splice(i,1);saveOpt();updateAllO()}
+function updateOptStatus(){var el=document.getElementById("optStatus");if(!el)return;var now=(new Date()).toISOString().slice(0,10);optionTrades=loadOpt();var active=optionTrades.filter(function(o){return o.expiry>=now&&!o.settled});if(!active.length){el.innerHTML="无活跃持仓";return}el.innerHTML=active.map(function(o){var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);var cp=livePrices[o.sym]||0;var itm=o.type==="CALL"&&cp>o.strike;var icon=itm?"🔵":"🟢";var txt=itm?"临近行权":"虚值";return "<div style=display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--rule)><span>"+icon+"</span><div style=flex:1><b>"+o.sym+"</b> "+o.type+" @$"+o.strike.toFixed(0)+" x"+(o.contracts||1)+"</div><div style=font-size:.55rem;color:"+(itm?"var(--blue)":"var(--accent)")+">"+txt+" · "+d+"天</div></div>";}).join("");}function delOpt(i){optionTrades.splice(i,1);saveOpt();updateAllO()}function assignOpt(i){var o=optionTrades[i];if(!o||o.type!=="CALL")return;var contracts=o.contracts||1;var msg="将以 $"+o.strike.toFixed(2)+" 卖出 "+contracts+"张CALL对应的 "+(contracts*100)+" 股 "+o.sym+"\n\n权利金已在卖CALL时入账，无需重复记录。";if(!confirm(msg))return;trades.push({id:tradeIdCounter++,symbol:o.sym,date:new Date().toISOString().slice(0,10),shares:-(contracts*100),price:o.strike});saveTrades();initTradeIds();o.settled=true;saveOpt();updateAllO();updatePortfolio();updateSidebar();updateSidebarPrices();showToast("已标记行权: "+o.sym+" @$"+o.strike.toFixed(2)+" x"+contracts,"ok")}function settleOpt(i){var o=optionTrades[i];if(!o)return;if(!confirm("确认到期结算 "+o.sym+" "+o.type+" @$"+o.strike.toFixed(2)+" x"+(o.contracts||1)+"张?\n\n权利金已在卖CALL时入账，到期未行权无需其他操作。"))return;o.settled=true;saveOpt();updateAllO();showToast("已到期结算: "+o.sym,"ok")}
 document.getElementById("btnAddOption").addEventListener("click",function(){
 var t=document.getElementById("otype").value;
 var s=document.getElementById("osym").value;
