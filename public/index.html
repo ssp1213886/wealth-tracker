@@ -1648,7 +1648,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 <section class="tab-panel" id="tab-option">
-<div class="card" style="padding:12px 18px;margin-bottom:14px;"><h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">📊 期权状态</h3><div id="optStatus" style="font-size:.58rem;color:var(--muted);">无活跃持仓</div>
+<div class="card" style="padding:8px 14px;margin-bottom:10px;background:var(--accent-l);border:1px solid var(--accent);"><div style="font-size:.52rem;color:var(--fg);line-height:1.6;">⚙️ <strong>铁律</strong>：被行权不是失败，让期权自动到期/被指派，T+1开盘市价买回——亏损远小于提前平仓</div></div><div class="card" style="padding:12px 18px;margin-bottom:14px;"><h3 style="font-size:.72rem;font-weight:500;margin-bottom:6px;color:var(--muted)">📊 期权状态</h3><div id="optStatus" style="font-size:.58rem;color:var(--muted);">无活跃持仓</div>
 
 </div>
 <div class="card" style="padding:10px 14px;margin-bottom:10px;">
@@ -3551,7 +3551,7 @@ if(!optionTrades.length){el.innerHTML="<tr><td colspan=8 style=text-align:center
 el.innerHTML=optionTrades.map(function(o,i){
 var exp=o.expiry||"",isExpired=exp<now,daysLeft=Math.ceil((new Date(exp)-new Date(now))/86400000),cp=livePrices[o.sym]||0,status="";
 if(isExpired){status="<span style=color:var(--muted)>已过期</span>"}
-else{var itm=o.type==="CALL"&&cp>o.strike;status=itm?"<span style=color:var(--red)>实值 "+daysLeft+"d</span>":"<span style=color:var(--accent)>"+daysLeft+"d</span>"}
+else{var itm=o.type==="CALL"&&cp>o.strike;status=itm?"<span style=color:var(--blue)>临近行权 "+daysLeft+"d</span>":"<span style=color:var(--accent)>"+daysLeft+"d</span>"}
 return "<tr style="+(isExpired?"opacity:.5":"")+"><td><b>"+o.sym+"</b></td><td style=color:"+(o.type==="CALL"?"var(--accent)":"var(--orange)")+">"+o.type+"</td><td>$"+o.strike.toFixed(2)+"</td><td>"+fmtFull(o.premium||0)+"</td><td>"+(o.contracts||1)+"张</td><td style=color:var(--muted)>"+exp+"</td><td>"+status+"</td><td><button onclick=delOpt("+i+") style=font-size:.4rem;padding:2px 6px;border:1px solid var(--muted);color:var(--muted);border-radius:3px;background:none;cursor:pointer>X</button></td></tr>"
 ;}).join("")}
 function updatePnLOpt(){
@@ -3599,7 +3599,7 @@ function updateOtm(){var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?liv
 function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";var v2=otmSettings[key]+dir;if(v2<1)v2=1;if(v2>20)v2=20;otmSettings[key]=v2;localStorage.setItem("otmSettings",JSON.stringify(otmSettings));updateOtm();autoPushDebounce();}
 try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adjOtm("VGT",1)};var em=document.getElementById("otmVgtMinus");if(em)em.onclick=function(){adjOtm("VGT",-1)};var sp2=document.getElementById("otmSmhPlus");if(sp2)sp2.onclick=function(){adjOtm("SMH",1)};var sm2=document.getElementById("otmSmhMinus");if(sm2)sm2.onclick=function(){adjOtm("SMH",-1)}}catch(e){}setTimeout(updateOtm,800);
 
-function updateOptBadge(){var now=(new Date()).toISOString().slice(0,10);try{optionTrades=loadOpt()}catch(e){return}var danger=0;optionTrades.forEach(function(o){if(o.expiry&&o.expiry>=now&&o.type==="CALL"){var d=Math.ceil((new Date(o.expiry)-new Date(now))/86400000);var cp=(livePrices&&livePrices[o.sym])||0;if(cp>o.strike&&d<=7)danger++;}});var db=document.getElementById("optBadge");var mb=document.getElementById("optBadgeMob");if(danger>0){if(db){db.style.display="inline";db.textContent=danger};if(mb){mb.style.display="inline";mb.textContent=danger}}else{if(db)db.style.display="none";if(mb)mb.style.display="none"}}
+function updateOptBadge(){var b=document.getElementById('optBadge');if(b)b.style.display='none'}
 setInterval(updateOptBadge,30000);
 setTimeout(updateOptBadge,1500);
 </script>
