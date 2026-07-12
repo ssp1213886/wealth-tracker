@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 
 
 
@@ -2045,7 +2045,7 @@ function updatePortfolio(){
 
 
 
-  var realizedOptionPremium=0;try{optionTrades.forEach(function(o){if(o.settled){realizedOptionPremium+=(o.premium||0)*(o.contracts||1)}})}catch(e){}var totalPnL=hasPriced&&totalPnLUnreal!=null?totalPnLUnreal+totalRealized+realizedOptionPremium:null;
+  var realizedOptionPremium=0;try{optionTrades.forEach(function(o){realizedOptionPremium+=(o.premium||0)*(o.contracts||1)})}catch(e){}var totalPnL=hasPriced&&totalPnLUnreal!=null?totalPnLUnreal+totalRealized+realizedOptionPremium:null;
 
 
 
