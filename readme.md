@@ -124,6 +124,33 @@ npx wrangler deploy
 
 首次使用时若检测到无数据，会自动提示用户导入备份或云端下载。
 
+
+
+## 首次部署
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/ssp1213886/wealth-tracker.git
+cd wealth-tracker
+
+# 2. 安装依赖
+npm install
+
+# 3. 创建 D1 数据库
+npx wrangler d1 create wealth-db
+
+# 4. 初始化表结构
+npx wrangler d1 execute wealth-db --file=schema.sql
+
+# 5. 将 d1 create 输出的 database_id 填入 wrangler.toml 的 database_id 字段
+
+# 6. 设置 AUTH_TOKEN（用于 API 鉴权，任意随机字符串）
+echo "YOUR_SECRET_TOKEN" | npx wrangler secret put AUTH_TOKEN
+
+# 7. 部署
+npx wrangler deploy
+```
+
 ## License
 
 MIT
