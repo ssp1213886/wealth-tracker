@@ -7,3 +7,6 @@ wrangler.toml
 
 *.bak-*
 _*.html
+.openclaw/
+*.bak
+*.backup-*
