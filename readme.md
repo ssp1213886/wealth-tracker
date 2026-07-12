@@ -26,7 +26,7 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 | 操作台 | 股票买卖录入（VGT/SMH/BTC/SGOV）、年度再平衡（换仓/注资，仅12/31解锁） |
 | 期权 | 持仓指标、OTM 行权价参考（可调百分比+localStorage）、期权状态（ITM 蓝色标签+铁律提示）、记录 CALL/PUT、CC 收入、持仓清单 |
 | 数据 | 现金管理（入金/出金/修正）、持仓明细（含张数列+列排序）、交易历史（筛选/排序）、资金流水（权利金蓝色独立标注） |
-| 日志 | 操作日志（热力图）、纪律打卡（连续定投+热力图）、投资规划（收入渐进加码/退出策略/提款模拟） |
+| 日志 | 操作日志（热力图）、纪律打卡（连续定投+热力图）、年度复盘矩阵（4×5热力 权利金收益率）、投资规划（收入渐进加码/退出策略/提款模拟） |
 
 ### 移动端底部导航
 5 键：仪表盘 → 操作台 → 期权 → 数据 → 日志
@@ -49,6 +49,7 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 
 ## 主要功能
 
+- 年度复盘矩阵：4行×5列热力方格，年度权利金收益率驱动着色，含年末持仓+CC收入+DCA统计，右侧长线数据面板（总入金/总资产/CAGR/目标差额）
 - OTM 行权价参考：VGT/SMH 按 +/- 调整百分比计算建议行权价，存 localStorage 记忆
 - 期权 CALL-only 策略（虽保留 PUT 类型选项供灵活使用，策略建议仅卖 CALL）：被动行权 T+1 开盘市价买回，亏损远小于提前平仓
 - Covered Call 仪表盘卡片：本月 CC 收入 + 张数统计，权利金复投核心仓
@@ -99,7 +100,7 @@ npx wrangler deploy
 
 | 文件 | 作用 |
 |------|------|
-| `public/index.html` | 主程序，单文件 SPA（全部 UI + 逻辑，~162KB） |
+| `public/index.html` | 主程序，单文件 SPA（全部 UI + 逻辑，~174KB） |
 | `public/guide.html` | 使用文档 |
 | `public/sw.js` | Service Worker（network-first） |
 | `public/manifest.json` | PWA 配置 |
