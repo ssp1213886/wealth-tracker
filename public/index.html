@@ -2392,12 +2392,13 @@ function renderAnnualMatrix(){
     var premRate=dcaTotal>0?yPrem/dcaTotal*100:0;
 
     var endHolds={};trades.filter(function(t){return t.date.slice(0,4)<=ys}).forEach(function(t){endHolds[t.symbol]=(endHolds[t.symbol]||0)+t.shares});
-    var vgtSh=Math.max(0,endHolds.VGT||0).toFixed(1),smhSh=Math.max(0,endHolds.SMH||0).toFixed(1),btcSh=Math.max(0,endHolds.BTC||0);
+    var vgtSh=Math.max(0,endHolds.VGT||0),smhSh=Math.max(0,endHolds.SMH||0),btcSh=Math.max(0,endHolds.BTC||0);
+    var fmtSh=function(n){return n===Math.floor(n)?n.toFixed(0):n.toFixed(1)};
 
     cells.push({ym:ys,prem:yPrem,dca:dcaTotal,rate:premRate,vgt:vgtSh,smh:smhSh,btc:btcSh,hasData:dcaTotal>0});
   }
 
-  var totalInvested=0,totalPrem=0;cells.forEach(function(c){totalInvested+=c.dca;totalPrem+=c.prem});
+  var totalInvested=cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).reduce(function(s,l){return s+l.amount},0);
   var activeYears=cells.filter(function(c){return c.hasData}).length;
   var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;
   var totalHoldings={};trades.forEach(function(t){totalHoldings[t.symbol]=(totalHoldings[t.symbol]||0)+t.shares});var totalMktV=0;ETF_SYMS.forEach(function(sym){var sh=Math.max(0,totalHoldings[sym]||0);totalMktV+=sh*(livePrices[sym]||0)});var totalAssets=totalMktV+nc;
@@ -2419,14 +2420,14 @@ function renderAnnualMatrix(){
   cells.forEach(function(c){
     var h=heatColor(c.rate,c.hasData);
     var rateStr=c.hasData?c.rate.toFixed(1)+'%':'-';
-    var holdStr=c.hasData?('V '+c.vgt+' S '+c.smh+' B '+c.btc):'';
+    var holdStr=c.hasData?('VGT '+fmtSh(c.vgt)+'股  SMH '+fmtSh(c.smh)+'股  BTC '+fmtSh(c.btc)):'';
     var detail=c.hasData?('CC '+fmt$(c.prem)+' | DCA '+fmt$(c.dca)):'';
     htm+='<div style="padding:6px 3px;text-align:center;border-radius:6px;background:'+h[0]+';font-size:.44rem;color:'+h[1]+';display:flex;flex-direction:column;justify-content:center;min-height:72px;border:1px solid '+(c.hasData?'rgba(0,0,0,.06)':'rgba(0,0,0,.04)')+';"><span style="font-size:.46rem;color:'+h[2]+';margin-bottom:1px">'+c.ym+'</span><strong style="font-size:.82rem;line-height:1.15">'+rateStr+'</strong><span style="font-size:.46rem;color:'+h[2]+';">'+holdStr+'</span><span style="font-size:.38rem;color:'+h[3]+';margin-top:1px">'+detail+'</span></div>';
   });
   grid.innerHTML=htm;
 
   var cc=totalAssets>=0?'var(--accent)':'var(--red)';
-  stats.innerHTML='<div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">累计总投入</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalInvested)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">当前总资产</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalAssets)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">长期 CAGR</div><div style="font-size:.74rem;font-weight:700;color:'+cc+';">'+(cagr*100).toFixed(1)+'%</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">250万目标差额</div><div style="font-size:.74rem;font-weight:700;color:var(--orange);">'+fmtFull(targetGap)+'</div></div><div style="font-size:.42rem;color:var(--muted);text-align:center;margin-top:4px;">热力=年度权利金收益率</div>';
+  stats.innerHTML='<div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">总入金</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalInvested)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">当前总资产</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalAssets)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">长期 CAGR</div><div style="font-size:.74rem;font-weight:700;color:'+cc+';">'+(cagr*100).toFixed(1)+'%</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">目标差额</div><div style="font-size:.74rem;font-weight:700;color:var(--orange);">'+fmtFull(targetGap)+'</div></div><div style="font-size:.42rem;color:var(--muted);text-align:center;margin-top:4px;">热力=年度权利金收益率</div>';
 }
 
 
