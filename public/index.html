@@ -2425,7 +2425,7 @@ function renderAnnualMatrix(){
     var h=heatColor(c.rate,c.hasData);
     var rateStr=c.hasData?c.rate.toFixed(1)+'%':'-';
     var holdStr=c.hasData?('VGT '+fmtSh(c.vgt)+'股  SMH '+fmtSh(c.smh)+'股  BTC '+fmtSh(c.btc)+'股'):'';
-    var detail=c.hasData?('CC '+fmt$(c.prem)+' | DCA '+fmt$(c.dca)):'';
+    var detail=c.hasData?('CC权利金 '+fmt$(c.prem)+' | 买入 '+fmt$(c.dca)):'';
     htm+='<div style="padding:6px 3px;text-align:center;border-radius:6px;background:'+h[0]+';font-size:.44rem;color:'+h[1]+';display:flex;flex-direction:column;justify-content:center;min-height:72px;border:1px solid '+(c.hasData?'rgba(0,0,0,.06)':'rgba(0,0,0,.04)')+';"><span style="font-size:.46rem;color:'+h[2]+';margin-bottom:1px">'+c.ym+'</span><strong style="font-size:.82rem;line-height:1.15">'+rateStr+'</strong><span style="font-size:.46rem;color:'+h[2]+';">'+holdStr+'</span><span style="font-size:.38rem;color:'+h[3]+';margin-top:1px">'+detail+'</span></div>';
   });
   grid.innerHTML=htm;
