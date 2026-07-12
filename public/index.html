@@ -1566,7 +1566,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-      <div style="font-size:.66rem;color:var(--muted);margin-bottom:4px;">总资产 <span style="font-weight:540;color:var(--fg);" id="prCostInline">$0</span> / <strong>$2,500,000</strong> · <span id="prPct" style="font-weight:540;">0%</span></div>
+      <div style="font-size:.66rem;color:var(--muted);margin-bottom:4px;">总资产 <span style="font-weight:540;color:var(--fg);" id="prCostInline">$0</span> / <strong id="prTargetInline">$2.5M</strong> · <span id="prPct" style="font-weight:540;">0%</span></div>
 
 
 
@@ -1574,7 +1574,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-      <div style="font-size:.62rem;color:var(--muted);">距 <span id="targetName">$2.5M</span> 还差 <span id="prGap" style="color:var(--red);">$2,500,000</span></div>
+      <div style="font-size:.62rem;color:var(--muted);">距 <span id="targetName">目标</span> 还差 <span id="prGap" style="color:var(--red);">$2,500,000</span></div>
 
 
 
@@ -2045,7 +2045,7 @@ function updatePortfolio(){
 
 
 
-  var totalPnL=hasPriced&&totalPnLUnreal!=null?totalPnLUnreal+totalRealized:null;
+  var realizedOptionPremium=0;try{optionTrades.forEach(function(o){if(o.settled){realizedOptionPremium+=(o.premium||0)*(o.contracts||1)}})}catch(e){}var totalPnL=hasPriced&&totalPnLUnreal!=null?totalPnLUnreal+totalRealized+realizedOptionPremium:null;
 
 
 
@@ -2073,7 +2073,7 @@ function updatePortfolio(){
 
 
 
-  var hpp=document.getElementById('hmPnLPct');if(hpp){var s='';if(hasPriced&&totalPct!=null){s+=fmtPnLPctParen(totalPct)+'<br>'}else if(unpriced.length>0){s+='需设价:'+unpriced.join(',')+'<br>'}var uc=totalPnLUnreal||0,rc=totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';hpp.innerHTML=s;}
+  var hpp=document.getElementById('hmPnLPct');if(hpp){var s='';if(hasPriced&&totalPct!=null){s+=fmtPnLPctParen(totalPct)+'<br>'}else if(unpriced.length>0){s+='需设价:'+unpriced.join(',')+'<br>'}var uc=totalPnLUnreal||0,rc=totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.55rem;margin-top:2px;background:'+(realizedOptionPremium>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(realizedOptionPremium>=0?'var(--accent-d)':'#b53a2a')+';">权利金 '+fmtPnLFull(realizedOptionPremium)+'</span>';hpp.innerHTML=s;}
 
 
 
@@ -2101,7 +2101,7 @@ function updatePortfolio(){
 
 
 
-  document.getElementById('prBar').style.width=pctVal+'%';document.getElementById('prPct').textContent=pctVal.toFixed(1)+'%';document.getElementById('prGap').textContent=fmtFull(gap);document.getElementById('prGap').style.color=gap>0?'var(--red)':'var(--accent)';document.getElementById('prCostInline').textContent=hasPriced?fmtFull(totalAssets):fmtFull(totalAssets);var tgt=document.getElementById('targetName');if(tgt)tgt.textContent=fmt$(target);var tl2=document.getElementById('targetLabel');if(tl2)tl2.textContent=fmt$(target);
+  document.getElementById('prBar').style.width=pctVal+'%';document.getElementById('prPct').textContent=pctVal.toFixed(1)+'%';document.getElementById('prGap').textContent=fmtFull(gap);document.getElementById('prGap').style.color=gap>0?'var(--red)':'var(--accent)';document.getElementById('prCostInline').textContent=hasPriced?fmtFull(totalAssets):fmtFull(totalAssets);var tgt=document.getElementById('targetName');if(tgt)tgt.textContent=fmt$(target);var tl2=document.getElementById('targetLabel');if(tl2)tl2.textContent=fmt$(target);var pti=document.getElementById('prTargetInline');if(pti)pti.textContent=fmt$(target);
 
 
 
