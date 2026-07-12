@@ -1232,6 +1232,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 @media(max-width:640px){#tab-option .tf-row{display:flex;flex-direction:column;gap:8px}#tab-option .tf-group{flex:1 1 100%;min-width:0}#tab-option .tf-group input,#tab-option .tf-group select{width:100%}#tab-option .tf-group label{font-size:.55rem}}
 @media(max-width:640px){.opt-form-metrics{grid-template-columns:1fr!important;gap:4px}}
+  @media(max-width:800px){#annualMatrix{flex-direction:column!important}#annualMatrixGrid{grid-template-columns:repeat(2,1fr)!important;gap:4px!important}#annualMatrixStats{width:auto!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;gap:6px!important;margin-top:8px}#annualMatrixStats>div{flex:0 0 calc(50% - 3px)!important;padding:8px 10px!important}}
 
 @media(max-width:800px){
   .opt-actions{display:inline-flex!important;flex-direction:column!important;gap:4px!important;align-items:stretch!important}
@@ -2420,7 +2421,7 @@ function renderAnnualMatrix(){
   cells.forEach(function(c){
     var h=heatColor(c.rate,c.hasData);
     var rateStr=c.hasData?c.rate.toFixed(1)+'%':'-';
-    var holdStr=c.hasData?('VGT '+fmtSh(c.vgt)+'股  SMH '+fmtSh(c.smh)+'股  BTC '+fmtSh(c.btc)):'';
+    var holdStr=c.hasData?('VGT '+fmtSh(c.vgt)+'股  SMH '+fmtSh(c.smh)+'股  BTC '+fmtSh(c.btc)+'股'):'';
     var detail=c.hasData?('CC '+fmt$(c.prem)+' | DCA '+fmt$(c.dca)):'';
     htm+='<div style="padding:6px 3px;text-align:center;border-radius:6px;background:'+h[0]+';font-size:.44rem;color:'+h[1]+';display:flex;flex-direction:column;justify-content:center;min-height:72px;border:1px solid '+(c.hasData?'rgba(0,0,0,.06)':'rgba(0,0,0,.04)')+';"><span style="font-size:.46rem;color:'+h[2]+';margin-bottom:1px">'+c.ym+'</span><strong style="font-size:.82rem;line-height:1.15">'+rateStr+'</strong><span style="font-size:.46rem;color:'+h[2]+';">'+holdStr+'</span><span style="font-size:.38rem;color:'+h[3]+';margin-top:1px">'+detail+'</span></div>';
   });
