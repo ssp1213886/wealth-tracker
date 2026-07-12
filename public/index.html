@@ -2374,11 +2374,18 @@ function renderLogHeatmap(){
 function renderAnnualMatrix(){
   var grid=document.getElementById('annualMatrixGrid'),stats=document.getElementById('annualMatrixStats');
   if(!grid||!stats)return;
-  var start=state.roadmapStart||'2025-01',sd=new Date(start+'-01');
-  var roadmapYears=20,cells=[];
 
-  for(var i=0;i<roadmapYears;i++){
-    var y=sd.getFullYear()+i,ys=String(y);
+  // Find the first year with any buy trade or cash deposit
+  var allDates=[].concat(trades.map(function(t){return t.date})).concat(cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).map(function(l){return l.date}));
+  if(!allDates.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;">暂无数据</div>';stats.innerHTML='';return}
+  allDates.sort();
+  var startYear=parseInt(allDates[0].slice(0,4));
+  var now=new Date(),endYear=now.getFullYear();
+  var maxYears=20,totalYears=Math.min(maxYears,endYear-startYear+1);
+  var cells=[];
+
+  for(var i=0;i<totalYears;i++){
+    var y=startYear+i,ys=String(y);
     var yBuys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,4)===ys});
     var yPrem=optionTrades.filter(function(o){return o.added&&o.added.slice(0,4)===ys}).reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);
     var dcaTotal=yBuys.reduce(function(s,t){return s+t.shares*t.price},0);
@@ -2387,7 +2394,7 @@ function renderAnnualMatrix(){
     var endHolds={};trades.filter(function(t){return t.date.slice(0,4)<=ys}).forEach(function(t){endHolds[t.symbol]=(endHolds[t.symbol]||0)+t.shares});
     var vgtSh=Math.max(0,endHolds.VGT||0).toFixed(1),smhSh=Math.max(0,endHolds.SMH||0).toFixed(1),btcSh=Math.max(0,endHolds.BTC||0);
 
-    cells.push({yr:i+1,ym:ys,prem:yPrem,dca:dcaTotal,rate:premRate,vgt:vgtSh,smh:smhSh,btc:btcSh,hasData:dcaTotal>0});
+    cells.push({ym:ys,prem:yPrem,dca:dcaTotal,rate:premRate,vgt:vgtSh,smh:smhSh,btc:btcSh,hasData:dcaTotal>0});
   }
 
   var totalInvested=0,totalPrem=0;cells.forEach(function(c){totalInvested+=c.dca;totalPrem+=c.prem});
@@ -2414,7 +2421,7 @@ function renderAnnualMatrix(){
     var rateStr=c.hasData?c.rate.toFixed(1)+'%':'-';
     var holdStr=c.hasData?('V '+c.vgt+' S '+c.smh+' B '+c.btc):'';
     var detail=c.hasData?('CC '+fmt$(c.prem)+' | DCA '+fmt$(c.dca)):'';
-    htm+='<div style="padding:6px 3px;text-align:center;border-radius:6px;background:'+h[0]+';font-size:.44rem;color:'+h[1]+';display:flex;flex-direction:column;justify-content:center;min-height:72px;border:1px solid '+(c.hasData?'rgba(0,0,0,.06)':'rgba(0,0,0,.04)')+';"><span style="font-size:.46rem;color:'+h[2]+';margin-bottom:1px">Y'+c.yr+' '+c.ym+'</span><strong style="font-size:.82rem;line-height:1.15">'+rateStr+'</strong><span style="font-size:.46rem;color:'+h[2]+';">'+holdStr+'</span><span style="font-size:.38rem;color:'+h[3]+';margin-top:1px">'+detail+'</span></div>';
+    htm+='<div style="padding:6px 3px;text-align:center;border-radius:6px;background:'+h[0]+';font-size:.44rem;color:'+h[1]+';display:flex;flex-direction:column;justify-content:center;min-height:72px;border:1px solid '+(c.hasData?'rgba(0,0,0,.06)':'rgba(0,0,0,.04)')+';"><span style="font-size:.46rem;color:'+h[2]+';margin-bottom:1px">'+c.ym+'</span><strong style="font-size:.82rem;line-height:1.15">'+rateStr+'</strong><span style="font-size:.46rem;color:'+h[2]+';">'+holdStr+'</span><span style="font-size:.38rem;color:'+h[3]+';margin-top:1px">'+detail+'</span></div>';
   });
   grid.innerHTML=htm;
 
