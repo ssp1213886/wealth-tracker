@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,18 +31,18 @@
 <p class="sub">Wealth Tracker · 个人投资仪表盘 · 最后更新：2026-07-12</p>
 
 <h2>投资策略</h2>
-<p>本工具围绕「永久核心仓 + Covered Call 增强」策略设计，<strong>仅卖出 CALL、不卖 PUT</strong>（CALL-only：不卖标的、永不做空）：</p>
+<p>本工具围绕「永久核心仓 + Covered Call 增强」策略设计，<strong>仅卖出 CALL、不卖正股</strong>（不做空、不卖标的）：</p>
 <ul>
-  <li><strong>核心仓永不动</strong>：VGT 50% / SMH 30% / BTC 20%，按月定投</li>
+  <li><strong>核心仓永不动</strong>：VGT / SMH / BTC 按月定投，侧边栏可调节分配比例</li>
   <li><strong>Covered Call 收租</strong>：持有正股卖出虚值 CALL，收获权利金</li>
   <li><strong>被动行权 T+1 买回</strong>：若 CALL 被行权（股价涨超行权价），T+1 手动买回正股，保持仓位不变</li>
   <li><strong>权利金复投</strong>：权利金收入按核心仓比例继续买入标的</li>
-  <li><strong>回撤加仓不卖 PUT</strong>：回撤时通过定投加仓而非卖 PUT，确保不增加额外风险</li>
+  <li><strong>回撤应对</strong>：回撤时通过定投加仓降低成本，不增额外风险</li>
   <li><strong>铁律</strong>：永不满仓卖出 CALL，始终保留至少 1 张不卖</li>
 </ul>
 
 <div class="call"><strong>核心铁律</strong>：<br>
-① 不卖标的 — 只卖 CALL、不卖正股<br>
+① 不卖标的 — 只卖 CALL、不卖正股，永不做空<br>
 ② 永不满仓 — 始终保留 1 张不卖<br>
 ③ 被动行权 — 被行权后 T+1 买回，不提前平仓<br>
 ④ 权利金复投 — 权利金按比例持续买入标的</div>
@@ -71,10 +71,10 @@
 
 <h3>期权</h3>
 <ul>
-  <li><strong>持仓指标</strong>：VGT/SMH 持仓市值、成本、可卖张数</li>
-  <li><strong>🎯 OTM 行权价参考</strong>：VGT/SMH 按百分比自动计算 CALL 行权价</li>
-  <li><strong>📝 记录期权</strong>：录入 CALL 合约（标的、行权价、权利金、到期日、张数），支持 CASE 类型切换</li>
-  <li><strong>期权状态</strong>：当前活跃 CALL 的盈亏状态 — 实值（ITM）显示蓝色「临近行权」标签替代红色告警，附带铁律提示</li>
+  <li><strong>持仓指标</strong>：VGT/SMH 持仓市值、成本、可卖张数 + 可复投金额</li>
+  <li><strong>🎯 OTM 行权价参考</strong>：VGT/SMH 按百分比自动计算 CALL 行权价，可手动调节后 localStorage 记忆</li>
+  <li><strong>📝 记录期权</strong>：录入 CALL/PUT 合约（标的、类型、行权价、权利金、到期日、张数）</li>
+  <li><strong>期权状态</strong>：当前活跃期权的盈亏状态 — 实值（ITM）CALL 显示<strong>蓝色</strong>「临近行权」标签（显示剩余天数），附带铁律提示文字</li>
   <li><strong>CC 收入</strong>：本月 + 累计权利金汇总 + 可复投金额</li>
   <li><strong>持仓清单</strong>：当前持有合约（含张数、到期状态、实值/虚值标记）</li>
 </ul>
@@ -82,26 +82,27 @@
 <h3>📁 数据</h3>
 <ul>
   <li><strong>💰 现金管理</strong>：入金/出金/修正 + 余额</li>
-  <li><strong>📊 持仓明细</strong>：标的/持仓/均价/现价/市值/盈亏，支持列排序</li>
-  <li><strong>📋 交易历史</strong>：全部记录 + 标的筛选</li>
-  <li><strong>💵 资金流水</strong>：出入金记录 + 修正记录 + 权利金独立显示</li>
+  <li><strong>📊 持仓明细</strong>：标的/持仓/均价/现价/市值/盈亏，含张数列，支持列排序</li>
+  <li><strong>📋 交易历史</strong>：全部记录 + 标的筛选 + 列排序</li>
+  <li><strong>💵 资金流水</strong>：出入金记录 + 修正记录 + 权利金蓝色独立显示</li>
 </ul>
 
 <h3>📜 日志·规划</h3>
 <ul>
-  <li><strong>操作日志</strong>：自动记录所有操作，带热力图</li>
-  <li><strong>收入加码</strong>：四阶段年龄自动计算（起步/增长/巅峰/冲刺）</li>
-  <li><strong>退出策略</strong>：47岁按回撤切换防守组合（可自定义保守组合比例）</li>
-  <li><strong>提款模拟</strong>：输入资产/提取率/回报/通胀，计算年/月提取额、耗尽时间、永续率</li>
+  <li><strong>🔥 纪律打卡</strong>：连续定投月份计数 + 操作日志热力图</li>
+  <li><strong>📈 收入渐进加码</strong>：四阶段年龄自动计算（起步期/增长期/巅峰期/冲刺期）</li>
+  <li><strong>🚪 退出策略</strong>：47岁按回撤切换防守组合（可自定义保守组合比例）</li>
+  <li><strong>💰 提款模拟</strong>：输入资产/提取率/回报/通胀，计算年/月提取额、耗尽时间、永续率</li>
 </ul>
 
 <h2>2. 侧边栏</h2>
 <ul>
   <li><strong>总资产</strong>：总额/持仓/现金 + 持仓环形图</li>
   <li><strong>实时价格</strong>：VGT/SMH/BTC/SGOV 实时行情（来源标注）</li>
-  <li>⚙️ <strong>投资参数</strong>：每月定投总额、定投起点日期、起点年龄、财务目标</li>
+  <li>⚙️ <strong>投资参数</strong>：每月定投总额、定投起点日期、起点年龄、财务目标、仓位分配滑块</li>
   <li>🎨 <strong>配色方案</strong>：5 种主题色（森林/海洋/暖阳/梅紫/极简），切换后记忆偏好</li>
-  <li>🔗 <strong>数据同步</strong>：Cloudflare D1 云端 + JSON 导出 + CSV 导入 + 自动备份</li>
+  <li>☁️ <strong>数据同步</strong>：Cloudflare D1 云端 + JSON 导出 + CSV 导入 + 自动备份</li>
+  <li>🌙/☀ <strong>暗色/亮色模式</strong>：首次自动跟随系统设置，手动切换后记忆偏好</li>
 </ul>
 
 <h2>3. 云端同步</h2>
@@ -141,24 +142,24 @@
 <h2>7. Toast 提示</h2>
 <p>所有操作反馈通过底部居中 Toast 气泡展示，统一毛玻璃效果 + 弹性动画：</p>
 <ul>
-  <li><strong>成功（绿色）</strong>：<code>.sync-toast.ok</code> — 半透明绿底 + 绿色阴影，用于保存/同步/导出等成功操作</li>
-  <li><strong>错误（红色）</strong>：<code>.sync-toast.err</code> — 半透明红底 + 红色阴影，用于失败/解析错误</li>
-  <li><strong>警告（橙色）</strong>：<code>.sync-toast.warn</code> — 半透明橙底 + 橙色阴影，用于提醒/注意</li>
-  <li><strong>撤销</strong>：<code>.sync-toast.undo</code> — 深色底 + 下划线，点击可撤销刚才的操作（如删除交易/清空流水）</li>
+  <li><strong>成功（绿色）</strong>：半透明绿底 + 绿色阴影，用于保存/同步/导出等成功操作</li>
+  <li><strong>错误（红色）</strong>：半透明红底 + 红色阴影，用于失败/解析错误</li>
+  <li><strong>警告（橙色）</strong>：半透明橙底 + 橙色阴影，用于提醒/注意</li>
+  <li><strong>撤销（下划线）</strong>：深色底 + 下划线，点击可撤销刚才的操作（如删除交易/清空流水）</li>
 </ul>
-<p>所有 Toast 统一：<code>backdrop-filter: blur(28px) saturate(180%)</code> 毛玻璃效果，<code>cubic-bezier(.34,1.56,.64,1)</code> 弹性弹入动画，自动 2.5-5 秒后消失。</p>
+<p>所有 Toast 统一毛玻璃效果（<code>backdrop-filter: blur(28px) saturate(180%)</code>），弹性弹入动画（<code>cubic-bezier(.34,1.56,.64,1)</code>），自动 2.5-5 秒后消失。</p>
 
 <h2>8. 表格滚动与表头固定</h2>
-<p>持仓明细、交易历史、资金流水、期权清单等表格的 <strong>表头（thead th）</strong> 已设置 <code>position: sticky; top: 0; z-index: 2</code>。当表格内容超出卡片高度滚动时，表头自动固定在顶部，始终保持可见，方便对照列名查看数据。</p>
+<p>持仓明细、交易历史、资金流水、期权清单等表格的 <strong>表头</strong> 已设置 sticky 定位。当表格内容超出卡片高度滚动时，表头自动固定在顶部，始终保持可见，方便对照列名查看数据。</p>
 
 <h2>9. 期权模块 · 被动行权 T+1</h2>
-<p>期权模块采用<strong>被动行权 T+1 买回</strong>策略：</p>
+<p>期权模块采用<strong>被动行权 T+1 买回</strong>策略（策略建议仅卖 CALL，但类型选择器保留 CALL/PUT 选项）：</p>
 <ul>
   <li><strong>实值（ITM）CALL</strong>：不再显示红色告警，改为<strong>蓝色</strong>「临近行权」标签（显示剩余天数），同时显示铁律提示文字</li>
+  <li><strong>铁律卡片</strong>：期权页顶部显示绿色弱底提示「切勿主动平仓，被行权不必慌，T+1 市价买回，踏空代价远高于追高成本」</li>
   <li><strong>被动行权</strong>：若到期时 CALL 处于实值被行权，在 T+1 手动买回正股，不提前平仓</li>
-  <li><strong>铁律提示</strong>：行权价列表旁实时显示不卖标的、永不满仓、T+1 买回等铁律文字</li>
   <li><strong>已结算</strong>：被行权后 CALL 状态变为「已结算」褪色显示</li>
-  <li><strong>权利金流程</strong>：录入 CALL 时权利金实时入账现金，不计入入金/出金，独立追踪</li>
+  <li><strong>权利金流程</strong>：录入 CALL/PUT 时权利金实时入账现金，不计入入金/出金，独立追踪</li>
 </ul>
 
 <h2>10. 资金流水 · 权利金独立</h2>
@@ -169,7 +170,16 @@
   <li><strong>合计归属</strong>：资金流水合计中权利金归入流入侧</li>
 </ul>
 
-<h2>11. 移动端</h2>
+<h2>11. 纪律打卡与投资规划</h2>
+<ul>
+  <li><strong>连续定投</strong>：日志页显示连续定投月份计数</li>
+  <li><strong>操作日志热力图</strong>：按日可视化操作频率</li>
+  <li><strong>收入渐进加码</strong>：根据起点年龄自动划分四阶段（起步/增长/巅峰/冲刺）</li>
+  <li><strong>退出策略</strong>：47岁按回撤切换防守组合，可自定义保守组合比例</li>
+  <li><strong>提款模拟</strong>：输入资产/提取率/回报/通胀，计算提取额、耗尽时间和永续率</li>
+</ul>
+
+<h2>12. 移动端</h2>
 <ul>
   <li>手机浏览器直接打开网址</li>
   <li>底部导航 5 个 Tab 切换页面</li>
@@ -180,17 +190,18 @@
   <li>顶部状态栏点击可下拉刷新价格</li>
 </ul>
 
-<h2>12. 暗色模式</h2>
-<p>首次打开自动跟随系统设置。手动切换后记忆偏好，不再跟随系统。侧边栏点 🌙/☀ 切换，5 种配色可选。暗色模式下卡片有明确边界（<code>card-bg</code>），分隔线亮度提升确保可读性。</p>
+<h2>13. 暗色模式与配色</h2>
+<p>首次打开自动跟随系统设置。手动切换后记忆偏好，不再跟随系统。侧边栏点 🌙/☀ 切换暗色/亮色模式。5 种配色方案可选（森林/海洋/暖阳/梅紫/极简），切换后 localStorage 记忆。暗色模式下卡片有明确边界。</p>
 
-<h2>13. UI 交互细节</h2>
+<h2>14. UI 交互细节</h2>
 <ul>
-  <li><strong>按钮体系统一</strong>：所有按钮带阴影（<code>box-shadow</code>）、悬浮过渡（<code>transition .15s</code>）、按压缩放（<code>:active → scale(.97)</code>）</li>
+  <li><strong>按钮体系统一</strong>：所有按钮带阴影、悬浮过渡、按压缩放（<code>:active → scale(.97)</code>）</li>
   <li><strong>主要按钮</strong>：绿色填充 + 绿色阴影，悬浮时加深 + 上浮 1px</li>
   <li><strong>次要按钮</strong>：灰色表面 + 边框，悬浮时上浮</li>
-  <li><strong>卡片系统统一</strong>：所有卡片统一圆角（<code>--radius</code>）+ 投影（<code>--shadow</code>），悬浮时阴影加深 + 上浮 1px</li>
+  <li><strong>卡片系统统一</strong>：统一圆角 + 投影，悬浮时阴影加深 + 上浮 1px</li>
   <li><strong>Tab 切换反馈</strong>：切换 Tab 时移动端触发 8ms 触觉震动</li>
-  <li><strong>输入框</strong>：focus 时显示绿色光环（<code>accent</code> 色 outline）</li>
+  <li><strong>输入框</strong>：focus 时显示绿色光环</li>
+  <li><strong>持仓分配滑块</strong>：侧边栏投资参数区可通过滑块调节 VGT/SMH/BTC 定投分配比例</li>
 </ul>
 </body>
 </html>
