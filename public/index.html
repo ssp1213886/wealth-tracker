@@ -2408,7 +2408,10 @@ function renderAnnualMatrix(){
 
   function heatColor(rate,hasData){
     if(!hasData)return['#f0f0ec','#888','rgba(0,0,0,.3)','rgba(0,0,0,.25)'];
-    if(rate>=12)return['#c0392b','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
+    if(rate>=100)return['#6c0a1e','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.6)'];
+    if(rate>=50)return['#922b3e','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.6)'];
+    if(rate>=25)return['#c0392b','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
+    if(rate>=12)return['#e67e22','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
     if(rate>=10)return['#e67e22','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
     if(rate>=8)return['#f0ad4e','#2c2c2c','rgba(0,0,0,.5)','rgba(0,0,0,.4)'];
     if(rate>=6)return['#f9e79f','#2c2c2c','rgba(0,0,0,.45)','rgba(0,0,0,.35)'];
@@ -2428,7 +2431,7 @@ function renderAnnualMatrix(){
   grid.innerHTML=htm;
 
   var cc=totalAssets>=0?'var(--accent)':'var(--red)';
-  stats.innerHTML='<div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">总入金</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalInvested)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">当前总资产</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalAssets)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">长期 CAGR</div><div style="font-size:.74rem;font-weight:700;color:'+cc+';">'+(cagr*100).toFixed(1)+'%</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">目标差额</div><div style="font-size:.74rem;font-weight:700;color:var(--orange);">'+fmtFull(targetGap)+'</div></div><div style="font-size:.42rem;color:var(--muted);text-align:center;margin-top:4px;">热力=年度权利金收益率</div>';
+  stats.innerHTML='<div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">总入金</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalInvested)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">当前总资产</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalAssets)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">长期 CAGR</div><div style="font-size:.74rem;font-weight:700;color:'+cc+';">'+(cagr*100).toFixed(1)+'%</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.5rem;color:var(--muted);margin-bottom:2px">目标差额</div><div style="font-size:.74rem;font-weight:700;color:var(--orange);">'+fmtFull(targetGap)+'</div></div><div style="font-size:.42rem;color:var(--muted);text-align:center;margin-top:4px;">热力=年度权利金收益率（CC权利金÷DCA总额）颜色越暖权利金作用越大</div>';
 }
 
 
