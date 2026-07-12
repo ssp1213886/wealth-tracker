@@ -31,6 +31,7 @@
 - ❌ 回撤加仓卖 PUT（已移除）
 - ❌ 回撤 5-12% 触发加仓（已移除，改为持续 DCA 不择时）
 - ❌ 主动平仓或 roll 期权（已禁止，CALL-only 策略）
+- ❌ SMH 52周高回撤警报和 SGOV 现金池页面（HTML 已移除，JS 代码变为死代码）
 
 ## 财务规划
 
@@ -43,23 +44,34 @@
 - 月度 DCA 打卡：监控每月定投完成情况
 - 连续定投计数：追踪定投 streak
 - 操作日志：记录所有交易和决策
-- SGOV 监视：当 SMH 从 52 周高点回撤 ≥25% 时提示
+- 年度再平衡锁定：仅在 12 月 31 日解锁调仓
 
 ## 技术实现
 
 - 前端：原生 HTML/CSS/JS（单文件 SPA，约 3650 行）
 - 后端：Cloudflare Worker + D1 数据库
-- 行情：Yahoo Finance（通过 Worker 代理）
-- 部署：Cloudflare Workers
+- 行情：Yahoo Finance（通过 Worker 代理，fallback 到腾讯行情）
+- 部署：Cloudflare Workers（`npx wrangler deploy`）
 - 多设备同步：Cloudflare D1（单 token 认证）
 - 数据备份：JSON 导出/导入 + 自动备份 + Schwab CSV 导入
+- 仓库：<https://github.com/ssp1213886/wealth-tracker>
+
+## 页面结构
+
+| 页面 | 功能 |
+|------|------|
+| 仪表盘 | 总资产、定投进度、持仓分布、Covered Call 收入、期权持仓摘要 |
+| 操作台 | 股票买卖录入、年度再平衡、手动设置价格 |
+| 期权 | 期权状态、持仓清单、记录 CALL、OTM 行权价参考 |
+| 数据 | 现金管理（入金/出金/修正）、持仓明细、交易历史、资金流水 |
+| 日志 | 操作日志 + 投资规划（收入枷锁/退出策略/提款模拟） |
 
 ## AI 助手行为准则
 
 当用户要求修改此项目时：
-1. 操作前确认 Git 干净且已推送
-2. 先给出修改方案，用户确认后执行
-3. 改完 commit + push + deploy
-4. 汇报实际改动内容
-5. 永远不修改用户的投资数据（trades/cashLog/state），只改代码逻辑
-6. 涉及计算逻辑的改动，需保守处理，保证已有数据兼容
+1. 操作前确认 `git status` 干净且已推送到 GitHub
+2. 先给出修改方案（改哪个文件、哪段代码、怎么改），用户确认后执行
+3. 改完 commit + push + `npx wrangler deploy`
+4. 汇报实际改了什么
+5. 永远不修改用户的投资数据（trades/cashLog/state/optionTrades），只改代码逻辑
+6. 涉及计算逻辑的改动需保守处理，保证已有数据兼容
