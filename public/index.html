@@ -3653,7 +3653,7 @@ var __us=updateSidebar;updateSidebar=function(){__us();
 var sh=document.getElementById("sbOptHoldings");
 if(sh&&typeof optionTrades!=="undefined"){
 var n2=(new Date()).toISOString().slice(0,10);
-var ac=optionTrades.filter(function(o){return o.expiry>=n2});
+var ac=optionTrades.filter(function(o){return o.expiry>=n2&&!o.settled});
 if(!ac.length){sh.innerHTML="无期权持仓"}
 else{sh.innerHTML=ac.map(function(o){var d=Math.ceil((new Date(o.expiry)-new Date(n2))/86400000);return "<div style=padding:2px 0>"+(o.type==="CALL"?"💎 ":"")+"<b>"+o.sym+"</b> "+o.type+"@"+o.strike.toFixed(0)+" x"+(o.contracts||1)+" <span style=float:right>"+d+"d</span></div>"}).join("")}
 }
