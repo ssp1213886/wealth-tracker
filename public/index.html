@@ -650,31 +650,15 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.metrics{grid-template-columns:repeat(2,1fr);gap:0;border-radius:var(--radius);overflow:hidden;background:var(--card-bg)}
+.metrics{grid-template-columns:repeat(2,1fr);gap:8px;border-radius:0;overflow:visible;background:transparent}
 
 
 
-.metric{padding:12px 10px;min-height:auto;background:transparent;border:none;border-bottom:1px solid var(--rule)}
+.metric{padding:12px;min-height:auto;background:var(--card-bg);border:none;border-radius:var(--radius-sm);border-left:3px solid var(--rule);box-shadow:var(--shadow-sm)}
 
 
 
-.metric:last-child{border-bottom:none}
-
-
-
-.metric:nth-child(2n){border-left:1px solid var(--rule)}.metric:nth-child(odd){border-right:1px solid var(--rule)}
-
-
-
-.metric .m-val{font-size:1.2rem;font-weight:700;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-
-
-.metric .m-label{font-size:.48rem;text-transform:uppercase}
-
-
-
-.metric .m-sub{font-size:.5rem}
+.metric .m-val{font-size:1.05rem;font-weight:700;letter-spacing:-.03em}.metric:nth-child(1){border-left-color:var(--accent)}.metric:nth-child(2){border-left-color:var(--blue)}.metric .m-label{font-size:.46rem;text-transform:uppercase}.metric .m-sub{font-size:.48rem}
 
 
 
