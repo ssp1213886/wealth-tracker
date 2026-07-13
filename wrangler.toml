@@ -9,4 +9,4 @@ directory = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "wealth-db"
-database_id = ""
+database_id = "f5ffd073-c0a2-4fad-a470-7f9120eae3d8"
