@@ -842,7 +842,7 @@ input,select,textarea{font-size:16px!important}
 
 
 
-.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.42rem;position:relative;transition:background .15s,transform .15s;-webkit-backdrop-filter:none}transition:transform .12s,background .12s}font-weight:500;padding:4px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-height:48px;cursor:pointer;position:relative;transition:color .2s}
+.bb-btn{border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:.42rem;font-weight:500;padding:4px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-height:48px;cursor:pointer;position:relative;transition:background .15s,transform .15s,color .2s;-webkit-backdrop-filter:none}
 
 
 
@@ -994,7 +994,7 @@ body{font-size:15px;-webkit-text-size-adjust:100%}
 
 
 
-.bb-btn .bb-icon{font-size:1.4rem;line-height:1;opacity:.5;,transition:transform .2s,opacity .2s}
+.bb-btn .bb-icon{font-size:1.4rem;line-height:1;opacity:.5;transition:transform .2s,opacity .2s}
 
 
 
@@ -1526,7 +1526,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-    <div class="card" style="padding:12px;"><h3 style="font-size:.68rem;">📋 本月定投目标</h3><div style="font-size:.5rem;color:var(--muted);margin-bottom:6px;"><span id="dcaBaseAmt">$2,000/月 · 本月</span> <input id="dcaOverride" type="number" placeholder="$2,000" min="0" step="100" style="width:85px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.55rem;background:var(--surface) min="0" step="100" style="width:70px;padding:2px 4px;border:1px solid var(--rule);border-radius:4px;font-size:.5rem;background:var(--surface);color:var(--fg);"></div><div id="dcaInstruction" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;"><div style="padding:8px;background:linear-gradient(135deg,rgba(46,107,80,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(46,107,80,.15);"><div style="font-size:.5rem;color:var(--muted);">VGT</div><div style="font-size:.82rem;font-weight:620;" id="dcaVGT">$1,000</div></div><div style="padding:8px;background:linear-gradient(135deg,rgba(74,143,212,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(74,143,212,.15);"><div style="font-size:.5rem;color:var(--muted);">SMH</div><div style="font-size:.82rem;font-weight:620;" id="dcaSMH">$600</div></div><div style="padding:8px;background:linear-gradient(135deg,rgba(194,133,60,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(194,133,60,.15);"><div style="font-size:.5rem;color:var(--muted);">BTC</div><div style="font-size:.82rem;font-weight:620;" id="dcaBTC">$400</div></div></div><div style="text-align:center;padding:10px 12px;border-radius:var(--radius-sm);font-size:.62rem;font-weight:560;" id="dcaStatus">🔍 检测中...</div></div>
+    <div class="card" style="padding:12px;"><h3 style="font-size:.68rem;">📋 本月定投目标</h3><div style="font-size:.5rem;color:var(--muted);margin-bottom:6px;"><span id="dcaBaseAmt">$2,000/月 · 本月</span> <input id="dcaOverride" type="number" placeholder="$2,000" min="0" step="100" style="width:70px;padding:2px 4px;border:1px solid var(--rule);border-radius:4px;font-size:.5rem;background:var(--surface);color:var(--fg);"></div><div id="dcaInstruction" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;"><div style="padding:8px;background:linear-gradient(135deg,rgba(46,107,80,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(46,107,80,.15);"><div style="font-size:.5rem;color:var(--muted);">VGT</div><div style="font-size:.82rem;font-weight:620;" id="dcaVGT">$1,000</div></div><div style="padding:8px;background:linear-gradient(135deg,rgba(74,143,212,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(74,143,212,.15);"><div style="font-size:.5rem;color:var(--muted);">SMH</div><div style="font-size:.82rem;font-weight:620;" id="dcaSMH">$600</div></div><div style="padding:8px;background:linear-gradient(135deg,rgba(194,133,60,.08),transparent);border-radius:var(--radius-sm);text-align:center;border:1px solid rgba(194,133,60,.15);"><div style="font-size:.5rem;color:var(--muted);">BTC</div><div style="font-size:.82rem;font-weight:620;" id="dcaBTC">$400</div></div></div><div style="text-align:center;padding:10px 12px;border-radius:var(--radius-sm);font-size:.62rem;font-weight:560;" id="dcaStatus">🔍 检测中...</div></div>
 
 
 
@@ -1647,7 +1647,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div class="metrics" style="grid-template-columns:repeat(2,1fr)"><div class="metric"><div class="m-label">VGT · OTM</div><div style="display:flex;align-items:center;gap:6px;justify-content:center"><button id="otmVgtMinus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">−</button><span id="otmVgtVal" style="font-size:.82rem;font-weight:600;font-family:Inter,var(--font);min-width:40px;text-align:center">7%</span><button id="otmVgtPlus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">+</button></div><div class="m-label" id="otmVgtStrike" style="font-size:.5rem;margin-top:2px">建议行权价 --</div></div><div class="metric"><div class="m-label">SMH · OTM</div><div style="display:flex;align-items:center;gap:6px;justify-content:center"><button id="otmSmhMinus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">−</button><span id="otmSmhVal" style="font-size:.82rem;font-weight:600;font-family:Inter,var(--font);min-width:40px;text-align:center">5%</span><button id="otmSmhPlus" style="width:24px;height:24px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);font-size:.7rem;cursor:pointer;line-height:1">+</button></div><div class="m-label" id="otmSmhStrike" style="font-size:.5rem;margin-top:2px">建议行权价 --</div></div></div></div>
 
 
-<div <div class="card" style="padding:12px 18px;">
+<div class="card" style="padding:12px 18px;">
 <h3 style="font-size:.68rem;font-weight:500;margin-bottom:8px;color:var(--muted)">📝 记录期权</h3>
 <div class="metrics opt-form-metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px">
 <div class="metric"><div class="m-label">类型</div><select id="otype" style="font-size:.6rem;padding:4px 2px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select></div>
@@ -1678,7 +1678,6 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-</section>
 
 
 
