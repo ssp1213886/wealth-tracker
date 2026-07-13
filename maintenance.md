@@ -7,7 +7,7 @@
 ## 项目结构
 
 ```
-wealth-server/
+wealth-tracker/
 ├── public/
 │   ├── index.html           → 主程序，单文件 SPA 全部逻辑
 │   ├── guide.html           → 使用文档网页版
@@ -20,18 +20,20 @@ wealth-server/
 │   └── tmp/                 → Wrangler 本地开发临时文件（自动生成）
 ├── schema.sql               → D1 数据库建表语句
 ├── package.json             → 项目信息 + npm 脚本
+├── wrangler.toml            → Cloudflare Workers 部署配置
+├── INVESTMENT_STRATEGY.md   → 投资策略定义
 ├── readme.md                → 项目首页说明（GitHub）
 └── maintenance.md           → 本文档
 ```
 
-> **核心文件**：`public/index.html` —— 整个网站是单个 HTML 文件，所有 UI 和逻辑都在里面。约 174KB，包含 CSS + HTML + JavaScript。
+> **核心文件**：`public/index.html` —— 整个网站是单个 HTML 文件，所有 UI 和逻辑都在里面。约 174KB / 3711 行，包含 CSS + HTML + JavaScript。
 
 ---
 
 ## 修改后部署
 
 ```bash
-cd wealth-server
+cd wealth-tracker
 npx wrangler deploy
 ```
 

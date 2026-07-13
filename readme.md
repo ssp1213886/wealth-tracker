@@ -84,7 +84,7 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 ## 本地开发
 
 ```bash
-cd wealth-server
+cd wealth-tracker
 npm install
 npx wrangler dev
 ```
@@ -107,6 +107,8 @@ npx wrangler deploy
 | `public/icon.png` | 应用图标 |
 | `src/worker.js` | Worker 后端（价格代理 + D1 数据同步 + 频率限制） |
 | `schema.sql` | D1 建表语句 |
+| `wrangler.toml` | Cloudflare Workers 部署配置 |
+| `INVESTMENT_STRATEGY.md` | 投资策略定义（AI 助手读取） |
 | `.wrangler/tmp/` | Wrangler 本地开发临时文件（自动生成，不纳入版本控制） |
 | `maintenance.md` | 维护指南 + 代码结构速查 |
 
