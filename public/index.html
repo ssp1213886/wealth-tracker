@@ -1802,6 +1802,7 @@ function fmt$(n){n=safeNum(n);if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(2)+'
 
 function fmtFull(n){n=safeNum(n);return'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function getNetCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});return cashBalance+ts-tb}
+function animateVal(el,to){if(!el)return;var from=parseFloat(el.dataset.v||"0")||0;el.dataset.v=to;var start=Date.now(),dur=500;function step(){var t=Math.min(1,(Date.now()-start)/dur);var v=from+(to-from)*(1-Math.pow(1-t,3));el.textContent=fmtFull(v);if(t<1)requestAnimationFrame(step)}step()}
 
 
 
@@ -1845,7 +1846,7 @@ function updateSidebar(){
 
 
 
-  var nc=getNetCash();document.getElementById('sbValue').textContent=hasAny?fmtFull(totalV+nc):fmtFull(nc);document.getElementById('sbHoldVal').textContent=hasAny?fmtFull(totalV):'';document.getElementById('sbCashVal').textContent=fmtFull(nc);
+  var nc=getNetCash();animateVal(document.getElementById('sbValue'),hasAny?totalV+nc:nc);document.getElementById('sbHoldVal').textContent=hasAny?fmtFull(totalV):'';document.getElementById('sbCashVal').textContent=fmtFull(nc);
 
 
 
@@ -2654,7 +2655,7 @@ document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('cl
 
 
 
-document.getElementById('hmRefresh').addEventListener('click',refreshPrices);
+document.getElementById('hmRefresh').addEventListener('click',function(){var btn=this;btn.style.opacity='.4';btn.style.pointerEvents='none';refreshPrices().then(function(){btn.style.opacity='1';btn.style.pointerEvents='auto'}).catch(function(){btn.style.opacity='1';btn.style.pointerEvents='auto'})});
 
 
 
@@ -2758,7 +2759,7 @@ function loadTheme(){try{var t=localStorage.getItem(LSKEY+'_theme');var isDark=f
 
 
 
-document.body.addEventListener('click',function(e){var b=e.target.closest('.trade-del');if(!b)return;var hid=b.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio();showToast('🗑️ 已清仓 '+hid,'ok')}return}var tid=parseInt(b.dataset.id);if(tid){var rmed=trades.find(function(t){return t.id===tid});if(!rmed)return;trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio();showToast('🗑️ '+rmed.symbol+' 已删除','ok');return}var cid=parseInt(b.dataset.clog);if(cid){var rmedLog=cashLog.find(function(l){return l.id===cid});if(!rmedLog)return;cashLog=cashLog.filter(function(l){return l.id!==cid});saveCashLog();cashBalance=0;cashLog.forEach(function(l){cashBalance+=l.type==='入金'?l.amount:-l.amount});saveCash();refreshCashUI();showToast('🗑️ '+rmedLog.type+' $'+rmedLog.amount.toFixed(2)+' 已删除','ok')}});
+document.body.addEventListener('click',function(e){var b=e.target.closest('.trade-del');if(!b)return;var hid=b.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio();showToast('🗑️ 已清仓 '+hid,'ok')}return}var tid=parseInt(b.dataset.id);if(tid){var rmed=trades.find(function(t){return t.id===tid});if(!rmed)return;trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio();showToast('🗑️ '+rmed.symbol+' 已删除 · 点击撤销','ok',function(){trades.push(rmed);trades.sort(function(a,b){return a.date.localeCompare(b.date)});saveTrades();updatePortfolio()});return}var cid=parseInt(b.dataset.clog);if(cid){var rmedLog=cashLog.find(function(l){return l.id===cid});if(!rmedLog)return;cashLog=cashLog.filter(function(l){return l.id!==cid});saveCashLog();cashBalance=0;cashLog.forEach(function(l){cashBalance+=l.type==='入金'?l.amount:-l.amount});saveCash();refreshCashUI();showToast('🗑️ '+rmedLog.type+' $'+rmedLog.amount.toFixed(2)+' 已删除','ok')}});
 
 
 
@@ -2889,7 +2890,7 @@ function updateMobStatusBar(){
 
 
 
-    var nc=getNetCash();vm.textContent=fmtFull(totalV+nc);
+    var nc=getNetCash();animateVal(vm,totalV+nc);
 
 
 
@@ -3137,7 +3138,7 @@ document.getElementById('btnClearActivity').addEventListener('click',function(){
 
 
 
-document.body.addEventListener('click',function(e){var b=e.target.closest('.trade-del');if(!b)return;var hid=b.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio();showToast('🗑️ 已清仓 '+hid,'ok')}return}var tid=parseInt(b.dataset.id);if(tid){var rmed=trades.find(function(t){return t.id===tid});if(!rmed)return;trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio();showToast('🗑️ '+rmed.symbol+' 已删除','ok');return}var cid=parseInt(b.dataset.clog);if(cid){var rmedLog=cashLog.find(function(l){return l.id===cid});if(!rmedLog)return;cashLog=cashLog.filter(function(l){return l.id!==cid});saveCashLog();cashBalance=0;cashLog.forEach(function(l){cashBalance+=l.type==='入金'?l.amount:-l.amount});saveCash();refreshCashUI();showToast('🗑️ '+rmedLog.type+' $'+rmedLog.amount.toFixed(2)+' 已删除','ok')}else if(b.dataset.act){var aid=parseInt(b.dataset.act);var acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]');acts=acts.filter(function(x){return x.id!==aid});localStorage.setItem(ACTIVITY_KEY,JSON.stringify(acts));markDirty('activities');renderActivity();showToast('🗑️ 已删除日志','ok');autoPushDebounce()}});
+document.body.addEventListener('click',function(e){var b=e.target.closest('.trade-del');if(!b)return;var hid=b.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio();showToast('🗑️ 已清仓 '+hid,'ok')}return}var tid=parseInt(b.dataset.id);if(tid){var rmed=trades.find(function(t){return t.id===tid});if(!rmed)return;trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio();showToast('🗑️ '+rmed.symbol+' 已删除 · 点击撤销','ok',function(){trades.push(rmed);trades.sort(function(a,b){return a.date.localeCompare(b.date)});saveTrades();updatePortfolio()});return}var cid=parseInt(b.dataset.clog);if(cid){var rmedLog=cashLog.find(function(l){return l.id===cid});if(!rmedLog)return;cashLog=cashLog.filter(function(l){return l.id!==cid});saveCashLog();cashBalance=0;cashLog.forEach(function(l){cashBalance+=l.type==='入金'?l.amount:-l.amount});saveCash();refreshCashUI();showToast('🗑️ '+rmedLog.type+' $'+rmedLog.amount.toFixed(2)+' 已删除','ok')}else if(b.dataset.act){var aid=parseInt(b.dataset.act);var acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]');acts=acts.filter(function(x){return x.id!==aid});localStorage.setItem(ACTIVITY_KEY,JSON.stringify(acts));markDirty('activities');renderActivity();showToast('🗑️ 已删除日志','ok');autoPushDebounce()}});
 
 
 
