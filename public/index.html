@@ -2650,11 +2650,7 @@ document.getElementById('mobHamburger').addEventListener('click',function(){var 
 
 
 
-document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap();renderAnnualMatrix()}
-
-
-
-if(b.dataset.tab==='data')updateDataPage()})});
+document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab)})});
 
 
 
@@ -2858,6 +2854,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
   if(tab==='data')updateDataPage()
+  if(tab==='option')setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},50)
 
 
 
@@ -3523,7 +3520,6 @@ if(cc&&cs){var nw=(new Date()).toISOString().slice(0,10),tm=nw.slice(0,7),ccTota
 optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===tm){ccTotal+=(o.premium||0)*(o.contracts||1);ccCount++}});
 cc.textContent=fmtFull(ccTotal);cs.textContent=ccCount+" 张CALL · 复投核心仓"}
 });
-var __os=switchTab;switchTab=function(tab){__os(tab);if(tab==="option")setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},50)};
 var __us=updateSidebar;updateSidebar=function(){__us();
 var sh=document.getElementById("sbOptHoldings");
 if(sh&&typeof optionTrades!=="undefined"){
