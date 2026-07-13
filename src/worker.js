@@ -59,10 +59,12 @@
     if (url.pathname === '/api/sync' && request.method === 'GET') {
       const { results } = await env.DB.prepare('SELECT key, value, updated_at FROM data').all();
       const data = {};
+      const meta = {};
       for (const row of results) {
         try { data[row.key] = JSON.parse(row.value); } catch { data[row.key] = row.value; }
+        meta[row.key] = row.updated_at;
       }
-      return json({ ok: true, data, ts: Date.now() });
+      return json({ ok: true, data, ts: Date.now(), meta });
     }
 
     // --- API: POST /api/sync ---
