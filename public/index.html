@@ -1805,6 +1805,7 @@ function fmt$(n){n=safeNum(n);if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(2)+'
 
 
 function fmtFull(n){n=safeNum(n);return'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function getNetCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});return cashBalance+ts-tb}
 
 
 
@@ -1848,7 +1849,7 @@ function updateSidebar(){
 
 
 
-  var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;document.getElementById('sbValue').textContent=hasAny?fmtFull(totalV+nc):fmtFull(nc);document.getElementById('sbHoldVal').textContent=hasAny?fmtFull(totalV):'';document.getElementById('sbCashVal').textContent=fmtFull(nc);
+  var nc=getNetCash();document.getElementById('sbValue').textContent=hasAny?fmtFull(totalV+nc):fmtFull(nc);document.getElementById('sbHoldVal').textContent=hasAny?fmtFull(totalV):'';document.getElementById('sbCashVal').textContent=fmtFull(nc);
 
 
 
@@ -2080,7 +2081,7 @@ function updatePortfolio(){
 
 
 
-  var target=state.targetGoal||2500000,totalAssets=totalValue;var ts2=0,tb2=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts2+=a;else tb2+=a});totalAssets+=cashBalance+ts2-tb2;var pctVal=Math.min(100,totalAssets/target*100),gap=Math.max(0,target-totalAssets);
+  var target=state.targetGoal||2500000,totalAssets=totalValue;totalAssets+=getNetCash();var pctVal=Math.min(100,totalAssets/target*100),gap=Math.max(0,target-totalAssets);
 
 
 
@@ -2369,7 +2370,7 @@ function renderAnnualMatrix(){
 
   var totalInvested=cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).reduce(function(s,l){return s+l.amount},0);
   var activeYears=cells.filter(function(c){return c.hasData}).length;
-  var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;
+  var nc=getNetCash();
   var totalHoldings={};trades.forEach(function(t){totalHoldings[t.symbol]=(totalHoldings[t.symbol]||0)+t.shares});var totalMktV=0;ETF_SYMS.forEach(function(sym){var sh=Math.max(0,totalHoldings[sym]||0);totalMktV+=sh*(livePrices[sym]||0)});var totalAssets=totalMktV+nc;
   var cagr=totalInvested>0&&activeYears>0?Math.pow(totalAssets/totalInvested,1/activeYears)-1:0;
   var targetGap=Math.max(0,(state.targetGoal||2500000)-totalAssets);
@@ -2412,7 +2413,7 @@ function renderAnnualMatrix(){
 
 
 
-function updateDataPage(){var nc=0;var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});nc=cashBalance+ts-tb;var dc=document.getElementById('dataCashBal');if(dc)dc.textContent=fmtFull(nc);var dd=document.getElementById('dataDep');if(dd){var ds=0;cashLog.forEach(function(l){if(l.type==='入金')ds+=l.amount});dd.textContent=fmtFull(ds)}var dl=document.getElementById('dataSel');if(dl){var ss=0;trades.forEach(function(t){if(t.shares<0)ss+=Math.abs(t.shares)*t.price});dl.textContent=fmtFull(ss)}var db=document.getElementById('dataBuy');if(db){var bs=0;trades.forEach(function(t){if(t.shares>0)bs+=t.shares*t.price});db.textContent='-'+fmtFull(bs)}updateTradeList();updatePnlSummary();renderCashLog()}
+function updateDataPage(){var nc=0;nc=getNetCash();var dc=document.getElementById('dataCashBal');if(dc)dc.textContent=fmtFull(nc);var dd=document.getElementById('dataDep');if(dd){var ds=0;cashLog.forEach(function(l){if(l.type==='入金')ds+=l.amount});dd.textContent=fmtFull(ds)}var dl=document.getElementById('dataSel');if(dl){var ss=0;trades.forEach(function(t){if(t.shares<0)ss+=Math.abs(t.shares)*t.price});dl.textContent=fmtFull(ss)}var db=document.getElementById('dataBuy');if(db){var bs=0;trades.forEach(function(t){if(t.shares>0)bs+=t.shares*t.price});db.textContent='-'+fmtFull(bs)}updateTradeList();updatePnlSummary();renderCashLog()}
 
 
 
@@ -2689,7 +2690,7 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
 
 
 
-  if(type==='buy'){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var avail=cashBalance+ts-tb;var cost=shares*price;if(cost>avail){alert('现金不足！\n需要：'+fmtFull(cost)+'\n可用：'+fmtFull(avail));return}}
+  if(type==='buy'){var avail=getNetCash();var cost=shares*price;if(cost>avail){alert('现金不足！\n需要：'+fmtFull(cost)+'\n可用：'+fmtFull(avail));return}}
 
 
 
@@ -2888,7 +2889,6 @@ function updateMobStatusBar(){
 
 
 
-    var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});
 
 
 
@@ -2896,7 +2896,7 @@ function updateMobStatusBar(){
 
 
 
-    var nc=cashBalance+ts-tb;vm.textContent=fmtFull(totalV+nc);
+    var nc=getNetCash();vm.textContent=fmtFull(totalV+nc);
 
 
 
@@ -3092,7 +3092,7 @@ function showToast(msg,type,undoFn){var t=document.getElementById('syncToast');i
 
 
 
-function updateHoldCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;document.getElementById('hmCash').textContent=fmtFull(nc);document.getElementById('hmDep').textContent=fmtFull((cashLog||[]).reduce(function(s,l){return s+(l.type.indexOf('\u5165\u91d1')>=0?l.amount:0)},0));document.getElementById('hmSel').textContent=fmtFull(ts);document.getElementById('hmBuy').textContent='-'+fmtFull(tb)}document.getElementById('hmDeposit').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value);if(isNaN(v)||v<=0)return;cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'入金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('入金 $'+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog();var ncc=cashBalance;var tt=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)tt+=a;else tt-=a});ncc+=tt;var dcb=document.getElementById('dataCashBal');if(dcb)dcb.textContent=fmtFull(ncc)});document.getElementById('hmWithdraw').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value);if(isNaN(v)||v<=0)return;if(v>cashBalance){alert('余额不足');return}cashBalance-=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'出金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('出金 $'+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog();var ncc=cashBalance;var tt=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)tt+=a;else tt-=a});ncc+=tt;var dcb=document.getElementById('dataCashBal');if(dcb)dcb.textContent=fmtFull(ncc)});
+function updateHoldCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=cashBalance+ts-tb;document.getElementById('hmCash').textContent=fmtFull(nc);document.getElementById('hmDep').textContent=fmtFull((cashLog||[]).reduce(function(s,l){return s+(l.type.indexOf('\u5165\u91d1')>=0?l.amount:0)},0));document.getElementById('hmSel').textContent=fmtFull(ts);document.getElementById('hmBuy').textContent='-'+fmtFull(tb)}document.getElementById('hmDeposit').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value);if(isNaN(v)||v<=0)return;cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'入金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('入金 $'+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog();var ncc=getNetCash();var dcb=document.getElementById('dataCashBal');if(dcb)dcb.textContent=fmtFull(ncc)});document.getElementById('hmWithdraw').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value);if(isNaN(v)||v<=0)return;if(v>cashBalance){alert('余额不足');return}cashBalance-=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'出金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('出金 $'+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog();var ncc=getNetCash();var dcb=document.getElementById('dataCashBal');if(dcb)dcb.textContent=fmtFull(ncc)});
 
 
 
