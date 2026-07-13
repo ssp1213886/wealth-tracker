@@ -1576,7 +1576,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
-  <div class="chart-row"><div class="card" style="flex:1;"><h3>🍩 持仓分布</h3><div style="display:flex;align-items:center;gap:24px;"><div class="chart-wrap" style="width:220px;min-width:220px;"><canvas id="chartDonut" style="height:220px;"></canvas></div><div id="donutLegend" style="flex:1;min-width:140px;font-size:.66rem;"></div></div><div id="sgovPoolLabel" style="text-align:center;font-size:.58rem;color:var(--muted);margin-top:8px;padding:6px 12px;background:var(--surface);border-radius:var(--radius-sm);">+SGOV 池 $0</div></div>
+  <div class="chart-row"><div class="card" style="flex:1;"><h3>🍩 持仓分布</h3><div style="display:flex;align-items:center;gap:24px;"><div class="chart-wrap" style="width:220px;min-width:220px;"><canvas id="chartDonut" style="height:220px;"></canvas></div><div id="donutLegend" style="flex:1;min-width:140px;font-size:.66rem;"></div></div></div>
 
 
 
@@ -1860,7 +1860,7 @@ function updateSidebar(){
 
 
 
-    if(slices.length&&totalV>0){var angle=-Math.PI/2,cx=65,cy=55,r=40;slices.forEach(function(s,i){var slice=s.value/totalV*2*Math.PI;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=DONUT_COLORS[i%3];ctx.fill();angle+=slice});var imbalanced=document.getElementById("sbRebalanceAlert")?.style.display==="block";if(imbalanced){ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);ctx.strokeStyle="#d94535";ctx.lineWidth=2;ctx.globalAlpha=0.4;ctx.stroke();ctx.globalAlpha=1} ctx.beginPath();ctx.arc(cx,cy,22,0,2*Math.PI);ctx.fillStyle=document.documentElement.dataset.theme==='dark'?'#1f221f':'#fff';ctx.fill();ctx.fillStyle=document.documentElement.dataset.theme==='dark'?'#e4e4e0':'#1a1a1a';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(fmt$(totalV),cx,cy+2);ctx.font='8px sans-serif';ctx.fillStyle=document.documentElement.dataset.theme==='dark'?'#999':'#777';ctx.fillText('总市值',cx,cy+14)}
+    if(slices.length&&totalV>0){var angle=-Math.PI/2,cx=65,cy=55,r=40;slices.forEach(function(s,i){var slice=s.value/totalV*2*Math.PI;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=DONUT_COLORS[i%3];ctx.fill();angle+=slice}); ctx.beginPath();ctx.arc(cx,cy,22,0,2*Math.PI);ctx.fillStyle=document.documentElement.dataset.theme==='dark'?'#1f221f':'#fff';ctx.fill();ctx.fillStyle=document.documentElement.dataset.theme==='dark'?'#e4e4e0':'#1a1a1a';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(fmt$(totalV),cx,cy+2);ctx.font='8px sans-serif';ctx.fillStyle=document.documentElement.dataset.theme==='dark'?'#999':'#777';ctx.fillText('总市值',cx,cy+14)}
 
 
 
@@ -1928,7 +1928,7 @@ async function refreshPrices(){
 
 
 
-    if(d&&d.source!=='缓存'){var cachedPrice=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');var oldP=cachedPrice[sym]?cachedPrice[sym].price:null;livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source==='yahoo'?'Yahoo':d.source;if(d.change!=null&&d.change!==0){liveChanges[sym]=d.change}else if(oldP&&oldP!==d.price){liveChanges[sym]=d.price-oldP}if(sym==='SMH'&&d.hi52>0){var o2=parseFloat(localStorage.getItem('smh_cur_52hi')||'0');if(d.hi52>o2)localStorage.setItem('smh_cur_52hi',d.hi52.toString());smh52hi=Math.max(smh52hi,d.hi52)}cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
+    if(d&&d.source!=='缓存'){var cachedPrice=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');var oldP=cachedPrice[sym]?cachedPrice[sym].price:null;livePrices[sym]=d.price;liveSources[sym]=d.source==='tencent'?'腾讯':d.source==='yahoo'?'Yahoo':d.source;if(d.change!=null&&d.change!==0){liveChanges[sym]=d.change}else if(oldP&&oldP!==d.price){liveChanges[sym]=d.price-oldP}cachePrice(sym,d);return pricePill(sym,d.price,d.change,d.source)}
 
 
 
@@ -1948,7 +1948,7 @@ async function refreshPrices(){
 
 
 
-  updatePortfolio();updateSidebar();updateSidebarPrices();updateSgovPage();
+  updatePortfolio();updateSidebar();updateSidebarPrices();
 
 
 
@@ -2092,18 +2092,6 @@ function updatePortfolio(){
 
 
 
-  var maxDev=0,offList=[];
-
-
-
-  rows.forEach(function(r){if(r.priced&&r.value>0){var c=r.value/totalValue,t=state[r.sym.toLowerCase()]||0;var d=Math.abs(c-t)*100;if(d>maxDev)maxDev=d;if(d>10)offList.push(r.sym+(c>t?' 偏高':' 偏低'))}});
-
-
-
-  var ra=document.getElementById('sbRebalanceAlert');if(ra){if(offList.length>0){ra.style.display='block';ra.innerHTML='!! '+offList.join(', ');var rb=document.getElementById('sbBalanced');if(rb)rb.style.display='none'}else{ra.style.display='none';var rb2=document.getElementById('sbBalanced');if(rb2)rb2.style.display='block'}}
-
-
-
   // 距高点回撤
 
 
@@ -2172,7 +2160,7 @@ function updatePortfolio(){
 
 
 
-function updateDonutChart(rows){var canvas=document.getElementById("chartDonut"),legend=document.getElementById("donutLegend");if(!canvas)return;var dpr=window.devicePixelRatio||1,size=220;canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+"px";canvas.style.height=size+"px";var ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,size,size);if(!rows.length||rows.every(function(r){return!r.priced})){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">📊 暂无数据</div>";return}var priced=rows.filter(function(r){return r.priced&&r.value>0});if(!priced.length){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">请先设价</div>";return}var total=priced.reduce(function(s,r){return s+r.value},0),cx=size/2,cy=90,r=82,angle=-Math.PI/2;var slices=[];priced.forEach(function(row,i){var slice=row.value/total*2*Math.PI;slices.push({sym:row.sym,value:row.value,pct:row.value/total,color:DONUT_COLORS[i%3]});ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=DONUT_COLORS[i%3];ctx.fill();ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.stroke();angle+=slice});var dark=document.documentElement.dataset.theme==="dark";ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);var grd=ctx.createRadialGradient(cx,cy,45,cx,cy,60);grd.addColorStop(0,dark?"#222522":"#faf9f5");grd.addColorStop(1,dark?"#1a1d1a":"#f0ede5");ctx.fillStyle=grd;ctx.fill();ctx.fillStyle=dark?"#e4e4e0":"#1a1a1a";ctx.font="bold 20px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(fmt$(total),cx,cy-2);ctx.font="10px sans-serif";ctx.fillStyle=dark?"#999":"#777";ctx.fillText("总市值",cx,cy+14);if(!legend)return;var h="";slices.forEach(function(s){h+="<div style=\"display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;border-radius:var(--radius-sm);background:var(--surface);\"><span style=\"width:10px;height:10px;border-radius:50%;background:"+s.color+";flex-shrink:0;\"></span><span style=\"flex:1;margin-left:8px;font-weight:520;font-size:.68rem;\">"+s.sym+"</span><span style=\"font-size:.64rem;color:var(--fg);font-weight:520;\">"+(s.pct*100).toFixed(1)+"%</span><span style=\"font-size:.56rem;color:var(--muted);margin-left:6px;\">"+fmtFull(s.value)+"</span></div>"});var sgovShares1=0;trades.forEach(function(t){if(t.symbol==='SGOV')sgovShares1+=t.shares});var sgovV=(livePrices.SGOV||0)*Math.max(0,sgovShares1);var sl=document.getElementById('sgovPoolLabel');if(sl){if(sgovShares1>0){sl.style.display='';sl.textContent='+SGOV 池 '+fmt$(sgovV||0)}else{sl.style.display='none'}}legend.innerHTML=h}var rebalanceMode="swap";function updateRebalance(rows,totalValue){
+function updateDonutChart(rows){var canvas=document.getElementById("chartDonut"),legend=document.getElementById("donutLegend");if(!canvas)return;var dpr=window.devicePixelRatio||1,size=220;canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+"px";canvas.style.height=size+"px";var ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,size,size);if(!rows.length||rows.every(function(r){return!r.priced})){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">📊 暂无数据</div>";return}var priced=rows.filter(function(r){return r.priced&&r.value>0});if(!priced.length){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">请先设价</div>";return}var total=priced.reduce(function(s,r){return s+r.value},0),cx=size/2,cy=90,r=82,angle=-Math.PI/2;var slices=[];priced.forEach(function(row,i){var slice=row.value/total*2*Math.PI;slices.push({sym:row.sym,value:row.value,pct:row.value/total,color:DONUT_COLORS[i%3]});ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=DONUT_COLORS[i%3];ctx.fill();ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.stroke();angle+=slice});var dark=document.documentElement.dataset.theme==="dark";ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);var grd=ctx.createRadialGradient(cx,cy,45,cx,cy,60);grd.addColorStop(0,dark?"#222522":"#faf9f5");grd.addColorStop(1,dark?"#1a1d1a":"#f0ede5");ctx.fillStyle=grd;ctx.fill();ctx.fillStyle=dark?"#e4e4e0":"#1a1a1a";ctx.font="bold 20px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(fmt$(total),cx,cy-2);ctx.font="10px sans-serif";ctx.fillStyle=dark?"#999":"#777";ctx.fillText("总市值",cx,cy+14);if(!legend)return;var h="";slices.forEach(function(s){h+="<div style=\"display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;border-radius:var(--radius-sm);background:var(--surface);\"><span style=\"width:10px;height:10px;border-radius:50%;background:"+s.color+";flex-shrink:0;\"></span><span style=\"flex:1;margin-left:8px;font-weight:520;font-size:.68rem;\">"+s.sym+"</span><span style=\"font-size:.64rem;color:var(--fg);font-weight:520;\">"+(s.pct*100).toFixed(1)+"%</span><span style=\"font-size:.56rem;color:var(--muted);margin-left:6px;\">"+fmtFull(s.value)+"</span></div>"});var sgovShares1=0;trades.forEach(function(t){if(t.symbol==='SGOV')sgovShares1+=t.shares});var sgovV=(livePrices.SGOV||0)*Math.max(0,sgovShares1);legend.innerHTML=h}var rebalanceMode="swap";function updateRebalance(rows,totalValue){
 
 
 
@@ -2468,47 +2456,7 @@ function updateDashboardWidgets(){
 
 
 
-  var dl=document.getElementById('devLight'),dm=document.getElementById('devMsg');
-
-
-
-  if(!hasHoldings){if(dl)dl.textContent='--';if(dm)dm.textContent='暂无持仓数据';if(document.getElementById('roadLabel'))document.getElementById('roadLabel').textContent='--';return}
-
-
-
-  var curPct={VGT:curV/totalV,SMH:curS/totalV,BTC:curB/totalV};
-
-
-
-  var maxDev=0;ETF_SYMS.forEach(function(s){var d=Math.abs(curPct[s]-target[s])*100;if(d>maxDev)maxDev=d});
-
-
-
-  var btcPct=curPct.BTC*100;
-
-
-
-  if(btcPct<5||btcPct>50){if(dl){dl.innerHTML='<span style="color:var(--red);">🔴 红灯</span>';dl.style.color=''}if(dm)dm.textContent='极度失衡'}
-
-
-
-  else if(maxDev>10){if(dl){dl.innerHTML='<span style="color:var(--orange);">🟡 黄灯</span>';dl.style.color=''}if(dm)dm.textContent='市场分化'}
-
-
-
-  else{if(dl){dl.innerHTML='<span style="color:var(--accent);">🟢 绿灯</span>';dl.style.color=''}if(dm)dm.textContent='一切正常'}
-
-
-
-  // SGOV 建议基于 SMH 监测
-
-
-
-  var smhP=livePrices.SMH,smh5=smh52hi||smhP||0,smhDD2=smhP>0&&smh5>0?((smh5-smhP)/smh5*100):0;
-
-
-
-  var ds2=document.getElementById('devSgov');if(ds2){if(smhDD2>=25)ds2.textContent='SMH回撤'+smhDD2.toFixed(0)+'% → 出击';else if(smhDD2>=20)ds2.textContent='SMH回撤'+smhDD2.toFixed(0)+'% → 关注';else ds2.textContent='SMH正常 · 无需出击'}
+  if(!hasHoldings){var rl0=document.getElementById('roadLabel');if(rl0)rl0.textContent='--';return}
 
 
 
@@ -2545,38 +2493,6 @@ function updateDashboardWidgets(){
 
 
   updatePlanAges();
-
-
-
-  // 当月定投状态
-
-
-
-  var ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),dca=state.monthlyDCA||2000;
-
-
-
-  var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===ym}),bs={},totalB=0;
-
-
-
-  buys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price;totalB+=t.shares*t.price});
-
-
-
-  var okTotal=totalB>0&&Math.abs(totalB-dca)/dca<0.10,okV=bs.VGT>0&&Math.abs(bs.VGT/totalB-state.vgt)<0.15,okM=bs.SMH>0&&Math.abs(bs.SMH/totalB-state.smh)<0.15,okB=bs.BTC>0&&Math.abs(bs.BTC/totalB-state.btc)<0.15,complete=okTotal&&okV&&okM&&okB;
-
-
-
-  var sd2=document.getElementById('sbDCAStatus'),sub=document.getElementById('sbDCASub');
-
-
-
-  if(complete){if(sd2)sd2.innerHTML='✅ 已完成';if(sd2)sd2.style.color='var(--accent)';var ld=buys[buys.length-1];if(sub)sub.textContent=ld?(ld.date.replace(/-/g,'/').slice(5)):''}
-
-
-
-  else{if(sd2)sd2.innerHTML='⏳ 待执行';if(sd2)sd2.style.color='var(--orange)';if(sub)sub.textContent='本月 '+fmt$(dca)+' 待分配'}
 
 
 
@@ -2649,94 +2565,6 @@ function updateRebalanceLock(){
 
 
 }
-
-
-
-// ---- SGOV 监测 ----
-
-
-
-var btcAth=parseFloat(localStorage.getItem('btc_ath')||'0'),smh52hi=parseFloat(localStorage.getItem('smh_52hi')||'0');
-
-
-
-/* ===== SGOV 池 ===== */
-
-
-
-function updateSgovPage(){
-
-
-
-  // SGOV 余额
-
-
-
-  var sgovShares=0,sgovCost=0;trades.forEach(function(t){if(t.symbol==='SGOV'){sgovShares+=t.shares;sgovCost+=t.shares*t.price}});
-
-
-
-  var sgovPrice=livePrices.SGOV||0,sgovVal=sgovPrice>0?sgovShares*sgovPrice:sgovCost;
-
-
-
-  var sb=document.getElementById('sgovBalance');if(sb)sb.textContent=fmtFull(sgovVal);
-
-
-
-  var sd=document.getElementById('sgovDetail');if(sd){var pnl=sgovVal-sgovCost,pnlPct=sgovCost>0?(pnl/sgovCost*100):0;sd.innerHTML='成本 '+fmtFull(sgovCost)+' · 盈亏 <span style="color:'+(pnl>=0?'var(--accent)':'var(--red)')+';">'+(pnl>=0?'+':'')+fmtFull(pnl)+' ('+pnlPct.toFixed(2)+'%)</span>'}
-
-
-
-  // SMH 监测
-
-
-
-  var smhP=livePrices.SMH,smh5=smh52hi||smhP||0;;var st=state.sgovTarget||0,sp=sgovVal;var si=document.getElementById('sgovTargetInput');if(si&&si.value!=String(st))si.value=st;var sb2=document.getElementById('sgovTargetBar'),sl2=document.getElementById('sgovTargetLabel'),sg2=document.getElementById('sgovTargetGap');if(st>0&&sb2){var pct=Math.min(100,sp/st*100);sb2.style.width=pct+'%';sl2.textContent=((pct>=100)?'已达成':'')+fmtFull(sp)+' / '+fmtFull(st);sg2.textContent=(pct>=100)?'':'还差 '+fmtFull(st-sp)+' ('+(100-pct).toFixed(0)+'%)'}else if(sl2){sl2.textContent='未设置目标';sg2.textContent=''}
-
-
-
-  if(smhP>0&&smh5>0){var smhDD=((smh5-smhP)/smh5*100);
-
-
-
-    var sdEl=document.getElementById('smhDrawdown'),shEl=document.getElementById('smh52hi'),scEl=document.getElementById('smhCur');
-
-
-
-    if(sdEl){sdEl.textContent=smhDD.toFixed(1)+'%';sdEl.style.color=smhDD>=25?'var(--red)':smhDD>=20?'var(--orange)':'var(--accent)'}
-
-
-
-    if(shEl)shEl.textContent='$'+smh5.toFixed(2);if(scEl)scEl.textContent='$'+smhP.toFixed(2);
-
-
-
-    var trig=smhDD>=25;var sa=document.getElementById('smhAlertStatus');if(sa){if(trig)sa.innerHTML='<div class="red-alert">⚠️ 已触发 · SMH 回撤 '+smhDD.toFixed(1)+'% ≥ 25%</div>';else sa.innerHTML='<div style="padding:8px 10px;font-size:.58rem;color:var(--muted);">未触发 · 当前回撤 '+smhDD.toFixed(1)+'%</div>'}
-
-
-
-    var shield=document.getElementById('sgovShield'),icon=document.getElementById('shieldIcon'),txt=document.getElementById('shieldText'),sub=document.getElementById('shieldSub');
-
-
-
-    if(trig){if(shield)shield.classList.add('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.innerHTML='<span style="color:var(--red);">出击信号已触发</span>';if(sub)sub.innerHTML='按 50/30/20 比例买入 VGT/SMH/BTC · 注意分批进场'}
-
-
-
-    else{if(shield)shield.classList.remove('shield-red');if(icon)icon.textContent='🛡️';if(txt)txt.textContent='警戒中';if(sub)sub.textContent='市场未触发极端信号'}
-
-
-
-  }else{var sdEl2=document.getElementById('smhDrawdown');if(sdEl2)sdEl2.textContent='等待数据'}
-
-
-
-}
-
-
-
-// 价格刷新时更新 SMH 52 周高
 
 
 
@@ -2821,7 +2649,7 @@ document.getElementById('mobHamburger').addEventListener('click',function(){var 
 
 
 
-document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='sgov')updateSgovPage();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap();renderAnnualMatrix()}
+document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.getElementById('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='holding')updatePortfolio();if(b.dataset.tab==='log'){renderActivity();renderLogHeatmap();renderAnnualMatrix()}
 
 
 
@@ -3021,7 +2849,6 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
 
-  if(tab==='sgov')updateSgovPage();
 
 
 
@@ -3221,11 +3048,11 @@ function initAll(){
 
 
 
-  var tgInput=document.getElementById('targetGoalInput');if(tgInput){tgInput.value=state.targetGoal||2500000;tgInput.addEventListener('change',function(){var v=parseInt(tgInput.value)||2500000;v=Math.max(100000,Math.min(10000000,v));tgInput.value=v;state.targetGoal=v;saveState();updatePortfolio()});var tl=document.getElementById('targetLabel');if(tl)tl.textContent=fmt$(state.targetGoal||2500000)}var stInput=document.getElementById('sgovTargetInput');if(stInput){stInput.value=state.sgovTarget||0;stInput.addEventListener('change',function(){var v=parseInt(stInput.value)||0;v=Math.max(0,Math.min(10000000,v));stInput.value=v;state.sgovTarget=v;saveState();updateSgovPage()})}
+  var tgInput=document.getElementById('targetGoalInput');if(tgInput){tgInput.value=state.targetGoal||2500000;tgInput.addEventListener('change',function(){var v=parseInt(tgInput.value)||2500000;v=Math.max(100000,Math.min(10000000,v));tgInput.value=v;state.targetGoal=v;saveState();updatePortfolio()});var tl=document.getElementById('targetLabel');if(tl)tl.textContent=fmt$(state.targetGoal||2500000)}
 
 
 
-  updateWithdrawal();updateDCA();updateSgovPage();renderActivity();renderLogHeatmap();renderAnnualMatrix();renderCashLog();
+  updateWithdrawal();updateDCA();renderActivity();renderLogHeatmap();renderAnnualMatrix();renderCashLog();
 
 
 
@@ -3702,9 +3529,7 @@ if(!ac.length){sh.innerHTML="无期权持仓"}
 else{sh.innerHTML=ac.map(function(o){var d=Math.ceil((new Date(o.expiry)-new Date(n2))/86400000);return "<div style=padding:2px 0>"+(o.type==="CALL"?"💎 ":"")+"<b>"+o.sym+"</b> "+o.type+"@"+o.strike.toFixed(0)+" x"+(o.contracts||1)+" <span style=float:right>"+d+"d</span></div>"}).join("")}
 }
 };
-try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return;cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:v>0?"修正+":"修正-",amount:v});saveCashLog();document.getElementById("hmCorrectAmt").value="";addActivity("现金修正 "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog();updateCashPage()})}catch(e){}
-try{var __uf=updateFooter||function(){};updateFooter=function(){__uf();var cl=document.getElementById("cashPoolLabel");if(cl){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});cl.textContent=fmtFull(cashBalance+ts-tb)}};}catch(e){}
-var updateSgovPage=function(){};
+try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return;cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:v>0?"修正+":"修正-",amount:v});saveCashLog();document.getElementById("hmCorrectAmt").value="";addActivity("现金修正 "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()})}catch(e){}
 setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},500);
 
 var otmSettings={vgt:7,smh:5};
@@ -3713,9 +3538,6 @@ function updateOtm(){var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?liv
 function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";var v2=otmSettings[key]+dir;if(v2<1)v2=1;if(v2>20)v2=20;otmSettings[key]=v2;localStorage.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
 try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adjOtm("VGT",1)};var em=document.getElementById("otmVgtMinus");if(em)em.onclick=function(){adjOtm("VGT",-1)};var sp2=document.getElementById("otmSmhPlus");if(sp2)sp2.onclick=function(){adjOtm("SMH",1)};var sm2=document.getElementById("otmSmhMinus");if(sm2)sm2.onclick=function(){adjOtm("SMH",-1)}}catch(e){}setTimeout(updateOtm,800);
 
-function updateOptBadge(){var b=document.getElementById('optBadge');if(b)b.style.display='none'}
-setInterval(updateOptBadge,30000);
-setTimeout(updateOptBadge,1500);
 </script>
 
 
