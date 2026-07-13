@@ -1752,6 +1752,8 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 
 
 
+  <div class="card" style="padding:14px;border:1px solid var(--red);margin-top:8px;"><h3 style="color:var(--red);">⚠️ 危险区域</h3><p style="font-size:.56rem;color:var(--muted);margin:4px 0 8px;line-height:1.5;">清除所有数据(交易/现金/期权/日志/配置/价格)。UI偏好(主题/颜色)保留。如已配置云同步,空数据将推送覆盖云端。</p><button class="btn btn-out btn-sm" id="btnClearAll" style="font-size:.6rem;color:var(--red);border-color:var(--red);">🗑️ 清除所有数据</button></div>
+
   </section>
 
 
@@ -3543,6 +3545,7 @@ function updateOtm(){var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?liv
 function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";var v2=otmSettings[key]+dir;if(v2<1)v2=1;if(v2>20)v2=20;otmSettings[key]=v2;localStorage.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
 try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adjOtm("VGT",1)};var em=document.getElementById("otmVgtMinus");if(em)em.onclick=function(){adjOtm("VGT",-1)};var sp2=document.getElementById("otmSmhPlus");if(sp2)sp2.onclick=function(){adjOtm("SMH",1)};var sm2=document.getElementById("otmSmhMinus");if(sm2)sm2.onclick=function(){adjOtm("SMH",-1)}}catch(e){}setTimeout(updateOtm,800);
 
+document.getElementById("btnClearAll").addEventListener("click",function(){if(!confirm("⚠️ 此操作将清空所有数据!\n\n包括:交易记录、现金余额、现金日志、期权记录、活动日志、配置状态、价格缓存\n\nUI偏好(主题/颜色)保留。\n\n确认清除?"))return;if(!confirm("再次确认:这将永久删除所有数据,不可恢复!\n\n(如需备份请先导出)"))return;var prefs={};["wealth_dashboard_v2_theme","wealth_dashboard_v2_accent","wealth_dashboard_v2_sidebar","autoBackup"].forEach(function(k){var v=localStorage.getItem(k);if(v)prefs[k]=v});localStorage.clear();Object.keys(prefs).forEach(function(k){localStorage.setItem(k,prefs[k])});var ss={dirty:{},cloudTs:{}};["trades","cashBalance","cashLog","state","activities","optionTrades","otmSettings","exit_portfolio"].forEach(function(k){ss.dirty[k]=true});localStorage.setItem("wealth_sync_state",JSON.stringify(ss));location.reload();});
 </script>
 
 
