@@ -43,8 +43,10 @@
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
+      const allowedRanges = ['1d','5d','1mo','3mo','6mo','1y','2y','5y','10y','ytd','max'];
+      const range = allowedRanges.indexOf(url.searchParams.get('range')) > -1 ? url.searchParams.get('range') : '1d';
         const r = await fetch(
-          'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=1d',
+          'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=' + range,
           { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: controller.signal }
         );
         clearTimeout(timeout);
