@@ -1555,11 +1555,6 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
 <div class="metric"><div class="m-label">到期日</div><input id="oexpiry" type="date" style="font-size:.7rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
 <div class="metric"><div class="m-label">张数</div><input id="ocontracts" type="number" min="1" value="1" style="font-size:.7rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
 </div>
-<div class="metrics opt-form-metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:8px">
-<div class="metric"><div class="m-label">Delta (选填)</div><input id="odelta" type="number" step="0.01" placeholder="0.20" style="font-size:.7rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
-<div class="metric"><div class="m-label">IV% (选填)</div><input id="oiv" type="number" step="1" placeholder="25" style="font-size:.7rem;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--card-bg);color:var(--fg);width:100%"></div>
-<div class="metric"></div>
-</div>
 <div style="text-align:right"><button class="btn btn-pri" id="btnAddOption" style="padding:6px 18px;font-size:.7rem">记录</button></div>
 </div>
 
@@ -3415,11 +3410,9 @@ var k=parseFloat(document.getElementById("ostrike").value||0);
 var p=parseFloat(document.getElementById("opremium").value||0);
 var e=document.getElementById("oexpiry").value;
 var c=parseInt(document.getElementById("ocontracts").value||1);
-var dl=parseFloat(document.getElementById("odelta")&&document.getElementById("odelta").value);
-var iv=parseFloat(document.getElementById("oiv")&&document.getElementById("oiv").value);
 if(!t||!s||!k||!e||k<=0)return;
-var premiumTotal=p*(c||1);var optObj={sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:new Date().toISOString().slice(0,10)};if(dl&&!isNaN(dl))optObj.delta=dl;if(iv&&!isNaN(iv))optObj.iv=iv;optionTrades.push(optObj);addActivity('卖'+t+'开仓 '+s+'×'+c+'张 @$'+k+' 💰$'+p);
-cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();updateSidebar();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";var _od=document.getElementById("odelta");if(_od)_od.value="";var _oi=document.getElementById("oiv");if(_oi)_oi.value="";updateAllO();
+var premiumTotal=p*(c||1);var optObj={sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:new Date().toISOString().slice(0,10)};optionTrades.push(optObj);addActivity('卖'+t+'开仓 '+s+'×'+c+'张 @$'+k+' 💰$'+p);
+cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();updateSidebar();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";updateAllO();
 var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");
 if(cc&&cs){var nw=(new Date()).toISOString().slice(0,10),tm=nw.slice(0,7),ccTotal=0,ccCount=0;
 optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===tm){ccTotal+=(o.premium||0)*(o.contracts||1);ccCount++}});
