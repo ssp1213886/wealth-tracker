@@ -42,7 +42,7 @@
 
 
 
-<meta name="theme-color" content="#00c805">
+<meta name="theme-color" content="#2e6b50">
 
 
 
@@ -2972,6 +2972,7 @@ function initAll(){
 
 
 window.addEventListener('DOMContentLoaded',initAll);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});
 
 
 
@@ -3039,7 +3040,6 @@ document.getElementById('btnClearActivity').addEventListener('click',function(){
 
 
 
-document.body.addEventListener('click',function(e){var b=e.target.closest('.trade-del');if(!b)return;var hid=b.dataset.hold;if(hid){if(confirm('确定清仓 '+hid+'?')){trades=trades.filter(function(t){return t.symbol!==hid});saveTrades();updatePortfolio();showToast('🗑️ 已清仓 '+hid,'ok')}return}var tid=parseInt(b.dataset.id);if(tid){var rmed=trades.find(function(t){return t.id===tid});if(!rmed)return;trades=trades.filter(function(t){return t.id!==tid});saveTrades();updatePortfolio();showToast('🗑️ '+rmed.symbol+' 已删除 · 点击撤销','ok',function(){trades.push(rmed);trades.sort(function(a,b){return a.date.localeCompare(b.date)});saveTrades();updatePortfolio()});return}var cid=parseInt(b.dataset.clog);if(cid){var rmedLog=cashLog.find(function(l){return l.id===cid});if(!rmedLog)return;cashLog=cashLog.filter(function(l){return l.id!==cid});saveCashLog();cashBalance=0;cashLog.forEach(function(l){cashBalance+=l.type==='入金'?l.amount:-l.amount});saveCash();refreshCashUI();showToast('🗑️ '+rmedLog.type+' $'+rmedLog.amount.toFixed(2)+' 已删除','ok')}else if(b.dataset.act){var aid=parseInt(b.dataset.act);var acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]');acts=acts.filter(function(x){return x.id!==aid});localStorage.setItem(ACTIVITY_KEY,JSON.stringify(acts));markDirty('activities');renderActivity();showToast('🗑️ 已删除日志','ok');autoPushDebounce()}});
 
 
 
