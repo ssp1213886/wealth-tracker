@@ -1,6 +1,6 @@
 // Service Worker v3 - StaleWhileRevalidate + precache
 var CACHE = 'wealth-v3';
-var PRECACHE = ['/', '/index.html', '/manifest.json', '/icon.png', '/guide.html'];
+var PRECACHE = ['/', '/index.html', '/manifest.json', '/icon.png', '/guide'];
 
 self.addEventListener('install', function(e) {
   e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(PRECACHE); }).then(function() { self.skipWaiting(); }));
