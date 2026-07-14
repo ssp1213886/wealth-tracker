@@ -31,7 +31,7 @@
 - ❌ 回撤加仓卖 PUT（已移除）
 - ❌ 回撤 5-12% 触发加仓（已移除，改为持续 DCA 不择时）
 - ❌ 主动平仓或 roll 期权（已禁止，CALL-only 策略）
-- ❌ SMH 52周高回撤警报和 SGOV 现金池页面（HTML 已移除，JS 代码变为死代码）
+- ❌ SMH 52周高专项回撤警报（已移除；通用高点回撤仍基于 52 周高点 hi52 展示）
 
 ## 财务规划
 
@@ -50,9 +50,9 @@
 
 ## 技术实现
 
-- 前端：原生 HTML/CSS/JS（单文件 SPA，约 3700 行）
+- 前端：原生 HTML/CSS/JS（单文件 SPA，约 3555 行）
 - 后端：Cloudflare Worker + D1 数据库
-- 行情：Yahoo Finance（通过 Worker 代理，fallback 到腾讯行情）
+- 行情：Yahoo Finance（通过 Worker 代理）；支持手动录入价格并标注来源（腾讯等）
 - 部署：Cloudflare Workers（`npx wrangler deploy`）
 - 多设备同步：Cloudflare D1（单 token 认证）
 - 数据备份：JSON 导出/导入 + 自动备份 + Schwab CSV 导入

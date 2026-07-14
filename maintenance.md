@@ -11,7 +11,7 @@ wealth-tracker/
 ├── public/
 │   ├── index.html           → 主程序，单文件 SPA 全部逻辑
 │   ├── guide.html           → 使用文档网页版
-│   ├── sw.js                → Service Worker，网络优先策略
+│   ├── sw.js                → Service Worker，Stale-While-Revalidate 缓存策略（陈旧优先+后台更新）
 │   ├── manifest.json        → PWA 配置
 │   └── icon.png             → 应用图标
 ├── src/
@@ -26,7 +26,7 @@ wealth-tracker/
 └── maintenance.md           → 本文档
 ```
 
-> **核心文件**：`public/index.html` —— 整个网站是单个 HTML 文件，所有 UI 和逻辑都在里面。约 174KB / 3711 行，包含 CSS + HTML + JavaScript。
+> **核心文件**：`public/index.html` —— 整个网站是单个 HTML 文件，所有 UI 和逻辑都在里面。约 191KB / 3555 行，包含 CSS + HTML + JavaScript。
 
 ---
 
@@ -88,6 +88,8 @@ AI 会：改动 → 验证 JS 语法 → npx wrangler deploy → git commit + pu
 策略：永久核心仓（VGT / SMH / BTC）+ Covered Call
 
 最近功能：
+- 股息记录（VGT/SMH 入账，仅记现金流水不污染月度定投指标）
+- 年度收益归因视图（选择年份拆解当年总收益，标注各来源贡献占比）
 - 年度复盘热力矩阵：4×5 权利金贡献率热力 + 年末持仓 + 长线数据面板（总入金/总资产/CAGR/目标差额）
 - 移动端矩阵 2 列自适应布局 + 资金流水渲染修复
 - 纪律打卡模块：连续定投月份计数 + 操作日志热力图
