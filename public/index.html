@@ -3074,8 +3074,8 @@ function hasLocalData(key){
   if(key==='state')return localStorage.getItem(LSKEY)!==null;
   if(key==='activities')return(JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')).length>0;
   if(key==='optionTrades')return(JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')).length>0;
-  if(key==='otmSettings')return !!localStorage.getItem('otmSettings');
-  if(key==='exit_portfolio')return !!localStorage.getItem('exit_portfolio');
+  if(key==='otmSettings')return localStorage.getItem('otmSettings')!==null;
+  if(key==='exit_portfolio')return localStorage.getItem('exit_portfolio')!==null;
   return false;
 }
 function hasCloudData(key,cv){
