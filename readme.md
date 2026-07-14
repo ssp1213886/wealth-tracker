@@ -42,7 +42,7 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 - 投资参数（月度定投总额、路线图起始日期+年龄、财务目标、仓位分配滑块）
 - 5 种配色方案（森林/海洋/暖阳/梅紫/极简）
 - 自动备份开关 + 上次备份时间
-- JSON 导出/导入 + Schwab CSV 导入
+- JSON 导出/导入（导入数据归一化校验） + Schwab CSV 导入
 - 暗色/亮色模式切换
 
 ---
@@ -67,6 +67,7 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 - Toast 提示美化：毛玻璃效果 + 弹性弹入动画 + 撤销类支持点击撤销
 - 表格表头 sticky 固定：持仓明细、交易历史表头滚动时吸顶
 - 按钮/卡片/微交互 UI 统一：hover 浮起、点击缩放、统一过渡动画
+- Worker 安全加固：API 输入校验（key白名单+value大小限制）、symbol 正则防注入、限流清理
 - Cloudflare D1 云端同步（期权交易纳入同步）
 - Yahoo Finance 实时行情（Worker 代理绕 CORS）
 - Schwab CSV 拖拽导入
@@ -102,12 +103,12 @@ npx wrangler deploy
 
 | 文件 | 作用 |
 |------|------|
-| `public/index.html` | 主程序，单文件 SPA（全部 UI + 逻辑，~191KB） |
+| `public/index.html` | 主程序，单文件 SPA（全部 UI + 逻辑，~198KB） |
 | `public/guide.html` | 使用文档 |
 | `public/sw.js` | Service Worker（network-first） |
 | `public/manifest.json` | PWA 配置 |
 | `public/icon.png` | 应用图标 |
-| `src/worker.js` | Worker 后端（价格代理 + D1 数据同步 + 频率限制） |
+| `src/worker.js` | Worker 后端（价格代理 + D1 数据同步 + 频率限制 + 输入校验） |
 | `schema.sql` | D1 建表语句 |
 | `wrangler.toml` | Cloudflare Workers 部署配置 |
 | `INVESTMENT_STRATEGY.md` | 投资策略定义（AI 助手读取） |

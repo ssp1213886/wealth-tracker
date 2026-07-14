@@ -50,7 +50,7 @@
 
 ## 技术实现
 
-- 前端：原生 HTML/CSS/JS（单文件 SPA，约 3555 行）
+- 前端：原生 HTML/CSS/JS（单文件 SPA，约 3565 行）
 - 后端：Cloudflare Worker + D1 数据库
 - 行情：Yahoo Finance（通过 Worker 代理）；支持手动录入价格并标注来源（腾讯等）
 - 部署：Cloudflare Workers（`npx wrangler deploy`）
