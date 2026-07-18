@@ -1,5 +1,5 @@
-// Service Worker v11 - extend navigation background through the iPhone safe area
-var CACHE = 'wealth-v11';
+// Service Worker v12 - extend navigation background through the iPhone safe area
+var CACHE = 'wealth-v12';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
