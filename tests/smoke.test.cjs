@@ -133,7 +133,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v8/);
+  assert.match(serviceWorker, /wealth-v9/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
@@ -151,7 +151,10 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /\.bottom-bar\{height:calc\(58px \+ min\(env\(safe-area-inset-bottom\),20px\)\)!important/);
+  assert.match(html, /\.bottom-bar\{height:64px!important;padding:0 4px!important\}/);
+  assert.match(html, /\.qa-fab\{bottom:16px!important;width:54px!important;height:54px!important/);
+  assert.match(html, /\.main\{padding:0 16px 68px!important\}/);
+  assert.doesNotMatch(html, /\.bottom-bar\{height:calc\([^}]*safe-area-inset-bottom/);
   assert.doesNotMatch(html, /fonts\.googleapis\.com/);
 });
 
@@ -164,6 +167,52 @@ test('mobile portfolio and quick actions prioritize active investing work', () =
   assert.doesNotMatch(html, /function qaDividend\(/);
   assert.match(html, /id="hmDividend"/);
   assert.match(html, /\.qa-grid\{display:grid;grid-template-columns:repeat\(4,1fr\)/);
+});
+
+test('reminders deduplicate, sort by severity, and support persistent snooze', () => {
+  const alertContext = vm.createContext({
+    Date,
+    String,
+    Array,
+    Object,
+    Set,
+    ALERT_SEVERITY_SCORE: { critical: 4, high: 3, medium: 2, low: 1 },
+  });
+  vm.runInContext(extractFunction('normalizeAlerts'), alertContext);
+  const result = alertContext.normalizeAlerts([
+    { id: 'call:VGT', severity: 'medium', title: 'VGT normal' },
+    { id: 'dca:2026-07', severity: 'low', title: 'DCA' },
+    { id: 'call:VGT', severity: 'critical', title: 'VGT urgent' },
+    { id: 'call:SMH', severity: 'high', title: 'SMH expiry' },
+  ], 1000, { 'call:SMH': 2000 });
+  assert.deepEqual(Array.from(result.active, (item) => item.id), ['call:VGT', 'dca:2026-07']);
+  assert.equal(result.active[0].severity, 'critical');
+  assert.deepEqual(Array.from(result.snoozed, (item) => item.id), ['call:SMH']);
+  assert.match(html, /var ALERT_SNOOZE_KEY='wealth_alert_snooze_v1'/);
+  assert.match(html, /data-alert-snooze=/);
+  assert.match(html, /24小时后提醒/);
+  assert.doesNotMatch(html, /<button class="qa-alert-item/);
+});
+
+test('drawdown visualization exposes current-to-peak distance with desktop space', () => {
+  assert.match(html, /id="hmDrawdownWorst"/);
+  assert.match(html, /class="drawdown-track"/);
+  assert.match(html, /class="drawdown-marker" style="left:'/);
+  assert.match(html, /d\.dd>=20\?'var\(--red\)':d\.dd>=10\?'var\(--orange\)'/);
+  assert.match(html, /\.goal-row\{grid-column:1\/9!important;grid-row:4!important;height:220px!important/);
+  assert.match(html, /\.cc-overview\{grid-column:9\/-1!important;grid-row:4!important;height:220px!important/);
+});
+
+test('data health shows cloud sync, backup, and conflict state', () => {
+  for (const id of ['sbSyncLast', 'sbBackupLast', 'sbConflictState']) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+  assert.match(html, /s\.pendingConflicts=Array\.isArray\(s\.pendingConflicts\)/);
+  assert.match(html, /function recordSyncSuccess\(/);
+  assert.match(html, /function recordSyncFailure\(/);
+  assert.match(html, /function setSyncConflicts\(/);
+  assert.match(html, /function recordBackupTime\(/);
+  assert.match(html, /syncFetchWithoutHealth=syncFetch/);
 });
 
 test('market sparkline is built from real cached history points', () => {
