@@ -1,5 +1,5 @@
-// Service Worker v10 - compact PWA navigation hotfix
-var CACHE = 'wealth-v10';
+// Service Worker v11 - extend navigation background through the iPhone safe area
+var CACHE = 'wealth-v11';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
