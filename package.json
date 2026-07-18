@@ -1,11 +1,14 @@
 {
   "name": "wealth-server",
   "version": "1.0.0",
-  "description": "个人投资仪表盘 — 持仓追踪、实时行情、云端同步",
+  "description": "个人投资仪表盘：持仓追踪、实时行情与 Cloudflare 云端同步",
   "main": "src/worker.js",
   "scripts": {
+    "check": "npm test && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "preview:lan": "node scripts/lan-preview.mjs",
+    "test": "node --test tests/*.test.cjs"
   },
   "keywords": ["portfolio", "investment", "cloudflare-worker"],
   "author": "ssp1213886",

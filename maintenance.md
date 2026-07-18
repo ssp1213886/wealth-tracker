@@ -18,6 +18,8 @@ wealth-tracker/
 │   └── worker.js            → Worker 后端（价格代理 + D1 数据同步 + 频率限制 + 输入校验）
 ├── .wrangler/
 │   └── tmp/                 → Wrangler 本地开发临时文件（自动生成）
+├── tests/
+│   └── smoke.test.cjs       → 数据归一化、CSV、BTC ETF 边界与 PWA 冒烟测试
 ├── schema.sql               → D1 数据库建表语句
 ├── package.json             → 项目信息 + npm 脚本
 ├── wrangler.toml            → Cloudflare Workers 部署配置
@@ -34,6 +36,7 @@ wealth-tracker/
 
 ```bash
 cd wealth-tracker
+npm run check
 npx wrangler deploy
 ```
 
@@ -85,7 +88,7 @@ AI 会：改动 → 验证 JS 语法 → npx wrangler deploy → git commit + pu
 
 分支：`main`
 
-策略：永久核心仓（VGT / SMH / BTC）+ Covered Call
+策略：永久核心仓（VGT / SMH / BTC ETF，美股代码 BTC）+ VGT/SMH Covered Call
 
 最近功能：
 - 股息记录（VGT/SMH 入账，仅记现金流水不污染月度定投指标）

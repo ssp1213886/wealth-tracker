@@ -1,6 +1,6 @@
 ﻿# Wealth Tracker · 个人投资仪表盘
 
-VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker + D1 云端同步的 PWA 投资追踪工具。
+VGT + SMH + BTC ETF（美股代码 `BTC`，非现货 BTC）永久核心仓 + Covered Call 增强策略，Cloudflare Worker + D1 云端同步的 PWA 投资追踪工具。
 
 **线上地址**：[https://wealth-tracker.ssp2180481336.workers.dev](https://wealth-tracker.ssp2180481336.workers.dev)
 
@@ -8,10 +8,10 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 
 ## 投资策略：永久核心仓 + Covered Call
 
-核心思想：永远持有 VGT/SMH/BTC 作为财富发动机，用部分仓位卖 CALL 获取额外现金流，权利金继续买入核心资产，让期权成为复利加速器，而不是替代投资。
+核心思想：永远持有 VGT/SMH/BTC ETF 作为财富发动机，用部分仓位卖 CALL 获取额外现金流，权利金继续买入核心资产，让期权成为复利加速器，而不是替代投资。
 
 - **核心仓（永不动）**：VGT / SMH / BTC 按月定投，比例可调
-- **Covered Call**：持有正股，卖出虚值 CALL，收取权利金
+- **Covered Call**：仅针对 VGT / SMH，持有正股后卖出虚值 CALL；BTC ETF 不进入期权模块
 - **权利金复投**：收取的权利金按核心仓比例继续买入 VGT/SMH/BTC
 - **被动行权 T+1 买回**：若 CALL 被行权，T+1 手动买回正股保持仓位，不提前平仓
 - **铁律**：不卖正股、不提前平仓
@@ -30,6 +30,8 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 
 ### 移动端底部导航
 5 键：仪表盘 → 操作台 → 期权 → 数据 → 日志
+
+移动端针对 iPhone PWA 优先设计：安全区适配、44pt 核心触控目标、首屏资产摘要、固定底部导航、右侧快捷操作，以及同步精修的浅色/暗色主题。
 
 ---
 
@@ -67,11 +69,12 @@ VGT + SMH + BTC 永久核心仓 + Covered Call 增强策略，Cloudflare Worker 
 - Toast 提示美化：毛玻璃效果 + 弹性弹入动画 + 撤销类支持点击撤销
 - 表格表头 sticky 固定：持仓明细、交易历史表头滚动时吸顶
 - 按钮/卡片/微交互 UI 统一：hover 浮起、点击缩放、统一过渡动画
-- Worker 安全加固：API 输入校验（key白名单+value大小限制）、symbol 正则防注入、限流清理
+- Worker 安全加固：API 输入校验（key白名单+value大小限制）、行情代码白名单、symbol 正则防注入、限流清理
 - Cloudflare D1 云端同步（期权交易纳入同步）
 - Yahoo Finance 实时行情（Worker 代理绕 CORS）
 - Schwab CSV 拖拽导入
 - JSON 导出/导入
+- 完整备份：交易、现金、流水、日志、期权、设置与主题统一导出/校验恢复
 
 ---
 

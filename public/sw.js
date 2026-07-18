@@ -1,5 +1,5 @@
-// Service Worker v4 - network-first navigation + SWR assets
-var CACHE = 'wealth-v4';
+// Service Worker v5 - mobile-first shell, network-first navigation + SWR assets
+var CACHE = 'wealth-v5';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 self.addEventListener('install', function(e) {

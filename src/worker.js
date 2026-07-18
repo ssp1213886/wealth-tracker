@@ -50,13 +50,18 @@
       if (!sym) return json({ error: 'Missing symbol' }, 400);
       // P0-2: validate symbol format to prevent path traversal / open proxy abuse
       if (!/^[A-Z0-9.\-^]{1,12}$/i.test(sym)) return json({ error: 'Invalid symbol' }, 400);
+      // This app tracks US-listed funds. `BTC` is the BTC ETF ticker, never BTC-USD spot.
+      const quoteSymbol = sym.toUpperCase();
+      if (!new Set(['VGT', 'SMH', 'BTC', 'SGOV']).has(quoteSymbol)) {
+        return json({ error: 'Unsupported symbol' }, 400);
+      }
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000);
         const allowedRanges = ['1d','5d','1mo','3mo','6mo','1y','2y','5y','10y','ytd','max'];
         const range = allowedRanges.indexOf(url.searchParams.get('range')) > -1 ? url.searchParams.get('range') : '1d';
         const r = await fetch(
-          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(sym) + '?interval=1d&range=' + range,
+          'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(quoteSymbol) + '?interval=1d&range=' + range,
           { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: controller.signal }
         );
         clearTimeout(timeout);
@@ -96,6 +101,7 @@
       // P0-3: key whitelist
       const allowedKeys = new Set(['trades','cashBalance','cashLog','state','activities','optionTrades','otmSettings','exit_portfolio','prices']);
       const statements = [];
+      const syncTs = Date.now();
       for (const [key, value] of entries) {
         if (typeof key !== 'string' || key.length > 64 || !/^[a-zA-Z0-9_\-.]+$/.test(key)) {
           return json({ error: 'Bad key: ' + key }, 400);
@@ -107,15 +113,15 @@
         if (s.length > 512 * 1024) return json({ error: 'Value too large for key: ' + key }, 400);
         statements.push(
           env.DB.prepare(
-            'INSERT OR REPLACE INTO data (key, value, updated_at) VALUES (?, ?, unixepoch())'
-          ).bind(key, s)
+            'INSERT OR REPLACE INTO data (key, value, updated_at) VALUES (?, ?, ?)'
+          ).bind(key, s, syncTs)
         );
       }
       try {
         if (statements.length > 0) {
           await env.DB.batch(statements);
         }
-        return json({ ok: true, saved: statements.length, ts: Date.now() });
+        return json({ ok: true, saved: statements.length, ts: syncTs });
       } catch (e) {
         return json({ ok: false, error: 'DB error', detail: e.message }, 502);
       }
