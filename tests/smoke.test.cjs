@@ -26,6 +26,8 @@ const context = vm.createContext({
   Object,
   isFinite,
   isNaN,
+  HOME_TIME_ZONE: 'Asia/Shanghai',
+  MARKET_TIME_ZONE: 'America/New_York',
   ETF_SYMS: ['VGT', 'SMH', 'BTC'],
   trades: [],
   tradeIdCounter: 1,
@@ -33,6 +35,14 @@ const context = vm.createContext({
 
 for (const name of [
   'localDate',
+  'zonedDateParts',
+  'zonedDate',
+  'marketDate',
+  'chinaDate',
+  'marketClock',
+  'dateOrdinal',
+  'optionExpiryState',
+  'isActiveOption',
   'cleanText',
   'escapeHtml',
   'normalizeDateValue',
@@ -57,6 +67,22 @@ test('dates and imported text are normalized safely', () => {
   assert.equal(context.normalizeDateValue('7/18/2026'), '2026-07-18');
   assert.equal(context.normalizeDateValue('2026-02-30'), '');
   assert.equal(context.escapeHtml('<img onerror="x">'), '&lt;img onerror=&quot;x&quot;&gt;');
+});
+
+test('US market dates do not roll over at Beijing midnight', () => {
+  const beijingAfterMidnight = new Date('2026-07-19T00:30:00+08:00');
+  assert.equal(context.chinaDate(beijingAfterMidnight), '2026-07-19');
+  assert.equal(context.marketDate(beijingAfterMidnight), '2026-07-18');
+  assert.equal(context.marketClock(beijingAfterMidnight), '12:30');
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(context.optionExpiryState('2026-07-18', beijingAfterMidnight))),
+    { days: 0, expired: false },
+  );
+  const afterMarketClose = new Date('2026-07-19T05:00:00+08:00');
+  assert.equal(context.optionExpiryState('2026-07-18', afterMarketClose).expired, true);
+  assert.equal(context.isActiveOption({ expiry: '2026-07-18' }, beijingAfterMidnight), true);
+  assert.equal(context.isActiveOption({ expiry: '2026-07-18' }, afterMarketClose), false);
+  assert.equal(context.marketDate(new Date('2026-08-01T00:30:00+08:00')).slice(0, 7), '2026-07');
 });
 
 test('trade normalization accepts BTC ETF ticker and rejects spot symbols', () => {
@@ -102,11 +128,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=3');
+  assert.equal(manifest.start_url, '/?v=4');
+  assert.equal(manifest.background_color, '#0b0e0c');
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v6/);
+  assert.match(serviceWorker, /wealth-v7/);
+  assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
   assert.match(html, /register\('\/sw\.js',\{updateViaCache:'none'\}\)/);
@@ -118,6 +146,12 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, /\.sidebar,\.sidebar\.collapsed\{display:flex!important;flex-direction:column!important/);
   assert.match(html, /\.sidebar>\.sb-section,\.sidebar>\.sb-footer-links\{display:block;flex:0 0 auto!important/);
   assert.match(html, /body\.drawer-open \.bottom-bar,body\.drawer-open \.qa-fab/);
+  assert.match(html, /id="settingsData"/);
+  assert.match(html, />导入备份<\/button>/);
+  assert.match(html, />导出备份<\/button>/);
+  assert.match(html, />导入券商 CSV<\/button>/);
+  assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
+  assert.match(html, /\.bottom-bar\{height:calc\(60px \+ env\(safe-area-inset-bottom\)\)!important/);
   assert.doesNotMatch(html, /fonts\.googleapis\.com/);
 });
 
@@ -166,5 +200,8 @@ test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(html, /color=getAssetColor\(row\.sym\)/);
   assert.match(html, /for\(var i=-11;i<=0;i\+\+\)/);
   assert.match(html, /#logHeatmap\{display:grid!important/);
+  assert.doesNotMatch(html, /\+' · BTC ETF'/);
+  assert.match(html, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
+  assert.match(html, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
   assert.match(html, /美股非交易时段/);
 });
