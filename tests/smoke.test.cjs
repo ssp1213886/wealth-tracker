@@ -128,12 +128,12 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=4');
+  assert.equal(manifest.start_url, '/?v=5');
   assert.equal(manifest.background_color, '#0b0e0c');
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v9/);
+  assert.match(serviceWorker, /wealth-v10/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
@@ -151,9 +151,10 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /\.bottom-bar\{height:64px!important;padding:0 4px!important\}/);
-  assert.match(html, /\.qa-fab\{bottom:16px!important;width:54px!important;height:54px!important/);
-  assert.match(html, /\.main\{padding:0 16px 68px!important\}/);
+  assert.match(html, /\.bottom-bar\{height:56px!important;padding:0 4px!important\}/);
+  assert.match(html, /\.bb-btn\{top:0!important;min-height:52px!important;height:52px!important/);
+  assert.match(html, /\.qa-fab\{bottom:8px!important;width:54px!important;height:54px!important/);
+  assert.match(html, /\.main\{padding:0 16px 60px!important\}/);
   assert.doesNotMatch(html, /\.bottom-bar\{height:calc\([^}]*safe-area-inset-bottom/);
   assert.doesNotMatch(html, /fonts\.googleapis\.com/);
 });
@@ -169,7 +170,7 @@ test('mobile portfolio and quick actions prioritize active investing work', () =
   assert.match(html, /\.qa-grid\{display:grid;grid-template-columns:repeat\(4,1fr\)/);
 });
 
-test('reminders deduplicate, sort by severity, and support persistent snooze', () => {
+test('reminders deduplicate and sort by severity without snooze controls', () => {
   const alertContext = vm.createContext({
     Date,
     String,
@@ -184,13 +185,13 @@ test('reminders deduplicate, sort by severity, and support persistent snooze', (
     { id: 'dca:2026-07', severity: 'low', title: 'DCA' },
     { id: 'call:VGT', severity: 'critical', title: 'VGT urgent' },
     { id: 'call:SMH', severity: 'high', title: 'SMH expiry' },
-  ], 1000, { 'call:SMH': 2000 });
-  assert.deepEqual(Array.from(result.active, (item) => item.id), ['call:VGT', 'dca:2026-07']);
-  assert.equal(result.active[0].severity, 'critical');
-  assert.deepEqual(Array.from(result.snoozed, (item) => item.id), ['call:SMH']);
-  assert.match(html, /var ALERT_SNOOZE_KEY='wealth_alert_snooze_v1'/);
-  assert.match(html, /data-alert-snooze=/);
-  assert.match(html, /24小时后提醒/);
+  ]);
+  assert.deepEqual(Array.from(result, (item) => item.id), ['call:VGT', 'call:SMH', 'dca:2026-07']);
+  assert.equal(result[0].severity, 'critical');
+  assert.doesNotMatch(html, /ALERT_SNOOZE_KEY/);
+  assert.doesNotMatch(html, /data-alert-snooze=/);
+  assert.doesNotMatch(html, /qa-alert-snooze/);
+  assert.doesNotMatch(html, /24小时后提醒/);
   assert.doesNotMatch(html, /<button class="qa-alert-item/);
 });
 

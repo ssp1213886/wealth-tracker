@@ -1,5 +1,5 @@
-// Service Worker v9 - fixed PWA safe-area navigation and data-health UI
-var CACHE = 'wealth-v9';
+// Service Worker v10 - compact PWA navigation hotfix
+var CACHE = 'wealth-v10';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
