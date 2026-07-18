@@ -1,5 +1,5 @@
-// Service Worker v12 - extend navigation background through the iPhone safe area
-var CACHE = 'wealth-v12';
+// Service Worker v13 - fix PWA bottom-bar empty gap (use --bottom-offset CSS var instead of env in height/top)
+var CACHE = 'wealth-v13';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
