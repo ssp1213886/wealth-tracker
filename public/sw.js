@@ -1,5 +1,5 @@
-// Service Worker v7 - fast PWA startup with bounded network waits
-var CACHE = 'wealth-v7';
+// Service Worker v8 - compact safe-area navigation and refreshed mobile shell
+var CACHE = 'wealth-v8';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {

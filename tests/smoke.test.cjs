@@ -133,7 +133,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v7/);
+  assert.match(serviceWorker, /wealth-v8/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
@@ -151,8 +151,19 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /\.bottom-bar\{height:calc\(60px \+ env\(safe-area-inset-bottom\)\)!important/);
+  assert.match(html, /\.bottom-bar\{height:calc\(58px \+ min\(env\(safe-area-inset-bottom\),20px\)\)!important/);
   assert.doesNotMatch(html, /fonts\.googleapis\.com/);
+});
+
+test('mobile portfolio and quick actions prioritize active investing work', () => {
+  assert.match(html, /class="sb-portfolio-grid"/);
+  assert.match(html, /class="sb-portfolio-insights"/);
+  assert.match(html, /已卖 '\+contracts\+' 张 Call/);
+  assert.doesNotMatch(html, /距 Covered Call/);
+  assert.doesNotMatch(html, /onclick="qaDividend\(\)"/);
+  assert.doesNotMatch(html, /function qaDividend\(/);
+  assert.match(html, /id="hmDividend"/);
+  assert.match(html, /\.qa-grid\{display:grid;grid-template-columns:repeat\(4,1fr\)/);
 });
 
 test('market sparkline is built from real cached history points', () => {
