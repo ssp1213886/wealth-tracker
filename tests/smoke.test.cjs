@@ -41,6 +41,7 @@ for (const name of [
   'parseCSVRow',
   'parseMoneyValue',
   'parseSchwabCSV',
+  'sparklinePath',
 ]) {
   vm.runInContext(extractFunction(name), context);
 }
@@ -96,20 +97,72 @@ test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', (
 test('PWA metadata and worker quote boundary stay valid', () => {
   const manifest = JSON.parse(fs.readFileSync('public/manifest.json', 'utf8'));
   const worker = fs.readFileSync('src/worker.js', 'utf8');
+  const serviceWorker = fs.readFileSync('public/sw.js', 'utf8');
   assert.equal(manifest.display, 'standalone');
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
+  assert.equal(manifest.start_url, '/?v=3');
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
+  assert.match(serviceWorker, /wealth-v6/);
+  assert.match(serviceWorker, /Navigation timeout/);
+  assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
+  assert.match(html, /register\('\/sw\.js',\{updateViaCache:'none'\}\)/);
+});
+
+test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
+  assert.match(html, /aria-controls="settingsDrawer"/);
+  assert.match(html, /class="menu-open"/);
+  assert.match(html, /\.sidebar,\.sidebar\.collapsed\{display:flex!important;flex-direction:column!important/);
+  assert.match(html, /\.sidebar>\.sb-section,\.sidebar>\.sb-footer-links\{display:block;flex:0 0 auto!important/);
+  assert.match(html, /body\.drawer-open \.bottom-bar,body\.drawer-open \.qa-fab/);
+  assert.doesNotMatch(html, /fonts\.googleapis\.com/);
+});
+
+test('market sparkline is built from real cached history points', () => {
+  assert.equal(context.sparklinePath([1]), '');
+  const path = context.sparklinePath([10, 12, 11, 15]);
+  assert.match(path, /^M1\.0 /);
+  assert.match(path, /L57\.0 2\.0$/);
+});
+
+test('price refresh requests one-month history and retains valid closes', async () => {
+  let requestedUrl = '';
+  const priceContext = vm.createContext({
+    console,
+    Date,
+    Number,
+    Array,
+    Object,
+    isFinite,
+    encodeURIComponent,
+    PRICE_SYMBOLS: { BTC: 'BTC' },
+    readPriceCache: () => ({}),
+    fetch: async (url) => {
+      requestedUrl = url;
+      return {
+        ok: true,
+        json: async () => ({ ok: true, data: { chart: { result: [{
+          meta: { regularMarketPrice: 28.38, chartPreviousClose: 28.41 },
+          indicators: { quote: [{ close: [27.9, null, 28.1, 28.38] }] },
+        }] } } }),
+      };
+    },
+  });
+  vm.runInContext('async ' + extractFunction('fetchPrice'), priceContext);
+  const quote = await priceContext.fetchPrice('BTC');
+  assert.match(requestedUrl, /symbol=BTC&range=1mo$/);
+  assert.deepEqual(Array.from(quote.history), [27.9, 28.1, 28.38]);
+  assert.equal(quote.historyRange, '1mo');
 });
 
 test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(html, /html\[data-accent="ocean"\]\{--accent:#2867b7/);
   assert.match(html, /\.main\{[^}]*height:100vh!important[^}]*overflow-y:auto!important/);
-  assert.match(html, /sparkTransform=ch2<0\?' transform="translate\(0 22\) scale\(1 -1\)"'/);
-  assert.match(html, /isFlat=Math\.abs\(ch2\)<\.0001/);
+  assert.doesNotMatch(html, /sparkTransform|paths=\{VGT:/);
+  assert.match(html, /historyRange:'1mo'/);
   assert.match(html, /color=getAssetColor\(row\.sym\)/);
   assert.match(html, /for\(var i=-11;i<=0;i\+\+\)/);
   assert.match(html, /#logHeatmap\{display:grid!important/);
