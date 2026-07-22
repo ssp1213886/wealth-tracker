@@ -1,5 +1,5 @@
-// Service Worker v13 - fix PWA bottom-bar empty gap (use --bottom-offset CSS var instead of env in height/top)
-var CACHE = 'wealth-v13';
+// Service Worker v14 - refresh mobile navigation layout and quote baseline logic
+var CACHE = 'wealth-v14';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {

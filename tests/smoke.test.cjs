@@ -133,7 +133,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v11/);
+  assert.match(serviceWorker, /wealth-v14/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
@@ -151,10 +151,10 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /\.bottom-bar\{height:calc\(56px \+ env\(safe-area-inset-bottom\)\)!important;padding:0 4px env\(safe-area-inset-bottom\)!important\}/);
-  assert.match(html, /\.bb-btn\{top:env\(safe-area-inset-bottom\)!important;min-height:52px!important;height:52px!important/);
-  assert.match(html, /\.qa-fab\{bottom:calc\(8px \+ env\(safe-area-inset-bottom\)\)!important;width:54px!important;height:54px!important/);
-  assert.match(html, /\.main\{padding:0 16px calc\(60px \+ env\(safe-area-inset-bottom\)\)!important\}/);
+  assert.match(html, /\.bottom-bar\{height:56px!important;bottom:var\(--bottom-offset\)!important;padding:0 4px!important\}/);
+  assert.match(html, /\.bb-btn\{top:2px!important;min-height:52px!important;height:52px!important/);
+  assert.match(html, /\.qa-fab\{bottom:calc\(8px \+ var\(--bottom-offset\)\)!important;width:54px!important;height:54px!important/);
+  assert.match(html, /\.main\{padding:0 16px calc\(60px \+ var\(--bottom-offset\)\)!important\}/);
   assert.doesNotMatch(html, /fonts\.googleapis\.com/);
 });
 
@@ -194,9 +194,10 @@ test('reminders deduplicate and sort by severity without snooze controls', () =>
   assert.doesNotMatch(html, /<button class="qa-alert-item/);
 });
 
-test('drawdown visualization exposes current-to-peak distance with desktop space', () => {
+test('drawdown visualization uses a shared zero-based distance-to-peak scale', () => {
   assert.match(html, /id="hmDrawdownWorst"/);
   assert.match(html, /class="drawdown-track"/);
+  assert.match(html, /class="drawdown-fill" style="width:'/);
   assert.match(html, /class="drawdown-marker" style="left:'/);
   assert.match(html, /d\.dd>=20\?'var\(--red\)':d\.dd>=10\?'var\(--orange\)'/);
   assert.match(html, /\.goal-row\{grid-column:1\/9!important;grid-row:4!important;height:220px!important/);
@@ -249,6 +250,8 @@ test('price refresh requests one-month history and retains valid closes', async 
   const quote = await priceContext.fetchPrice('BTC');
   assert.match(requestedUrl, /symbol=BTC&range=1mo$/);
   assert.deepEqual(Array.from(quote.history), [27.9, 28.1, 28.38]);
+  assert.equal(quote.prevClose, 28.1);
+  assert.ok(Math.abs(quote.change - 0.28) < 1e-9);
   assert.equal(quote.historyRange, '1mo');
 });
 
