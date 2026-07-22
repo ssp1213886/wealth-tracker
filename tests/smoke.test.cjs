@@ -128,16 +128,18 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=6');
+  assert.equal(manifest.start_url, '/?v=25');
   assert.equal(manifest.background_color, '#0b0e0c');
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v11/);
+  assert.match(serviceWorker, /wealth-v25/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(html, /register\('\/sw\.js',\{updateViaCache:'none'\}\)/);
+  assert.match(html, /register\('\/sw\.js\?v=25',\{updateViaCache:'none'\}\)/);
+  assert.doesNotMatch(html, /viewport-fit=cover/);
+  assert.doesNotMatch(serviceWorker, /viewport-fit=cover/);
 });
 
 test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
@@ -151,10 +153,10 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /\.bottom-bar\{height:calc\(56px \+ env\(safe-area-inset-bottom\)\)!important;padding:0 4px env\(safe-area-inset-bottom\)!important\}/);
-  assert.match(html, /\.bb-btn\{top:env\(safe-area-inset-bottom\)!important;min-height:52px!important;height:52px!important/);
-  assert.match(html, /\.qa-fab\{bottom:calc\(8px \+ env\(safe-area-inset-bottom\)\)!important;width:54px!important;height:54px!important/);
-  assert.match(html, /\.main\{padding:0 16px calc\(60px \+ env\(safe-area-inset-bottom\)\)!important\}/);
+  assert.match(html, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;bottom:0!important;padding:0 4px env\(safe-area-inset-bottom,0px\)!important;border:0!important;border-top:1px solid var\(--rule\)!important;background:color-mix\(in srgb,var\(--card-bg\) 95%,transparent\)!important/);
+  assert.match(html, /\.bb-btn\{top:4px!important;min-height:68px!important;height:68px!important;font-size:\.64rem!important;gap:4px!important;pointer-events:auto\}/);
+  assert.match(html, /#qaFab\.qa-fab\{bottom:calc\(6px \+ env\(safe-area-inset-bottom,0px\)\)!important;width:64px!important;height:64px!important/);
+  assert.match(html, /\.main\{padding:0 16px calc\(76px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
   assert.doesNotMatch(html, /fonts\.googleapis\.com/);
 });
 
@@ -249,6 +251,8 @@ test('price refresh requests one-month history and retains valid closes', async 
   const quote = await priceContext.fetchPrice('BTC');
   assert.match(requestedUrl, /symbol=BTC&range=1mo$/);
   assert.deepEqual(Array.from(quote.history), [27.9, 28.1, 28.38]);
+  assert.equal(quote.prevClose, 28.1);
+  assert.ok(Math.abs(quote.change - 0.28) < 1e-9);
   assert.equal(quote.historyRange, '1mo');
 });
 

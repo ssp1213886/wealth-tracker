@@ -1,5 +1,5 @@
-// Service Worker v11 - extend navigation background through the iPhone safe area
-var CACHE = 'wealth-v11';
+// Service Worker v25 - let iOS constrain the PWA viewport to its safe area
+var CACHE = 'wealth-v25';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
@@ -12,7 +12,7 @@ function cacheResponse(request, response) {
 }
 
 function offlineDocument() {
-  return new Response('<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b0e0c"><title>暂时无法连接</title><style>html,body{height:100%;margin:0}body{display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#0b0e0c;color:#f1f3f1;font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;text-align:center}main{max-width:300px}strong{font-size:18px}p{margin:10px 0 0;color:#9ba59e;line-height:1.65}button{margin-top:18px;min-height:44px;padding:0 18px;border:1px solid #303832;border-radius:12px;background:#151a17;color:inherit;font:inherit}</style></head><body><main><strong>暂时无法连接</strong><p>你的本地数据仍保存在此设备。网络恢复后重新加载即可。</p><button onclick="location.reload()">重新加载</button></main></body></html>', {status: 503, headers: {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}});
+  return new Response('<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0e0c"><title>暂时无法连接</title><style>html,body{height:100%;margin:0}body{display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#0b0e0c;color:#f1f3f1;font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;text-align:center}main{max-width:300px}strong{font-size:18px}p{margin:10px 0 0;color:#9ba59e;line-height:1.65}button{margin-top:18px;min-height:44px;padding:0 18px;border:1px solid #303832;border-radius:12px;background:#151a17;color:inherit;font:inherit}</style></head><body><main><strong>暂时无法连接</strong><p>你的本地数据仍保存在此设备。网络恢复后重新加载即可。</p><button onclick="location.reload()">重新加载</button></main></body></html>', {status: 503, headers: {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}});
 }
 
 self.addEventListener('install', function(event) {
@@ -38,6 +38,8 @@ self.addEventListener('message', function(event) {
 self.addEventListener('fetch', function(event) {
   var request = event.request;
   var url = new URL(request.url);
+  // A worker must never answer its own update check from Cache Storage.
+  if (url.pathname === '/sw.js') return;
   if (url.pathname.indexOf('/api/') === 0 || request.method !== 'GET') return;
 
   if (request.mode === 'navigate') {
