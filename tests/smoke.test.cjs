@@ -133,11 +133,11 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
   assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
   assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v16/);
+  assert.match(serviceWorker, /wealth-v17/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(html, /register\('\/sw\.js',\{updateViaCache:'none'\}\)/);
+  assert.match(html, /register\('\/sw\.js\?v=17',\{updateViaCache:'none'\}\)/);
 });
 
 test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
@@ -151,7 +151,7 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /\.bottom-bar\{height:56px!important;bottom:12px!important;padding:0 4px!important\}/);
+  assert.match(html, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;height:56px!important;bottom:12px!important;padding:0 4px!important\}/);
   assert.match(html, /\.bb-btn\{top:2px!important;min-height:52px!important;height:52px!important/);
   assert.match(html, /\.qa-fab\{bottom:20px!important;width:54px!important;height:54px!important/);
   assert.match(html, /\.main\{padding:0 16px 72px!important\}/);

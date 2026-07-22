@@ -1,5 +1,5 @@
-// Service Worker v16 - restore fixed PWA bottom navigation positioning
-var CACHE = 'wealth-v16';
+// Service Worker v17 - prevent future worker updates from being served from its own cache
+var CACHE = 'wealth-v17';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
@@ -38,6 +38,8 @@ self.addEventListener('message', function(event) {
 self.addEventListener('fetch', function(event) {
   var request = event.request;
   var url = new URL(request.url);
+  // A worker must never answer its own update check from Cache Storage.
+  if (url.pathname === '/sw.js') return;
   if (url.pathname.indexOf('/api/') === 0 || request.method !== 'GET') return;
 
   if (request.mode === 'navigate') {
