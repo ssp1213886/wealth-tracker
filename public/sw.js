@@ -1,5 +1,5 @@
-// Service Worker v14 - refresh mobile navigation layout and quote baseline logic
-var CACHE = 'wealth-v14';
+// Service Worker v15 - make PWA navigation cover the physical bottom edge
+var CACHE = 'wealth-v15';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
