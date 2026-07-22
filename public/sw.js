@@ -1,5 +1,5 @@
-// Service Worker v17 - prevent future worker updates from being served from its own cache
-var CACHE = 'wealth-v17';
+// Service Worker v18 - pin the mobile navigation to the physical bottom edge
+var CACHE = 'wealth-v18';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
