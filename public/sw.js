@@ -1,5 +1,5 @@
-// Service Worker v15 - make PWA navigation cover the physical bottom edge
-var CACHE = 'wealth-v15';
+// Service Worker v16 - restore fixed PWA bottom navigation positioning
+var CACHE = 'wealth-v16';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
