@@ -1,5 +1,5 @@
-// Service Worker v18 - pin the mobile navigation to the physical bottom edge
-var CACHE = 'wealth-v18';
+// Service Worker v19 - extend navigation background through the iPhone home indicator area
+var CACHE = 'wealth-v19';
 var PRECACHE = ['/', '/manifest.json', '/icon.png'];
 
 function cacheResponse(request, response) {
