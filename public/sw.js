@@ -1,5 +1,5 @@
-// Service Worker v29 - restore previous mobile bottom spacing
-var CACHE = 'wealth-v29';
+// Service Worker v30 - visible iOS PWA redesign
+var CACHE = 'wealth-v30';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
