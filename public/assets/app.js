@@ -856,7 +856,7 @@ function initTradeIds(){var max=0;for(var i=0;i<trades.length;i++){if(trades[i].
 
 
 
-function refreshVisualPalette(){DONUT_COLORS=ETF_SYMS.map(getAssetColor);if(typeof updatePortfolio==='function')updatePortfolio();if(typeof updateSidebar==='function')updateSidebar()}function updateThemeMeta(){var dark=document.documentElement.dataset.theme==='dark',meta=document.querySelector('meta[name="theme-color"]'),label=document.getElementById('desktopThemeLabel');if(meta)meta.content=dark?'#0d1210':'#f3f5f2';if(label)label.textContent=dark?'深色模式':'浅色模式'}function toggleTheme(){var h=document.documentElement,cur=h.dataset.theme;h.dataset.theme=cur==='dark'?'light':'dark';updateThemeMeta();refreshVisualPalette();try{localStorage.setItem(LSKEY+'_theme',h.dataset.theme)}catch(e){}setTimeout(function(){try{document.activeElement.blur()}catch(e){}},0)}document.getElementById('btnTheme').addEventListener('click',toggleTheme);window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(e){var t=localStorage.getItem(LSKEY+'_theme');if(!t||t==='system'){document.documentElement.dataset.theme=e.matches?'dark':'light';updateThemeMeta();refreshVisualPalette()}});
+function refreshVisualPalette(){DONUT_COLORS=ETF_SYMS.map(getAssetColor);if(typeof updatePortfolio==='function')updatePortfolio();if(typeof updateSidebar==='function')updateSidebar()}function updateThemeMeta(){var dark=document.documentElement.dataset.theme==='dark',meta=document.querySelector('meta[name="theme-color"]'),label=document.getElementById('desktopThemeLabel');if(meta)meta.content=dark?'#000000':'#f5f6f3';if(label)label.textContent=dark?'深色模式':'浅色模式'}function toggleTheme(){var h=document.documentElement,cur=h.dataset.theme;h.dataset.theme=cur==='dark'?'light':'dark';updateThemeMeta();refreshVisualPalette();try{localStorage.setItem(LSKEY+'_theme',h.dataset.theme)}catch(e){}setTimeout(function(){try{document.activeElement.blur()}catch(e){}},0)}document.getElementById('btnTheme').addEventListener('click',toggleTheme);window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(e){var t=localStorage.getItem(LSKEY+'_theme');if(!t||t==='system'){document.documentElement.dataset.theme=e.matches?'dark':'light';updateThemeMeta();refreshVisualPalette()}});
 
 
 
@@ -1294,7 +1294,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=26',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=29',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 

@@ -1,5 +1,5 @@
-// Service Worker v26 - split app assets for long-term caching
-var CACHE = 'wealth-v26';
+// Service Worker v29 - restore previous mobile bottom spacing
+var CACHE = 'wealth-v29';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

@@ -4,10 +4,10 @@
   "description": "个人投资仪表盘",
   "id": "/",
   "scope": "/",
-  "start_url": "/?v=26",
+  "start_url": "/?v=29",
   "display": "standalone",
-  "background_color": "#0b0e0c",
-  "theme_color": "#0b0e0c",
+  "background_color": "#f5f6f3",
+  "theme_color": "#f5f6f3",
   "orientation": "any",
   "icons": [
     {
@@ -17,5 +17,5 @@
       "purpose": "any maskable"
     }
   ],
-  "version": "2.0"
+  "version": "2.3"
 }
