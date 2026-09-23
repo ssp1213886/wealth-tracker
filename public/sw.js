@@ -1,5 +1,5 @@
-// Service Worker v32 - iOS option and data sections
-var CACHE = 'wealth-v32';
+// Service Worker v33 - iOS log and settings drawer
+var CACHE = 'wealth-v33';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
