@@ -1,5 +1,5 @@
-// Service Worker v30 - visible iOS PWA redesign
-var CACHE = 'wealth-v30';
+// Service Worker v32 - iOS option and data sections
+var CACHE = 'wealth-v32';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

@@ -1478,3 +1478,102 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .tf-group input,.tf-group select{min-height:46px!important;font-size:16px!important}
   .btn{min-height:46px!important;font-size:.78rem!important;font-weight:620!important;border-radius:13px!important}
 }
+
+
+/* Stage 4.1 · iOS console, tab bar, and action sheet */
+@media(max-width:800px){
+  #tab-console.active{padding-top:0!important}
+  #tab-console .card{padding:18px!important}
+  #tab-console .collapsible-header{min-height:44px!important;margin:0 0 14px!important;padding:0!important;background:transparent!important;border-bottom:1px solid var(--rule)!important}
+  #tab-console .collapsible-body{padding-top:0!important}
+  .trade-form{display:block!important;margin:0!important;padding:0!important}
+  .tf-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin-bottom:10px!important}
+  .tf-row-full{grid-template-columns:1fr!important}
+  .tf-group{display:flex!important;flex-direction:column!important;gap:5px!important;margin:0!important;padding:0!important;background:transparent!important;border:0!important}
+  .tf-group label{font-size:.7rem!important;font-weight:560!important;color:var(--muted)!important;letter-spacing:-.005em!important}
+  .trade-form input,.trade-form select{width:100%!important;height:46px!important;min-height:46px!important;padding:0 12px!important;border:1px solid var(--rule)!important;border-radius:12px!important;background:var(--surface)!important;color:var(--fg)!important;font-size:16px!important;font-family:var(--font)!important;transition:border-color .12s var(--ios-ease),background-color .12s var(--ios-ease)}
+  .trade-form input::placeholder{color:color-mix(in srgb,var(--fg) 38%,transparent)!important}
+  .trade-form input:focus,.trade-form select:focus{border-color:var(--accent)!important;background:var(--card-bg)!important;box-shadow:0 0 0 3.5px color-mix(in srgb,var(--accent) 18%,transparent)!important}
+  .trade-form .btn{width:100%!important;height:48px!important;min-height:48px!important;margin-top:2px!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font-size:.82rem!important;font-weight:650!important;letter-spacing:-.01em!important;box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 22%,transparent)!important}
+  #hmPricesCompact{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin:0 0 14px!important;font-size:.68rem!important}
+  #hmPricesCompact>*{min-height:42px;display:flex;align-items:center;justify-content:center;padding:6px 8px;border:1px solid var(--rule)!important;border-radius:12px;background:var(--surface)!important}
+  #hmPriceTime{margin:0 0 14px!important;font-size:.67rem!important;text-align:left!important}
+  .inline-action{height:34px!important;min-height:34px!important;padding:0 10px!important;border-radius:10px!important;background:color-mix(in srgb,var(--accent) 12%,transparent)!important;color:var(--accent)!important;font-size:.67rem!important;font-weight:620!important;box-shadow:none!important}
+  .inline-action svg{width:15px!important;height:15px!important}
+  .section-heading{font-size:.95rem!important;font-weight:650!important;letter-spacing:-.018em!important}
+  #rebalContent{font-size:.75rem!important}
+  .rb-mode-btn{height:36px!important;padding:0 13px!important;font-size:.7rem!important;font-weight:600!important}
+  .rb-mode-btn.active{background:var(--accent)!important;color:#fff!important}
+  #bottomBar.bottom-bar{padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))!important;background:color-mix(in srgb,var(--card-bg) 82%,transparent)!important;backdrop-filter:saturate(180%) blur(28px)!important;-webkit-backdrop-filter:saturate(180%) blur(28px)!important;box-shadow:0 -1px 0 var(--rule),0 -12px 34px rgba(0,0,0,.06)!important}
+  .bb-btn{height:60px!important;min-height:60px!important;padding:6px 0 2px!important;border-radius:14px!important;font-size:.62rem!important;font-weight:520!important;letter-spacing:0!important;transition:color .12s var(--ios-ease),transform .12s var(--ios-ease)}
+  .bb-btn .bb-icon{margin-bottom:2px}
+  .bb-btn .bb-icon svg{width:25px!important;height:25px!important;stroke-width:1.75!important}
+  #bottomBar .bb-btn.active{color:var(--accent)!important;font-weight:620!important}
+  .bb-btn.active .bb-icon{opacity:1!important;transform:scale(1)!important}
+  .qa-sheet{background:rgba(0,0,0,.32)!important;backdrop-filter:blur(2px)!important;-webkit-backdrop-filter:blur(2px)!important}
+  .qa-panel{max-width:none!important;padding:10px 14px calc(18px + env(safe-area-inset-bottom,0px))!important;border-radius:24px 24px 0 0!important;background:var(--card-bg)!important;box-shadow:0 -18px 48px rgba(0,0,0,.18)!important}
+  .qa-panel:before{content:''!important;display:block!important;width:38px!important;height:5px!important;margin:4px auto 14px!important;border-radius:99px!important;background:color-mix(in srgb,var(--fg) 18%,transparent)!important}
+  .qa-title{margin:0 0 12px!important;font-size:.75rem!important;font-weight:560!important;color:var(--muted)!important}
+  .qa-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important}
+  .qa-item{min-width:0!important;min-height:82px!important;padding:12px 5px!important;border-radius:16px!important;background:var(--surface)!important;transition:transform .12s var(--ios-ease),background-color .12s var(--ios-ease)!important}
+  .qa-item:active{transform:scale(.95)!important;background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important}
+  .qa-icon{width:38px!important;height:38px!important;border-radius:13px!important;font-size:.95rem!important}
+  .qa-label{font-size:.68rem!important;font-weight:540!important}
+}
+
+
+/* Stage 4.2 · iOS option and data sections */
+@media(max-width:800px){
+  #tab-option.active,#tab-data.active{padding-top:0!important}
+  #tab-option .card,#tab-data .card{margin-bottom:12px!important;padding:18px!important;border:1px solid var(--rule)!important;border-radius:20px!important;background:var(--card-bg)!important;box-shadow:var(--shadow)!important}
+  #tab-option .card[style*="accent"],#tab-option .card[style*="--accent"]{border-color:color-mix(in srgb,var(--accent) 38%,transparent)!important;background:color-mix(in srgb,var(--accent) 8%,var(--card-bg))!important}
+  #tab-option h3,#tab-data h3{margin:0 0 12px!important;font-size:.95rem!important;font-weight:650!important;color:var(--fg)!important;letter-spacing:-.02em!important}
+  #tab-option .collapsible-header{min-height:44px!important;margin:0 0 12px!important;padding:0!important;background:transparent!important;border-bottom:1px solid var(--rule)!important}
+  #tab-option .collapsible-header h3{margin:0!important;font-size:.95rem!important;color:var(--fg)!important}
+  #tab-option .collapsible-body{padding-top:0!important}
+  #tab-option .metrics{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
+  #tab-option .metric{min-height:0!important;margin:0!important;padding:10px!important;border:1px solid var(--rule)!important;border-radius:14px!important;background:var(--surface)!important;box-shadow:none!important}
+  #tab-option .m-label{display:block!important;font-size:.63rem!important;color:var(--muted)!important;line-height:1.2!important}
+  #tab-option .m-val{display:block!important;margin-top:4px!important;font-size:.78rem!important;font-weight:650!important;color:var(--fg)!important;letter-spacing:-.015em!important}
+  #tab-option .metric[style*="grid-template-columns:repeat(2"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #tab-option button[style*="width:24px"]{width:34px!important;height:34px!important;border-radius:11px!important;border-color:var(--rule)!important;background:var(--card-bg)!important;color:var(--accent)!important;font-size:.9rem!important;font-weight:650!important}
+  #tab-option button[style*="width:24px"]:active{transform:scale(.94)}
+  #tab-option span[style*="font-size:.82rem"]{font-size:.8rem!important;font-weight:650!important}
+  #tab-option .opt-form-metrics{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin:0 0 12px!important}
+  #tab-option .opt-form-metrics .metric{padding:11px!important;border-radius:14px!important}
+  #tab-option .tf-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin-bottom:10px!important}
+  #tab-option .tf-row-full{grid-template-columns:1fr!important}
+  #tab-option .tf-group{display:flex!important;flex-direction:column!important;gap:5px!important}
+  #tab-option .tf-group label{font-size:.69rem!important;font-weight:560!important;color:var(--muted)!important}
+  #tab-option input,#tab-option select{width:100%!important;height:46px!important;min-height:46px!important;padding:0 12px!important;border:1px solid var(--rule)!important;border-radius:12px!important;background:var(--surface)!important;color:var(--fg)!important;font-size:16px!important;font-family:var(--font)!important}
+  #tab-option input:focus,#tab-option select:focus{border-color:var(--accent)!important;background:var(--card-bg)!important;box-shadow:0 0 0 3.5px color-mix(in srgb,var(--accent) 18%,transparent)!important}
+  #tab-option .btn-pri{width:100%!important;height:48px!important;min-height:48px!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font-size:.82rem!important;font-weight:650!important}
+  #tab-option .trade-table{display:block!important;width:100%!important;overflow-x:auto!important}
+  #tab-option .trade-table th{font-size:.64rem!important;color:var(--muted)!important;background:transparent!important}
+  #tab-option .trade-table td{min-height:54px;padding-top:10px!important;padding-bottom:10px!important;font-size:.73rem!important;line-height:1.2!important;border-bottom:1px solid var(--rule)!important}
+  #tab-option .trade-table tr:last-child td{border-bottom:0!important}
+  #tab-data .collapsible-header{min-height:44px!important;margin:0 0 12px!important;padding:0!important;background:transparent!important;border-bottom:1px solid var(--rule)!important}
+  #tab-data .collapsible-header h3{margin:0!important;font-size:.95rem!important}
+  #tab-data .collapsible-body{padding-top:0!important}
+  #tab-data select{width:auto!important;min-height:34px!important;padding:0 8px!important;border:1px solid var(--rule)!important;border-radius:10px!important;background:var(--card-bg)!important;font-size:.68rem!important;color:var(--fg)!important}
+  #tab-data .btn{height:40px!important;min-height:40px!important;padding:0 12px!important;border-radius:11px!important;font-size:.7rem!important;font-weight:620!important}
+  #tab-data .btn-pri{background:var(--accent)!important;color:#fff!important}
+  #tab-data .btn-out{background:color-mix(in srgb,var(--accent) 10%,transparent)!important;color:var(--accent)!important}
+  #tab-data .trade-table th{font-size:.64rem!important;background:transparent!important}
+  #tab-data .trade-table td{padding-top:10px!important;padding-bottom:10px!important;font-size:.73rem!important;line-height:1.2!important;border-bottom:1px solid var(--rule)!important}
+  #tab-data .trade-table tr:last-child td{border-bottom:0!important}
+  #tab-data .card:has(#btnClearTrades),#tab-data .card:has(#btnClearCashLog){border-color:color-mix(in srgb,var(--red) 26%,var(--rule))!important}
+  #tab-data .card:has(#btnClearTrades) .btn,#tab-data .card:has(#btnClearCashLog) .btn{background:color-mix(in srgb,var(--red) 10%,transparent)!important;color:var(--red)!important}
+}
+
+
+/* Dark-mode restoration for redesigned mobile system */
+@media(max-width:800px){
+  [data-theme="dark"]{
+    --bg:#000000;--fg:#f5f5f7;--muted:#98989f;--surface:#1c1c1e;--card-bg:#1c1c1e;--rule:rgba(255,255,255,.14);--shadow:0 10px 30px rgba(0,0,0,.42);--shadow-lg:0 18px 48px rgba(0,0,0,.55);--shadow-sm:0 5px 16px rgba(0,0,0,.34)
+  }
+  body{background:var(--bg)!important}
+  .main{background:var(--bg)!important}
+  html[data-theme="dark"] body{background:#000!important}
+  html[data-theme="dark"] .main{background:#000!important}
+}
