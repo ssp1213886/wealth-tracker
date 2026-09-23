@@ -1,6 +1,6 @@
-// Service Worker v25 - let iOS constrain the PWA viewport to its safe area
-var CACHE = 'wealth-v25';
-var PRECACHE = ['/', '/manifest.json', '/icon.png'];
+// Service Worker v26 - split app assets for long-term caching
+var CACHE = 'wealth-v26';
+var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
   if (!response || !response.ok) return Promise.resolve();

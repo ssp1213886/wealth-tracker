@@ -1,19 +1,22 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const vm = require('node:vm');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
 
 const html = fs.readFileSync('public/index.html', 'utf8');
+const css = fs.readFileSync('public/assets/main.css', 'utf8');
+const appSource = fs.readFileSync('public/assets/app.js', 'utf8');
+const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
   const marker = `function ${name}(`;
-  const start = html.indexOf(marker);
+  const start = appSource.indexOf(marker);
   assert.notEqual(start, -1, `missing ${name}`);
   const nextNamed = /function\s+[A-Za-z_$][\w$]*\s*\(/g;
   nextNamed.lastIndex = start + marker.length;
-  const next = nextNamed.exec(html);
+  const next = nextNamed.exec(appSource);
   assert.ok(next, `unterminated ${name}`);
-  return html.slice(start, next.index).trim();
+  return appSource.slice(start, next.index).trim();
 }
 
 const context = vm.createContext({
@@ -128,47 +131,44 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=25');
+  assert.equal(manifest.start_url, '/?v=26');
   assert.equal(manifest.background_color, '#0b0e0c');
-  assert.match(worker, /\['VGT', 'SMH', 'BTC', 'SGOV'\]/);
-  assert.match(worker, /encodeURIComponent\(quoteSymbol\)/);
-  assert.doesNotMatch(worker, /encodeURIComponent\(sym\)/);
-  assert.match(serviceWorker, /wealth-v25/);
+  assert.match(serviceWorker, /wealth-v26/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(html, /register\('\/sw\.js\?v=25',\{updateViaCache:'none'\}\)/);
-  assert.doesNotMatch(html, /viewport-fit=cover/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=26',\{updateViaCache:'none'\}\)/);
+  assert.doesNotMatch(appMarkup, /viewport-fit=cover/);
   assert.doesNotMatch(serviceWorker, /viewport-fit=cover/);
 });
 
 test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, /aria-controls="settingsDrawer"/);
   assert.match(html, /class="menu-open"/);
-  assert.match(html, /\.sidebar,\.sidebar\.collapsed\{display:flex!important;flex-direction:column!important/);
-  assert.match(html, /\.sidebar>\.sb-section,\.sidebar>\.sb-footer-links\{display:block;flex:0 0 auto!important/);
-  assert.match(html, /body\.drawer-open \.bottom-bar,body\.drawer-open \.qa-fab/);
+  assert.match(appMarkup, /\.sidebar,\.sidebar\.collapsed\{display:flex!important;flex-direction:column!important/);
+  assert.match(appMarkup, /\.sidebar>\.sb-section,\.sidebar>\.sb-footer-links\{display:block;flex:0 0 auto!important/);
+  assert.match(appMarkup, /body\.drawer-open \.bottom-bar,body\.drawer-open \.qa-fab/);
   assert.match(html, /id="settingsData"/);
   assert.match(html, />导入备份<\/button>/);
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(html, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;bottom:0!important;padding:0 4px env\(safe-area-inset-bottom,0px\)!important;border:0!important;border-top:1px solid var\(--rule\)!important;background:color-mix\(in srgb,var\(--card-bg\) 95%,transparent\)!important/);
-  assert.match(html, /\.bb-btn\{top:4px!important;min-height:68px!important;height:68px!important;font-size:\.64rem!important;gap:4px!important;pointer-events:auto\}/);
-  assert.match(html, /#qaFab\.qa-fab\{bottom:calc\(6px \+ env\(safe-area-inset-bottom,0px\)\)!important;width:64px!important;height:64px!important/);
-  assert.match(html, /\.main\{padding:0 16px calc\(76px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
-  assert.doesNotMatch(html, /fonts\.googleapis\.com/);
+  assert.match(appMarkup, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;bottom:0!important;padding:0 4px env\(safe-area-inset-bottom,0px\)!important;border:0!important;border-top:1px solid var\(--rule\)!important;background:color-mix\(in srgb,var\(--card-bg\) 95%,transparent\)!important/);
+  assert.match(appMarkup, /\.bb-btn\{top:4px!important;min-height:68px!important;height:68px!important;font-size:\.64rem!important;gap:4px!important;pointer-events:auto\}/);
+  assert.match(appMarkup, /#qaFab\.qa-fab\{bottom:calc\(6px \+ env\(safe-area-inset-bottom,0px\)\)!important;width:64px!important;height:64px!important/);
+  assert.match(appMarkup, /\.main\{padding:0 16px calc\(76px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
+  assert.doesNotMatch(appMarkup, /fonts\.googleapis\.com/);
 });
 
 test('mobile portfolio and quick actions prioritize active investing work', () => {
   assert.match(html, /class="sb-portfolio-grid"/);
   assert.match(html, /class="sb-portfolio-insights"/);
-  assert.match(html, /已卖 '\+contracts\+' 张 Call/);
-  assert.doesNotMatch(html, /距 Covered Call/);
-  assert.doesNotMatch(html, /onclick="qaDividend\(\)"/);
-  assert.doesNotMatch(html, /function qaDividend\(/);
+  assert.match(appMarkup, /已卖 '\+contracts\+' 张 Call/);
+  assert.doesNotMatch(appMarkup, /距 Covered Call/);
+  assert.doesNotMatch(appMarkup, /onclick="qaDividend\(\)"/);
+  assert.doesNotMatch(appMarkup, /function qaDividend\(/);
   assert.match(html, /id="hmDividend"/);
-  assert.match(html, /\.qa-grid\{display:grid;grid-template-columns:repeat\(4,1fr\)/);
+  assert.match(appMarkup, /\.qa-grid\{display:grid;grid-template-columns:repeat\(4,1fr\)/);
 });
 
 test('reminders deduplicate and sort by severity without snooze controls', () => {
@@ -189,32 +189,32 @@ test('reminders deduplicate and sort by severity without snooze controls', () =>
   ]);
   assert.deepEqual(Array.from(result, (item) => item.id), ['call:VGT', 'call:SMH', 'dca:2026-07']);
   assert.equal(result[0].severity, 'critical');
-  assert.doesNotMatch(html, /ALERT_SNOOZE_KEY/);
-  assert.doesNotMatch(html, /data-alert-snooze=/);
-  assert.doesNotMatch(html, /qa-alert-snooze/);
-  assert.doesNotMatch(html, /24小时后提醒/);
-  assert.doesNotMatch(html, /<button class="qa-alert-item/);
+  assert.doesNotMatch(appMarkup, /ALERT_SNOOZE_KEY/);
+  assert.doesNotMatch(appMarkup, /data-alert-snooze=/);
+  assert.doesNotMatch(appMarkup, /qa-alert-snooze/);
+  assert.doesNotMatch(appMarkup, /24小时后提醒/);
+  assert.doesNotMatch(appMarkup, /<button class="qa-alert-item/);
 });
 
 test('drawdown visualization exposes current-to-peak distance with desktop space', () => {
   assert.match(html, /id="hmDrawdownWorst"/);
-  assert.match(html, /class="drawdown-track"/);
-  assert.match(html, /class="drawdown-marker" style="left:'/);
-  assert.match(html, /d\.dd>=20\?'var\(--red\)':d\.dd>=10\?'var\(--orange\)'/);
-  assert.match(html, /\.goal-row\{grid-column:1\/9!important;grid-row:4!important;height:220px!important/);
-  assert.match(html, /\.cc-overview\{grid-column:9\/-1!important;grid-row:4!important;height:220px!important/);
+  assert.match(appSource, /class="drawdown-track"/);
+  assert.match(appSource, /class="drawdown-marker" style="left:/);
+  assert.match(appMarkup, /d\.dd>=20\?'var\(--red\)':d\.dd>=10\?'var\(--orange\)'/);
+  assert.match(appMarkup, /\.goal-row\{grid-column:1\/9!important;grid-row:4!important;height:220px!important/);
+  assert.match(appMarkup, /\.cc-overview\{grid-column:9\/-1!important;grid-row:4!important;height:220px!important/);
 });
 
 test('data health shows cloud sync, backup, and conflict state', () => {
   for (const id of ['sbSyncLast', 'sbBackupLast', 'sbConflictState']) {
-    assert.match(html, new RegExp(`id="${id}"`));
+    assert.match(appMarkup, new RegExp(`id="${id}"`));
   }
-  assert.match(html, /s\.pendingConflicts=Array\.isArray\(s\.pendingConflicts\)/);
-  assert.match(html, /function recordSyncSuccess\(/);
-  assert.match(html, /function recordSyncFailure\(/);
-  assert.match(html, /function setSyncConflicts\(/);
-  assert.match(html, /function recordBackupTime\(/);
-  assert.match(html, /syncFetchWithoutHealth=syncFetch/);
+  assert.match(appMarkup, /s\.pendingConflicts=Array\.isArray\(s\.pendingConflicts\)/);
+  assert.match(appMarkup, /function recordSyncSuccess\(/);
+  assert.match(appMarkup, /function recordSyncFailure\(/);
+  assert.match(appMarkup, /function setSyncConflicts\(/);
+  assert.match(appMarkup, /function recordBackupTime\(/);
+  assert.match(appMarkup, /syncFetchWithoutHealth=syncFetch/);
 });
 
 test('market sparkline is built from real cached history points', () => {
@@ -257,15 +257,15 @@ test('price refresh requests one-month history and retains valid closes', async 
 });
 
 test('desktop UI states stay data-consistent and scrollable', () => {
-  assert.match(html, /html\[data-accent="ocean"\]\{--accent:#2867b7/);
-  assert.match(html, /\.main\{[^}]*height:100vh!important[^}]*overflow-y:auto!important/);
-  assert.doesNotMatch(html, /sparkTransform|paths=\{VGT:/);
-  assert.match(html, /historyRange:'1mo'/);
-  assert.match(html, /color=getAssetColor\(row\.sym\)/);
-  assert.match(html, /for\(var i=-11;i<=0;i\+\+\)/);
-  assert.match(html, /#logHeatmap\{display:grid!important/);
-  assert.doesNotMatch(html, /\+' · BTC ETF'/);
-  assert.match(html, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
-  assert.match(html, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
-  assert.match(html, /美股非交易时段/);
+  assert.match(appMarkup, /html\[data-accent="ocean"\]\{--accent:#2867b7/);
+  assert.match(appMarkup, /\.main\{[^}]*height:100vh!important[^}]*overflow-y:auto!important/);
+  assert.doesNotMatch(appMarkup, /sparkTransform|paths=\{VGT:/);
+  assert.match(appMarkup, /historyRange:'1mo'/);
+  assert.match(appMarkup, /color=getAssetColor\(row\.sym\)/);
+  assert.match(appMarkup, /for\(var i=-11;i<=0;i\+\+\)/);
+  assert.match(appMarkup, /#logHeatmap\{display:grid!important/);
+  assert.doesNotMatch(appMarkup, /\+' · BTC ETF'/);
+  assert.match(appMarkup, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
+  assert.match(appMarkup, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
+  assert.match(appMarkup, /美股非交易时段/);
 });

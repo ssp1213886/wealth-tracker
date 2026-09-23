@@ -9,3 +9,8 @@ _*.html
 .openclaw/
 *.bak
 *.backup-*
+
+src/worker.cjs
+src/lib/*.cjs
+
+tests/*.test.cjs
