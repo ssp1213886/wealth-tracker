@@ -1,5 +1,5 @@
-// Service Worker v75 - sync spinner failsafe
-var CACHE = 'wealth-v75';
+// Service Worker v76 - pull refresh hint failsafe
+var CACHE = 'wealth-v76';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

@@ -1246,7 +1246,7 @@ function fillTradeForm(sym,price){
 
 
 
-var _ptrEl=document.getElementById("pullHint"),_ptrBtn=document.getElementById("mobStatusBar");if(_ptrEl&&_ptrBtn){_ptrBtn.style.cursor="pointer";_ptrBtn.addEventListener("click",function(){_ptrEl.style.display="block";_ptrEl.innerHTML="⟳ 刷新中...";refreshPrices().then(function(){_ptrEl.innerHTML="✅ 已刷新";setTimeout(function(){_ptrEl.style.display="none"},1000)})})}
+var _ptrEl=document.getElementById("pullHint"),_ptrBtn=document.getElementById("mobStatusBar");if(_ptrEl&&_ptrBtn){_ptrBtn.style.cursor="pointer";_ptrBtn.addEventListener("click",function(){_ptrEl.style.display="block";_ptrEl.innerHTML="⟳ 刷新中...";var _ptrDone=function(html){clearTimeout(_ptrTimer);_ptrEl.innerHTML=html;setTimeout(function(){_ptrEl.style.display="none"},1200)};var _ptrTimer=setTimeout(function(){_ptrDone("⚠️ 刷新超时")},15000);Promise.resolve().then(function(){return refreshPrices()}).then(function(){_ptrDone("✅ 已刷新")}).catch(function(){_ptrDone("⚠️ 刷新失败")})})}
 
 
 
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=75',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=76',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
