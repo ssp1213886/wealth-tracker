@@ -1798,14 +1798,6 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 #bottomBar .bb-btn.active{background-image:linear-gradient(var(--accent),var(--accent));background-size:18px 3px;background-position:center top 3px;background-repeat:no-repeat}
 
 /* ===== Per-page ambience (accent-derived) ===== */
-#tab-holding{background-image:radial-gradient(152% 74% at 50% -9%,color-mix(in srgb,var(--accent) 42%,transparent),transparent 80%)}
-#tab-console{background-image:radial-gradient(152% 66% at 50% -9%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 80%)}
-#tab-option{background-image:radial-gradient(152% 68% at 50% -9%,color-mix(in srgb,var(--accent) 32%,transparent),transparent 80%)}
-#tab-data{background-image:radial-gradient(152% 60% at 50% -9%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 80%)}
-[data-theme="dark"] #tab-holding{background-image:radial-gradient(152% 74% at 50% -9%,color-mix(in srgb,var(--accent) 56%,transparent),transparent 80%)}
-[data-theme="dark"] #tab-console{background-image:radial-gradient(152% 66% at 50% -9%,color-mix(in srgb,var(--accent) 40%,transparent),transparent 80%)}
-[data-theme="dark"] #tab-option{background-image:radial-gradient(152% 68% at 50% -9%,color-mix(in srgb,var(--accent) 44%,transparent),transparent 80%)}
-[data-theme="dark"] #tab-data{background-image:radial-gradient(152% 60% at 50% -9%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 80%)}
 
 /* ===== Bottom bar separated from cards ===== */
 #bottomBar.bottom-bar{background:color-mix(in srgb,var(--surface) 92%,transparent)!important}
@@ -1817,11 +1809,11 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 [data-theme="dark"]{--bar-solid:color-mix(in srgb,var(--card-bg) 95%,#fff)}
 
 /* ===== Full-page ambience (whole viewport, accent-tinted) ===== */
-body[data-active-tab="holding"] .main{background-color:color-mix(in srgb,var(--accent) 3.5%,var(--bg))!important}
-body[data-active-tab="option"] .main{background-color:color-mix(in srgb,var(--accent) 2.8%,var(--bg))!important}
-body[data-active-tab="console"] .main{background-color:color-mix(in srgb,var(--accent) 2.2%,var(--bg))!important}
-body[data-active-tab="data"] .main{background-color:color-mix(in srgb,var(--accent) 1.6%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="holding"] .main{background-color:color-mix(in srgb,var(--accent) 6%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="option"] .main{background-color:color-mix(in srgb,var(--accent) 4.5%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="console"] .main{background-color:color-mix(in srgb,var(--accent) 3.5%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="data"] .main{background-color:color-mix(in srgb,var(--accent) 2.5%,var(--bg))!important}
+body[data-active-tab="holding"] .main{background:color-mix(in srgb,var(--accent) 6%,var(--bg))!important}
+body[data-active-tab="option"] .main{background:color-mix(in srgb,var(--accent) 5%,var(--bg))!important}
+body[data-active-tab="console"] .main{background:color-mix(in srgb,var(--accent) 4%,var(--bg))!important}
+body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 3%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="holding"] .main{background:color-mix(in srgb,var(--accent) 11%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="option"] .main{background:color-mix(in srgb,var(--accent) 8.5%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="console"] .main{background:color-mix(in srgb,var(--accent) 6.5%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 4.5%,var(--bg))!important}
