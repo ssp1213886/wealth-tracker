@@ -1,5 +1,5 @@
-// Service Worker v71 - remove active tab marker
-var CACHE = 'wealth-v71';
+// Service Worker v72 - sync failure diagnostics
+var CACHE = 'wealth-v72';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
