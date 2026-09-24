@@ -2087,3 +2087,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sync-toast .toast-action{flex:0 0 auto;min-height:34px;padding:0 14px;border:0;border-radius:10px;background:var(--accent);color:#fff;font:600 .74rem var(--font);cursor:pointer;touch-action:manipulation}
 .sync-toast .toast-action:active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){.sync-toast{transition:none}}
+
+/* ===== Toast v3 · theme-aware glass ===== */
+.sync-toast{background:color-mix(in srgb,var(--card-bg) 84%,transparent)!important;color:var(--fg)!important;border:1px solid color-mix(in srgb,var(--rule) 85%,transparent)!important;box-shadow:0 16px 40px rgba(0,0,0,.20),0 2px 8px rgba(0,0,0,.06)!important;-webkit-backdrop-filter:blur(26px) saturate(180%)!important;backdrop-filter:blur(26px) saturate(180%)!important}
+[data-theme="dark"] .sync-toast{background:color-mix(in srgb,var(--card-bg) 80%,transparent)!important;box-shadow:0 16px 40px rgba(0,0,0,.5)!important;border-color:color-mix(in srgb,var(--rule) 90%,transparent)!important}
+.sync-toast .toast-icon{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)!important}
+.sync-toast.err .toast-icon,.sync-toast.undo .toast-icon{background:color-mix(in srgb,var(--danger) 16%,transparent)!important;color:var(--danger)!important}
+.sync-toast .toast-msg{color:var(--fg)!important}

@@ -1,5 +1,5 @@
-// Service Worker v100 - toast fix (page crash recovery)
-var CACHE = 'wealth-v100';
+// Service Worker v101 - theme-aware glass toast
+var CACHE = 'wealth-v101';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
