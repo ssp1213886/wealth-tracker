@@ -1,5 +1,5 @@
-// Service Worker v99 - toast redesign and undo protection
-var CACHE = 'wealth-v99';
+// Service Worker v100 - toast fix (page crash recovery)
+var CACHE = 'wealth-v100';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
