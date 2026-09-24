@@ -1,5 +1,5 @@
-// Service Worker v97 - haptic feedback system
-var CACHE = 'wealth-v97';
+// Service Worker v98 - unified destructive action flow
+var CACHE = 'wealth-v98';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
