@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { KEYS } from '../src/app/store.js';
 
 const html = fs.readFileSync('public/index.html', 'utf8');
 const css = fs.readFileSync('public/assets/main.css', 'utf8');
@@ -13,9 +14,12 @@ const calcSource = fs.readFileSync('src/app/calc.js', 'utf8').replace(/^export /
 const storeSource = fs.readFileSync('src/app/store.js', 'utf8').replace(/^export /gm, '');
 const syncSource = fs.readFileSync('src/app/sync.js', 'utf8').replace(/^export /gm, '');
 const renderSource = fs.readFileSync('src/app/render.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
+const rowsSource = fs.readFileSync('src/app/rows.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
+const timeSource = fs.readFileSync('src/app/time.js', 'utf8').replace(/^export /gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
-  utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' + renderSource + '\n' + indexSource;
+  utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -37,6 +41,7 @@ const context = vm.createContext({
   String,
   Array,
   Object,
+  KEYS,
   isFinite,
   isNaN,
   HOME_TIME_ZONE: 'Asia/Shanghai',
@@ -141,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=137');
+  assert.equal(manifest.start_url, '/?v=138');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v137/);
+  assert.match(serviceWorker, /wealth-v138/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=137',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=138',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

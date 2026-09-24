@@ -3,6 +3,7 @@ import {computeHoldings, buildPositionRows} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations} from './store.js';
 import {buildSyncPayload, classifySyncError} from './sync.js';
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
+import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals} from './rows.js';
 var LSKEY=KEYS.dashboard,PRICE_KEY=KEYS.prices,TRADE_KEY=KEYS.trades,CB_KEY=KEYS.cash,CLOG_KEY=KEYS.cashLog;var cashBalance=0,cashLog=[];
 
@@ -14,7 +15,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v137';var APP_DATA_VERSION=5;
+var APP_BUILD='v138';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -35,13 +36,13 @@ function createBackupData(){return{version:APP_DATA_VERSION,date:new Date().toIS
 
 
 
-function localDate(d){d=d||new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
-var HOME_TIME_ZONE='Asia/Shanghai',MARKET_TIME_ZONE='America/New_York',MARKET_SESSION_LABELS={open:'美股交易时段',closed:'美股非交易时段'};
-function zonedDateParts(d,timeZone){d=d||new Date();var parts={};try{new Intl.DateTimeFormat('en-CA',{timeZone:timeZone,year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).forEach(function(p){if(p.type!=='literal')parts[p.type]=p.value})}catch(e){parts.year=String(d.getFullYear());parts.month=('0'+(d.getMonth()+1)).slice(-2);parts.day=('0'+d.getDate()).slice(-2);parts.weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];parts.hour=('0'+d.getHours()).slice(-2);parts.minute=('0'+d.getMinutes()).slice(-2)}return parts}
-function zonedDate(d,timeZone){var p=zonedDateParts(d,timeZone);return p.year+'-'+p.month+'-'+p.day}
-function marketDate(d){return zonedDate(d,MARKET_TIME_ZONE)}
+
+
+
+
+
 function chinaDate(d){return zonedDate(d,HOME_TIME_ZONE)}
-function marketClock(d){var p=zonedDateParts(d||new Date(),MARKET_TIME_ZONE);return p.hour+':'+p.minute}
+
 
 function optionExpiryState(expiry,d){var clock=zonedDateParts(d||new Date(),MARKET_TIME_ZONE),today=clock.year+'-'+clock.month+'-'+clock.day,days=dateOrdinal(expiry)-dateOrdinal(today),afterClose=(Number(clock.hour)||0)*60+(Number(clock.minute)||0)>=960,expired=!isFinite(days)||days<0||(days===0&&afterClose);return{days:isFinite(days)?Math.max(0,days):0,expired:expired}}
 function isActiveOption(o,d){return !!(o&&!o.settled&&!o.archived&&o.expiry&&!optionExpiryState(o.expiry,d).expired)}
@@ -1330,7 +1331,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=137',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=138',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1927,6 +1928,6 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 
 /* 打包成 IIFE 后，把内联事件用到的入口显式暴露到 window */
 if(typeof window!=='undefined'){
-  var __globals={clearAllData:clearAllData,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState};
+  var __globals={clearAllData:clearAllData,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData};
   for(var __k in __globals){try{if(typeof __globals[__k]==='function')window[__k]=__globals[__k]}catch(e){}}
 }
