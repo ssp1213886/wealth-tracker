@@ -1089,7 +1089,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
 
-  document.querySelectorAll('.bb-btn').forEach(function(b){b.classList.remove('active')});
+  document.querySelectorAll('.bb-btn').forEach(function(b){b.classList.remove('active');b.removeAttribute('aria-current')});
 
 
 
@@ -1097,7 +1097,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
 
-  if(bba)bba.classList.add('active');
+  if(bba){bba.classList.add('active');bba.setAttribute('aria-current','page')}
 
 
 
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=61',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=62',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 

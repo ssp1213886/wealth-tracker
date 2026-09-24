@@ -607,14 +607,14 @@
 
 
 <div class="bottom-bar" id="bottomBar">
-  <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5"/><path d="M5.5 9.2V21h5v-6.5h3V21h5V9.2"/></svg></span>仪表盘</button>
+  <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings" aria-current="page"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5"/><path d="M5.5 9.2V21h5v-6.5h3V21h5V9.2"/></svg></span>仪表盘</button>
   <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15"/><path d="m16 4 3 3-3 3"/><path d="M20 17H5"/><path d="m8 14-3 3 3 3"/></svg></span>操作</button>
   <button onclick="switchTab('option')" class="bb-btn" id="bbOption"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.5 12h3l1.7-4.2 3.2 8.4 1.8-4.2h3.3"/></svg></span>期权<span id="optBadgeMob" style="background:var(--red);color:#fff;font-size:.7rem;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
   <button onclick="switchTab('data')" class="bb-btn" id="bbData"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v5h4"/><path d="M9 12h7M9 16h7"/></svg></span>记录</button>
 
 </div>
 
-<button class="qa-fab" id="qaFab" onclick="qaToggle()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+<button class="qa-fab" id="qaFab" onclick="qaToggle()" aria-label="快捷操作"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
 <div class="qa-sheet" id="qaSheet" onclick="if(event.target===this)qaClose()">
   <div class="qa-panel">
     <div class="qa-title">快捷操作</div>
