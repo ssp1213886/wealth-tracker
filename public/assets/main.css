@@ -2131,3 +2131,9 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 }
 .asset-row,.price-pill{transition:background-color 140ms var(--ease-out),border-color 140ms var(--ease-out)}
 @media(prefers-reduced-motion:reduce){.asset-row,.price-pill{transition:none}}
+
+/* ===== Card polish 3 · inner divider specificity fix ===== */
+@media(max-width:800px){
+  #tab-data .trade-table tbody td,#tab-option .trade-table tbody td,#tab-data .res-table tbody td{border-bottom-color:color-mix(in srgb,var(--rule) 60%,transparent)!important}
+  #tab-data .trade-table tbody tr:last-child td,#tab-option .trade-table tbody tr:last-child td{border-bottom-color:transparent!important}
+}
