@@ -1,5 +1,5 @@
-// Service Worker v110 - inner divider fix
-var CACHE = 'wealth-v110';
+// Service Worker v111 - stronger card texture
+var CACHE = 'wealth-v111';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

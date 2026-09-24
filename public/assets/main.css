@@ -2137,3 +2137,13 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #tab-data .trade-table tbody td,#tab-option .trade-table tbody td,#tab-data .res-table tbody td{border-bottom-color:color-mix(in srgb,var(--rule) 60%,transparent)!important}
   #tab-data .trade-table tbody tr:last-child td,#tab-option .trade-table tbody tr:last-child td{border-bottom-color:transparent!important}
 }
+
+/* ===== Card polish · stronger (per request) ===== */
+@media(max-width:800px){
+  .card,.chart-card,.metric{background-image:linear-gradient(180deg,rgba(255,255,255,.92) 0,rgba(255,255,255,0) 110px)!important}
+  [data-theme="dark"] .card,[data-theme="dark"] .chart-card,[data-theme="dark"] .metric{background-image:linear-gradient(180deg,rgba(255,255,255,.05) 0,rgba(255,255,255,0) 110px)!important}
+  .card,.chart-card,.metric{box-shadow:0 1px 3px rgba(18,28,22,.06),0 10px 28px rgba(18,28,22,.08)!important}
+  [data-theme="dark"] .card,[data-theme="dark"] .chart-card,[data-theme="dark"] .metric{box-shadow:0 1px 3px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.32)!important}
+  .card,#tab-holding .card,#holdMetrics .metric,#tab-option .card,#tab-console .card{border-radius:22px!important}
+  #tab-data .trade-table tbody td,#tab-option .trade-table tbody td,#tab-data .res-table tbody td{border-bottom-color:color-mix(in srgb,var(--rule) 42%,transparent)!important}
+}
