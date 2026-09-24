@@ -1,5 +1,5 @@
-// Service Worker v95 - sidebar breathing room
-var CACHE = 'wealth-v95';
+// Service Worker v96 - sidebar section separation
+var CACHE = 'wealth-v96';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
