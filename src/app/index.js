@@ -15,7 +15,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v146';var APP_DATA_VERSION=5;
+var APP_BUILD='v148';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1331,7 +1331,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=146',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=148',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1516,14 +1516,14 @@ function pushSoon(delay){if(!syncCfg||!syncCfg.url||!syncCfg.token)return;clearT
 function pushNow(){pushSoon(0)}
 function syncBarEl(){return document.getElementById('syncBar')}
 var syncBarTimer=null;
-function setSyncBar(state,text){var el=syncBarEl();if(!el)return;clearTimeout(syncBarTimer);if(!state){el.className='sync-bar';return}el.className='sync-bar show is-'+state;var msg=el.querySelector('.sync-bar-text');if(msg)msg.textContent=text||'';var ic=el.querySelector('.sb-ic');if(ic)ic.textContent=state==='ok'?'✓':state==='err'?'!':'';var retry=document.getElementById('syncBarRetry');if(retry)retry.hidden=(state!=='err');var close=document.getElementById('syncBarClose');if(close)close.hidden=(state!=='err');if(state==='ok')syncBarTimer=setTimeout(function(){setSyncBar('')},2200)}
+function setSyncBar(state,text){var el=syncBarEl();if(!el)return;clearTimeout(syncBarTimer);if(!state){el.className='sync-bar';return}el.className='sync-bar show is-'+state;var msg=el.querySelector('.sync-bar-text');if(msg)msg.textContent=text||'';var ic=el.querySelector('.sb-ic');if(ic)ic.textContent=state==='ok'?'✓':state==='err'?'!':'';if(state==='ok')syncBarTimer=setTimeout(function(){setSyncBar('')},2200);else if(state==='err')syncBarTimer=setTimeout(function(){setSyncBar('')},8000)}
 function syncClockText(){try{return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
 function pushPendingSoon(delay){try{var st=loadSyncState();var pending=SYNC_KEYS.filter(function(k){return !!st.dirty[k]});if(pending.length>0)pushSoon(delay)}catch(e){}}
 function pushedKeysOf(data){var keys=[];SYNC_KEYS.forEach(function(k){if(data&&Object.prototype.hasOwnProperty.call(data,k))keys.push(k)});return keys}
 function pushKeysForce(keys,label){if(!keys||!keys.length)return;if(!syncCfg||!syncCfg.url||!syncCfg.token)return;var payload={};keys.forEach(function(k){payload[k]=localValOf(k)});setSyncBar('busy','正在覆盖云端…');syncFetchWithoutHealth('POST',payload).then(function(r){var st=loadSyncState();keys.forEach(function(k){clearDirty(k);if(r&&r.ts)setCloudTs(k,r.ts)});st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);setSyncBar('ok','已覆盖云端 '+syncClockText());showToast(label||'已用本机数据覆盖云端','ok')}).catch(function(e){setSyncBar('err','覆盖失败：'+((e&&e.message)||'未知错误'))})}
 function healPushConflict(data){var sent=pushedKeysOf(data);if(!syncCfg||!syncCfg.url||!syncCfg.token){autoPull();return}setSyncBar('busy','正在核对…');syncFetchWithoutHealth('GET').then(function(r){if(!r||!r.data){setSyncBar('');autoPull();showToast('云端已有更新，请确认冲突','err');return}var meta=r.meta||{},st=loadSyncState(),diff=[];sent.forEach(function(k){var lv=localValOf(k),cv=r.data[k];if(cv===undefined||cv===null){delete st.cloudTs[k];st.dirty[k]=true;return}if(syncContentEqual(k,lv,cv,normalizeState)){st.dirty[k]=false;var ts=normalizeSyncTs(meta[k]);if(ts)st.cloudTs[k]=ts}else{diff.push(k)}});saveSyncState(st);if(diff.length){setSyncBar('');autoPull();showToast('云端已有更新，请确认冲突','err')}else{setSyncBar('ok','已对齐云端 '+syncClockText());showToast('云端内容与本机一致，已自动对齐','ok')}}).catch(function(){setSyncBar('');autoPull();showToast('云端已有更新，请确认冲突','err')})}
 function flushDirtyOnHide(){try{if(!syncCfg||!syncCfg.url||!syncCfg.token)return;var st=loadSyncState();var pending=SYNC_KEYS.filter(function(k){return !!st.dirty[k]});if(!pending.length)return;var payload=buildPushData(true);delete payload.__expectedVersions;var body=JSON.stringify(payload);if(!body||body.length>60000)return;fetch((syncCfg.url||location.origin).replace(/\/$/,'')+'/api/sync',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':syncCfg.token},body:body,keepalive:true}).catch(function(){})}catch(e){}}
-(function initSyncBar(){var r=document.getElementById('syncBarRetry');if(r)r.addEventListener('click',function(){setSyncBar('busy','正在重试…');pushNow();autoPull()});var c=document.getElementById('syncBarClose');if(c)c.addEventListener('click',function(){setSyncBar('')})})();
+
 (function initPendingPush(){var run=function(){pushPendingSoon(1500)};if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',run)}else{run()}})();
 
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200)}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;

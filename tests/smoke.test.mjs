@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=146');
+  assert.equal(manifest.start_url, '/?v=148');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v146/);
+  assert.match(serviceWorker, /wealth-v148/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=146',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=148',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -253,8 +253,10 @@ test('data health shows cloud sync, backup, and conflict state', () => {
 
 test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(html, /id="syncBar"/);
-  assert.match(html, /id="syncBarRetry"/);
-  assert.match(html, /id="syncBarClose"/);
+  // 胶囊是纯指示：不放按钮（失败的可操作出口是横幅与数据健康），这样三态宽度才真正一致
+  assert.doesNotMatch(html, /id="syncBarRetry"/);
+  assert.doesNotMatch(html, /id="syncBarClose"/);
+  assert.doesNotMatch(appSource, /syncBarRetry|syncBarClose|initSyncBar/);
   assert.match(appMarkup, /\.sync-bar\.is-busy\{/);
   assert.match(appMarkup, /\.sync-bar\.is-ok\{/);
   assert.match(appMarkup, /\.sync-bar\.is-err\{/);
@@ -280,10 +282,16 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(appMarkup, /justify-content:center;gap:8px;min-width:132px/);
   assert.match(appMarkup, /\.sync-bar\.is-busy \.sb-ic::before\{content:'';width:11px;height:11px/);
   assert.doesNotMatch(appMarkup, /\.sync-bar\.is-busy \.sb-ic\{width:11px/, '转圈不再缩小图标盒');
+  // 失败态用"视觉重量"表达紧急度：红色光晕 + 中心放大（几何尺寸不变）
+  assert.match(appMarkup, /\.sync-bar\.is-err\{[^}]*box-shadow:0 0 0 3px color-mix\(in srgb,var\(--red\) 26%,transparent\)/);
+  assert.match(appMarkup, /\.sync-bar\.show\.is-err\{transform:translate3d\(-50%,0,0\) scale\(1\.04\)\}/);
+  assert.match(appMarkup, /\.sync-bar\.is-ok\{[^}]*box-shadow:0 4px 14px rgba\(10,20,14,\.10\)\}/);
   // 胶囊文案统一缩短，避免同一条提示忽大忽小
   assert.match(appSource, /'正在下载…':'正在上传…'/);
   assert.doesNotMatch(appSource, /正在上传到云端/);
   assert.doesNotMatch(appSource, /同步失败 · 数据仅存本机/);
+  // 失败态 8 秒后自动收起（横幅继续常驻）
+  assert.match(appSource, /else if\(state==='err'\)syncBarTimer=setTimeout\(function\(\)\{setSyncBar\(''\)\},8000\)/);
 });
 
 test('sync feedback has a single channel per event', () => {
