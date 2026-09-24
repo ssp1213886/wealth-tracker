@@ -1,5 +1,5 @@
-// Service Worker v106 - force upload local data
-var CACHE = 'wealth-v106';
+// Service Worker v107 - keep-local now force uploads
+var CACHE = 'wealth-v107';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
