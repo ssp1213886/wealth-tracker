@@ -1973,3 +1973,22 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar .sb-health-row{border-radius:10px!important}
   .sidebar .sb-mini-donut,.sidebar .sb-mini-legend span{border-radius:8px}
 }
+
+/* ===== Sidebar · collapsible health ===== */
+@media(max-width:800px){
+  .sidebar>.sb-section.sb-sync-summary>.sb-sync-head{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;margin-bottom:0!important}
+  .sidebar>.sb-section.sb-sync-summary:not(.is-collapsed)>.sb-sync-head{margin-bottom:10px!important}
+  .sidebar>.sb-section.sb-sync-summary>.sb-sync-head::before{content:"\25BE";order:3;margin-left:6px;font-size:.58rem;color:var(--muted);transition:transform 180ms var(--ease-out)}
+  .sidebar>.sb-section.sb-sync-summary.is-collapsed>.sb-sync-head::before{transform:rotate(-90deg)}
+  .sidebar>.sb-section.sb-sync-summary.is-collapsed{height:50px!important;min-height:0!important;max-height:50px!important;padding-top:11px!important;padding-bottom:0!important;overflow:hidden!important}
+  .sidebar>.sb-section.sb-sync-summary.is-collapsed>*:not(.sb-sync-head){display:none!important;visibility:hidden!important}
+}
+@media(min-width:801px){
+  .sidebar>.sb-section.sb-sync-summary>.sb-sync-head{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;margin-bottom:0!important}
+  .sidebar>.sb-section.sb-sync-summary:not(.is-collapsed)>.sb-sync-head{margin-bottom:10px!important}
+  .sidebar>.sb-section.sb-sync-summary>.sb-sync-head::before{content:"\25BE";order:3;margin-left:6px;font-size:.58rem;color:var(--muted);transition:transform 180ms var(--ease-out)}
+  .sidebar>.sb-section.sb-sync-summary.is-collapsed>.sb-sync-head::before{transform:rotate(-90deg)}
+  .sidebar>.sb-section.sb-sync-summary.is-collapsed{height:50px!important;min-height:0!important;max-height:50px!important;padding-top:11px!important;padding-bottom:0!important;overflow:hidden!important}
+  .sidebar>.sb-section.sb-sync-summary.is-collapsed>*:not(.sb-sync-head){display:none!important;visibility:hidden!important}
+}
+@media(prefers-reduced-motion:reduce){.sidebar>.sb-section.sb-sync-summary>.sb-sync-head::before{transition:none}}

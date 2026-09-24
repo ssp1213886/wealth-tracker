@@ -1,5 +1,5 @@
-// Service Worker v85 - sidebar density per reference
-var CACHE = 'wealth-v85';
+// Service Worker v86 - collapsible sidebar health
+var CACHE = 'wealth-v86';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
