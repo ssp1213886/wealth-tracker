@@ -1,5 +1,5 @@
-// Service Worker v107 - keep-local now force uploads
-var CACHE = 'wealth-v107';
+// Service Worker v108 - card polish
+var CACHE = 'wealth-v108';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

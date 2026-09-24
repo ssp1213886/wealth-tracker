@@ -2105,3 +2105,14 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 /* ===== Form invalid field ===== */
 .is-invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 20%,transparent)!important;transition:border-color 160ms var(--ease-out),box-shadow 160ms var(--ease-out)}
 @media(prefers-reduced-motion:reduce){.is-invalid{transition:none}}
+
+/* ===== Card polish · unified containers, titles, top highlight ===== */
+@media(max-width:800px){
+  #tab-option .card,#tab-data .card,#tab-holding .card,#holdMetrics .metric{border-radius:20px!important}
+  #tab-option .card{box-shadow:var(--shadow)!important}
+  #tab-data .card{border-radius:16px!important;box-shadow:var(--shadow)!important}
+  .card,.chart-card,.metric{box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.72)!important}
+  [data-theme="dark"] .card,[data-theme="dark"] .chart-card,[data-theme="dark"] .metric{box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.05)!important}
+  #tab-holding .card>h3,#tab-holding .chart-card>h3,#tab-option .card>h3,#tab-data .card>h3,#tab-console .card>h3{font-size:.84rem!important;font-weight:650!important;letter-spacing:-.012em!important;margin:0 0 12px!important}
+  #tab-option .card>.collapsible-header+.collapsible-body>h3,#tab-data .card h3{letter-spacing:-.012em!important}
+}
