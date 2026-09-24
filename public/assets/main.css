@@ -2053,3 +2053,8 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar>.sb-section.sb-sync-summary{order:5!important}
   .sidebar>.sb-section.sb-settings{order:6!important}
 }
+
+/* ===== Desktop sidebar · no hard-coded heights ===== */
+@media(min-width:801px){
+  .sidebar>.sb-section.sb-portfolio,.sidebar>.sb-section.sb-allocation,.sidebar>.sb-section.sb-market,.sidebar>.sb-section.sb-sync-summary,.sidebar>.sb-section.sb-settings,.sidebar>.sb-section[style*="padding:8px"]{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
+}

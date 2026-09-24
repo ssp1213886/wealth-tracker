@@ -1,5 +1,5 @@
-// Service Worker v93 - desktop sidebar section order
-var CACHE = 'wealth-v93';
+// Service Worker v94 - sidebar auto heights
+var CACHE = 'wealth-v94';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
