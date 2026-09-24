@@ -1,5 +1,5 @@
-// Service Worker v117 - holdings accent bars and option spacing
-var CACHE = 'wealth-v117';
+// Service Worker v119 - sidebar allocation color unification
+var CACHE = 'wealth-v119';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
