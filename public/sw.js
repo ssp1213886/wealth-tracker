@@ -1,5 +1,5 @@
-// Service Worker v70 - light theme polish
-var CACHE = 'wealth-v70';
+// Service Worker v71 - remove active tab marker
+var CACHE = 'wealth-v71';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

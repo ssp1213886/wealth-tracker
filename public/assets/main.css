@@ -1795,7 +1795,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 
 /* ===== Bottom bar · a11y-aware refinements ===== */
 #bottomBar.bottom-bar{grid-template-columns:1fr 1fr 88px 1fr 1fr!important;box-shadow:0 -8px 24px rgba(0,0,0,.16)!important}
-#bottomBar .bb-btn.active{background-image:linear-gradient(var(--accent),var(--accent));background-size:18px 3px;background-position:center top 3px;background-repeat:no-repeat}
+/* 选中项指示条已按要求移除，当前项仅以颜色区分 */
 
 /* ===== Per-page ambience (accent-derived) ===== */
 
