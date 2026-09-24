@@ -2300,18 +2300,21 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sb-settings-entry{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
 .sb-settings-entry>span{margin-left:auto;font-weight:500;letter-spacing:0;font-size:1rem;opacity:.6}
 
-/* ===== 同步状态提示条：同步中 / 已同步 / 失败 ===== */
-.sync-bar{position:sticky;top:0;z-index:46;display:none;align-items:center;gap:8px;margin:0 0 8px;padding:7px 11px;border:1px solid var(--rule);border-radius:12px;background:var(--card-bg);color:var(--muted);font-size:.68rem;font-weight:560;line-height:1.3;box-shadow:0 1px 2px rgba(17,32,23,.04)}
-.sync-bar.show{display:flex}
-/* 文字色用"状态色 + 前景色"混合：浅色下加深、深色下提亮，保证 AA 对比度（浅色错误态曾只有 3.97:1） */
-.sync-bar.is-busy{background:color-mix(in srgb,var(--accent) 9%,var(--card-bg));border-color:color-mix(in srgb,var(--accent) 26%,var(--rule));color:color-mix(in srgb,var(--accent) 68%,var(--fg))}
-.sync-bar.is-ok{background:color-mix(in srgb,var(--accent) 12%,var(--card-bg));border-color:color-mix(in srgb,var(--accent) 30%,var(--rule));color:color-mix(in srgb,var(--accent) 68%,var(--fg))}
-.sync-bar.is-err{background:color-mix(in srgb,var(--red) 10%,var(--card-bg));border-color:color-mix(in srgb,var(--red) 30%,var(--rule));color:color-mix(in srgb,var(--red) 74%,var(--fg))}
-.sync-bar-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sync-bar .sb-spin{flex:0 0 auto;width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;animation:syncBarSpin .7s linear infinite}
-.sync-bar.is-ok .sb-spin,.sync-bar.is-err .sb-spin{display:none}
-.sync-bar button{border:0;background:transparent;color:inherit;font:inherit;font-weight:620;padding:2px 7px;border-radius:8px;cursor:pointer}
-.sync-bar .sync-bar-close{font-size:.95rem;line-height:1;opacity:.6;padding:0 4px}
+/* ===== 同步提示：居中悬浮胶囊（覆盖式，不占文档流、不推内容） =====
+   位置固定在顶部安全区下方 56px（避开左上角 ☰ 与页头），宽度随内容收缩并居中，
+   所以永远不会压到汉堡按钮；最大宽度留出左右各 66px 的边距。
+   三态靠"颜色 + 图标 + 文案"三重区分：同步中=中性灰+转圈，已同步=主色+✓，失败=红+!+重试。 */
+.sync-bar{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:50%;z-index:48;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 132px);padding:8px 14px;border:0;border-radius:999px;background:var(--card-bg);color:var(--fg);font-size:.7rem;font-weight:560;line-height:1.25;box-shadow:0 10px 28px rgba(10,20,14,.16),0 2px 8px rgba(10,20,14,.08);opacity:0;pointer-events:none;transform:translate3d(-50%,-10px,0);transition:opacity .18s cubic-bezier(.22,.8,.22,1),transform .18s cubic-bezier(.22,.8,.22,1)}
+.sync-bar.show{opacity:1;pointer-events:auto;transform:translate3d(-50%,0,0)}
+[data-theme='dark'] .sync-bar{box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.4)}
+/* 进行中是"中性"的，不再和成功态同样泛绿 */
+.sync-bar.is-busy{background:color-mix(in srgb,var(--fg) 7%,var(--card-bg));color:var(--fg)}
+/* 状态色与前景色混合：浅色下加深、深色下提亮，保证 AA 对比度（浅色错误态曾只有 3.97:1） */
+.sync-bar.is-ok{background:color-mix(in srgb,var(--accent) 14%,var(--card-bg));color:color-mix(in srgb,var(--accent) 66%,var(--fg))}
+.sync-bar.is-err{background:color-mix(in srgb,var(--red) 12%,var(--card-bg));color:color-mix(in srgb,var(--red) 72%,var(--fg))}
+.sync-bar-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sync-bar .sb-ic{flex:0 0 auto;display:grid;place-items:center;width:13px;height:13px;font-style:normal;font-size:.72rem;font-weight:700;line-height:1}
+.sync-bar.is-busy .sb-ic{width:11px;height:11px;border-radius:50%;border:1.6px solid currentColor;border-top-color:transparent;animation:syncBarSpin .7s linear infinite}
+.sync-bar button{border:0;background:transparent;color:inherit;font:inherit;font-weight:640;padding:2px 6px;border-radius:999px;cursor:pointer}
+.sync-bar .sync-bar-close{font-size:.95rem;line-height:1;opacity:.55;padding:0 3px}
 @keyframes syncBarSpin{to{transform:rotate(360deg)}}
-/* 移动端左上角是固定的 ☰（40px，left:12px），提示条要让开它，否则会被压住 */
-@media (max-width:800px){.sync-bar{margin-left:50px}}

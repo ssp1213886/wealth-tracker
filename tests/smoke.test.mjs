@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=144');
+  assert.equal(manifest.start_url, '/?v=145');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v144/);
+  assert.match(serviceWorker, /wealth-v145/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=144',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=145',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -264,6 +264,17 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(appSource, /function pushKeysForce\(/);
   // 409 不再直接甩给用户，先自动核对
   assert.doesNotMatch(appSource, /status===409\)\{autoPull\(\);showToast\('云端已有更新/);
+
+  // 悬浮胶囊：覆盖式（不占流、不推内容）、居中、避开左上角 ☰
+  assert.match(appMarkup, /\.sync-bar\{position:fixed;top:calc\(56px \+ env\(safe-area-inset-top,0px\)\);left:50%/);
+  assert.match(appMarkup, /transform:translate3d\(-50%,-10px,0\)/);
+  assert.match(appMarkup, /max-width:calc\(100vw - 132px\)/);
+  assert.match(appMarkup, /\.sync-bar\.show\{opacity:1;pointer-events:auto;transform:translate3d\(-50%,0,0\)\}/);
+  assert.doesNotMatch(appMarkup, /\.sync-bar\{margin-left:50px\}/, '旧的避让式左缩进应已删除');
+  // 三态图标
+  assert.match(html, /class="sb-ic"/);
+  assert.match(appSource, /state==='ok'\?'✓':state==='err'\?'!':''/);
+  assert.match(appSource, /setSyncBar\(''\)\},2200\)/, '成功态停留 2.2 秒');
 });
 
 test('sync feedback has a single channel per event', () => {

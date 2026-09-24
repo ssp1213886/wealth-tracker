@@ -15,7 +15,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v144';var APP_DATA_VERSION=5;
+var APP_BUILD='v145';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1331,7 +1331,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=144',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=145',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1516,7 +1516,7 @@ function pushSoon(delay){if(!syncCfg||!syncCfg.url||!syncCfg.token)return;clearT
 function pushNow(){pushSoon(0)}
 function syncBarEl(){return document.getElementById('syncBar')}
 var syncBarTimer=null;
-function setSyncBar(state,text){var el=syncBarEl();if(!el)return;clearTimeout(syncBarTimer);if(!state){el.className='sync-bar';return}el.className='sync-bar show is-'+state;var msg=el.querySelector('.sync-bar-text');if(msg)msg.textContent=text||'';var retry=document.getElementById('syncBarRetry');if(retry)retry.hidden=(state!=='err');var close=document.getElementById('syncBarClose');if(close)close.hidden=(state!=='err');if(state==='ok')syncBarTimer=setTimeout(function(){setSyncBar('')},1600)}
+function setSyncBar(state,text){var el=syncBarEl();if(!el)return;clearTimeout(syncBarTimer);if(!state){el.className='sync-bar';return}el.className='sync-bar show is-'+state;var msg=el.querySelector('.sync-bar-text');if(msg)msg.textContent=text||'';var ic=el.querySelector('.sb-ic');if(ic)ic.textContent=state==='ok'?'✓':state==='err'?'!':'';var retry=document.getElementById('syncBarRetry');if(retry)retry.hidden=(state!=='err');var close=document.getElementById('syncBarClose');if(close)close.hidden=(state!=='err');if(state==='ok')syncBarTimer=setTimeout(function(){setSyncBar('')},2200)}
 function syncClockText(){try{return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
 function pushPendingSoon(delay){try{var st=loadSyncState();var pending=SYNC_KEYS.filter(function(k){return !!st.dirty[k]});if(pending.length>0)pushSoon(delay)}catch(e){}}
 function pushedKeysOf(data){var keys=[];SYNC_KEYS.forEach(function(k){if(data&&Object.prototype.hasOwnProperty.call(data,k))keys.push(k)});return keys}
