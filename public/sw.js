@@ -1,5 +1,5 @@
-// Service Worker v74 - stronger touch press feedback
-var CACHE = 'wealth-v74';
+// Service Worker v75 - sync spinner failsafe
+var CACHE = 'wealth-v75';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
