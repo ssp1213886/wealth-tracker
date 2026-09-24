@@ -1,5 +1,5 @@
-// Service Worker v50 - unified empty states
-var CACHE = 'wealth-v50';
+// Service Worker v51 - unified records tables
+var CACHE = 'wealth-v51';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

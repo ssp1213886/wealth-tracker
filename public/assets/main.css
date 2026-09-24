@@ -1550,7 +1550,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 
 /* Tables */
 #tab-option .trade-table,#tab-data .trade-table{display:block!important;width:100%!important;overflow-x:auto!important}
-#tab-option .trade-table th,#tab-data .trade-table th{font-size:.64rem;color:var(--muted)!important;background:transparent!important}
+#tab-option .trade-table th,#tab-data .trade-table th{font-size:.64rem;color:var(--muted)!important;background:color-mix(in srgb,var(--surface) 72%,transparent)!important}
 #tab-option .trade-table td,#tab-data .trade-table td{padding-top:10px!important;padding-bottom:10px!important;font-size:.73rem;line-height:1.2!important;border-bottom:1px solid var(--rule)!important}
 #tab-option .trade-table tr:last-child td,#tab-data .trade-table tr:last-child td{border-bottom:0!important}
 
@@ -1753,3 +1753,12 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .ds-empty-compact .ds-empty-icon{width:24px;height:24px;border-radius:8px}
 .ds-empty-compact .ds-empty-icon svg{width:14px;height:14px}
 .ds-empty-compact .ds-empty-title{font-size:.72rem;font-weight:520;color:var(--muted)}
+
+/* ===== Records tables · unified ===== */
+.trade-table,.res-table{font-size:.72rem}
+.trade-table thead th,.res-table thead th{border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--surface) 72%,transparent);color:var(--muted);font-weight:560;letter-spacing:.02em;padding:9px 10px}
+.trade-table tbody td,.res-table tbody td{padding:11px 10px;border-bottom:1px solid var(--rule)}
+.trade-table tbody tr:nth-child(even),.res-table tbody tr:nth-child(even){background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.trade-table tbody tr:last-child td,.res-table tbody tr:last-child td{border-bottom:0}
+.trade-table tbody tr:active,.res-table tbody tr:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.table-empty{padding:22px 14px;font-size:.74rem;color:var(--muted);text-align:center}
