@@ -1,5 +1,5 @@
-// Service Worker v114 - option holdings cards
-var CACHE = 'wealth-v114';
+// Service Worker v115 - option action buttons and card spacing
+var CACHE = 'wealth-v115';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

@@ -2156,26 +2156,26 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 
 /* ===== Record cards - mobile layout ===== */
 @media(max-width:800px){
-  #tab-data #holdBody tr,#tab-data #tradeBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px 6px!important;padding:11px 13px!important;height:auto!important}
-  #tab-data #holdBody td,#tab-data #tradeBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.42!important;text-align:left!important}
+  #tab-data #holdBody tr,#tab-data #tradeBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:6px 8px!important;padding:13px 14px!important;height:auto!important}
+  #tab-data #holdBody td,#tab-data #tradeBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.5!important;text-align:left}
   #tab-data #holdBody td::before,#tab-data #tradeBody td::before{display:none!important}
   #tab-data #holdBody td:nth-child(1){grid-area:1/1/2/5;font-size:.9rem!important;font-weight:660}
   #tab-data #holdBody td:nth-child(4){grid-area:1/5/2/9;font-size:.95rem!important;font-weight:690;text-align:right;font-variant-numeric:tabular-nums}
-  #tab-data #holdBody td:nth-child(2){grid-area:2/1/3/5;color:var(--muted);font-size:.68rem!important;font-variant-numeric:tabular-nums}
-  #tab-data #holdBody td:nth-child(3){grid-area:2/5/3/9;color:var(--muted);font-size:.68rem!important;text-align:right;font-variant-numeric:tabular-nums}
+  #tab-data #holdBody td:nth-child(2){grid-area:2/1/3/5;color:var(--muted);font-size:.7rem!important;font-variant-numeric:tabular-nums}
+  #tab-data #holdBody td:nth-child(3){grid-area:2/5/3/9;color:var(--muted);font-size:.7rem!important;text-align:right;font-variant-numeric:tabular-nums}
   #tab-data #holdBody td:nth-child(2)::before{display:inline!important;content:'持仓 ';color:var(--muted)}
   #tab-data #holdBody td:nth-child(2)::after{display:inline!important;content:' 股';color:var(--muted)}
   #tab-data #holdBody td:nth-child(3)::before{display:inline!important;content:'均价 ';color:var(--muted)}
-  #tab-data #holdBody td:nth-child(5){grid-area:3/1/4/5;font-size:.84rem!important;font-weight:660;font-variant-numeric:tabular-nums}
-  #tab-data #holdBody td:nth-child(6){grid-area:3/5/4/7;font-size:.84rem!important;font-weight:660;text-align:right;font-variant-numeric:tabular-nums}
+  #tab-data #holdBody td:nth-child(5){grid-area:3/1/4/5;font-size:.86rem!important;font-weight:660;font-variant-numeric:tabular-nums}
+  #tab-data #holdBody td:nth-child(6){grid-area:3/5/4/7;font-size:.86rem!important;font-weight:660;text-align:right;font-variant-numeric:tabular-nums}
   #tab-data #holdBody td:nth-child(7){grid-area:3/7/4/9;text-align:right}
   #tab-data #holdBody td.pnl-pos{color:var(--ok)!important}
   #tab-data #holdBody td.pnl-neg{color:var(--danger)!important}
   #tab-data #tradeBody td:nth-child(2){grid-area:1/1/2/5;font-size:.9rem!important;font-weight:660}
   #tab-data #tradeBody td:nth-child(3){grid-area:1/5/2/9;text-align:right}
-  #tab-data #tradeBody td:nth-child(1){grid-area:2/1/3/5;color:var(--muted);font-size:.66rem!important;font-variant-numeric:tabular-nums}
-  #tab-data #tradeBody td:nth-child(4){grid-area:2/5/3/9;color:var(--muted);font-size:.66rem!important;text-align:right;font-variant-numeric:tabular-nums}
-  #tab-data #tradeBody td:nth-child(5){grid-area:3/1/4/6;font-size:.86rem!important;font-weight:670;font-variant-numeric:tabular-nums}
+  #tab-data #tradeBody td:nth-child(1){grid-area:2/1/3/5;color:var(--muted);font-size:.68rem!important;font-variant-numeric:tabular-nums}
+  #tab-data #tradeBody td:nth-child(4){grid-area:2/5/3/9;color:var(--muted);font-size:.68rem!important;text-align:right;font-variant-numeric:tabular-nums}
+  #tab-data #tradeBody td:nth-child(5){grid-area:3/1/4/6;font-size:.88rem!important;font-weight:670;font-variant-numeric:tabular-nums}
   #tab-data #tradeBody td:nth-child(6){grid-area:3/6/4/9;text-align:right}
   #tab-data #tradeBody .trade-dir{font-size:.64rem;padding:1px 6px;margin-right:5px}
   #tab-data #tradeBody .trade-qty{font-size:.82rem;font-weight:650}
@@ -2219,8 +2219,8 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 
 /* ===== Option holdings - mobile layout ===== */
 @media(max-width:800px){
-  #tab-option #holdingsBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px 6px!important;padding:11px 13px!important;height:auto!important;opacity:1!important}
-  #tab-option #holdingsBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.42!important;text-align:left!important}
+  #tab-option #holdingsBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:6px 8px!important;padding:13px 14px!important;height:auto!important;opacity:1!important}
+  #tab-option #holdingsBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.5!important;text-align:left}
   #tab-option #holdingsBody td::before{display:none!important}
   #tab-option #holdingsBody td:nth-child(1){grid-area:1/1/2/3;font-size:.9rem!important;font-weight:670}
   #tab-option #holdingsBody td:nth-child(2){grid-area:1/3/2/5}
@@ -2229,7 +2229,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #tab-option #holdingsBody td:nth-child(6){grid-area:2/6/3/9;color:var(--muted);font-size:.66rem!important;text-align:right;font-variant-numeric:tabular-nums}
   #tab-option #holdingsBody td:nth-child(4){grid-area:3/1/4/4;font-size:.84rem!important;font-weight:650;font-variant-numeric:tabular-nums}
   #tab-option #holdingsBody td:nth-child(5){grid-area:3/4/4/5;color:var(--muted);font-size:.68rem!important}
-  #tab-option #holdingsBody td:nth-child(8){grid-area:3/5/4/9;text-align:right}
+  #tab-option #holdingsBody td:nth-child(8){grid-area:4/1/5/9;text-align:right;padding-top:5px!important}
   #tab-option #holdingsBody td[colspan]{grid-column:1/-1!important;text-align:center!important;white-space:normal!important;overflow:visible!important}
   #tab-option #holdingsBody td:nth-child(3)::before{display:inline!important;content:'行权 ';color:var(--muted);font-size:.68rem;font-weight:500}
   #tab-option #holdingsBody td:nth-child(4)::before{display:inline!important;content:'权利金 ';color:var(--muted);font-size:.68rem;font-weight:500}
