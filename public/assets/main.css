@@ -2021,3 +2021,8 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 :is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-sm,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-icon{font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important;border-radius:var(--btn-r-sm)!important}
 :is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-pri,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .console-form .btn-pri,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .option-form .btn-pri{font-size:var(--btn-f-lg)!important;font-weight:var(--btn-w-strong)!important;border-radius:var(--btn-r-lg)!important}
 .header-tools .btn{font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important;border-radius:var(--btn-r-sm)!important}
+
+/* ===== Settings entry pinned to drawer bottom ===== */
+@media(max-width:800px){
+  .sidebar .sb-settings-entry{position:sticky!important;bottom:0!important;z-index:8!important;background:var(--card-bg)!important;border-top:1px solid var(--rule)!important;box-shadow:0 -8px 18px rgba(0,0,0,.12);margin-top:auto!important}
+}

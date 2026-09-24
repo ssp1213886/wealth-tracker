@@ -1,5 +1,5 @@
-// Service Worker v89 - unified button typography
-var CACHE = 'wealth-v89';
+// Service Worker v90 - pinned sidebar settings entry
+var CACHE = 'wealth-v90';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
