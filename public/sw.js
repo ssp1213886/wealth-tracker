@@ -1,5 +1,5 @@
-// Service Worker v77 - sync failure banner and retry
-var CACHE = 'wealth-v77';
+// Service Worker v78 - remove status bar tap hot zone
+var CACHE = 'wealth-v78';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
