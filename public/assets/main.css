@@ -2303,9 +2303,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 /* ===== 同步状态提示条：同步中 / 已同步 / 失败 ===== */
 .sync-bar{position:sticky;top:0;z-index:46;display:none;align-items:center;gap:8px;margin:0 0 8px;padding:7px 11px;border:1px solid var(--rule);border-radius:12px;background:var(--card-bg);color:var(--muted);font-size:.68rem;font-weight:560;line-height:1.3;box-shadow:0 1px 2px rgba(17,32,23,.04)}
 .sync-bar.show{display:flex}
-.sync-bar.is-busy{background:color-mix(in srgb,var(--accent) 9%,var(--card-bg));border-color:color-mix(in srgb,var(--accent) 26%,var(--rule));color:var(--accent)}
-.sync-bar.is-ok{background:color-mix(in srgb,var(--accent) 12%,var(--card-bg));border-color:color-mix(in srgb,var(--accent) 30%,var(--rule));color:var(--accent)}
-.sync-bar.is-err{background:color-mix(in srgb,var(--red) 10%,var(--card-bg));border-color:color-mix(in srgb,var(--red) 30%,var(--rule));color:var(--red)}
+/* 文字色用"状态色 + 前景色"混合：浅色下加深、深色下提亮，保证 AA 对比度（浅色错误态曾只有 3.97:1） */
+.sync-bar.is-busy{background:color-mix(in srgb,var(--accent) 9%,var(--card-bg));border-color:color-mix(in srgb,var(--accent) 26%,var(--rule));color:color-mix(in srgb,var(--accent) 68%,var(--fg))}
+.sync-bar.is-ok{background:color-mix(in srgb,var(--accent) 12%,var(--card-bg));border-color:color-mix(in srgb,var(--accent) 30%,var(--rule));color:color-mix(in srgb,var(--accent) 68%,var(--fg))}
+.sync-bar.is-err{background:color-mix(in srgb,var(--red) 10%,var(--card-bg));border-color:color-mix(in srgb,var(--red) 30%,var(--rule));color:color-mix(in srgb,var(--red) 74%,var(--fg))}
 .sync-bar-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sync-bar .sb-spin{flex:0 0 auto;width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor;border-top-color:transparent;animation:syncBarSpin .7s linear infinite}
 .sync-bar.is-ok .sb-spin,.sync-bar.is-err .sb-spin{display:none}
