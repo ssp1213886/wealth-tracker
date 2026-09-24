@@ -1795,6 +1795,4 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 
 /* ===== Bottom bar · a11y-aware refinements ===== */
 #bottomBar.bottom-bar{grid-template-columns:1fr 1fr 88px 1fr 1fr!important;box-shadow:0 -8px 24px rgba(0,0,0,.16)!important}
-#bottomBar .bb-btn::before{content:"";position:absolute;top:3px;left:50%;transform:translateX(-50%);width:18px;height:3px;border-radius:2px;background:transparent;transition:background-color 160ms var(--ease-out)}
-#bottomBar .bb-btn.active::before{background:var(--accent)}
-@media(prefers-reduced-motion:reduce){#bottomBar .bb-btn::before{transition:none}}
+#bottomBar .bb-btn.active{background-image:linear-gradient(var(--accent),var(--accent));background-size:18px 3px;background-position:center top 3px;background-repeat:no-repeat}
