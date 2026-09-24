@@ -1,5 +1,5 @@
-// Service Worker v33 - iOS log and settings drawer
-var CACHE = 'wealth-v33';
+// Service Worker v45 - mobile rhythm refinement
+var CACHE = 'wealth-v45';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

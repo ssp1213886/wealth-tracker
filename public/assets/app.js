@@ -516,7 +516,7 @@ function addActivity(action,detail){var acts=[];try{acts=JSON.parse(localStorage
 
 
 
-function renderActivity(){var el=document.getElementById('activityLog');if(!el)return;var acts=normalizeActivities(JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]'));if(!acts.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:.7rem;">暂无操作记录</div>';return}el.innerHTML=acts.slice().reverse().map(function(a){var kind=a.action.indexOf('买入')>=0?'buy':a.action.indexOf('卖出')>=0?'sell':a.action.indexOf('入金')>=0?'deposit':a.action.indexOf('出金')>=0?'withdraw':'note',icon=kind==='buy'||kind==='deposit'?'<path d="m5 12 4 4 10-10"/>':kind==='sell'||kind==='withdraw'?'<path d="M6 6l12 12M18 6 6 18"/>':'<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/>';return'<div style="padding:8px 10px;border-bottom:1px solid var(--rule);font-size:.7rem;display:flex;gap:8px;align-items:flex-start;"><span class="activity-mark '+kind+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+icon+'</svg></span><div style="flex:1;min-width:0;"><div style="color:var(--fg);">'+escapeHtml(a.action)+'</div>'+(a.detail?'<div style="color:var(--muted);font-size:.7rem;">'+escapeHtml(a.detail)+'</div>':'')+'</div><span style="color:var(--muted);font-size:.7rem;white-space:nowrap;">'+escapeHtml(a.date.slice(5)+' '+a.time)+'</span><button class="trade-del" data-act="'+a.id+'" aria-label="删除这条日志" style="font-size:.7rem;background:none;border:none;color:var(--muted);cursor:pointer;padding:0 2px;">×</button></div>'}).join('')}
+function renderActivity(){var el=document.getElementById('activityLog');if(!el)return;var acts=normalizeActivities(JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]'));if(!acts.length){el.innerHTML='<div class="table-empty">暂无操作记录</div>';return}el.innerHTML=acts.slice().reverse().map(function(a){var kind=a.action.indexOf('买入')>=0?'buy':a.action.indexOf('卖出')>=0?'sell':a.action.indexOf('入金')>=0?'deposit':a.action.indexOf('出金')>=0?'withdraw':'note',icon=kind==='buy'||kind==='deposit'?'<path d="m5 12 4 4 10-10"/>':kind==='sell'||kind==='withdraw'?'<path d="M6 6l12 12M18 6 6 18"/>':'<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/>';return'<div class="activity-item"><span class="activity-mark '+kind+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+icon+'</svg></span><div class="activity-body"><div class="activity-title">'+escapeHtml(a.action)+'</div>'+(a.detail?'<div class="activity-detail">'+escapeHtml(a.detail)+'</div>':'')+'</div><span class="activity-time">'+escapeHtml(a.date.slice(5)+' '+a.time)+'</span><button class="trade-del" data-act="'+a.id+'" aria-label="删除这条日志">×</button></div>'}).join('')}
 
 
 
@@ -584,7 +584,7 @@ function renderLogHeatmap(){
 
 
 
-    htm+='<div title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'" style="padding:8px 4px;text-align:center;border-radius:5px;background:'+bg+';border:'+(mt.ym===curYM?'2px solid var(--accent)':'1px solid transparent')+';font-size:.7rem;color:'+txt+';min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:.7rem;">'+mt.label+'</span>'+(icon?'<span style="font-size:.7rem;font-weight:700;">'+icon+'</span>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm
+    var state=mt.isFuture?'':mt.ym===curYM?'is-current':!mt.hasBuy?'is-empty':mt.complete?'is-done':'is-partial';htm+='<div class="discipline-month '+state+'" title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'"><span>'+mt.label+'</span>'+(icon?'<strong>'+icon+'</strong>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm
 
 
 
@@ -598,7 +598,7 @@ function renderAnnualMatrix(){
 
   // Find the first year with any buy trade or cash deposit
   var allDates=[].concat(trades.map(function(t){return t.date})).concat(cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).map(function(l){return l.date}));
-  if(!allDates.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;">暂无数据</div>';stats.innerHTML='';return}
+if(!allDates.length){grid.innerHTML='<div class="table-empty">暂无数据</div>';stats.innerHTML='';return}
   allDates.sort();
   var startYear=parseInt(allDates[0].slice(0,4));
   var now=new Date(),endYear=now.getFullYear();
@@ -646,12 +646,12 @@ function renderAnnualMatrix(){
     var rateStr=c.hasData?c.rate.toFixed(1)+'%':'-';
     var holdStr=c.hasData?('VGT '+fmtSh(c.vgt)+'股  SMH '+fmtSh(c.smh)+'股  BTC '+fmtSh(c.btc)+'股'):'';
     var detail=c.hasData?('CC权利金 '+fmt$(c.prem)+' | 总买入 '+fmt$(c.dca)):'';
-    htm+='<div style="padding:6px 3px;text-align:center;border-radius:6px;background:'+h[0]+';font-size:.7rem;color:'+h[1]+';display:flex;flex-direction:column;justify-content:center;min-height:72px;border:1px solid '+(c.hasData?'rgba(0,0,0,.06)':'rgba(0,0,0,.04)')+';"><span style="font-size:.7rem;color:'+h[2]+';margin-bottom:1px">'+c.ym+'</span><strong style="font-size:.82rem;line-height:1.15">'+rateStr+'</strong><span style="font-size:.7rem;color:'+h[2]+';">'+holdStr+'</span><span style="font-size:.7rem;color:'+h[3]+';margin-top:1px">'+detail+'</span></div>';
+    htm+='<div class="annual-cell" style="background:'+h[0]+';color:'+h[1]+';border-color:'+h[3]+'"><span class="year" style="color:'+h[2]+'">'+c.ym+'</span><strong>'+rateStr+'</strong><span style="color:'+h[2]+'">'+holdStr+'</span><span style="color:'+h[3]+'">'+detail+'</span></div>';
   });
   grid.innerHTML=htm;
 
   var cc=totalAssets>=0?'var(--accent)':'var(--red)';
-  stats.innerHTML='<div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.7rem;color:var(--muted);margin-bottom:2px">总入金</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalInvested)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.7rem;color:var(--muted);margin-bottom:2px">当前总资产</div><div style="font-size:.74rem;font-weight:700;">'+fmtFull(totalAssets)+'</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.7rem;color:var(--muted);margin-bottom:2px">长期 CAGR</div><div style="font-size:.74rem;font-weight:700;color:'+cc+';">'+(cagr*100).toFixed(1)+'%</div></div><div style="background:var(--surface);padding:10px 12px;border-radius:8px;border:1px solid var(--rule);"><div style="font-size:.7rem;color:var(--muted);margin-bottom:2px">目标差额</div><div style="font-size:.74rem;font-weight:700;color:var(--orange);">'+fmtFull(targetGap)+'</div></div><div style="font-size:.7rem;color:var(--muted);text-align:center;margin-top:4px;">热力=年度权利金贡献率（CC权利金÷买入总额）颜色越暖权利金贡献越大</div>';
+  stats.innerHTML='<div class="annual-stat"><span>总入金</span><strong>'+fmtFull(totalInvested)+'</strong></div><div class="annual-stat"><span>当前总资产</span><strong>'+fmtFull(totalAssets)+'</strong></div><div class="annual-stat"><span>长期 CAGR</span><strong style="color:'+cc+'">'+(cagr*100).toFixed(1)+'%</strong></div><div class="annual-stat"><span>目标差额</span><strong style="color:var(--orange)">'+fmtFull(targetGap)+'</strong></div><div class="annual-note">热力=年度权利金贡献率（CC权利金÷买入总额）颜色越暖权利金贡献越大</div>';
 }
 
 
@@ -955,7 +955,7 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
 
 
 
-  saveTrades();updatePortfolio();updateDCA();document.getElementById('tfShares').value='';document.getElementById('tfPrice').value='';
+  saveTrades();updatePortfolio();updateDCA();document.getElementById('tfShares').value='';document.getElementById('tfPrice').value='';updateTradeEstimate();
 
 
 
@@ -1161,11 +1161,68 @@ function updateMobStatusBar(){
 
 
 
+function updateTradeEstimate(){
+  var shares=parseFloat(document.getElementById('tfShares').value),price=parseFloat(document.getElementById('tfPrice').value),out=document.getElementById('tfEstimated');
+  if(out)out.textContent=shares>0&&price>0?fmtFull(shares*price):'$0.00';
+}
+function syncTradeControls(){
+  var type=document.getElementById('tfType'),asset=document.getElementById('tfAsset');
+  if(!type||!asset)return;
+  document.querySelectorAll('.segment').forEach(function(btn){
+    var active=btn.dataset.tradeType===type.value;
+    btn.classList.toggle('active',active);
+    btn.setAttribute('aria-selected',active?'true':'false');
+  });
+  document.querySelectorAll('.asset-chip').forEach(function(btn){
+    btn.classList.toggle('active',btn.dataset.asset===asset.value);
+  });
+}
+function initConsoleEntryControls(){
+  var type=document.getElementById('tfType'),asset=document.getElementById('tfAsset'),shares=document.getElementById('tfShares'),price=document.getElementById('tfPrice');
+  if(!type||!asset)return;
+  document.querySelectorAll('.segment').forEach(function(btn){
+    btn.addEventListener('click',function(){type.value=btn.dataset.tradeType;syncTradeControls()});
+  });
+  document.querySelectorAll('.asset-chip').forEach(function(btn){
+    btn.addEventListener('click',function(){asset.value=btn.dataset.asset;syncTradeControls()});
+  });
+  type.addEventListener('change',syncTradeControls);
+  asset.addEventListener('change',syncTradeControls);
+  if(shares)shares.addEventListener('input',updateTradeEstimate);
+  if(price)price.addEventListener('input',updateTradeEstimate);
+  syncTradeControls();
+  updateTradeEstimate();
+}
+function syncOptionControls(){
+  var type=document.getElementById('otype'),asset=document.getElementById('osym');
+  if(!type||!asset)return;
+  document.querySelectorAll('.option-type-segment .segment').forEach(function(btn){
+    var active=btn.dataset.optionType===type.value;
+    btn.classList.toggle('active',active);
+    btn.setAttribute('aria-selected',active?'true':'false');
+  });
+  document.querySelectorAll('.option-asset-chips .asset-chip').forEach(function(btn){
+    btn.classList.toggle('active',btn.dataset.optionAsset===asset.value);
+  });
+}
+function initOptionEntryControls(){
+  var type=document.getElementById('otype'),asset=document.getElementById('osym');
+  if(!type||!asset)return;
+  document.querySelectorAll('.option-type-segment .segment').forEach(function(btn){
+    btn.addEventListener('click',function(){type.value=btn.dataset.optionType;syncOptionControls()});
+  });
+  document.querySelectorAll('.option-asset-chips .asset-chip').forEach(function(btn){
+    btn.addEventListener('click',function(){asset.value=btn.dataset.optionAsset;syncOptionControls()});
+  });
+  type.addEventListener('change',syncOptionControls);
+  asset.addEventListener('change',syncOptionControls);
+  syncOptionControls();
+}
 function fillTradeForm(sym,price){
 
 
 
-  var se=document.getElementById('tfAsset');if(se)se.value=sym;
+  var se=document.getElementById('tfAsset');if(se)se.value=sym;syncTradeControls();
 
 
 
@@ -1173,11 +1230,11 @@ function fillTradeForm(sym,price){
 
 
 
-  var pe=document.getElementById('tfPrice');if(pe&&price)pe.value=price.toFixed(2);
+  var pe=document.getElementById('tfPrice');if(pe&&price)pe.value=price.toFixed(2);updateTradeEstimate();
 
 
 
-  var qe=document.getElementById('tfShares');if(qe)qe.focus();
+  var qe=document.getElementById('tfShares');if(qe)qe.focus();syncTradeControls();
 
 
 
@@ -1199,7 +1256,11 @@ var _ptrEl=document.getElementById("pullHint"),_ptrBtn=document.getElementById("
 
 function initAll(){
 
-  var initialTradeDate=document.getElementById('tfDate');if(initialTradeDate&&!initialTradeDate.value)initialTradeDate.value=marketDate();
+  var initialTradeDate=document.getElementById('tfDate');if(initialTradeDate&&!initialTradeDate.value)initialTradeDate.value=marketDate();initConsoleEntryControls();
+
+
+
+  initOptionEntryControls();
 
 
 
@@ -1231,7 +1292,7 @@ function initAll(){
 
 
 
-    var tb=document.querySelector('.tab-btn[data-tab="holding"]');if(tb)tb.click();
+    var tb=document.querySelector('.tab-btn[data-tab="holding"]');if(tb)tb.click();syncTradeControls();updateTradeEstimate();
 
 
 
@@ -1279,7 +1340,7 @@ function initAll(){
 
 
 
-  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
+  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr;syncTradeControls();updateTradeEstimate()});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);document.body.innerHTML='<div style="padding:40px"><h2>Error</h2><pre>'+e.message+'</pre><p>Clear cache and reload (Ctrl+Shift+R)</p></div>'}
 
 
 
@@ -1294,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=33',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=45',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1707,7 +1768,7 @@ function cashSigned(l){var t=l.type||'',a=l.amount||0;return (t==='出金'||t.in
 function fetchYearStartPrice(sym,year){return fetch('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=max').then(function(r){return r.json()}).catch(function(){return null}).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0];var ts=r.timestamp||[];var cs=r.indicators.quote[0].close||[];var tgt=year+'-01-01';for(var i=0;i<ts.length;i++){var d2=marketDate(new Date(ts[i]*1000));if(d2>=tgt&&cs[i]!=null)return cs[i]}return cs[cs.length-1]||0}).catch(function(){return null})}
 function fetchYearEndPrice(sym,year){return fetch('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=max').then(function(r){return r.json()}).catch(function(){return null}).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0];var ts=r.timestamp||[];var cs=r.indicators.quote[0].close||[];var tgt=year+'-12-31';var last=null;for(var i=0;i<ts.length;i++){var d2=marketDate(new Date(ts[i]*1000));if(d2>tgt)break;if(d2<=tgt&&cs[i]!=null)last=cs[i]}return last||cs[cs.length-1]||0}).catch(function(){return null})}
 function calcAttribution(year){var yS=year+'-01-01',yE=year+'-12-31';var ss={},es={},ac={};ETF_SYMS.forEach(function(s){ss[s]=0;es[s]=0;ac[s]=0});var sSell=0,sBuy=0,eSell=0,eBuy=0;trades.forEach(function(t){if(t.date<=yE&&es[t.symbol]!==undefined)es[t.symbol]+=t.shares;if(t.date<yS&&ss[t.symbol]!==undefined)ss[t.symbol]+=t.shares;if(t.date>=yS&&t.date<=yE&&t.shares>0&&ac[t.symbol]!==undefined)ac[t.symbol]+=t.shares*t.price;if(t.date<yS){var a=Math.abs(t.shares)*t.price;if(t.shares<0)sSell+=a;else sBuy+=a}if(t.date<=yE){var ea=Math.abs(t.shares)*t.price;if(t.shares<0)eSell+=ea;else eBuy+=ea}});var sCash=0,eCash=0,ccP=0,div=0,nd=0;cashLog.forEach(function(l){if(l.date<yS)sCash+=cashSigned(l);if(l.date<=yE)eCash+=cashSigned(l);if(l.date>=yS&&l.date<=yE){if(l.type&&l.type.indexOf('入金')>=0)nd+=l.amount||0;if(l.type&&l.type.indexOf('出金')>=0)nd-=Math.abs(l.amount||0);if(l.type&&l.type.indexOf('股息')>=0)div+=l.amount||0}});optionTrades.forEach(function(o){if(o.added&&o.added.slice(0,4)===year)ccP+=(o.premium||0)*(o.contracts||1)});Promise.all(ETF_SYMS.map(function(s){return Promise.all([fetchYearStartPrice(s,year),fetchYearEndPrice(s,year)])})).then(function(pairs){var ps={},pe={};var _unavail=false;ETF_SYMS.forEach(function(s,i){ps[s]=pairs[i][0];pe[s]=pairs[i][1];if(ps[s]===null||pe[s]===null)_unavail=true});var sA=0,eA=eCash+eSell-eBuy,cg={};ETF_SYMS.forEach(function(s){var sp=ps[s]||0,ep=pe[s]||0;sA+=ss[s]*sp;eA+=es[s]*ep;cg[s]=(es[s]*ep)-(ss[s]*sp)-ac[s]});sA+=sCash+sSell-sBuy;var tg=eA-sA-nd;var ot=tg-ETF_SYMS.reduce(function(s,sym){return s+cg[sym]},0)-ccP-div;renderAttribution({year:year,totalGain:tg,startAssets:sA,endAssets:eA,netDep:nd,capGains:cg,ccPrem:ccP,dividend:div,other:ot,unavail:_unavail})})}
-function renderAttribution(r){var el=document.getElementById('attrSummary');if(el){el.innerHTML=(r.unavail?'<span style="font-size:.7rem;color:var(--orange);">⚠️ 价格数据不可用，结果可能不准确</span><br>':'')+'<span style="font-size:.8rem;font-weight:600;color:'+(r.totalGain>=0?'var(--accent)':'var(--red)')+';">总收益 '+fmtFull(r.totalGain)+'</span>'}var ch=document.getElementById('attrChart');if(ch){var items=[{label:'VGT 增值',val:r.capGains.VGT},{label:'SMH 增值',val:r.capGains.SMH},{label:'BTC 增值',val:r.capGains.BTC},{label:'CC 权利金',val:r.ccPrem},{label:'股息',val:r.dividend},{label:'其他',val:r.other}];var mx=Math.max.apply(null,items.map(function(i){return Math.abs(i.val)}))||1;ch.innerHTML=items.map(function(it){var w=Math.abs(it.val)/mx*100;var pos=it.val>=0;return '<div style="margin:6px 0;"><div style="display:flex;justify-content:space-between;font-size:.7rem;margin-bottom:2px;"><span style="color:var(--muted);">'+it.label+'</span><span style="color:'+(pos?'var(--accent)':'var(--red)')+';">'+(pos?'+':'')+fmtFull(it.val)+(r.totalGain!==0?' '+(it.val/r.totalGain*100).toFixed(0)+'%':'')+'</span></div><div style="height:8px;background:var(--rule);border-radius:2px;overflow:hidden;"><div style="width:'+w+'%;height:100%;background:'+(pos?'var(--accent)':'var(--red)')+';border-radius:3px;"></div></div></div>'}).join('')}var det=document.getElementById('attrDetail');if(det){det.innerHTML='年初 '+fmtFull(r.startAssets)+' → 年末 '+fmtFull(r.endAssets)+' · 净入金 '+fmtFull(r.netDep)}}
+function renderAttribution(r){var el=document.getElementById('attrSummary');if(el){el.innerHTML=(r.unavail?'<span style="color:var(--orange)">⚠️ 价格数据不可用，结果可能不准确</span><br>':'')+'<strong style="color:'+(r.totalGain>=0?'var(--accent)':'var(--red)')+'">总收益 '+fmtFull(r.totalGain)+'</strong>'}var ch=document.getElementById('attrChart');if(ch){var items=[{label:'VGT 增值',val:r.capGains.VGT},{label:'SMH 增值',val:r.capGains.SMH},{label:'BTC 增值',val:r.capGains.BTC},{label:'CC 权利金',val:r.ccPrem},{label:'股息',val:r.dividend},{label:'其他',val:r.other}];var mx=Math.max.apply(null,items.map(function(i){return Math.abs(i.val)}))||1;ch.innerHTML=items.map(function(it){var w=Math.abs(it.val)/mx*100;var pos=it.val>=0;return '<div class="attribution-row"><div class="attribution-row-head"><span>'+it.label+'</span><span class="'+(pos?'pos':'neg')+'">'+(pos?'+':'')+fmtFull(it.val)+(r.totalGain!==0?' '+(it.val/r.totalGain*100).toFixed(0)+'%':'')+'</span></div><div class="attribution-bar"><i style="width:'+w+'%;background:'+(pos?'var(--accent)':'var(--red)')+'"></i></div></div>'}).join('')}var det=document.getElementById('attrDetail');if(det){det.innerHTML='年初 '+fmtFull(r.startAssets)+' → 年末 '+fmtFull(r.endAssets)+' · 净入金 '+fmtFull(r.netDep)}}
 try{var ay=document.getElementById('attrYear');if(ay){ay.addEventListener('change',function(){calcAttribution(this.value)});var cy=new Date().getFullYear();var ey=9999;cashLog.forEach(function(l){if(l.type&&l.type.indexOf('入金')>=0&&l.date){var y=parseInt(l.date.slice(0,4));if(y<ey)ey=y}});if(ey===9999){cashLog.forEach(function(l){if(l.date){var y=parseInt(l.date.slice(0,4));if(y<ey)ey=y}});trades.forEach(function(t){if(t.date){var y=parseInt(t.date.slice(0,4));if(y<ey)ey=y}})}if(ey===9999)ey=cy;var opts='';for(var y=cy;y>=ey;y--){opts+='<option value="'+y+'">'+y+'</option>'}ay.innerHTML=opts;ay.value=String(cy);setTimeout(function(){calcAttribution(String(cy))},2000)}}catch(e){}
 
 var otmSettings={vgt:7,smh:5};
@@ -1722,8 +1783,8 @@ function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),
 function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else s.classList.add('open')}
 function qaClose(){document.getElementById('qaSheet').classList.remove('open')}
 function qaDeposit(){qaClose();switchTab('data');setTimeout(function(){var e=document.getElementById('hmCashAmt');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
-function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
-function qaSell(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='sell';setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
+function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
+function qaSell(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='sell';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 function qaCall(){qaClose();switchTab('option');setTimeout(function(){var e=document.getElementById('ostrike');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 
 var ALERT_SEVERITY_SCORE={critical:4,high:3,medium:2,low:1};

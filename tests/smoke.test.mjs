@@ -131,14 +131,15 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=33');
+  assert.equal(manifest.start_url, '/?v=45');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v33/);
+  assert.match(serviceWorker, /wealth-v45/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=33',\{updateViaCache:'none'\}\)/);
-  assert.doesNotMatch(serviceWorker, /viewport-fit=cover/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=45',\{updateViaCache:'none'\}\)/);
+  assert.doesNotMatch(html, /viewport-fit=cover/);
+  assert.match(html, /interactive-widget=resizes-content/);
 });
 
 test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
@@ -153,7 +154,13 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
   assert.match(appMarkup, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;bottom:0!important;padding:0 4px env\(safe-area-inset-bottom,0px\)!important;border:0!important;border-top:1px solid var\(--rule\)!important;background:color-mix\(in srgb,var\(--card-bg\) 95%,transparent\)!important/);
-  assert.match(appMarkup, /\.bb-btn\{top:4px!important;min-height:68px!important;height:68px!important;font-size:\.64rem!important;gap:4px!important;pointer-events:auto\}/);
+  assert.match(appMarkup, /#bottomBar\.bottom-bar\{display:grid!important;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/);
+  assert.match(appMarkup, /\.bb-btn\{position:static!important;top:auto!important;left:auto!important;width:100%!important;min-width:0!important;justify-self:stretch!important;height:68px!important;min-height:68px!important/);
+  assert.match(appMarkup, /\.sidebar\.open\{transform:translate3d\(0,0,0\)!important\}/);
+  assert.match(appMarkup, /transition:none!important\}/);
+  assert.match(appMarkup, /#qaFab\.qa-fab\{left:auto!important;right:16px!important;bottom:calc\(84px \+ env\(safe-area-inset-bottom,0px\)\)!important/);
+  assert.match(appMarkup, /#tab-option \.option-type-segment\{height:42px!important/);
+  assert.match(appMarkup, /\.segmented-control\{height:42px;margin-bottom:10px;border-radius:14px\}/);
   assert.match(appMarkup, /#qaFab\.qa-fab\{bottom:calc\(6px \+ env\(safe-area-inset-bottom,0px\)\)!important;width:64px!important;height:64px!important/);
   assert.match(appMarkup, /\.main\{padding:0 16px calc\(76px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
   assert.doesNotMatch(appMarkup, /fonts\.googleapis\.com/);
@@ -257,7 +264,7 @@ test('price refresh requests one-month history and retains valid closes', async 
 
 test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(appMarkup, /html\[data-accent="ocean"\]\{--accent:#2867b7/);
-  assert.match(appMarkup, /\.main\{[^}]*height:100vh!important[^}]*overflow-y:auto!important/);
+  assert.match(appMarkup, /\.main\{[^}]*height:100dvh!important[^}]*overflow-y:auto!important/);
   assert.doesNotMatch(appMarkup, /sparkTransform|paths=\{VGT:/);
   assert.match(appMarkup, /historyRange:'1mo'/);
   assert.match(appMarkup, /color=getAssetColor\(row\.sym\)/);
