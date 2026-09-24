@@ -1,5 +1,5 @@
-// Service Worker v90 - pinned sidebar settings entry
-var CACHE = 'wealth-v90';
+// Service Worker v91 - sidebar header flush fix
+var CACHE = 'wealth-v91';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

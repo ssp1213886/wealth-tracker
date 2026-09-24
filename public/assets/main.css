@@ -2026,3 +2026,13 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 @media(max-width:800px){
   .sidebar .sb-settings-entry{position:sticky!important;bottom:0!important;z-index:8!important;background:var(--card-bg)!important;border-top:1px solid var(--rule)!important;box-shadow:0 -8px 18px rgba(0,0,0,.12);margin-top:auto!important}
 }
+
+/* ===== Sidebar header flush to drawer top ===== */
+@media(max-width:800px){
+  .sidebar{padding-top:0!important}
+  .sidebar .sb-header,.sidebar>.sb-header{top:0!important;padding:calc(12px + env(safe-area-inset-top,0px)) 22px 10px!important;margin:0!important;background:var(--card-bg)!important;border-bottom:1px solid var(--rule)!important}
+}
+@media(min-width:801px){
+  .sidebar{padding-top:0!important}
+  .sidebar .sb-header,.sidebar>.sb-header{top:0!important;padding:14px 22px 12px!important;margin:0!important;background:var(--card-bg)!important;border-bottom:1px solid var(--rule)!important}
+}
