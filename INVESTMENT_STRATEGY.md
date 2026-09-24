@@ -51,30 +51,33 @@
 
 ## 技术实现
 
-- 前端：原生 HTML/CSS/JS（单文件 SPA，约 3565 行）
-- 后端：Cloudflare Worker + D1 数据库
+- 前端：原生 HTML/CSS/JS（无框架）。源码模块化在 `src/app/`（`index.js` 页面逻辑 + calc / util / store / sync / render / rows / time），由 esbuild 打包成 `public/assets/app.js`
+- 后端：Cloudflare Worker（`src/worker.js` + `src/lib/`）+ D1 数据库
 - 行情：Yahoo Finance（通过 Worker 代理）；支持手动录入价格并标注来源（腾讯等）
-- 部署：Cloudflare Workers（`npx wrangler deploy`）
+- 部署：Cloudflare Workers（`npm run deploy` = 构建 + 部署）
 - 多设备同步：Cloudflare D1（单 token 认证）
 - 数据备份：JSON 导出/导入 + 自动备份 + Schwab CSV 导入
 - 仓库：<https://github.com/ssp1213886/wealth-tracker>
 
 ## 页面结构
 
+4 个 Tab（桌面端顶部 Tab / 移动端底部导航），其中「记录」页内部分为「明细」和「日志」两个分段。
+
 | 页面 | 功能 |
 |------|------|
 | 仪表盘 | 总资产、定投进度、持仓分布、Covered Call 收入、期权持仓摘要 |
 | 操作台 | 股票买卖录入、年度再平衡、手动设置价格 |
 | 期权 | 期权状态、持仓清单、记录 CALL、OTM 行权价参考 |
-| 数据 | 现金管理（入金/出金/修正）、持仓明细、交易历史、资金流水 |
-| 日志 | 操作日志 + 年度复盘矩阵 + 投资规划（退出策略/提款模拟） |
+| 记录 · 明细 | 现金管理（入金/出金/修正/股息）、持仓明细、交易历史、资金流水、年度归因、顶部搜索 |
+| 记录 · 日志 | 操作日志、纪律打卡、年度复盘矩阵、投资规划（退出策略/提款模拟） |
 
 ## AI 助手行为准则
 
 当用户要求修改此项目时：
 1. 操作前确认 `git status` 干净且已推送到 GitHub
 2. 先给出修改方案（改哪个文件、哪段代码、怎么改），用户确认后执行
-3. 改完 commit + push + `npx wrangler deploy`
-4. 汇报实际改了什么
-5. 永远不修改用户的投资数据（trades/cashLog/state/optionTrades），只改代码逻辑
-6. 涉及计算逻辑的改动需保守处理，保证已有数据兼容
+3. **改前端逻辑请改 `src/app/*`，不要直接编辑 `public/assets/app.js`（构建产物）**；改完必须 `npm run build`
+4. 改完 commit + push + `npm run deploy`
+5. 汇报实际改了什么
+6. 永远不修改用户的投资数据（trades/cashLog/state/optionTrades），只改代码逻辑
+7. 涉及计算逻辑的改动需保守处理，保证已有数据兼容
