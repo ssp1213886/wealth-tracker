@@ -4,6 +4,7 @@ import { corsHeaders, json } from './lib/http.js';
 import { handlePrice } from './lib/price.js';
 import { handleSyncGet, handleSyncPost } from './lib/sync.js';
 import { createRateLimiter } from './lib/rate-limit.js';
+import { handleLog } from './lib/logs.js';
 
 const rateLimiter = createRateLimiter();
 
@@ -36,6 +37,10 @@ export default {
 
     if (url.pathname === '/api/price') {
       const result = await handlePrice(request, url);
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/log') {
+      const result = await handleLog(request, env);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/sync' && request.method === 'GET') {

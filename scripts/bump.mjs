@@ -42,9 +42,11 @@ manifestNext = need(manifestNext, `"version": "${curManifestVer}"`, `"version": 
 write(MANIFEST, manifestNext);
 changed.push(`manifest.json → start_url ?v=${next}, version ${curManifestVer} → ${nextManifestVer}`);
 
-// 3) app.js：Service Worker 注册 URL
-write(APP, need(read(APP), `sw.js?v=${cur}`, `sw.js?v=${next}`, 'app 注册 URL'));
-changed.push(`app.js       → register sw.js?v=${next}`);
+// 3) app.js：Service Worker 注册 URL + 构建版本常量
+let appNext = need(read(APP), `sw.js?v=${cur}`, `sw.js?v=${next}`, 'app 注册 URL');
+appNext = need(appNext, `var APP_BUILD='v${cur}';`, `var APP_BUILD='v${next}';`, 'app 构建版本');
+write(APP, appNext);
+changed.push(`app.js       → register sw.js?v=${next}, APP_BUILD v${next}`);
 
 // 4) tests：三处断言
 let tests = read(TESTS);
