@@ -1725,3 +1725,20 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 /* 价格容器会把直接子元素强制成"价格行"网格，骨架需要更高特异性还原为占位块 */
 #hmPricesCompact>.ds-skeleton{display:flex;flex-direction:column;gap:9px;min-height:0;padding:2px 0;border:0;background:transparent}
 #hmPricesCompact>.ds-skeleton>i{display:block;width:100%;min-height:15px;border:0}
+
+/* ===== Task rows · data health ===== */
+.sb-sync-summary .sb-sync-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.sb-sync-summary .sb-sync-head>strong{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 10px;border-radius:999px;background:var(--accent-l);color:var(--accent-d);font-size:.62rem;font-weight:640}
+.sb-sync-summary .sb-sync-head>strong.is-error{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}
+.sb-sync-summary .sb-health-list{display:flex;flex-direction:column;gap:9px}
+.sb-sync-summary .sb-health-row{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 12px;border:1px solid var(--rule);border-radius:13px;background:var(--surface)}
+.sb-sync-summary .sb-health-row>i{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;border-radius:8px;background:color-mix(in srgb,var(--muted) 12%,transparent);color:var(--muted)}
+.sb-sync-summary .sb-health-row>i svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sb-sync-summary .sb-health-row>span{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1;min-width:0}
+.sb-sync-summary .sb-health-row small{font-size:.7rem;font-weight:450;color:var(--muted)}
+.sb-sync-summary .sb-health-row strong{max-width:60%;font-size:.74rem;font-weight:620;color:var(--fg);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-sync-summary .sb-health-row.is-ok>i{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.sb-sync-summary .sb-health-row.is-warn>i{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
+.sb-sync-summary .sb-health-row.is-error>i{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
+.sb-sync-summary .sb-health-row.is-error strong{color:var(--red)}
+@media(max-width:800px){.sb-sync-summary .sb-health-row{min-height:52px}}
