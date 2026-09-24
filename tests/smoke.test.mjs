@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=145');
+  assert.equal(manifest.start_url, '/?v=146');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v145/);
+  assert.match(serviceWorker, /wealth-v146/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=145',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=146',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -275,6 +275,15 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(html, /class="sb-ic"/);
   assert.match(appSource, /state==='ok'\?'✓':state==='err'\?'!':''/);
   assert.match(appSource, /setSyncBar\(''\)\},2200\)/, '成功态停留 2.2 秒');
+
+  // 三态尺寸要落在同一档：统一最小宽度 + 图标盒统一 13px（转圈在盒内画 11px 的环）
+  assert.match(appMarkup, /justify-content:center;gap:8px;min-width:132px/);
+  assert.match(appMarkup, /\.sync-bar\.is-busy \.sb-ic::before\{content:'';width:11px;height:11px/);
+  assert.doesNotMatch(appMarkup, /\.sync-bar\.is-busy \.sb-ic\{width:11px/, '转圈不再缩小图标盒');
+  // 胶囊文案统一缩短，避免同一条提示忽大忽小
+  assert.match(appSource, /'正在下载…':'正在上传…'/);
+  assert.doesNotMatch(appSource, /正在上传到云端/);
+  assert.doesNotMatch(appSource, /同步失败 · 数据仅存本机/);
 });
 
 test('sync feedback has a single channel per event', () => {

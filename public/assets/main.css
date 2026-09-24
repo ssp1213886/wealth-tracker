@@ -2304,7 +2304,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
    位置固定在顶部安全区下方 56px（避开左上角 ☰ 与页头），宽度随内容收缩并居中，
    所以永远不会压到汉堡按钮；最大宽度留出左右各 66px 的边距。
    三态靠"颜色 + 图标 + 文案"三重区分：同步中=中性灰+转圈，已同步=主色+✓，失败=红+!+重试。 */
-.sync-bar{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:50%;z-index:48;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 132px);padding:8px 14px;border:0;border-radius:999px;background:var(--card-bg);color:var(--fg);font-size:.7rem;font-weight:560;line-height:1.25;box-shadow:0 10px 28px rgba(10,20,14,.16),0 2px 8px rgba(10,20,14,.08);opacity:0;pointer-events:none;transform:translate3d(-50%,-10px,0);transition:opacity .18s cubic-bezier(.22,.8,.22,1),transform .18s cubic-bezier(.22,.8,.22,1)}
+.sync-bar{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:50%;z-index:48;display:flex;align-items:center;justify-content:center;gap:8px;min-width:132px;max-width:calc(100vw - 132px);padding:8px 14px;border:0;border-radius:999px;background:var(--card-bg);color:var(--fg);font-size:.7rem;font-weight:560;line-height:1.25;box-shadow:0 10px 28px rgba(10,20,14,.16),0 2px 8px rgba(10,20,14,.08);opacity:0;pointer-events:none;transform:translate3d(-50%,-10px,0);transition:opacity .18s cubic-bezier(.22,.8,.22,1),transform .18s cubic-bezier(.22,.8,.22,1)}
 .sync-bar.show{opacity:1;pointer-events:auto;transform:translate3d(-50%,0,0)}
 [data-theme='dark'] .sync-bar{box-shadow:0 12px 32px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.4)}
 /* 进行中是"中性"的，不再和成功态同样泛绿 */
@@ -2313,8 +2313,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sync-bar.is-ok{background:color-mix(in srgb,var(--accent) 14%,var(--card-bg));color:color-mix(in srgb,var(--accent) 66%,var(--fg))}
 .sync-bar.is-err{background:color-mix(in srgb,var(--red) 12%,var(--card-bg));color:color-mix(in srgb,var(--red) 72%,var(--fg))}
 .sync-bar-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 图标盒三态统一 13×13（早期转圈盒只有 11px，看着比对勾小一号） */
 .sync-bar .sb-ic{flex:0 0 auto;display:grid;place-items:center;width:13px;height:13px;font-style:normal;font-size:.72rem;font-weight:700;line-height:1}
-.sync-bar.is-busy .sb-ic{width:11px;height:11px;border-radius:50%;border:1.6px solid currentColor;border-top-color:transparent;animation:syncBarSpin .7s linear infinite}
+.sync-bar.is-busy .sb-ic{border:0;animation:none}
+.sync-bar.is-busy .sb-ic::before{content:'';width:11px;height:11px;border-radius:50%;border:1.6px solid currentColor;border-top-color:transparent;animation:syncBarSpin .7s linear infinite}
 .sync-bar button{border:0;background:transparent;color:inherit;font:inherit;font-weight:640;padding:2px 6px;border-radius:999px;cursor:pointer}
 .sync-bar .sync-bar-close{font-size:.95rem;line-height:1;opacity:.55;padding:0 3px}
 @keyframes syncBarSpin{to{transform:rotate(360deg)}}
