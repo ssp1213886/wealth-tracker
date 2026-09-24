@@ -1,5 +1,5 @@
-// Service Worker v46 - mobile design token consolidation
-var CACHE = 'wealth-v46';
+// Service Worker v47 - destructive action approval card
+var CACHE = 'wealth-v47';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

@@ -1694,3 +1694,19 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   html[data-theme="dark"] body{background:var(--bg)!important}
   html[data-theme="dark"] .main{background:var(--bg)!important}
 }
+
+/* ===== Approval card · destructive action confirmation ===== */
+.ds-approval{position:fixed;inset:0;z-index:10002;display:flex;align-items:flex-end;justify-content:center;padding:0 12px calc(14px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--fg) 42%,transparent);opacity:0;transition:opacity 160ms var(--ease-out)}
+.ds-approval.show{opacity:1}
+.ds-approval-card{width:min(430px,100%);background:var(--card-bg);border:1px solid var(--rule);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden;transform:translateY(10px) scale(.985);transition:transform 220ms var(--ease-out)}
+.ds-approval.show .ds-approval-card{transform:translateY(0) scale(1)}
+.ds-approval-body{padding:20px 20px 14px}
+.ds-approval-title{display:block;font-size:.98rem;font-weight:650;letter-spacing:-.02em;color:var(--fg)}
+.ds-approval-text{margin:9px 0 0;font-size:.78rem;line-height:1.5;color:var(--muted);white-space:pre-line}
+.ds-approval-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 20px}
+.ds-approval-btn{min-height:46px;border:1px solid var(--rule);border-radius:13px;background:var(--surface);color:var(--fg);font:600 .8rem var(--font);cursor:pointer;transition:transform 120ms var(--ease-out),background-color 120ms var(--ease-out);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.ds-approval-btn:active{transform:scale(.97)}
+.ds-approval-danger{border-color:transparent;background:var(--red);color:#fff}
+@media(hover:hover) and (pointer:fine){.ds-approval-btn:hover{background:color-mix(in srgb,var(--surface) 86%,var(--fg))}.ds-approval-danger:hover{background:color-mix(in srgb,var(--red) 88%,#000)}}
+@media(min-width:801px){.ds-approval{align-items:center;padding:24px}}
+@media(prefers-reduced-motion:reduce){.ds-approval,.ds-approval-card,.ds-approval-btn{transition:none}}

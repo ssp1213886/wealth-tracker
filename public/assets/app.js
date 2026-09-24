@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=46',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=47',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1403,7 +1403,7 @@ document.getElementById('btnRebalanceRecalc').addEventListener('click',doRebalan
 
 
 
-document.getElementById('btnClearTrades').addEventListener('click',function(){if(!trades.length)return;if(!confirm('确定清空全部 '+trades.length+' 条交易记录？'))return;var old=trades.slice();trades=[];saveTrades();updatePortfolio();showToast('🗑️ 已清空 '+old.length+' 笔交易','ok',function(){trades=old.slice();saveTrades();updatePortfolio();showToast('✅ 已恢复 '+old.length+' 笔交易')})});
+document.getElementById('btnClearTrades').addEventListener('click',function(){if(!trades.length)return;showApproval({title:'清空交易记录',message:'将删除本机全部 '+trades.length+' 条交易记录。清空后仍可点击底部提示条撤销。',confirmText:'清空 '+trades.length+' 条',onConfirm:function(){var old=trades.slice();trades=[];saveTrades();updatePortfolio();showToast('🗑️ 已清空 '+old.length+' 笔交易','ok',function(){trades=old.slice();saveTrades();updatePortfolio();showToast('✅ 已恢复 '+old.length+' 笔交易')})}})});
 
 
 
@@ -1411,7 +1411,7 @@ document.getElementById('btnClearTrades').addEventListener('click',function(){if
 
 
 
-document.getElementById('btnClearCashLog').addEventListener('click',function(){if(!cashLog.length)return;if(!confirm('清空全部 '+cashLog.length+' 条资金流水？'))return;var oldCash=cashLog.slice(),oldBal=cashBalance;cashLog=[];saveCashLog();cashBalance=0;saveCash();refreshCashUI();showToast('🗑️ 已清空 '+oldCash.length+' 条流水','ok',function(){cashLog=oldCash.slice();saveCashLog();cashBalance=oldBal;saveCash();refreshCashUI();showToast('✅ 已恢复资金流水')})});
+document.getElementById('btnClearCashLog').addEventListener('click',function(){if(!cashLog.length)return;showApproval({title:'清空资金流水',message:'将删除本机全部 '+cashLog.length+' 条资金流水，并把现金余额重置为 0。清空后可点击底部提示条撤销。',confirmText:'清空 '+cashLog.length+' 条',onConfirm:function(){var oldCash=cashLog.slice(),oldBal=cashBalance;cashLog=[];saveCashLog();cashBalance=0;saveCash();refreshCashUI();showToast('🗑️ 已清空 '+oldCash.length+' 条流水','ok',function(){cashLog=oldCash.slice();saveCashLog();cashBalance=oldBal;saveCash();refreshCashUI();showToast('✅ 已恢复资金流水')})}})});
 
 
 
@@ -1419,7 +1419,7 @@ document.getElementById('btnClearCashLog').addEventListener('click',function(){i
 
 
 
-document.getElementById('btnClearActivity').addEventListener('click',function(){var acts=[];try{acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')}catch(e){}if(!acts.length)return;if(!confirm('清空全部 '+acts.length+' 条操作日志？'))return;var old=acts.slice();localStorage.setItem(ACTIVITY_KEY,'[]');markDirty('activities');renderActivity();showToast('🗑️ 已清空 '+old.length+' 条日志','ok',function(){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(old));markDirty('activities');renderActivity();showToast('✅ 已恢复操作日志');autoPushDebounce()});autoPushDebounce()});
+document.getElementById('btnClearActivity').addEventListener('click',function(){var acts=[];try{acts=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')}catch(e){}if(!acts.length)return;showApproval({title:'清空操作日志',message:'将删除全部 '+acts.length+' 条操作日志。清空后可点击底部提示条撤销。',confirmText:'清空 '+acts.length+' 条',onConfirm:function(){var old=acts.slice();localStorage.setItem(ACTIVITY_KEY,'[]');markDirty('activities');renderActivity();showToast('🗑️ 已清空 '+old.length+' 条日志','ok',function(){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(old));markDirty('activities');renderActivity();showToast('✅ 已恢复操作日志');autoPushDebounce()});autoPushDebounce()}})});
 
 
 
@@ -1515,7 +1515,7 @@ function clearAllData(){
   var cfg=syncCfg||{}; var base=(cfg.url||location.origin).replace(/\/$/,'');
   var hasCloud=!!cfg.token;
   var promptText=hasCloud?'确定清除本地与云端的全部投资数据？\n\n请先确认已导出完整备份。云端清除成功后才会清理本机。':'确定清除本机全部投资数据？\n\n当前未配置云同步，只会清理本机。请先确认已导出完整备份。';
-  if(!confirm(promptText)) return;
+  showApproval({title:'清除全部数据',message:promptText,confirmText:'清除全部',onConfirm:function(){
   var empty={trades:[],cashBalance:0,cashLog:[],state:{},activities:[],optionTrades:[],otmSettings:{},exit_portfolio:'',prices:{}};
   var clearLocal=function(){
     ['wealth_trades_v2','wealth_cash_v2','wealth_cashlog_v2','wealth_dashboard_v2','wealth_activity_v1','wealth_options_v2','otmSettings','exit_portfolio','wealth_prices_v2','wealth_sync_state','lastBackupTime','wealth_alert_snooze_v1'].forEach(function(k){try{localStorage.removeItem(k)}catch(e){}});
@@ -1524,6 +1524,7 @@ function clearAllData(){
   if(!hasCloud){clearLocal();return}
   showToast('正在清除云端数据');
   fetch(base+'/api/sync',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':cfg.token},body:JSON.stringify(empty)}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(r){if(!r.ok)throw new Error(r.error||'云端拒绝清除');clearLocal()}).catch(function(e){showToast('云端清除失败，本地数据已保留：'+e.message,'err')});
+  }});
 }
 
 function showSyncConflict(conflicts,pendingCloud){
@@ -1729,6 +1730,41 @@ if(o.archived){status="<span style=color:var(--muted)>已归档</span>";isExpire
 return "<tr style="+(isExpired?"opacity:.4":"")+"><td><b>"+o.sym+"</b></td><td style=color:"+(o.type==="CALL"?"var(--accent)":"var(--orange)")+">"+o.type+"</td><td>$"+o.strike.toFixed(2)+"</td><td>"+fmtFull(o.premium||0)+"</td><td>"+(o.contracts||1)+"张</td><td style=color:var(--muted)>"+exp+"</td><td>"+status+"</td><td><span class=opt-actions><button onclick=delOpt(\x27"+oid+"\x27) style=font-size:.7rem;padding:2px 6px;border:1px solid var(--muted);color:var(--muted);border-radius:3px;background:none;cursor:pointer>"+(o.archived?"恢复":o.settled?"归档":"X")+"</button>"+(o.type==="CALL"&&!isExpired&&!o.settled?"<button onclick=assignOpt(\x27"+oid+"\x27) style=font-size:.7rem;padding:4px 10px;border:1px solid var(--accent);color:var(--accent);border-radius:4px;background:none;cursor:pointer>行权</button>":"")+(!o.settled&&isExpired?"<button onclick=settleOpt(\x27"+oid+"\x27) style=font-size:.7rem;padding:4px 10px;border:1px solid var(--muted);color:var(--muted);border-radius:4px;background:none;cursor:pointer>结算</button>":"")+"</span></td></tr>"
 ;}).join("");
 if(archivedCount>0){rows+="<tr><td colspan=8 style=text-align:center;padding:4px><button onclick='showArchivedOpt=!showArchivedOpt;renderOpt()' style='font-size:.7rem;padding:3px 10px;border:1px solid var(--muted);color:var(--muted);border-radius:4px;background:none;cursor:pointer'>"+(showArchivedOpt?"📁 隐藏已归档":"📁 显示已归档 "+archivedCount+" 个")+"</button></td></tr>"}el.innerHTML=rows}
+function showApproval(opts){
+  var o=opts||{};
+  var existing=document.getElementById('approvalModal');
+  if(existing)existing.remove();
+  var modal=document.createElement('div');
+  modal.id='approvalModal';
+  modal.className='ds-approval';
+  modal.innerHTML='<div class="ds-approval-card" role="dialog" aria-modal="true" aria-labelledby="approvalTitle"><div class="ds-approval-body"><strong class="ds-approval-title" id="approvalTitle"></strong><p class="ds-approval-text"></p></div><div class="ds-approval-actions"><button type="button" class="ds-approval-btn" data-act="cancel"></button><button type="button" class="ds-approval-btn ds-approval-danger" data-act="ok"></button></div></div>';
+  modal.querySelector('.ds-approval-title').textContent=o.title||'请确认';
+  modal.querySelector('.ds-approval-text').textContent=o.message||'';
+  var cancelBtn=modal.querySelector('[data-act="cancel"]'),okBtn=modal.querySelector('[data-act="ok"]');
+  cancelBtn.textContent=o.cancelText||'取消';
+  okBtn.textContent=o.confirmText||'确认';
+  if(o.danger===false)okBtn.className='ds-approval-btn';
+  var closed=false;
+  function close(){
+    if(closed)return;
+    closed=true;
+    modal.classList.remove('show');
+    if(modal.parentNode)modal.parentNode.removeChild(modal);
+    document.removeEventListener('keydown',onKey);
+  }
+  function onKey(e){
+    if(e.key==='Escape'){e.preventDefault();close()}
+  }
+  cancelBtn.addEventListener('click',close);
+  okBtn.addEventListener('click',function(){close();if(typeof o.onConfirm==='function')o.onConfirm()});
+  modal.addEventListener('click',function(e){if(e.target===modal)close()});
+  document.addEventListener('keydown',onKey);
+  document.body.appendChild(modal);
+  requestAnimationFrame(function(){modal.classList.add('show')});
+  cancelBtn.focus();
+  return modal;
+}
+
 function updatePnLOpt(){
 var nowInstant=new Date(),now=marketDate(nowInstant),thisM=now.slice(0,7);
 optionTrades=loadOpt();
