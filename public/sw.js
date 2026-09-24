@@ -1,5 +1,5 @@
-// Service Worker v57 - refined center action button
-var CACHE = 'wealth-v57';
+// Service Worker v58 - tuned center action button size
+var CACHE = 'wealth-v58';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
