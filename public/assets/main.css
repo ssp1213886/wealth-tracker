@@ -1173,7 +1173,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   .trade-table,.res-table{display:block;width:100%;overflow:visible;box-shadow:none}.trade-table thead,.res-table thead{display:none}.trade-table tbody,.res-table tbody{display:block}.trade-table tbody tr,.res-table tbody tr{display:grid;grid-template-columns:1fr 1fr;margin:0 0 10px;padding:12px;border:1px solid var(--rule);border-radius:12px;background:var(--surface)}.trade-table tbody td,.res-table tbody td{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:7px 4px!important;border:0!important;white-space:normal;font-size:.72rem}.trade-table tbody td::before,.res-table tbody td::before{color:var(--muted);font-size:.64rem;font-weight:500}.trade-table tbody td[colspan],.res-table tbody td[colspan]{grid-column:1/-1;display:block;text-align:center!important}.trade-table tbody td[colspan]::before,.res-table tbody td[colspan]::before{display:none}
   /* 持仓明细标签由信息卡规则接管 */
   /* 交易历史标签由信息卡规则接管 */
-  #cashLogBody td:nth-child(1)::before{content:'日期'}#cashLogBody td:nth-child(2)::before{content:'类型'}#cashLogBody td:nth-child(3)::before{content:'金额'}#cashLogBody td:nth-child(4){justify-content:flex-end}
+  /* 资金流水标签由信息卡规则接管 */
   #holdingsBody td:nth-child(1)::before{content:'标的'}#holdingsBody td:nth-child(2)::before{content:'类型'}#holdingsBody td:nth-child(3)::before{content:'行权价'}#holdingsBody td:nth-child(4)::before{content:'权利金'}#holdingsBody td:nth-child(5)::before{content:'张数'}#holdingsBody td:nth-child(6)::before{content:'到期'}#holdingsBody td:nth-child(7)::before{content:'状态'}#holdingsBody td:nth-child(8){grid-column:1/-1;justify-content:flex-end}
   .collapsible-header h3{margin-bottom:0!important}.collapse-arrow{width:20px}.trade-del{min-width:40px;min-height:40px;border-radius:10px!important}
   #tab-data>.card:first-child>div{flex-wrap:wrap}#tab-data>.card:first-child #dataCashBal{width:100%;font-size:1.4rem}#tab-data .btn-sm{min-height:44px}.timeline{gap:8px}.tl-phase{min-width:0;padding:10px 6px}.wd-grid,.sc-grid{grid-template-columns:1fr 1fr;gap:8px}.wd-item{padding:12px}.sc-card{padding:13px 10px}
@@ -2181,4 +2181,21 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #tab-data #tradeBody .trade-qty{font-size:.82rem;font-weight:650}
   #tab-data #holdBody .trade-del,#tab-data #tradeBody .trade-del{display:inline-flex!important;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;padding:0;margin:-7px -4px -7px 0;font-size:1rem;line-height:1;opacity:.32;border-radius:50%}
   #tab-data #holdBody .trade-del:active,#tab-data #tradeBody .trade-del:active{opacity:1;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+}
+
+/* ===== Cash log amount direction ===== */
+.cash-pos{color:var(--ok);font-weight:660}
+.cash-neg{color:var(--danger);font-weight:660}
+
+/* ===== Cash log cards - mobile layout ===== */
+@media(max-width:800px){
+  #tab-data #cashLogBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px 6px!important;padding:11px 13px!important;height:auto!important}
+  #tab-data #cashLogBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.42!important;text-align:left!important}
+  #tab-data #cashLogBody td::before{display:none!important}
+  #tab-data #cashLogBody td:nth-child(2){grid-area:1/1/2/5}
+  #tab-data #cashLogBody td:nth-child(3){grid-area:1/5/2/9;font-size:.92rem!important;font-weight:690;text-align:right;font-variant-numeric:tabular-nums}
+  #tab-data #cashLogBody td:nth-child(1){grid-area:2/1/3/6;color:var(--muted);font-size:.66rem!important;font-variant-numeric:tabular-nums}
+  #tab-data #cashLogBody td:nth-child(4){grid-area:2/6/3/9;text-align:right}
+  #tab-data #cashLogBody .trade-del{display:inline-flex!important;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;padding:0;margin:-7px -4px -7px 0;font-size:1rem;line-height:1;opacity:.32;border-radius:50%}
+  #tab-data #cashLogBody .trade-del:active{opacity:1;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
 }
