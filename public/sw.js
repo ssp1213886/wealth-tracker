@@ -1,5 +1,5 @@
-// Service Worker v83 - mobile settings drawer
-var CACHE = 'wealth-v83';
+// Service Worker v84 - inline quick settings accordion
+var CACHE = 'wealth-v84';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

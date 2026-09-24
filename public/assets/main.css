@@ -1933,3 +1933,13 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 }
 @media(min-width:801px){.sb-settings-entry,.sb-panel-head{display:none!important}}
 @media(prefers-reduced-motion:reduce){.sb-section.sb-settings{transition:none}}
+
+/* ===== Inline quick settings (mobile) ===== */
+@media(max-width:800px){
+  .sb-quick-menu button.is-open{color:var(--accent)}
+  .quick-acc{margin:2px 0 10px;padding:4px 0 2px}
+  .quick-acc[hidden]{display:none}
+  .quick-acc .settings-panel{padding:12px 14px!important;border:1px solid var(--rule)!important;border-radius:14px!important;background:var(--surface)!important}
+  .quick-acc .settings-panel-head{margin-bottom:10px}
+  .quick-acc .settings-field{margin-bottom:10px}
+}
