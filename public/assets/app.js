@@ -1357,7 +1357,7 @@ function initAll(){
 window.addEventListener('DOMContentLoaded',initAll);
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=122',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=123',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1886,7 +1886,7 @@ try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adj
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
 (function(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(sh)sh.addEventListener('input',refreshTradeAffordability);if(pr)pr.addEventListener('input',refreshTradeAffordability)})();
-function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else s.classList.add('open')}
+function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else{s.classList.add('open');markAlertsSeen(alertSignature(currentAlerts||[]));updateBellBadge(currentAlerts||[]);}}
 function qaClose(){document.getElementById('qaSheet').classList.remove('open')}
 function qaDeposit(){qaClose();switchTab('data');setTimeout(function(){var e=document.getElementById('hmCashAmt');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
@@ -1895,6 +1895,21 @@ function qaCall(){qaClose();switchTab('option');setTimeout(function(){var e=docu
 
 var ALERT_SEVERITY_SCORE={critical:4,high:3,medium:2,low:1};
 function normalizeAlerts(alerts){var byId={};(alerts||[]).forEach(function(a){if(!a||!a.id)return;var current=byId[a.id],score=ALERT_SEVERITY_SCORE[a.severity]||0;if(!current||score>(ALERT_SEVERITY_SCORE[current.severity]||0))byId[a.id]=a});return Object.keys(byId).map(function(id){return byId[id]}).sort(function(a,b){return (ALERT_SEVERITY_SCORE[b.severity]||0)-(ALERT_SEVERITY_SCORE[a.severity]||0)||String(a.title).localeCompare(String(b.title),'zh-CN')})}
+var currentAlerts=[];
+function alertSignature(list){try{return (list||[]).map(function(a){return String(a&&a.id)+':'+String(a&&a.severity)}).sort().join('|')}catch(e){return ''}}
+function loadAlertSeen(){try{return localStorage.getItem('wealth_alert_seen_v1')||''}catch(e){return ''}}
+function markAlertsSeen(sig){try{localStorage.setItem('wealth_alert_seen_v1',String(sig||''))}catch(e){}}
+function updateBellBadge(list){
+var bell=document.querySelector('.ms-bell');if(!bell)return;
+var items=list||[],count=items.length,sig=alertSignature(items),unseen=count>0&&sig!==loadAlertSeen();
+var critical=items.some(function(a){return a&&a.severity==='critical'});
+bell.classList.toggle('has-alerts',unseen);
+bell.classList.toggle('has-critical',unseen&&critical);
+var badge=bell.querySelector('.ms-bell-badge');
+if(unseen){if(!badge){badge=document.createElement('span');badge.className='ms-bell-badge';badge.setAttribute('aria-hidden','true');bell.appendChild(badge);bell.classList.add('bell-ping');setTimeout(function(){bell.classList.remove('bell-ping')},1300)}badge.textContent=count>9?'9+':String(count)}
+else if(badge)badge.remove();
+bell.setAttribute('aria-label',count>0?('查看提醒，'+count+' 条待办'):'查看提醒');
+}
 function optPingKey(){return 'wealth_opt_ping_v1'}
 function loadOptPing(){try{var v=JSON.parse(localStorage.getItem(optPingKey())||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
 function saveOptPing(id){try{var m=loadOptPing();m[String(id)]=marketDate();localStorage.setItem(optPingKey(),JSON.stringify(m))}catch(e){}}
@@ -1912,7 +1927,7 @@ var pingMap=loadOptPing(),todayKey=marketDate(nowInstant);
 opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,nowInstant);if(st.days>3)return;if(pingMap[o.id]===todayKey)return;var expired=st.expired,leftDays=Math.max(0,st.days),cnt=Number(o.contracts)||1;alerts.push({id:'expiry:'+o.id,type:expired?'red':'orange',severity:expired?'critical':'high',title:o.sym+' '+o.type+' $'+o.strike.toFixed(0)+(expired?' 已过期未结算':' 还剩 '+leftDays+' 天到期'),detail:'到期日 '+o.expiry+' · '+cnt+' 张'+(expired?' · 请确认行权或结算':''),action:'option',dismiss:'opt-expiry-'+o.id})});
 var monthBuys=trades.filter(function(t){return t.date.slice(0,7)===now&&t.shares>0}),buyTotal=monthBuys.reduce(function(s,t){return s+(t.price*Math.abs(t.shares))},0),dcaTarget=state.dcaOverride&&state.dcaOverride.month===now?state.dcaOverride.amount:state.monthlyDCA;
 if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id:'dca:'+now,type:'accent',severity:'low',title:'本月定投还差 '+fmtFull(gap),detail:'完成后保持目标资产配比',action:'console'})}
-var alertIcons={orange:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>',red:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17.5v.5"/></svg>',accent:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3M22 12h-3"/><path d="m14 10 6-6"/></svg>',blue:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg>'},normalized=normalizeAlerts(alerts),buttons=normalized.map(function(a){return renderAlertItem(a,alertIcons)}).join('');
+var alertIcons={orange:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>',red:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17.5v.5"/></svg>',accent:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3M22 12h-3"/><path d="m14 10 6-6"/></svg>',blue:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg>'},normalized=normalizeAlerts(alerts);currentAlerts=normalized;updateBellBadge(normalized);var buttons=normalized.map(function(a){return renderAlertItem(a,alertIcons)}).join('');
 if(container)container.innerHTML=normalized.length?'<div class="qa-alert-title"><span>待办事项 · 风险优先</span></div>'+buttons:'';
 if(mobile)mobile.innerHTML=normalized.length?buttons:emptyStateHTML({title:'暂无待办',hint:'纪律执行正常，继续保持',compact:true});
 if(meta)meta.textContent=normalized.length?normalized.length+'项 · 风险优先':'风险优先';
