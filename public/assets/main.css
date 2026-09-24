@@ -1742,3 +1742,14 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .sb-sync-summary .sb-health-row.is-error>i{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
 .sb-sync-summary .sb-health-row.is-error strong{color:var(--red)}
 @media(max-width:800px){.sb-sync-summary .sb-health-row{min-height:52px}}
+
+/* ===== Empty states ===== */
+.ds-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:22px 16px;border:1px dashed var(--rule);border-radius:14px;background:color-mix(in srgb,var(--surface) 60%,transparent);text-align:center}
+.ds-empty-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--muted) 12%,transparent);color:var(--muted)}
+.ds-empty-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ds-empty-title{font-size:.76rem;font-weight:560;color:var(--fg)}
+.ds-empty-hint{font-size:.68rem;line-height:1.45;color:var(--muted)}
+.ds-empty-compact{flex-direction:row;gap:9px;padding:13px 14px;border-radius:12px;text-align:left}
+.ds-empty-compact .ds-empty-icon{width:24px;height:24px;border-radius:8px}
+.ds-empty-compact .ds-empty-icon svg{width:14px;height:14px}
+.ds-empty-compact .ds-empty-title{font-size:.72rem;font-weight:520;color:var(--muted)}

@@ -598,7 +598,7 @@ function renderAnnualMatrix(){
 
   // Find the first year with any buy trade or cash deposit
   var allDates=[].concat(trades.map(function(t){return t.date})).concat(cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).map(function(l){return l.date}));
-if(!allDates.length){grid.innerHTML='<div class="table-empty">暂无数据</div>';stats.innerHTML='';return}
+if(!allDates.length){grid.innerHTML=emptyStateHTML({title:'暂无纪律数据',hint:'记录第一笔买入后，这里会自动生成月度热力图'});stats.innerHTML='';return}
   allDates.sort();
   var startYear=parseInt(allDates[0].slice(0,4));
   var now=new Date(),endYear=now.getFullYear();
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=49',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=50',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1719,7 +1719,7 @@ optionTrades=loadOpt();
 function updateAllO(){if(!trades||!trades.forEach||!livePrices)return;var nowInstant=new Date();optionTrades=loadOpt();var vsh=0,ssh=0;trades.forEach(function(t){if(t.symbol==="VGT")vsh+=t.shares;if(t.symbol==="SMH")ssh+=t.shares});var vVGTcalls=optionTrades.filter(function(o){return o.sym==="VGT"&&o.type==="CALL"&&isActiveOption(o,nowInstant)}).reduce(function(s,o){return s+(o.contracts||1)},0);var vSMHcalls=optionTrades.filter(function(o){return o.sym==="SMH"&&o.type==="CALL"&&isActiveOption(o,nowInstant)}).reduce(function(s,o){return s+(o.contracts||1)},0);var vc=document.getElementById("ov");if(vc)vc.textContent=vsh+" 股";var cv=document.getElementById("ocv");if(cv){cv.textContent="可卖 "+Math.max(0,Math.floor(vsh/100)-vVGTcalls)+" 张CALL"}var vd=document.getElementById("vd");if(vd)vd.textContent=ssh+" 股";var cs=document.getElementById("ocs");if(cs){cs.textContent="可卖 "+Math.max(0,Math.floor(ssh/100)-vSMHcalls)+" 张CALL"}var re=document.getElementById("ore");if(re){var thisM=marketDate(nowInstant).slice(0,7);optionTrades=loadOpt();var m=optionTrades.filter(function(o){return o.added&&o.added.slice(0,7)===thisM}).reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);re.textContent=fmtFull(m)}renderOpt();updatePnLOpt();updateOptStatus();}var showArchivedOpt=false;function renderOpt(){
 var el=document.getElementById("holdingsBody");if(!el)return;
 optionTrades=loadOpt();var nowInstant=new Date();
-if(!optionTrades.length){el.innerHTML="<tr><td colspan=8 style=text-align:center;color:var(--muted);padding:16px>暂无期权持仓</td></tr>";return}
+if(!optionTrades.length){el.innerHTML='<tr><td colspan="8" style="padding:12px 0">'+emptyStateHTML({title:'暂无期权持仓',hint:'录入一笔 Covered Call 后会显示在这里',compact:true})+'</td></tr>';return}
 var archivedCount=optionTrades.filter(function(o){return o.archived}).length;
 var visible=showArchivedOpt?optionTrades.slice():optionTrades.filter(function(o){return !o.archived});
 if(!visible.length&&archivedCount>0){showArchivedOpt=true;visible=optionTrades.slice()}
@@ -1776,6 +1776,17 @@ function showApproval(opts){
   return modal;
 }
 
+function emptyStateHTML(opts){
+  var o=opts||{};
+  var icon=o.icon||'<svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="m4 7 8 6 8-6"/></svg>';
+  var cls='ds-empty'+(o.compact?' ds-empty-compact':'');
+  var esc=function(s){return String(s).replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;'})};
+  var html='<div class="'+cls+'" role="status"><span class="ds-empty-icon" aria-hidden="true">'+icon+'</span>';
+  html+='<span class="ds-empty-title">'+esc(o.title||'暂无数据')+'</span>';
+  if(o.hint)html+='<span class="ds-empty-hint">'+esc(o.hint)+'</span>';
+  return html+'</div>';
+}
+
 function updatePnLOpt(){
 var nowInstant=new Date(),now=marketDate(nowInstant),thisM=now.slice(0,7);
 optionTrades=loadOpt();
@@ -1805,7 +1816,7 @@ var sh=document.getElementById("sbOptHoldings");
 if(sh&&typeof optionTrades!=="undefined"){
 var nowInstant=new Date();
 var ac=optionTrades.filter(function(o){return isActiveOption(o,nowInstant)});
-if(!ac.length){sh.innerHTML="无期权持仓"}
+if(!ac.length){sh.innerHTML=emptyStateHTML({title:'暂无期权持仓',compact:true})}
 else{sh.innerHTML=ac.map(function(o){var d=optionExpiryState(o.expiry,nowInstant).days;return '<div class="sb-option-line"><span><b>'+escapeHtml(o.sym)+'</b> '+escapeHtml(o.type)+' $'+Number(o.strike||0).toFixed(0)+' ×'+(o.contracts||1)+'</span><strong>'+d+'天</strong></div>'}).join("")}
 }
 };
@@ -1850,7 +1861,7 @@ var monthBuys=trades.filter(function(t){return t.date.slice(0,7)===now&&t.shares
 if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id:'dca:'+now,type:'accent',severity:'low',title:'本月定投还差 '+fmtFull(gap),detail:'完成后保持目标资产配比',action:'console'})}
 var alertIcons={orange:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>',red:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5M12 17.5v.5"/></svg>',accent:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3M22 12h-3"/><path d="m14 10 6-6"/></svg>',blue:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg>'},normalized=normalizeAlerts(alerts),buttons=normalized.map(function(a){return renderAlertItem(a,alertIcons)}).join('');
 if(container)container.innerHTML=normalized.length?'<div class="qa-alert-title"><span>待办事项 · 风险优先</span></div>'+buttons:'';
-if(mobile)mobile.innerHTML=normalized.length?buttons:'<div class="mobile-empty">暂无待办，继续保持纪律</div>';
+if(mobile)mobile.innerHTML=normalized.length?buttons:emptyStateHTML({title:'暂无待办',hint:'纪律执行正常，继续保持',compact:true});
 if(meta)meta.textContent=normalized.length?normalized.length+'项 · 风险优先':'风险优先';
 }
 document.addEventListener('click',function(event){var target=event.target;if(!target||!target.closest)return;var action=target.closest('[data-alert-action]');if(action){qaClose();switchTab(action.getAttribute('data-alert-action'))}});

@@ -1,5 +1,5 @@
-// Service Worker v49 - data health task rows
-var CACHE = 'wealth-v49';
+// Service Worker v50 - unified empty states
+var CACHE = 'wealth-v50';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
