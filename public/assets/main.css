@@ -2261,3 +2261,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .metric .m-val,.option-metric strong,.cash-balance-row strong,.trade-summary strong,.cash-summary span,.asset-row strong{font-weight:680!important;font-variant-numeric:tabular-nums}
 .btn-pri,.trade-form .btn,.option-entry-card .btn{box-shadow:0 1px 2px color-mix(in srgb,var(--accent) 30%,transparent)!important}
 #tab-data #holdBody td[colspan],#tab-data #tradeBody td[colspan],#tab-data #cashLogBody td[colspan]{grid-column:1/-1!important;white-space:normal!important;overflow:visible!important;text-align:center!important;padding:4px 0!important}
+
+/* ===== Card button press feedback ===== */
+.card button,.card .btn,.card .btn-sm,.card .btn-out,.card .cash-action,.card .segment,.card .price-pill{transition:transform .1s var(--ease-out),background-color .16s var(--ease-out),border-color .16s var(--ease-out),color .16s var(--ease-out)}
+.card button:not(:disabled):active,.card .btn:active,.card .btn-sm:active,.card .btn-out:active,.card .cash-action:active,.card .segment:active,.card .price-pill:active{transform:scale(.97)!important}
