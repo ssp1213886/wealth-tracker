@@ -1,5 +1,5 @@
-// Service Worker v91 - sidebar header flush fix
-var CACHE = 'wealth-v91';
+// Service Worker v92 - mobile sidebar natural scroll
+var CACHE = 'wealth-v92';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

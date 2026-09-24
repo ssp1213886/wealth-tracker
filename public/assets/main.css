@@ -2036,3 +2036,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar{padding-top:0!important}
   .sidebar .sb-header,.sidebar>.sb-header{top:0!important;padding:14px 22px 12px!important;margin:0!important;background:var(--card-bg)!important;border-bottom:1px solid var(--rule)!important}
 }
+
+/* ===== Mobile sidebar: natural scrolling (header + settings entry) ===== */
+@media(max-width:800px){
+  .sidebar{padding-top:18px!important}
+  .sidebar .sb-header,.sidebar>.sb-header{position:static!important;top:auto!important;z-index:auto!important;margin:0 18px!important;padding:0 0 14px!important;background:transparent!important;border-bottom:0!important}
+  .sidebar .sb-settings-entry{position:static!important;bottom:auto!important;margin-top:0!important;box-shadow:none!important}
+}
