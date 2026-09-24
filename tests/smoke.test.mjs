@@ -9,8 +9,10 @@ const css = fs.readFileSync('public/assets/main.css', 'utf8');
 // util.js 放在前面：它的最后一个函数后面紧跟 index.js 的第一个函数，
 // 这样测试里的"按下一个 function 声明切片"仍能拿到完整函数体。
 const utilSource = fs.readFileSync('src/app/util.js', 'utf8').replace(/^export /gm, '');
+const calcSource = fs.readFileSync('src/app/calc.js', 'utf8').replace(/^export /gm, '');
+const storeSource = fs.readFileSync('src/app/store.js', 'utf8').replace(/^export /gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
-const appSource = utilSource + '\n' + indexSource;
+const appSource = utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -136,13 +138,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=133');
+  assert.equal(manifest.start_url, '/?v=134');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v133/);
+  assert.match(serviceWorker, /wealth-v134/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=133',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=134',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
