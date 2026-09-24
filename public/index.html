@@ -352,7 +352,7 @@
     <button type="button" class="btn btn-out btn-sm inline-action" id="hmRefresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 8A7 7 0 0 1 18.7 7L20 12M4 12l1.3 5A7 7 0 0 0 17.9 16"/></svg>刷新</button>
   </div>
   <div class="collapsible-body">
-    <div class="price-list" id="hmPricesCompact" aria-label="实时价格">Loading...</div>
+    <div class="price-list" id="hmPricesCompact" aria-label="实时价格" aria-busy="true"><div class="ds-skeleton" aria-hidden="true"><i></i><i></i><i></i></div></div>
     <div class="price-meta-row"><div class="price-meta" id="hmPriceTime"></div><span id="mktStatus" class="market-status"></span></div>
     <form class="trade-form console-form" onsubmit="return false">
       <div class="trade-native-controls">

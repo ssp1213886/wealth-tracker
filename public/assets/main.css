@@ -1710,3 +1710,18 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 @media(hover:hover) and (pointer:fine){.ds-approval-btn:hover{background:color-mix(in srgb,var(--surface) 86%,var(--fg))}.ds-approval-danger:hover{background:color-mix(in srgb,var(--red) 88%,#000)}}
 @media(min-width:801px){.ds-approval{align-items:center;padding:24px}}
 @media(prefers-reduced-motion:reduce){.ds-approval,.ds-approval-card,.ds-approval-btn{transition:none}}
+
+/* ===== Loading states · shimmer / spinner ===== */
+@keyframes ds-spin{to{transform:rotate(360deg)}}
+@keyframes ds-shimmer{0%{background-position:-120% 0}100%{background-position:220% 0}}
+.ds-skeleton{display:flex;flex-direction:column;gap:9px;padding:2px 0}
+.ds-skeleton i{display:block;height:15px;border-radius:9px;background:linear-gradient(90deg,var(--surface) 0%,color-mix(in srgb,var(--rule) 65%,var(--surface)) 45%,var(--surface) 90%);background-size:220% 100%;animation:ds-shimmer 1.5s var(--ease-in-out) infinite}
+.ds-skeleton i:nth-child(2){width:76%}
+.ds-skeleton i:nth-child(3){width:54%}
+.ds-spinner{display:inline-block;width:12px;height:12px;margin-right:7px;border:1.6px solid currentColor;border-top-color:transparent;border-radius:50%;animation:ds-spin .8s linear infinite;vertical-align:-2px}
+.sync-toast.busy{display:flex;align-items:center;justify-content:center}
+.ms-sync.is-syncing i{border-radius:50%;border:1.6px solid currentColor;border-top-color:transparent;background:transparent!important;animation:ds-spin .8s linear infinite}
+@media(prefers-reduced-motion:reduce){.ds-skeleton i,.ds-spinner,.ms-sync.is-syncing i{animation:none}.ds-skeleton i{background:var(--surface)}}
+/* 价格容器会把直接子元素强制成"价格行"网格，骨架需要更高特异性还原为占位块 */
+#hmPricesCompact>.ds-skeleton{display:flex;flex-direction:column;gap:9px;min-height:0;padding:2px 0;border:0;background:transparent}
+#hmPricesCompact>.ds-skeleton>i{display:block;width:100%;min-height:15px;border:0}

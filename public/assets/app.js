@@ -160,7 +160,7 @@ async function refreshPrices(){
 
 
 
-  var el=document.getElementById('hmPricesCompact');if(el)el.textContent='加载中...';
+  var el=document.getElementById('hmPricesCompact');if(el){el.setAttribute('aria-busy','true');el.innerHTML='<div class="ds-skeleton" aria-hidden="true"><i></i><i></i><i></i></div>'}
 
 
 
@@ -394,7 +394,7 @@ function updatePortfolio(){
 
 
 
-  document.getElementById('hmPricesCompact').innerHTML=ETF_SYMS.map(function(sym){return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||''):'<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('');
+  document.getElementById('hmPricesCompact').setAttribute('aria-busy','false');document.getElementById('hmPricesCompact').innerHTML=ETF_SYMS.map(function(sym){return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||''):'<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('');
 
 
 
@@ -984,7 +984,7 @@ document.getElementById('btnExport').addEventListener('click',function(){var url
 
 
 function recordBackupTime(timestamp){var ts=Number(timestamp)||Date.now();localStorage.setItem('lastBackupTime',String(ts));var el=document.getElementById('lastBackupTime');if(el)el.textContent='上次备份 '+new Date(ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});renderSyncHealth()}
-document.getElementById('btnExportData').addEventListener('click',function(){showToast('正在生成完整备份');setTimeout(function(){var data=createBackupData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wealth-complete-'+localDate()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},5000);recordBackupTime(Date.now());showToast('完整备份已导出 · '+data.trades.length+' 笔交易 · '+data.optionTrades.length+' 个期权','ok')},80)});
+document.getElementById('btnExportData').addEventListener('click',function(){showBusyToast('正在生成完整备份');setTimeout(function(){var data=createBackupData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wealth-complete-'+localDate()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},5000);recordBackupTime(Date.now());showToast('完整备份已导出 · '+data.trades.length+' 笔交易 · '+data.optionTrades.length+' 个期权','ok')},80)});
 
 
 
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=47',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=48',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1544,7 +1544,7 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 
 
 var syncFetchWithoutHealth=syncFetch;
-syncFetch=function(method,body){return syncFetchWithoutHealth(method,body).then(function(result){recordSyncSuccess(method==='GET'?'pull':'push',Date.now());return result}).catch(function(error){recordSyncFailure(Date.now());throw error})};
+syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');if(host)host.classList.add('is-syncing');var done=function(){if(host)host.classList.remove('is-syncing')};return syncFetchWithoutHealth(method,body).then(function(result){recordSyncSuccess(method==='GET'?'pull':'push',Date.now());done();return result}).catch(function(error){recordSyncFailure(Date.now());done();throw error})};
 document.getElementById('syncToken').addEventListener('change',renderSyncHealth);
 document.getElementById('syncPanelHeader').addEventListener('click',function(){document.getElementById('syncPanel').classList.toggle('open')});
 
@@ -1730,6 +1730,17 @@ if(o.archived){status="<span style=color:var(--muted)>已归档</span>";isExpire
 return "<tr style="+(isExpired?"opacity:.4":"")+"><td><b>"+o.sym+"</b></td><td style=color:"+(o.type==="CALL"?"var(--accent)":"var(--orange)")+">"+o.type+"</td><td>$"+o.strike.toFixed(2)+"</td><td>"+fmtFull(o.premium||0)+"</td><td>"+(o.contracts||1)+"张</td><td style=color:var(--muted)>"+exp+"</td><td>"+status+"</td><td><span class=opt-actions><button onclick=delOpt(\x27"+oid+"\x27) style=font-size:.7rem;padding:2px 6px;border:1px solid var(--muted);color:var(--muted);border-radius:3px;background:none;cursor:pointer>"+(o.archived?"恢复":o.settled?"归档":"X")+"</button>"+(o.type==="CALL"&&!isExpired&&!o.settled?"<button onclick=assignOpt(\x27"+oid+"\x27) style=font-size:.7rem;padding:4px 10px;border:1px solid var(--accent);color:var(--accent);border-radius:4px;background:none;cursor:pointer>行权</button>":"")+(!o.settled&&isExpired?"<button onclick=settleOpt(\x27"+oid+"\x27) style=font-size:.7rem;padding:4px 10px;border:1px solid var(--muted);color:var(--muted);border-radius:4px;background:none;cursor:pointer>结算</button>":"")+"</span></td></tr>"
 ;}).join("");
 if(archivedCount>0){rows+="<tr><td colspan=8 style=text-align:center;padding:4px><button onclick='showArchivedOpt=!showArchivedOpt;renderOpt()' style='font-size:.7rem;padding:3px 10px;border:1px solid var(--muted);color:var(--muted);border-radius:4px;background:none;cursor:pointer'>"+(showArchivedOpt?"📁 隐藏已归档":"📁 显示已归档 "+archivedCount+" 个")+"</button></td></tr>"}el.innerHTML=rows}
+function showBusyToast(msg){
+  var t=document.getElementById('syncToast');
+  if(!t)return;
+  clearTimeout(t._timer);
+  t.onclick=null;
+  t.style.pointerEvents='auto';
+  t.className='sync-toast busy show';
+  t.innerHTML='<span class="ds-spinner" aria-hidden="true"></span><span></span>';
+  t.lastElementChild.textContent=msg;
+}
+
 function showApproval(opts){
   var o=opts||{};
   var existing=document.getElementById('approvalModal');

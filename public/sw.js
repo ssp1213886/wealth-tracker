@@ -1,5 +1,5 @@
-// Service Worker v47 - destructive action approval card
-var CACHE = 'wealth-v47';
+// Service Worker v48 - unified loading states
+var CACHE = 'wealth-v48';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
