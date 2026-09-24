@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=141');
+  assert.equal(manifest.start_url, '/?v=142');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v141/);
+  assert.match(serviceWorker, /wealth-v142/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=141',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=142',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -233,6 +233,11 @@ test('data health shows cloud sync, backup, and conflict state', () => {
   for (const id of ['sbSyncLast', 'sbBackupLast', 'sbConflictState']) {
     assert.match(appMarkup, new RegExp(`id="${id}"`));
   }
+  // 上次成功推送：只有 push 方向才更新，且要有独立状态行
+  assert.match(appMarkup, /id="sbPushRow"/);
+  assert.match(appMarkup, /id="sbLastPush"/);
+  assert.match(appSource, /if\(s\.lastSyncDirection==='push'\)s\.lastPushAt=s\.lastSyncAt;/);
+  assert.match(appSource, /setHealthRow\('sbPushRow'/);
   assert.match(appMarkup, /s\.pendingConflicts=Array\.isArray\(s\.pendingConflicts\)/);
   assert.match(appMarkup, /function recordSyncSuccess\(/);
   assert.match(appMarkup, /function recordSyncFailure\(/);

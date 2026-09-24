@@ -190,6 +190,7 @@ const steps = {
 - 侧边栏「数据与备份」→ 导出 JSON（含交易/现金/流水/期权/设置/主题/行情缓存）
 - 导入时会做归一化校验（类型强制、补 id）
 - 云端恢复（应急）：`POST /api/sync`，**只提交白名单键**（`trades/cashBalance/cashLog/state/activities/optionTrades/otmSettings/exit_portfolio/prices`），未提交的键（如 `notes`）会保持原样
+- v142 已删除 D1 里 `notes`、`options` 两行遗留数据（旧版功能残留，不在白名单、`updated_at` 是秒级）。D1 现在只剩上面 9 个白名单键；排查时可先核对 `SELECT key, updated_at FROM data` 是否为 9 行。
 
 > ⚠️ `cashBalance` 这个字段存的**不是"当前余额"，而是"累计净投入"**。
 > 可用现金 = `cashBalance + 卖出额 − 买入额`（见 `getNetCash()`）。手工改数据或做导入时务必注意。
@@ -228,6 +229,7 @@ const steps = {
 | v139 | **删除 `beforeunload` 自动推送**（原来可能用空数据覆盖云端） |
 | v140 | **手动上传接入 409 冲突处理**（原来只提示"同步失败"） |
 | v141 | **修掉假冲突链路**：云端版本号单位统一为毫秒、不知道版本时不发 `__expectedVersions`、云端没有该行不再判冲突、409 先自动核对内容；删除/撤销立即推送 + 关页面补推（仅脏键）；推送串行化；新增顶部同步提示条 |
+| v142 | 侧边栏「数据健康」新增**上次成功推送**时间；清理 D1 中 `notes`/`options` 两行遗留数据 |
 
 ### 已知未修问题
 
