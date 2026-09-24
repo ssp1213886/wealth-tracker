@@ -8,7 +8,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v129';var APP_DATA_VERSION=5;
+var APP_BUILD='v130';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 function cleanText(v,max){return String(v==null?'':v).replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,max||160)}
 function escapeHtml(v){return cleanText(v,500).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -1030,6 +1030,20 @@ document.body.addEventListener('click',function(e){var b=e.target.closest('.trad
 
 
 
+var DATA_SCHEMA=2;
+function runMigrations(){
+  var key='wealth_schema_v1',from=0;
+  try{from=Number(localStorage.getItem(key)||0)||0}catch(e){from=0}
+  if(from>=DATA_SCHEMA)return;
+  var steps={
+    1:function(){try{localStorage.removeItem('wealth_alert_seen_v1')}catch(e){}}
+  };
+  for(var v=from+1;v<=DATA_SCHEMA;v++){
+    try{steps[v]&&steps[v]()}catch(e){reportError('migration v'+v,e&&e.stack)}
+  }
+  try{localStorage.setItem(key,String(DATA_SCHEMA))}catch(e){}
+}
+runMigrations();
 cashBalance=loadCash();cashLog=loadCashLog();function initPortfolio(){initTradeIds();var cached=readPriceCache();for(var sym in cached){livePrices[sym]=cached[sym].price||cached[sym];liveQuoteData[sym]=cached[sym];liveSources[sym]=cached[sym].source==='tencent'?'腾讯':cached[sym].source||'缓存';if(cached[sym].change!=null)liveChanges[sym]=cached[sym].change}updatePortfolio();refreshPrices();setInterval(refreshPrices,300000)}
 
 
@@ -1362,7 +1376,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=129',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=130',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
