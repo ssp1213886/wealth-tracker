@@ -1174,7 +1174,7 @@ input,select,textarea{border-radius:var(--radius-sm)!important}
   /* 持仓明细标签由信息卡规则接管 */
   /* 交易历史标签由信息卡规则接管 */
   /* 资金流水标签由信息卡规则接管 */
-  #holdingsBody td:nth-child(1)::before{content:'标的'}#holdingsBody td:nth-child(2)::before{content:'类型'}#holdingsBody td:nth-child(3)::before{content:'行权价'}#holdingsBody td:nth-child(4)::before{content:'权利金'}#holdingsBody td:nth-child(5)::before{content:'张数'}#holdingsBody td:nth-child(6)::before{content:'到期'}#holdingsBody td:nth-child(7)::before{content:'状态'}#holdingsBody td:nth-child(8){grid-column:1/-1;justify-content:flex-end}
+  /* 期权持仓标签由信息卡规则接管 */
   .collapsible-header h3{margin-bottom:0!important}.collapse-arrow{width:20px}.trade-del{min-width:40px;min-height:40px;border-radius:10px!important}
   #tab-data>.card:first-child>div{flex-wrap:wrap}#tab-data>.card:first-child #dataCashBal{width:100%;font-size:1.4rem}#tab-data .btn-sm{min-height:44px}.timeline{gap:8px}.tl-phase{min-width:0;padding:10px 6px}.wd-grid,.sc-grid{grid-template-columns:1fr 1fr;gap:8px}.wd-item{padding:12px}.sc-card{padding:13px 10px}
   #annualMatrixGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
@@ -2198,4 +2198,46 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #tab-data #cashLogBody td:nth-child(4){grid-area:2/6/3/9;text-align:right}
   #tab-data #cashLogBody .trade-del{display:inline-flex!important;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;padding:0;margin:-7px -4px -7px 0;font-size:1rem;line-height:1;opacity:.32;border-radius:50%}
   #tab-data #cashLogBody .trade-del:active{opacity:1;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+}
+
+/* ===== Option chips ===== */
+.opt-type{display:inline-block;font-size:.62rem;font-weight:620;line-height:1.5;padding:1px 6px;border-radius:6px;letter-spacing:.02em;vertical-align:1px}
+.opt-type.is-call{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.opt-type.is-put{color:var(--orange);background:color-mix(in srgb,var(--orange) 15%,transparent)}
+.opt-status{display:inline-block;font-size:.66rem;font-weight:600;line-height:1.5;padding:1px 6px;border-radius:6px}
+.opt-status.is-live{color:var(--accent);background:color-mix(in srgb,var(--accent) 11%,transparent)}
+.opt-status.is-warn{color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent)}
+.opt-status.is-done{color:var(--muted);background:color-mix(in srgb,var(--muted) 12%,transparent)}
+.opt-dist{display:inline-block;margin-left:6px;font-size:.68rem}
+.opt-dist.is-otm{color:var(--muted)}
+.opt-dist.is-itm{color:var(--danger);font-weight:640}
+.opt-actions{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+.opt-actions button{font-family:inherit;font-size:.7rem;line-height:1.2;padding:3px 9px;border:1px solid var(--muted);color:var(--muted);border-radius:5px;background:none;cursor:pointer}
+.opt-actions button.opt-assign{border-color:var(--accent);color:var(--accent)}
+.opt-actions button:active{background:color-mix(in srgb,currentColor 14%,transparent)}
+.opt-toggle{font-family:inherit;font-size:.7rem;line-height:1.3;padding:4px 12px;border:1px solid var(--muted);color:var(--muted);border-radius:6px;background:none;cursor:pointer}
+
+/* ===== Option holdings - mobile layout ===== */
+@media(max-width:800px){
+  #tab-option #holdingsBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px 6px!important;padding:11px 13px!important;height:auto!important;opacity:1!important}
+  #tab-option #holdingsBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.42!important;text-align:left!important}
+  #tab-option #holdingsBody td::before{display:none!important}
+  #tab-option #holdingsBody td:nth-child(1){grid-area:1/1/2/3;font-size:.9rem!important;font-weight:670}
+  #tab-option #holdingsBody td:nth-child(2){grid-area:1/3/2/5}
+  #tab-option #holdingsBody td:nth-child(7){grid-area:1/5/2/9;text-align:right;font-size:.68rem!important}
+  #tab-option #holdingsBody td:nth-child(3){grid-area:2/1/3/6;font-size:.84rem!important;font-weight:650;font-variant-numeric:tabular-nums}
+  #tab-option #holdingsBody td:nth-child(6){grid-area:2/6/3/9;color:var(--muted);font-size:.66rem!important;text-align:right;font-variant-numeric:tabular-nums}
+  #tab-option #holdingsBody td:nth-child(4){grid-area:3/1/4/4;font-size:.84rem!important;font-weight:650;font-variant-numeric:tabular-nums}
+  #tab-option #holdingsBody td:nth-child(5){grid-area:3/4/4/5;color:var(--muted);font-size:.68rem!important}
+  #tab-option #holdingsBody td:nth-child(8){grid-area:3/5/4/9;text-align:right}
+  #tab-option #holdingsBody td[colspan]{grid-column:1/-1!important;text-align:center!important;white-space:normal!important;overflow:visible!important}
+  #tab-option #holdingsBody td:nth-child(3)::before{display:inline!important;content:'行权 ';color:var(--muted);font-size:.68rem;font-weight:500}
+  #tab-option #holdingsBody td:nth-child(4)::before{display:inline!important;content:'权利金 ';color:var(--muted);font-size:.68rem;font-weight:500}
+  #tab-option #holdingsBody td:nth-child(6)::before{display:inline!important;content:'到期 '}
+  #tab-option #holdingsBody .opt-actions{display:inline-flex!important;align-items:center;gap:6px!important;vertical-align:middle}
+  #tab-option #holdingsBody .opt-actions button{height:30px!important;min-height:30px!important;padding:0 11px!important;border-radius:8px!important;font-size:.72rem!important;line-height:1!important;margin:0!important}
+  #tab-option #holdingsBody tr.is-done td{color:var(--muted)!important}
+  #tab-option #holdingsBody tr.is-done .opt-type{color:var(--muted)!important;background:color-mix(in srgb,var(--muted) 12%,transparent)!important}
+  #tab-option #holdingsBody tr.is-done .opt-status{background:transparent!important}
+  #tab-option #holdingsBody tr.is-done .opt-actions button{opacity:.75}
 }

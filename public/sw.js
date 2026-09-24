@@ -1,5 +1,5 @@
-// Service Worker v113 - cash log cards and amount direction
-var CACHE = 'wealth-v113';
+// Service Worker v114 - option holdings cards
+var CACHE = 'wealth-v114';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
