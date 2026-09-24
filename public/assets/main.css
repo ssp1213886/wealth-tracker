@@ -1943,3 +1943,33 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .quick-acc .settings-panel-head{margin-bottom:10px}
   .quick-acc .settings-field{margin-bottom:10px}
 }
+
+/* ===== Sidebar · mobile polish ===== */
+@media(max-width:800px){
+  .sidebar>.sb-section{width:100%!important;margin:0!important;padding:12px 22px!important;border:0!important;border-bottom:1px solid var(--rule)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+  .sidebar>.sb-section>h3{font-size:.68rem!important;font-weight:600!important;letter-spacing:.02em!important;color:var(--muted)!important;margin:0 0 9px!important}
+  .sidebar>.sb-header{position:sticky;top:0;z-index:6;background:var(--card-bg);padding:12px 22px 10px!important;margin:0!important;border-bottom:1px solid var(--rule)}
+  .sidebar>.sb-section.sb-market>h3{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;-webkit-tap-highlight-color:transparent}
+  .sidebar>.sb-section.sb-market>h3::after{content:"\25BE";font-size:.58rem;color:var(--muted);transition:transform 180ms var(--ease-out)}
+  .sidebar>.sb-section.sb-market.is-collapsed>h3::after{transform:rotate(-90deg)}
+  .sidebar>.sb-section.sb-market.is-collapsed{height:50px!important;min-height:0!important;max-height:50px!important;padding-top:11px!important;padding-bottom:0!important;overflow:hidden!important}
+  .sidebar>.sb-section.sb-market.is-collapsed>*:not(h3){display:none!important;visibility:hidden!important}
+  .sidebar .sb-health-row{min-height:44px!important}
+  .sidebar .sb-price-row{padding-top:7px!important;padding-bottom:7px!important}
+}
+@media(max-width:800px) and (prefers-reduced-motion:reduce){.sidebar>.sb-section.sb-market>h3::after{transition:none}}
+
+/* ===== Sidebar · reference-calibrated (Beautiful UI Sidebar Nav) ===== */
+@media(max-width:800px){
+  .sidebar .sb-header,.sidebar>.sb-header{position:sticky!important;top:0!important;left:auto!important;right:auto!important;z-index:7!important;background:var(--card-bg)!important;padding:12px 22px 10px!important;margin:0!important;border-bottom:1px solid var(--rule)!important}
+  .sidebar>.sb-section>h3{font-size:.78rem!important;font-weight:500!important;letter-spacing:0!important;color:var(--muted)!important;margin:0 0 8px!important}
+  .sidebar .sb-price-row strong,.sidebar .sb-health-row strong,.sidebar .sb-quick-menu span,.sidebar .sb-allocation-body span{font-size:.76rem!important}
+  .sidebar .sb-health-row small,.sidebar .sb-price-row small,.sidebar .sb-quick-menu b{font-size:.68rem!important}
+  .sidebar .sb-health-row{min-height:40px!important;padding:8px 10px!important}
+  .sidebar .sb-health-list{gap:6px!important}
+  .sidebar .sb-health-row>i{width:22px!important;height:22px!important;flex:0 0 22px!important;border-radius:7px!important}
+  .sidebar .sb-quick-menu button{height:32px!important}
+  .sidebar .sb-quick-menu{gap:0!important}
+  .sidebar .sb-health-row{border-radius:10px!important}
+  .sidebar .sb-mini-donut,.sidebar .sb-mini-legend span{border-radius:8px}
+}

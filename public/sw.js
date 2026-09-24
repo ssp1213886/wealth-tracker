@@ -1,5 +1,5 @@
-// Service Worker v84 - inline quick settings accordion
-var CACHE = 'wealth-v84';
+// Service Worker v85 - sidebar density per reference
+var CACHE = 'wealth-v85';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
