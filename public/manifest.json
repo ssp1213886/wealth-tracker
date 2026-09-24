@@ -4,7 +4,7 @@
   "description": "个人投资仪表盘",
   "id": "/",
   "scope": "/",
-  "start_url": "/?v=111",
+  "start_url": "/?v=112",
   "display": "standalone",
   "background_color": "#f5f6f3",
   "theme_color": "#f5f6f3",
@@ -17,5 +17,5 @@
       "purpose": "any maskable"
     }
   ],
-  "version": "10.0"
+  "version": "10.1"
 }

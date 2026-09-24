@@ -1,5 +1,5 @@
-// Service Worker v111 - stronger card texture
-var CACHE = 'wealth-v111';
+// Service Worker v112 - record cards and trade direction
+var CACHE = 'wealth-v112';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
