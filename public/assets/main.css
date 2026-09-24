@@ -1571,9 +1571,9 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .discipline-month{display:grid;min-height:48px;place-items:center;padding:7px 4px;border:1px solid transparent;border-radius:10px;font-size:var(--type-caption);line-height:1.35;text-align:center}
 .discipline-month span{font-weight:620}
 .discipline-month strong{font-size:var(--type-body);font-weight:680}
-.discipline-month.is-empty{color:var(--red);background:color-mix(in srgb,var(--red) 9%,transparent)}
+.discipline-month.is-empty{color:var(--muted);background:color-mix(in srgb,var(--muted) 10%,transparent)}
 .discipline-month.is-done{color:#fff;background:var(--accent)}
-.discipline-month.is-partial{color:#fff;background:var(--orange)}
+.discipline-month.is-partial{color:var(--accent-d);background:color-mix(in srgb,var(--accent) 20%,transparent)}
 .discipline-month.is-current{border-color:var(--accent)}
 .attribution-card #attrYear{height:36px;min-height:36px;padding:0 8px;border:1px solid var(--rule);border-radius:10px;background:var(--card-bg);color:var(--fg);font-size:.68rem}
 .attribution-card #attrSummary,.attribution-card #attrDetail{color:var(--muted);font-size:var(--type-body);line-height:1.45}
@@ -1819,18 +1819,18 @@ body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 3%
 [data-theme="dark"] body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 4.5%,var(--bg))!important}
 
 /* ===== Bottom bar follows page tint ===== */
-body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 7%,var(--card-bg))!important}
-body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 6%,var(--card-bg))!important}
-body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 5%,var(--card-bg))!important}
-body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 4%,var(--card-bg))!important}
+body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 4%,var(--card-bg))!important}
+body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 3.5%,var(--card-bg))!important}
+body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 3%,var(--card-bg))!important}
+body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 2.5%,var(--card-bg))!important}
 [data-theme="dark"] body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 12%,var(--card-bg))!important}
 [data-theme="dark"] body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 10%,var(--card-bg))!important}
 [data-theme="dark"] body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 8%,var(--card-bg))!important}
 [data-theme="dark"] body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 6%,var(--card-bg))!important}
-body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 7%,var(--card-bg))}
-body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 6%,var(--card-bg))}
-body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 5%,var(--card-bg))}
-body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 4%,var(--card-bg))}
+body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 4%,var(--card-bg))}
+body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 3.5%,var(--card-bg))}
+body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 3%,var(--card-bg))}
+body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,var(--card-bg))}
 [data-theme="dark"] body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 12%,var(--card-bg))}
 [data-theme="dark"] body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 10%,var(--card-bg))}
 [data-theme="dark"] body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 8%,var(--card-bg))}

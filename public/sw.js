@@ -1,5 +1,5 @@
-// Service Worker v69 - tinted bottom bar
-var CACHE = 'wealth-v69';
+// Service Worker v70 - light theme polish
+var CACHE = 'wealth-v70';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
