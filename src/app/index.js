@@ -1,6 +1,7 @@
 import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal} from './util.js';
 import {computeHoldings, buildPositionRows} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations} from './store.js';
+import {buildSyncPayload, classifySyncError} from './sync.js';
 var LSKEY=KEYS.dashboard,PRICE_KEY=KEYS.prices,TRADE_KEY=KEYS.trades,CB_KEY=KEYS.cash,CLOG_KEY=KEYS.cashLog;var cashBalance=0,cashLog=[];
 
 
@@ -11,7 +12,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v134';var APP_DATA_VERSION=5;
+var APP_BUILD='v135';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 function escapeHtml(v){return cleanText(v,500).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -1327,7 +1328,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=134',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=135',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1468,20 +1469,17 @@ function applyCloudVal(key,val){
   else if(key==='exit_portfolio'){localStorage.setItem('exit_portfolio',val);var ep=document.getElementById('exitPortfolio');if(ep)ep.value=val}
 }
 function buildPushData(dirtyOnly){
-  var expected={};
-  var d={};
-  var inc=function(key,getter){if(!dirtyOnly||loadSyncState().dirty[key]){d[key]=getter();expected[key]=loadSyncState().cloudTs[key]||0}};
-  inc('trades',function(){return trades});
-  inc('cashBalance',function(){return cashBalance});
-  inc('cashLog',function(){return cashLog});
-  inc('state',function(){return state});
-  inc('activities',function(){return JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')});
-  inc('optionTrades',function(){return JSON.parse(localStorage.getItem('wealth_options_v2')||'[]')});
-  inc('otmSettings',function(){return JSON.parse(localStorage.getItem('otmSettings')||'{"vgt":7,"smh":5}')});
-  inc('exit_portfolio',function(){return localStorage.getItem('exit_portfolio')||''});
-  d['prices']=JSON.parse(localStorage.getItem(PRICE_KEY)||'{}');
-  d.__expectedVersions=expected;
-  return d;
+  var st=loadSyncState();
+  return buildSyncPayload({dirtyOnly:!!dirtyOnly,dirty:st.dirty||{},cloudTs:st.cloudTs||{},read:{
+    trades:function(){return trades},
+    cashBalance:function(){return cashBalance},
+    cashLog:function(){return cashLog},
+    state:function(){return state},
+    activities:function(){return JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]')},
+    optionTrades:function(){return JSON.parse(localStorage.getItem(KEYS.options)||'[]')},
+    otmSettings:function(){return JSON.parse(localStorage.getItem('otmSettings')||'{"vgt":7,"smh":5}')},
+    exit_portfolio:function(){return localStorage.getItem('exit_portfolio')||''}
+  },readPrices:function(){return JSON.parse(localStorage.getItem(PRICE_KEY)||'{}')}});
 }
 
 function clearAllData(){
@@ -1936,6 +1934,6 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 
 /* 打包成 IIFE 后，把内联事件用到的入口显式暴露到 window */
 if(typeof window!=='undefined'){
-  var __globals={clearAllData:clearAllData,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf};
+  var __globals={clearAllData:clearAllData,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState};
   for(var __k in __globals){try{if(typeof __globals[__k]==='function')window[__k]=__globals[__k]}catch(e){}}
 }
