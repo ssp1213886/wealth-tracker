@@ -1,5 +1,5 @@
-// Service Worker v88 - normalized button system
-var CACHE = 'wealth-v88';
+// Service Worker v89 - unified button typography
+var CACHE = 'wealth-v89';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

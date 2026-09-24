@@ -112,7 +112,7 @@ input,select,textarea{font-size:16px}
 
 
 
-.btn{padding:7px 14px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:.7rem;font-weight:520;cursor:pointer;transition:transform .15s,box-shadow .15s;white-space:nowrap;letter-spacing:.01em;box-shadow:var(--shadow-sm)}
+.btn{padding:7px 14px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:.78rem;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;white-space:nowrap;letter-spacing:.01em;box-shadow:var(--shadow-sm)}
 
 
 
@@ -132,7 +132,7 @@ input,select,textarea{font-size:16px}
 
 
 
-.btn-sm{padding:4px 10px;font-size:.7rem;box-shadow:var(--shadow-sm)}.btn-sm:active{transform:scale(.95)}.btn:disabled{opacity:.4;cursor:default;pointer-events:none}
+.btn-sm{padding:4px 10px;font-size:.72rem;font-weight:600;box-shadow:var(--shadow-sm)}.btn-sm:active{transform:scale(.95)}.btn:disabled{opacity:.4;cursor:default;pointer-events:none}
 
 
 
@@ -1405,7 +1405,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .asset-row>b{font-size:1.05rem}
   .tf-group{border-radius:12px!important}
   .tf-group input,.tf-group select{min-height:46px!important;font-size:16px}
-  .btn{min-height:46px!important;font-size:.78rem;font-weight:620!important;border-radius:13px!important}
+  .btn{min-height:46px!important;font-size:.78rem!important;font-weight:600!important;border-radius:12px!important}
 }
 /* Stage 4.1 · iOS console, tab bar, and action sheet */
 @media(max-width:800px){
@@ -1646,7 +1646,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .header-title{display:flex;align-items:center;gap:5px;min-width:0}
 .header-tools{display:flex;align-items:center;gap:6px;margin-left:auto}
 .header-tools select{height:36px;min-height:36px;padding:0 8px;border:1px solid var(--rule);border-radius:10px;background:var(--card-bg);color:var(--fg);font-size:.68rem}
-.header-tools .btn{height:40px;min-height:40px;padding:0 10px;border-radius:11px;font-size:.68rem;font-weight:620}
+.header-tools .btn{height:40px;min-height:40px;padding:0 10px;border-radius:10px;font-size:.72rem;font-weight:600}
 .table-empty{text-align:center;color:var(--muted);padding:20px}
 .table-empty .btn{margin-top:8px}
 .metrics-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ds-gap)}
@@ -2015,3 +2015,9 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .btn:disabled,.btn-pri:disabled,.btn-out:disabled,.btn-sm:disabled,.btn-icon:disabled,.sync-retry:disabled,.ds-banner-actions button:disabled{opacity:.45;pointer-events:none}
 .btn:focus-visible,.btn-pri:focus-visible,.btn-out:focus-visible,.btn-sm:focus-visible,.btn-icon:focus-visible,.segment:focus-visible,.record-seg:focus-visible,.asset-chip:focus-visible,.sync-retry:focus-visible,.ds-banner-actions button:focus-visible,.sb-settings-entry:focus-visible,.sb-quick-menu button:focus-visible,.qa-item:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 72%,#fff);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.btn,.btn-pri,.btn-out,.btn-sm,.btn-icon,.segment,.record-seg,.asset-chip,.sync-retry,.ds-banner-actions button,.sb-settings-entry,.sb-quick-menu button,.qa-item,.ds-approval-btn{transition:none}}
+
+/* ===== Button system · final override ===== */
+:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-out{font-size:var(--btn-f-md)!important;font-weight:var(--btn-w-normal)!important;border-radius:var(--btn-r-md)!important}
+:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-sm,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-icon{font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important;border-radius:var(--btn-r-sm)!important}
+:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .btn-pri,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .console-form .btn-pri,:is(#tab-holding,#tab-console,#tab-option,#tab-data,#tab-log,.sidebar,.main,.top-bar) .option-form .btn-pri{font-size:var(--btn-f-lg)!important;font-weight:var(--btn-w-strong)!important;border-radius:var(--btn-r-lg)!important}
+.header-tools .btn{font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important;border-radius:var(--btn-r-sm)!important}
