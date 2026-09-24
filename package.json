@@ -4,13 +4,13 @@
   "description": "个人投资仪表盘：持仓追踪、实时行情与 Cloudflare 云端同步",
   "main": "src/worker.js",
   "scripts": {
-    "check": "npm test && npx wrangler deploy --dry-run",
-    "deploy": "npx wrangler deploy",
+    "check": "npm test && npm run build && npx wrangler deploy --dry-run",
+    "deploy": "npm run build && npx wrangler deploy",
     "dev": "npx wrangler dev",
     "preview:lan": "node scripts/lan-preview.mjs",
     "test": "node --test tests/*.test.mjs",
     "lint": "node scripts/lint.mjs",
-    "build": "node scripts/build.mjs",
+    "build": "node scripts/bundle.mjs && node scripts/build.mjs",
     "bump": "node scripts/bump.mjs"
   },
   "keywords": [
@@ -21,6 +21,7 @@
   "author": "ssp1213886",
   "license": "MIT",
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "wrangler": "^4.104.0"
   },
   "type": "module"

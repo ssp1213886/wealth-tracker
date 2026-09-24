@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 
 const SW = 'public/sw.js';
 const MANIFEST = 'public/manifest.json';
-const APP = 'public/assets/app.js';
+const APP = 'src/app/index.js';
 const TESTS = 'tests/smoke.test.mjs';
 
 const dry = process.argv.includes('--dry');
@@ -68,4 +68,13 @@ if (check.status !== 0) {
   console.error((check.stdout || '') + (check.stderr || ''));
   process.exit(1);
 }
-console.log('\n✓ 测试通过，可以直接提交部署');
+
+// 版本号写的是源文件，必须重新打包，产物才会带上新版本
+const bundle = spawnSync(process.execPath, ['scripts/bundle.mjs'], { encoding: 'utf8' });
+if (bundle.status !== 0) {
+  console.error('\n⚠ 打包失败：');
+  console.error((bundle.stdout || '') + (bundle.stderr || ''));
+  process.exit(1);
+}
+console.log((bundle.stdout || '').trim());
+console.log('✓ 测试通过、产物已重建，可以直接提交部署');

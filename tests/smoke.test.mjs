@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const html = fs.readFileSync('public/index.html', 'utf8');
 const css = fs.readFileSync('public/assets/main.css', 'utf8');
-const appSource = fs.readFileSync('public/assets/app.js', 'utf8');
+const appSource = fs.readFileSync('src/app/index.js', 'utf8');
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -131,13 +131,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=130');
+  assert.equal(manifest.start_url, '/?v=131');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v130/);
+  assert.match(serviceWorker, /wealth-v131/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=130',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=131',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

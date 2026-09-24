@@ -12,7 +12,7 @@ const sourceFiles = [
   'scripts/lan-preview.mjs',
   'scripts/build.mjs',
 ];
-const assetFiles = ['public/assets/app.js'];
+const assetFiles = ['src/app/index.js'];
 let errors = [];
 
 for (const file of [...sourceFiles, ...assetFiles]) {
