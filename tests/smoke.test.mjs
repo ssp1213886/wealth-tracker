@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=143');
+  assert.equal(manifest.start_url, '/?v=144');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v143/);
+  assert.match(serviceWorker, /wealth-v144/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=143',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=144',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -238,6 +238,11 @@ test('data health shows cloud sync, backup, and conflict state', () => {
   assert.match(appMarkup, /id="sbLastPush"/);
   assert.match(appSource, /if\(s\.lastSyncDirection==='push'\)s\.lastPushAt=s\.lastSyncAt;/);
   assert.match(appSource, /setHealthRow\('sbPushRow'/);
+  // 上传 / 下载两条通道各自记时间，命名与侧边栏按钮统一
+  assert.match(appSource, /else if\(s\.lastSyncDirection==='pull'\)s\.lastPullAt=s\.lastSyncAt;/);
+  assert.match(appSource, /s\.lastPullAt=Number\(s\.lastPullAt\)\|\|0/);
+  assert.match(html, /最近成功下载/);
+  assert.match(html, /上次成功上传/);
   assert.match(appMarkup, /s\.pendingConflicts=Array\.isArray\(s\.pendingConflicts\)/);
   assert.match(appMarkup, /function recordSyncSuccess\(/);
   assert.match(appMarkup, /function recordSyncFailure\(/);
@@ -259,6 +264,17 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(appSource, /function pushKeysForce\(/);
   // 409 不再直接甩给用户，先自动核对
   assert.doesNotMatch(appSource, /status===409\)\{autoPull\(\);showToast\('云端已有更新/);
+});
+
+test('sync feedback has a single channel per event', () => {
+  // 自动推送不再弹 toast（由顶部提示条负责），只有用户手动点上传才弹
+  assert.doesNotMatch(appSource, /已同步到云端/);
+  assert.match(appSource, /已上传到云端/);
+  assert.match(appSource, /function syncPushImpl\(data\)\{return syncFetch\('POST',data\)/);
+  // 设置面板的圆点已移除，"已上传 hh:mm" 那行小字保留
+  assert.doesNotMatch(html, /id="syncDot"/);
+  assert.doesNotMatch(appSource, /syncDot/);
+  assert.match(appSource, /el\.textContent='已上传 '\+new Date\(\)\.toLocaleTimeString/);
 });
 
 test('market sparkline is built from real cached history points', () => {
