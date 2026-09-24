@@ -1,5 +1,5 @@
-// Service Worker v87 - sidebar sections always expanded
-var CACHE = 'wealth-v87';
+// Service Worker v88 - normalized button system
+var CACHE = 'wealth-v88';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

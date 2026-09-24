@@ -1999,3 +1999,19 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sidebar>.sb-section.sb-market.is-collapsed,.sidebar>.sb-section.sb-sync-summary.is-collapsed{height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
 .sidebar>.sb-section.sb-market.is-collapsed>*,.sidebar>.sb-section.sb-sync-summary.is-collapsed>*{display:revert!important;visibility:visible!important}
 .sidebar>.sb-section.sb-sync-summary.is-collapsed>.sb-health-list{display:flex!important;flex-direction:column!important}
+
+/* ===== Button system · normalized ===== */
+:root{--btn-r-sm:10px;--btn-r-md:12px;--btn-r-lg:14px;--btn-f-sm:.72rem;--btn-f-md:.78rem;--btn-f-lg:.84rem;--btn-w-normal:600;--btn-w-strong:650}
+.btn.btn,.btn-out.btn-out{border-radius:var(--btn-r-md)!important;font-size:var(--btn-f-md)!important;font-weight:var(--btn-w-normal)!important}
+.btn-pri.btn-pri{border-radius:var(--btn-r-lg)!important;font-size:var(--btn-f-lg)!important;font-weight:var(--btn-w-strong)!important}
+.btn-sm.btn-sm{border-radius:var(--btn-r-sm)!important;font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important}
+.btn-icon{border-radius:var(--btn-r-md)!important}
+.segment.segment,.record-seg.record-seg{border-radius:var(--btn-r-md)!important;font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important}
+.asset-chip{border-radius:var(--btn-r-pill,999px)!important;font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important}
+.sync-retry,.ds-banner-actions button{border-radius:var(--btn-r-sm)!important;font-size:var(--btn-f-sm)!important;font-weight:var(--btn-w-normal)!important;min-height:34px!important}
+.sb-settings-entry,.sb-quick-menu button,.qa-item{border-radius:var(--btn-r-sm)!important;font-weight:var(--btn-w-normal)!important}
+.btn,.btn-pri,.btn-out,.btn-sm,.btn-icon,.segment,.record-seg,.asset-chip,.sync-retry,.ds-banner-actions button,.sb-settings-entry,.sb-quick-menu button,.qa-item,.ds-approval-btn{transition:transform 120ms var(--ease-out),background-color 120ms var(--ease-out),border-color 120ms var(--ease-out),color 120ms var(--ease-out)}
+.btn:active,.btn-pri:active,.btn-out:active,.btn-sm:active,.btn-icon:active,.segment:active,.record-seg:active,.asset-chip:active,.sync-retry:active,.ds-banner-actions button:active,.sb-settings-entry:active,.sb-quick-menu button:active,.qa-item:active,.ds-approval-btn:active{transform:scale(.97)}
+.btn:disabled,.btn-pri:disabled,.btn-out:disabled,.btn-sm:disabled,.btn-icon:disabled,.sync-retry:disabled,.ds-banner-actions button:disabled{opacity:.45;pointer-events:none}
+.btn:focus-visible,.btn-pri:focus-visible,.btn-out:focus-visible,.btn-sm:focus-visible,.btn-icon:focus-visible,.segment:focus-visible,.record-seg:focus-visible,.asset-chip:focus-visible,.sync-retry:focus-visible,.ds-banner-actions button:focus-visible,.sb-settings-entry:focus-visible,.sb-quick-menu button:focus-visible,.qa-item:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 72%,#fff);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.btn,.btn-pri,.btn-out,.btn-sm,.btn-icon,.segment,.record-seg,.asset-chip,.sync-retry,.ds-banner-actions button,.sb-settings-entry,.sb-quick-menu button,.qa-item,.ds-approval-btn{transition:none}}
