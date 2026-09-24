@@ -134,7 +134,7 @@
   <div class="sb-section sb-allocation"><h3>目标配比</h3><div class="sb-allocation-body"><div class="sb-mini-donut"><span>目标</span></div><div class="sb-mini-legend"><span><i class="vgt"></i>VGT <b id="sbVgtPct">50%</b></span><span><i class="smh"></i>SMH <b id="sbSmhPct">30%</b></span><span><i class="btc"></i>BTC ETF <b id="sbBtcPct">20%</b></span></div></div></div>
   <div class="sb-section sb-market" style="padding:10px 14px;"><h3>市场行情 <span id="sbMarketTime">实时</span></h3><div id="sbLivePrices" style="font-size:.7rem;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:.7rem;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div>
   <div class="sb-section sb-sync-summary">
-    <div class="sb-sync-head"><h3>数据健康</h3><strong id="sbSyncState">本地保存</strong></div>
+    <div class="sb-sync-head"><h3>数据健康</h3><span class="sb-sync-actions"><button type="button" id="syncRetryBtn" class="sync-retry">重试</button><strong id="sbSyncState">本地保存</strong></span></div>
     <div class="sb-health-list">
       <div class="sb-health-row" id="sbCloudRow"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a4.6 4.6 0 0 1-.8-9.1A6.5 6.5 0 0 1 18.7 7 4 4 0 0 1 19 15h-1"/><path d="m9 15 3-3 3 3M12 12v9"/></svg></i><span><small>最近云同步</small><strong id="sbSyncLast">尚未配置</strong></span></div>
       <div class="sb-health-row" id="sbBackupRow"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg></i><span><small>最近备份</small><strong id="sbBackupLast">尚未导出</strong></span></div>
@@ -606,6 +606,7 @@
 
 
 
+<div id="syncFailBanner" class="ds-banner" role="alert" hidden><span class="ds-banner-body"><strong>云同步失败，数据仅存本机</strong><small id="syncBannerReason"></small></span><span class="ds-banner-actions"><button type="button" id="syncBannerRetry">重试</button><button type="button" id="syncBannerExport">导出备份</button><button type="button" id="syncBannerClose" aria-label="关闭提示">×</button></span></div>
 <div class="bottom-bar" id="bottomBar">
   <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings" aria-current="page"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5"/><path d="M5.5 9.2V21h5v-6.5h3V21h5V9.2"/></svg></span>仪表盘</button>
   <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15"/><path d="m16 4 3 3-3 3"/><path d="M20 17H5"/><path d="m8 14-3 3 3 3"/></svg></span>操作</button>

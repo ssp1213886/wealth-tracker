@@ -1,5 +1,5 @@
-// Service Worker v76 - pull refresh hint failsafe
-var CACHE = 'wealth-v76';
+// Service Worker v77 - sync failure banner and retry
+var CACHE = 'wealth-v77';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
