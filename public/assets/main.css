@@ -1815,3 +1815,13 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 
 /* FAB 描边跟随深色底栏（末位定义确保覆盖前面的 :root 声明） */
 [data-theme="dark"]{--bar-solid:color-mix(in srgb,var(--card-bg) 95%,#fff)}
+
+/* ===== Full-page ambience (whole viewport, accent-tinted) ===== */
+body[data-active-tab="holding"] .main{background-color:color-mix(in srgb,var(--accent) 3.5%,var(--bg))!important}
+body[data-active-tab="option"] .main{background-color:color-mix(in srgb,var(--accent) 2.8%,var(--bg))!important}
+body[data-active-tab="console"] .main{background-color:color-mix(in srgb,var(--accent) 2.2%,var(--bg))!important}
+body[data-active-tab="data"] .main{background-color:color-mix(in srgb,var(--accent) 1.6%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="holding"] .main{background-color:color-mix(in srgb,var(--accent) 6%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="option"] .main{background-color:color-mix(in srgb,var(--accent) 4.5%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="console"] .main{background-color:color-mix(in srgb,var(--accent) 3.5%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="data"] .main{background-color:color-mix(in srgb,var(--accent) 2.5%,var(--bg))!important}

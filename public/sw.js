@@ -1,5 +1,5 @@
-// Service Worker v66 - intensified per-page ambience
-var CACHE = 'wealth-v66';
+// Service Worker v67 - full-page ambience
+var CACHE = 'wealth-v67';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
