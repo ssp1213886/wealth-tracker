@@ -1910,3 +1910,13 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar>.sb-section.sb-portfolio{position:sticky!important;top:66px!important;z-index:5!important;background:var(--card-bg)!important;border-bottom:1px solid var(--rule)!important}
   .sidebar>.sb-section.sb-allocation,.sidebar>.sb-section.sb-market,.sidebar>.sb-section.sb-sync-summary,.sidebar>.sb-section.sb-settings{position:relative!important;z-index:1!important}
 }
+
+/* ===== Sidebar · collapsible market ===== */
+@media(min-width:801px){
+  .sidebar>.sb-section.sb-market>h3{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none;-webkit-tap-highlight-color:transparent}
+  .sidebar>.sb-section.sb-market>h3::after{content:"\25BE";font-size:.58rem;color:var(--muted);transition:transform 180ms var(--ease-out)}
+  .sidebar>.sb-section.sb-market.is-collapsed>h3::after{transform:rotate(-90deg)}
+  .sidebar>.sb-section.sb-market.is-collapsed{height:52px!important;min-height:0!important;max-height:52px!important;padding-top:12px!important;padding-bottom:0!important;overflow:hidden!important}
+  .sidebar>.sb-section.sb-market.is-collapsed>*:not(h3){display:none!important;visibility:hidden!important}
+}
+@media(prefers-reduced-motion:reduce){.sidebar>.sb-section.sb-market>h3::after{transition:none}}

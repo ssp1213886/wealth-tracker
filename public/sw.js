@@ -1,5 +1,5 @@
-// Service Worker v81 - sidebar sticky header and compaction
-var CACHE = 'wealth-v81';
+// Service Worker v82 - collapsible sidebar market
+var CACHE = 'wealth-v82';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
