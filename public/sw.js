@@ -1,5 +1,5 @@
-// Service Worker v68 - solid per-page background
-var CACHE = 'wealth-v68';
+// Service Worker v69 - tinted bottom bar
+var CACHE = 'wealth-v69';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
