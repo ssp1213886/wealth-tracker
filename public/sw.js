@@ -1,5 +1,5 @@
-// Service Worker v116 - card labels and alignment polish
-var CACHE = 'wealth-v116';
+// Service Worker v117 - holdings accent bars and option spacing
+var CACHE = 'wealth-v117';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

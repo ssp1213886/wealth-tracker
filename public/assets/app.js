@@ -318,7 +318,7 @@ function updatePortfolio(){
 
 
 
-  if(hb)hb.innerHTML=rows.length?rows.map(function(r){return'<tr><td>'+r.sym+'</td><td>'+Math.abs(r.shares).toFixed(2)+'</td><td>$'+r.avgCost.toFixed(2)+'</td><td>'+(r.priced?fmtFull(r.value):'<span style="color:orange;">-</span>')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.unrealPnL!=null?fmtPnLFull(r.unrealPnL):'-')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.pnlPct!=null?((r.pnlPct>=0?'+':'')+(r.pnlPct*100).toFixed(1)+'%'):'-')+'</td><td><button class="trade-del" data-hold="'+r.sym+'" title="清仓" aria-label="清仓该标的">×</button></td></tr>'}).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No holdings</td></tr>';
+  if(hb)hb.innerHTML=rows.length?rows.map(function(r){return'<tr style="--row-accent:'+getAssetColor(r.sym)+'"><td>'+r.sym+'</td><td>'+Math.abs(r.shares).toFixed(2)+'</td><td>$'+r.avgCost.toFixed(2)+'</td><td>'+(r.priced?fmtFull(r.value):'<span style="color:orange;">-</span>')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.unrealPnL!=null?fmtPnLFull(r.unrealPnL):'-')+'</td><td class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.pnlPct!=null?((r.pnlPct>=0?'+':'')+(r.pnlPct*100).toFixed(1)+'%'):'-')+'</td><td><button class="trade-del" data-hold="'+r.sym+'" title="清仓" aria-label="清仓该标的">×</button></td></tr>'}).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No holdings</td></tr>';
 
 
 
@@ -1356,7 +1356,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=116',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=117',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
