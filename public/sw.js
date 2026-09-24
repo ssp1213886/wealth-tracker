@@ -1,5 +1,5 @@
-// Service Worker v101 - theme-aware glass toast
-var CACHE = 'wealth-v101';
+// Service Worker v102 - sync version stamp fix
+var CACHE = 'wealth-v102';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

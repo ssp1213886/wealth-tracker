@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=101',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=102',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1544,7 +1544,7 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 
 
 var syncFetchWithoutHealth=syncFetch;
-syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');var clearSpin=function(){if(host)host.classList.remove('is-syncing')};if(host)host.classList.add('is-syncing');var spinTimer=setTimeout(clearSpin,12000);var done=function(){clearTimeout(spinTimer);clearSpin()};try{return syncFetchWithoutHealth(method,body).then(function(result){recordSyncSuccess(method==='GET'?'pull':'push',Date.now());done();return result}).catch(function(error){recordSyncFailure(Date.now(),error&&error.message);if(error&&console&&console.warn)console.warn('[sync]',error.message);done();throw error})}catch(e){done();throw e}};
+syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');var clearSpin=function(){if(host)host.classList.remove('is-syncing')};if(host)host.classList.add('is-syncing');var spinTimer=setTimeout(clearSpin,12000);var done=function(){clearTimeout(spinTimer);clearSpin()};try{return syncFetchWithoutHealth(method,body).then(function(result){if(method!=='GET'&&result&&result.ts&&body){try{Object.keys(body).forEach(function(k){if(k!=='__expectedVersions')setCloudTs(k,result.ts)})}catch(e){}}recordSyncSuccess(method==='GET'?'pull':'push',Date.now());done();return result}).catch(function(error){recordSyncFailure(Date.now(),error&&error.message);if(error&&console&&console.warn)console.warn('[sync]',error.message);done();throw error})}catch(e){done();throw e}};
 document.getElementById('syncToken').addEventListener('change',renderSyncHealth);
 document.getElementById('syncPanelHeader').addEventListener('click',function(){document.getElementById('syncPanel').classList.toggle('open')});
 
