@@ -1762,3 +1762,25 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .trade-table tbody tr:last-child td,.res-table tbody tr:last-child td{border-bottom:0}
 .trade-table tbody tr:active,.res-table tbody tr:active{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .table-empty{padding:22px 14px;font-size:.74rem;color:var(--muted);text-align:center}
+
+/* ===== Search field · records ===== */
+#tab-data .ds-search-card{padding:0!important;margin-bottom:12px;border:1px solid var(--rule)!important;background:var(--card-bg)!important;border-radius:14px!important;box-shadow:var(--shadow)!important}
+#tab-data .ds-search{display:flex;align-items:center;gap:9px;min-height:48px;padding:0 12px}
+#tab-data .ds-search-icon{display:grid;place-items:center;width:20px;height:20px;flex:0 0 20px;color:var(--muted)}
+#tab-data .ds-search-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+#tab-data .ds-search input{flex:1;min-width:0;height:46px!important;min-height:46px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--fg)!important;font-size:.78rem!important;box-shadow:none!important}
+#tab-data .ds-search input::placeholder{color:var(--muted)}
+#tab-data .ds-search input::-webkit-search-cancel-button{display:none}
+#tab-data .ds-search-count{font-size:.68rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+#tab-data .ds-search-clear{width:28px;height:28px;flex:0 0 28px;border:0;border-radius:50%;background:var(--surface);color:var(--muted);font-size:1rem;line-height:1;cursor:pointer;touch-action:manipulation}
+
+/* ===== Records page · segment switch ===== */
+.record-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px;padding:4px;border:1px solid var(--rule);border-radius:14px;background:var(--surface)}
+.record-seg{min-height:38px;border:0;border-radius:11px;background:transparent;color:var(--muted);font:600 .76rem var(--font);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color 140ms var(--ease-out),color 140ms var(--ease-out)}
+.record-seg.active{background:var(--card-bg);color:var(--fg);box-shadow:var(--shadow-sm)}
+.record-seg:active{transform:scale(.98)}
+.record-group{display:none}
+.record-group.active{display:block}
+@media(hover:hover) and (pointer:fine){.record-seg:not(.active):hover{color:var(--fg)}}
+@media(prefers-reduced-motion:reduce){.record-seg{transition:none}}
+#bottomBar.bottom-bar{grid-template-columns:repeat(4,minmax(0,1fr))!important}

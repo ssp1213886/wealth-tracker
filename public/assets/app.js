@@ -1061,7 +1061,7 @@ var autoBackup=false;function doAutoBackup(){if(!autoBackup)return;var data=crea
 
 
 
-function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate(8);document.body.dataset.activeTab=tab;var titleMap={holding:'My Portfolio',console:'操作台',option:'期权',data:'数据',log:'日志与规划'},desktopTitleMap={holding:'投资仪表盘',console:'操作台',option:'期权管理',data:'资产数据',log:'日志与规划'};var mt=document.getElementById('msPageTitle');if(mt)mt.textContent=titleMap[tab]||'My Portfolio';var dt=document.getElementById('desktopPageTitle');if(dt)dt.textContent=desktopTitleMap[tab]||'投资仪表盘';
+function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate(8);if(tab==='log'||tab==='logs')tab='data';document.body.dataset.activeTab=tab;var titleMap={holding:'My Portfolio',console:'操作台',option:'期权',data:'记录',log:'记录'},desktopTitleMap={holding:'投资仪表盘',console:'操作台',option:'期权管理',data:'记录',log:'记录'};var mt=document.getElementById('msPageTitle');if(mt)mt.textContent=titleMap[tab]||'My Portfolio';var dt=document.getElementById('desktopPageTitle');if(dt)dt.textContent=desktopTitleMap[tab]||'投资仪表盘';
 
 
 
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=51',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=52',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1775,6 +1775,67 @@ function showApproval(opts){
   cancelBtn.focus();
   return modal;
 }
+
+var dsSearchQuery="";
+function applyTableSearch(){
+  var q=dsSearchQuery.trim().toLowerCase(),total=0,matched=0;
+  ["holdBody","tradeBody","cashLogBody"].forEach(function(id){
+    var tb=document.getElementById(id);
+    if(!tb)return;
+    [].forEach.call(tb.querySelectorAll("tr"),function(tr){
+      if(tr.querySelector(".table-empty")||tr.querySelector(".ds-empty"))return;
+      total++;
+      var hit=!q||tr.textContent.toLowerCase().indexOf(q)>=0;
+      tr.style.display=hit?"":"none";
+      if(hit)matched++;
+    });
+  });
+  var counter=document.getElementById("dsSearchCount");
+  if(counter)counter.textContent=q?(matched+" 条"):"";
+  var clearBtn=document.getElementById("dsSearchClear");
+  if(clearBtn)clearBtn.hidden=!q;
+}
+function initTableSearch(){
+  var input=document.getElementById("dsSearchInput");
+  if(!input)return;
+  var timer=null;
+  input.addEventListener("input",function(){clearTimeout(timer);var v=input.value;timer=setTimeout(function(){dsSearchQuery=v;applyTableSearch()},120)});
+  input.addEventListener("keydown",function(e){if(e.key==="Escape"){input.value="";dsSearchQuery="";applyTableSearch()}});
+  var clearBtn=document.getElementById("dsSearchClear");
+  if(clearBtn)clearBtn.addEventListener("click",function(){input.value="";dsSearchQuery="";applyTableSearch();input.focus()});
+  ["holdBody","tradeBody","cashLogBody"].forEach(function(id){
+    var tb=document.getElementById(id);
+    if(tb&&window.MutationObserver)new MutationObserver(function(){applyTableSearch()}).observe(tb,{childList:true});
+  });
+  applyTableSearch();
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initTableSearch)}else{initTableSearch()}
+
+var RECORD_SEG_KEY="wealth_records_segment_v1";
+function setRecordSegment(seg,persist){
+  var groups=document.querySelectorAll(".record-group");
+  if(!groups.length)return;
+  [].forEach.call(groups,function(g){g.classList.toggle("active",g.getAttribute("data-group")===seg)});
+  [].forEach.call(document.querySelectorAll("#recordSeg .record-seg"),function(b){
+    var on=b.getAttribute("data-seg")===seg;
+    b.classList.toggle("active",on);
+    b.setAttribute("aria-selected",on?"true":"false");
+  });
+  if(persist!==false){try{localStorage.setItem(RECORD_SEG_KEY,seg)}catch(e){}}
+}
+function initRecordSegment(){
+  var seg=document.getElementById("recordSeg");
+  if(!seg)return;
+  seg.addEventListener("click",function(e){
+    var b=e.target&&e.target.closest?e.target.closest(".record-seg"):null;
+    if(!b)return;
+    setRecordSegment(b.getAttribute("data-seg"));
+  });
+  var saved="data";
+  try{saved=localStorage.getItem(RECORD_SEG_KEY)||"data"}catch(e){}
+  setRecordSegment(saved,false);
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initRecordSegment)}else{initRecordSegment()}
 
 function emptyStateHTML(opts){
   var o=opts||{};

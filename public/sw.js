@@ -1,5 +1,5 @@
-// Service Worker v51 - unified records tables
-var CACHE = 'wealth-v51';
+// Service Worker v52 - merged records page
+var CACHE = 'wealth-v52';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
