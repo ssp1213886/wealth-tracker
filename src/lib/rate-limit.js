@@ -1,5 +1,5 @@
 const WINDOW_MS = 60000;
-const MAX_REQUESTS = 60;
+const MAX_REQUESTS = 240;
 const CLEANUP_INTERVAL_MS = 300000;
 
 export function createRateLimiter({ now = Date.now } = {}) {

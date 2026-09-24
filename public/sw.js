@@ -1,5 +1,5 @@
-// Service Worker v72 - sync failure diagnostics
-var CACHE = 'wealth-v72';
+// Service Worker v73 - relaxed api rate limit
+var CACHE = 'wealth-v73';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
