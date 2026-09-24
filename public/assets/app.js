@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=102',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=103',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1778,24 +1778,7 @@ function showApproval(opts){
 }
 
 var dsSearchQuery="";
-function applyTableSearch(){
-  var q=dsSearchQuery.trim().toLowerCase(),total=0,matched=0;
-  ["holdBody","tradeBody","cashLogBody"].forEach(function(id){
-    var tb=document.getElementById(id);
-    if(!tb)return;
-    [].forEach.call(tb.querySelectorAll("tr"),function(tr){
-      if(tr.querySelector(".table-empty")||tr.querySelector(".ds-empty"))return;
-      total++;
-      var hit=!q||tr.textContent.toLowerCase().indexOf(q)>=0;
-      tr.style.display=hit?"":"none";
-      if(hit)matched++;
-    });
-  });
-  var counter=document.getElementById("dsSearchCount");
-  if(counter)counter.textContent=q?(matched+" 条"):"";
-  var clearBtn=document.getElementById("dsSearchClear");
-  if(clearBtn)clearBtn.hidden=!q;
-}
+function applyTableSearch(){var q=dsSearchQuery.trim().toLowerCase(),total=0,matched=0,first=null;['holdBody','tradeBody','cashLogBody'].forEach(function(id){var tb=document.getElementById(id);if(!tb)return;[].forEach.call(tb.querySelectorAll('tr'),function(tr){if(tr.querySelector('.table-empty')||tr.querySelector('.ds-empty'))return;total++;var hit=!q||tr.textContent.toLowerCase().indexOf(q)>=0;tr.style.display=hit?'':'none';if(hit){matched++;if(!first&&q)first=tr}})});var counter=document.getElementById('dsSearchCount');if(counter)counter.textContent=q?(matched+' 条'):'';var clearBtn=document.getElementById('dsSearchClear');if(clearBtn)clearBtn.hidden=!q;var tip=document.getElementById('dsSearchEmpty');if(tip)tip.hidden=!(q&&matched===0);if(q&&first){first.classList.add('is-search-hit');setTimeout(function(){first.classList.remove('is-search-hit')},1200);if(!first._jumpLock){first._jumpLock=true;try{first.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){first.scrollIntoView()}setTimeout(function(){first._jumpLock=false},1400)}}}
 function initTableSearch(){
   var input=document.getElementById("dsSearchInput");
   if(!input)return;

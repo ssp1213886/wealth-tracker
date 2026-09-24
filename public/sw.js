@@ -1,5 +1,5 @@
-// Service Worker v102 - sync version stamp fix
-var CACHE = 'wealth-v102';
+// Service Worker v103 - search jump and empty state
+var CACHE = 'wealth-v103';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

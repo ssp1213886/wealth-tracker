@@ -2094,3 +2094,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sync-toast .toast-icon{background:color-mix(in srgb,var(--accent) 16%,transparent)!important;color:var(--accent)!important}
 .sync-toast.err .toast-icon,.sync-toast.undo .toast-icon{background:color-mix(in srgb,var(--danger) 16%,transparent)!important;color:var(--danger)!important}
 .sync-toast .toast-msg{color:var(--fg)!important}
+
+/* ===== Search v2 · persistent field + jump to match ===== */
+#tab-data .ds-search-empty{margin:10px 0 0;padding:11px 12px;border:1px dashed var(--rule);border-radius:12px;text-align:center;font-size:.72rem;color:var(--muted);background:color-mix(in srgb,var(--surface) 60%,transparent)}
+#tab-data .ds-search-empty[hidden]{display:none}
+.trade-table tbody tr.is-search-hit,.res-table tbody tr.is-search-hit{background:color-mix(in srgb,var(--accent) 20%,transparent)!important;transition:background-color 200ms var(--ease-out)}
+#tab-data .record-group[data-group=log] .ds-search-card{display:none}
+@media(prefers-reduced-motion:reduce){.trade-table tbody tr.is-search-hit,.res-table tbody tr.is-search-hit{transition:none}}
