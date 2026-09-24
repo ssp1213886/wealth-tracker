@@ -1,5 +1,5 @@
-// Service Worker v60 - 56px center action button
-var CACHE = 'wealth-v60';
+// Service Worker v61 - 60px center action button
+var CACHE = 'wealth-v61';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
