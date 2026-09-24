@@ -1,4 +1,5 @@
 import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal} from './util.js';
+import {computeHoldings, buildPositionRows} from './calc.js';
 var LSKEY='wealth_dashboard_v2',PRICE_KEY='wealth_prices_v2',TRADE_KEY='wealth_trades_v2',CB_KEY='wealth_cash_v2',CLOG_KEY='wealth_cashlog_v2';var cashBalance=0,cashLog=[];
 
 
@@ -9,7 +10,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v132';var APP_DATA_VERSION=5;
+var APP_BUILD='v133';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 function escapeHtml(v){return cleanText(v,500).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -223,47 +224,8 @@ function updatePortfolio(){
 
 
 
-  var holdings={},totalBuys=0,totalInvested=0,totalRealized=0;
-
-
-
-  var sorted=[].concat(trades).sort(function(a,b){return a.date.localeCompare(b.date)});
-
-
-
-  for(var i=0;i<sorted.length;i++){
-
-
-
-    var t=sorted[i],sym=t.symbol,sh=Number(t.shares),pr=Number(t.price);
-
-
-
-    if(!holdings[sym])holdings[sym]={shares:0,cost:0,realized:0};
-
-
-
-    if(sh>0){holdings[sym].shares+=sh;holdings[sym].cost+=sh*pr;totalBuys+=sh*pr;totalInvested+=sh*pr}
-
-
-
-    else{var preAvg=holdings[sym].shares>0?holdings[sym].cost/holdings[sym].shares:pr;var soldCost=Math.abs(sh)*preAvg;var soldProceeds=Math.abs(sh)*pr;holdings[sym].shares+=sh;holdings[sym].cost-=soldCost;holdings[sym].realized+=soldProceeds-soldCost;totalRealized+=soldProceeds-soldCost}
-
-
-
-  }
-
-
-
-  var totalCost=0,totalValue=0,hasPriced=false,unpriced=[];
-
-
-
-  var rows=[];
-
-
-
-  for(var sym in holdings){var h=holdings[sym];if(h.shares<=0)continue;var avgCost=h.shares>0?h.cost/h.shares:0,priced=livePrices[sym]&&livePrices[sym]>0;var curPrice=priced?livePrices[sym]:null,value=priced?h.shares*curPrice:null;var unrealPnL=priced?value-h.cost:null,pnlPct=(priced&&h.cost>0)?unrealPnL/h.cost:null;totalCost+=h.cost;if(priced){totalValue+=value;hasPriced=true}else unpriced.push(sym);rows.push({sym:sym,shares:h.shares,avgCost:avgCost,priced:priced,curPrice:curPrice,value:value,unrealPnL:unrealPnL,pnlPct:pnlPct,realized:h.realized||0})}
+  var holdingsPack=computeHoldings(trades),holdings=holdingsPack.holdings,totalBuys=holdingsPack.totalBuys,totalInvested=holdingsPack.totalInvested,totalRealized=holdingsPack.totalRealized;
+  var rowsPack=buildPositionRows(holdings,livePrices),rows=rowsPack.rows,totalCost=rowsPack.totalCost,totalValue=rowsPack.totalValue,hasPriced=rowsPack.hasPriced,unpriced=rowsPack.unpriced;
 
 
 
@@ -1377,7 +1339,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=132',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=133',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
