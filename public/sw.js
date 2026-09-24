@@ -1,5 +1,5 @@
-// Service Worker v104 - form validation feedback
-var CACHE = 'wealth-v104';
+// Service Worker v105 - clear remaining silent validations
+var CACHE = 'wealth-v105';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

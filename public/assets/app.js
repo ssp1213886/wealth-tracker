@@ -919,7 +919,7 @@ document.getElementById('hmRefresh').addEventListener('click',function(){var btn
 
 
 
-document.getElementById('hmManualSet').addEventListener('click',function(){var sym=document.getElementById('hmManualSym').value.toUpperCase().trim();var price=parseFloat(document.getElementById('hmManualPrice').value);if(!sym||!price||price<=0||!ETF_SYMS.includes(sym))return;var manualData={price:price,source:'manual',time:Date.now()};livePrices[sym]=price;liveQuoteData[sym]=manualData;liveSources[sym]='手动';cachePrice(sym,manualData);document.getElementById('hmManualSym').value='';document.getElementById('hmManualPrice').value='';updatePortfolio();updateSidebar();updateSidebarPrices();showToast('✅ '+sym+' 价格已设为 $'+price.toFixed(2))});
+document.getElementById('hmManualSet').addEventListener('click',function(){var sym=document.getElementById('hmManualSym').value.toUpperCase().trim();var price=parseFloat(document.getElementById('hmManualPrice').value);if(!sym)return formError('请输入标的代码','hmManualSym');if(!ETF_SYMS.includes(sym))return formError('仅支持 '+ETF_SYMS.join('/'),'hmManualSym');if(!price||price<=0)return formError('请输入有效的价格','hmManualPrice');var manualData={price:price,source:'manual',time:Date.now()};livePrices[sym]=price;liveQuoteData[sym]=manualData;liveSources[sym]='手动';cachePrice(sym,manualData);document.getElementById('hmManualSym').value='';document.getElementById('hmManualPrice').value='';updatePortfolio();updateSidebar();updateSidebarPrices();showToast('✅ '+sym+' 价格已设为 $'+price.toFixed(2))});
 
 
 
@@ -939,11 +939,11 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
 
 
 
-  if(!shares||!price||shares<=0||price<=0)return;
+  if(!shares||shares<=0)return formError('请输入有效的股数','tfShares');if(!price||price<=0)return formError('请输入有效的价格','tfPrice');
 
 
 
-  if(type==='buy'){var avail=getNetCash();var cost=shares*price;if(cost>avail){alert('现金不足！\n需要：'+fmtFull(cost)+'\n可用：'+fmtFull(avail));return}}if(type==='sell'){var held=0;trades.forEach(function(t){if(t.symbol===sym)held+=t.shares});if(shares>held){alert('持仓不足！\n持有：'+held.toFixed(2)+'股\n卖出：'+shares.toFixed(2)+'股');return}}
+  if(type==='buy'){var avail=getNetCash();var cost=shares*price;if(cost>avail){showToast('现金不足：需要 '+fmtFull(cost)+'，可用 '+fmtFull(avail),'err');return}}if(type==='sell'){var held=0;trades.forEach(function(t){if(t.symbol===sym)held+=t.shares});if(shares>held){showToast('持仓不足！\n持有：'+held.toFixed(2)+'股\n卖出：'+shares.toFixed(2)+'股','err');return}}
 
 
 
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=104',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=105',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1372,7 +1372,7 @@ function showToast(msg,type,undoFn){var t=document.getElementById('syncToast');i
 
 
 
-function updateHoldCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=getNetCash();document.getElementById('hmCash').textContent=fmtFull(nc);document.getElementById('hmDep').textContent=fmtFull((cashLog||[]).reduce(function(s,l){return s+(l.type.indexOf('\u5165\u91d1')>=0?l.amount:0)},0));document.getElementById('hmSel').textContent=fmtFull(ts);document.getElementById('hmBuy').textContent='-'+fmtFull(tb)}document.getElementById('hmDeposit').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value);if(isNaN(v)||v<=0)return;cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'入金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('入金 '+fmtFull(v));refreshCashUI()});document.getElementById('hmWithdraw').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value),available=getNetCash();if(isNaN(v)||v<=0)return;if(v>available){alert('可用现金不足！\n申请出金：'+fmtFull(v)+'\n当前可用：'+fmtFull(available));return}cashBalance-=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'出金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('出金 '+fmtFull(v));refreshCashUI()});
+function updateHoldCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});var nc=getNetCash();document.getElementById('hmCash').textContent=fmtFull(nc);document.getElementById('hmDep').textContent=fmtFull((cashLog||[]).reduce(function(s,l){return s+(l.type.indexOf('\u5165\u91d1')>=0?l.amount:0)},0));document.getElementById('hmSel').textContent=fmtFull(ts);document.getElementById('hmBuy').textContent='-'+fmtFull(tb)}document.getElementById('hmDeposit').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value);if(isNaN(v)||v<=0)return formError('请输入入金金额','hmCashAmt');cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'入金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('入金 '+fmtFull(v));refreshCashUI()});document.getElementById('hmWithdraw').addEventListener('click',function(){var v=parseFloat(document.getElementById('hmCashAmt').value),available=getNetCash();if(isNaN(v)||v<=0)return formError('请输入出金金额','hmCashAmt');if(v>available){showToast('可用现金不足：申请 '+fmtFull(v)+'，当前可用 '+fmtFull(available),'err');return}cashBalance-=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:'出金',amount:v});saveCashLog();document.getElementById('hmCashAmt').value='';addActivity('出金 '+fmtFull(v));refreshCashUI()});
 
 
 
