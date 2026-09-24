@@ -12,9 +12,10 @@ const utilSource = fs.readFileSync('src/app/util.js', 'utf8').replace(/^export /
 const calcSource = fs.readFileSync('src/app/calc.js', 'utf8').replace(/^export /gm, '');
 const storeSource = fs.readFileSync('src/app/store.js', 'utf8').replace(/^export /gm, '');
 const syncSource = fs.readFileSync('src/app/sync.js', 'utf8').replace(/^export /gm, '');
+const renderSource = fs.readFileSync('src/app/render.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
-  utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' + indexSource;
+  utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' + renderSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -140,13 +141,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=135');
+  assert.equal(manifest.start_url, '/?v=136');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v135/);
+  assert.match(serviceWorker, /wealth-v136/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=135',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=136',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
