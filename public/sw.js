@@ -1,5 +1,5 @@
-// Service Worker v52 - merged records page
-var CACHE = 'wealth-v52';
+// Service Worker v53 - records layout fix and search zoom fix
+var CACHE = 'wealth-v53';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

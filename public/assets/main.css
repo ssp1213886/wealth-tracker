@@ -1768,7 +1768,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 #tab-data .ds-search{display:flex;align-items:center;gap:9px;min-height:48px;padding:0 12px}
 #tab-data .ds-search-icon{display:grid;place-items:center;width:20px;height:20px;flex:0 0 20px;color:var(--muted)}
 #tab-data .ds-search-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
-#tab-data .ds-search input{flex:1;min-width:0;height:46px!important;min-height:46px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--fg)!important;font-size:.78rem!important;box-shadow:none!important}
+#tab-data .ds-search input{flex:1;min-width:0;height:46px!important;min-height:46px!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;color:var(--fg)!important;font-size:16px!important;box-shadow:none!important}
 #tab-data .ds-search input::placeholder{color:var(--muted)}
 #tab-data .ds-search input::-webkit-search-cancel-button{display:none}
 #tab-data .ds-search-count{font-size:.68rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}

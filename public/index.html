@@ -483,6 +483,51 @@
 
 
 
+
+
+
+<section class="tab-panel" id="tab-data"><div class="record-toolbar" id="recordSeg" role="tablist" aria-label="记录视图"><button type="button" class="record-seg active" data-seg="data" role="tab" aria-selected="true">明细</button><button type="button" class="record-seg" data-seg="log" role="tab" aria-selected="false">日志</button></div><div class="record-group active" data-group="data">
+  <div class="card ds-search-card"><div class="ds-search"><span class="ds-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/></svg></span><input id="dsSearchInput" type="search" placeholder="搜索标的、日期或金额" autocomplete="off" aria-label="搜索记录"><span class="ds-search-count" id="dsSearchCount"></span><button type="button" class="ds-search-clear" id="dsSearchClear" hidden aria-label="清除搜索">×</button></div></div>
+
+
+
+
+  <div class="card cash-card">
+    <h3>现金管理</h3>
+    <div class="cash-balance-row"><span>现金余额</span><strong id="dataCashBal">$0.00</strong></div>
+    <div class="cash-form">
+      <div class="cash-row">
+        <div class="tf-group"><label for="hmCashAmt">入金 / 出金</label><input type="number" inputmode="decimal" id="hmCashAmt" placeholder="金额"></div>
+        <div class="cash-actions"><button type="button" class="cash-action is-primary" id="hmDeposit">入金</button><button type="button" class="cash-action" id="hmWithdraw">出金</button></div>
+      </div>
+      <div class="cash-row">
+        <div class="tf-group"><label for="hmCorrectAmt">现金修正</label><input type="number" inputmode="decimal" id="hmCorrectAmt" placeholder="修正金额"></div>
+        <button type="button" class="cash-action" id="hmCorrect">修正</button>
+      </div>
+      <div class="cash-row">
+        <div class="tf-group"><label for="divAmt">股息记录</label><div class="cash-fields"><select id="divSym" aria-label="股息标的"><option value="VGT">VGT</option><option value="SMH">SMH</option></select><input type="number" inputmode="decimal" id="divAmt" placeholder="股息金额"></div></div>
+        <button type="button" class="cash-action is-primary" id="hmDividend">记录</button>
+      </div>
+    </div>
+    <div class="cash-summary">入金 <span id="dataDep">$0</span> · 卖出 <span id="dataSel">$0</span> · 买入 <span id="dataBuy">-$0</span></div>
+  </div>
+
+
+
+  <div class="card collapsible-card"><div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>持仓明细</h3></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>标的</th><th>持仓</th><th>均价</th><th>现价</th><th>市值</th><th>盈亏</th><th>收益率</th><th></th></tr></thead><tbody id="holdBody"><tr><td colspan="8" class="table-empty">暂无持仓<br><button onclick="switchTab('console')" class="btn btn-pri btn-sm">去操作台录入</button></td></tr></tbody></table></div></div>
+
+
+
+  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>交易历史</h3></div><div class="header-tools"><select id="tradeFilterSym"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option></select><button class="btn btn-out btn-sm destructive" id="btnClearTrades">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+
+
+
+  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>资金流水</h3></div><div class="header-tools"><select id="cashFilter"><option value="">全部</option><option value="入金">入金</option><option value="出金">出金</option><option value="股息">股息</option><option value="权利金">权利金</option><option value="修正">修正</option></select><button class="btn btn-out btn-sm destructive" id="btnClearCashLog">清空</button></div></div><div class="collapsible-body"><div class="cash-log-summary"><span>入金 <strong id="cashTotalIn">$0</strong></span><span>出金 <strong id="cashTotalOut">$0</strong></span></div><table class="trade-table"><thead><tr><th>日期</th><th>类型</th><th>金额</th><th></th></tr></thead><tbody id="cashLogBody"><tr><td colspan="4" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+
+
+
+    </div>
+
 <div class="record-group" data-group="log">
 
 
@@ -529,50 +574,6 @@
 
 
 </div>
-
-
-
-<section class="tab-panel" id="tab-data"><div class="record-toolbar" id="recordSeg" role="tablist" aria-label="记录视图"><button type="button" class="record-seg active" data-seg="data" role="tab" aria-selected="true">明细</button><button type="button" class="record-seg" data-seg="log" role="tab" aria-selected="false">日志</button></div><div class="record-group active" data-group="data">
-  <div class="card ds-search-card"><div class="ds-search"><span class="ds-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/></svg></span><input id="dsSearchInput" type="search" placeholder="搜索标的、日期或金额" autocomplete="off" aria-label="搜索记录"><span class="ds-search-count" id="dsSearchCount"></span><button type="button" class="ds-search-clear" id="dsSearchClear" hidden aria-label="清除搜索">×</button></div></div>
-
-
-
-
-  <div class="card cash-card">
-    <h3>现金管理</h3>
-    <div class="cash-balance-row"><span>现金余额</span><strong id="dataCashBal">$0.00</strong></div>
-    <div class="cash-form">
-      <div class="cash-row">
-        <div class="tf-group"><label for="hmCashAmt">入金 / 出金</label><input type="number" inputmode="decimal" id="hmCashAmt" placeholder="金额"></div>
-        <div class="cash-actions"><button type="button" class="cash-action is-primary" id="hmDeposit">入金</button><button type="button" class="cash-action" id="hmWithdraw">出金</button></div>
-      </div>
-      <div class="cash-row">
-        <div class="tf-group"><label for="hmCorrectAmt">现金修正</label><input type="number" inputmode="decimal" id="hmCorrectAmt" placeholder="修正金额"></div>
-        <button type="button" class="cash-action" id="hmCorrect">修正</button>
-      </div>
-      <div class="cash-row">
-        <div class="tf-group"><label for="divAmt">股息记录</label><div class="cash-fields"><select id="divSym" aria-label="股息标的"><option value="VGT">VGT</option><option value="SMH">SMH</option></select><input type="number" inputmode="decimal" id="divAmt" placeholder="股息金额"></div></div>
-        <button type="button" class="cash-action is-primary" id="hmDividend">记录</button>
-      </div>
-    </div>
-    <div class="cash-summary">入金 <span id="dataDep">$0</span> · 卖出 <span id="dataSel">$0</span> · 买入 <span id="dataBuy">-$0</span></div>
-  </div>
-
-
-
-  <div class="card collapsible-card"><div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>持仓明细</h3></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>标的</th><th>持仓</th><th>均价</th><th>现价</th><th>市值</th><th>盈亏</th><th>收益率</th><th></th></tr></thead><tbody id="holdBody"><tr><td colspan="8" class="table-empty">暂无持仓<br><button onclick="switchTab('console')" class="btn btn-pri btn-sm">去操作台录入</button></td></tr></tbody></table></div></div>
-
-
-
-  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>交易历史</h3></div><div class="header-tools"><select id="tradeFilterSym"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option></select><button class="btn btn-out btn-sm destructive" id="btnClearTrades">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
-
-
-
-  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>资金流水</h3></div><div class="header-tools"><select id="cashFilter"><option value="">全部</option><option value="入金">入金</option><option value="出金">出金</option><option value="股息">股息</option><option value="权利金">权利金</option><option value="修正">修正</option></select><button class="btn btn-out btn-sm destructive" id="btnClearCashLog">清空</button></div></div><div class="collapsible-body"><div class="cash-log-summary"><span>入金 <strong id="cashTotalIn">$0</strong></span><span>出金 <strong id="cashTotalOut">$0</strong></span></div><table class="trade-table"><thead><tr><th>日期</th><th>类型</th><th>金额</th><th></th></tr></thead><tbody id="cashLogBody"><tr><td colspan="4" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
-
-
-
-    </div>
   </section>
 
 
