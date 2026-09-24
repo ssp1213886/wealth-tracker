@@ -1,5 +1,5 @@
-// Service Worker v45 - mobile rhythm refinement
-var CACHE = 'wealth-v45';
+// Service Worker v46 - mobile design token consolidation
+var CACHE = 'wealth-v46';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
