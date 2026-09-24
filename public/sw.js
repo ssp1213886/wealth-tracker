@@ -1,5 +1,5 @@
-// Service Worker v64 - per-page ambience and layered bottom bar
-var CACHE = 'wealth-v64';
+// Service Worker v65 - stronger per-page ambience
+var CACHE = 'wealth-v65';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

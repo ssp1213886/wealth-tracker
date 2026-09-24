@@ -1798,16 +1798,20 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 #bottomBar .bb-btn.active{background-image:linear-gradient(var(--accent),var(--accent));background-size:18px 3px;background-position:center top 3px;background-repeat:no-repeat}
 
 /* ===== Per-page ambience (accent-derived) ===== */
-#tab-holding{background-image:radial-gradient(130% 62% at 50% -6%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 72%)}
-#tab-console{background-image:radial-gradient(130% 54% at 50% -6%,color-mix(in srgb,var(--accent) 7%,transparent),transparent 72%)}
-#tab-option{background-image:radial-gradient(130% 56% at 50% -6%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 72%)}
-#tab-data{background-image:radial-gradient(130% 50% at 50% -6%,color-mix(in srgb,var(--accent) 5%,transparent),transparent 72%)}
-[data-theme="dark"] #tab-holding{background-image:radial-gradient(130% 62% at 50% -6%,color-mix(in srgb,var(--accent) 17%,transparent),transparent 72%)}
-[data-theme="dark"] #tab-console{background-image:radial-gradient(130% 54% at 50% -6%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 72%)}
-[data-theme="dark"] #tab-option{background-image:radial-gradient(130% 56% at 50% -6%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 72%)}
-[data-theme="dark"] #tab-data{background-image:radial-gradient(130% 50% at 50% -6%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 72%)}
+#tab-holding{background-image:radial-gradient(130% 62% at 50% -6%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 72%)}
+#tab-console{background-image:radial-gradient(130% 54% at 50% -6%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 72%)}
+#tab-option{background-image:radial-gradient(130% 56% at 50% -6%,color-mix(in srgb,var(--accent) 19%,transparent),transparent 72%)}
+#tab-data{background-image:radial-gradient(130% 50% at 50% -6%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-holding{background-image:radial-gradient(130% 62% at 50% -6%,color-mix(in srgb,var(--accent) 40%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-console{background-image:radial-gradient(130% 54% at 50% -6%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-option{background-image:radial-gradient(130% 56% at 50% -6%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-data{background-image:radial-gradient(130% 50% at 50% -6%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 72%)}
 
 /* ===== Bottom bar separated from cards ===== */
 #bottomBar.bottom-bar{background:color-mix(in srgb,var(--surface) 92%,transparent)!important}
-[data-theme="dark"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--surface) 94%,transparent)!important}
+[data-theme="dark"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--card-bg) 95%,#fff)!important}
+[data-theme="dark"]{--bar-solid:color-mix(in srgb,var(--card-bg) 95%,#fff)}
 :root{--bar-solid:color-mix(in srgb,var(--surface) 92%,var(--bg))}
+
+/* FAB 描边跟随深色底栏（末位定义确保覆盖前面的 :root 声明） */
+[data-theme="dark"]{--bar-solid:color-mix(in srgb,var(--card-bg) 95%,#fff)}
