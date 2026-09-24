@@ -1347,8 +1347,8 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .btn{transition:transform var(--ios-press) var(--ios-ease),background-color var(--ios-press) var(--ios-ease),opacity var(--ios-press) var(--ios-ease)}
   .btn-sm{min-height:38px}
   .btn:active{transform:scale(.97)}
-  #qaFab.qa-fab{left:auto!important;right:16px!important;bottom:calc(84px + env(safe-area-inset-bottom,0px))!important;transform:none!important;width:56px!important;height:56px!important;border:4px solid var(--bg)!important;background:var(--accent)!important;box-shadow:0 10px 24px rgba(0,0,0,.18)!important;transition:transform var(--ios-press) var(--ios-ease)}
-  #qaFab.qa-fab:active{transform:scale(.92)!important}
+  #qaFab.qa-fab{left:50%!important;right:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;transform:translateX(-50%)!important;width:56px!important;height:56px!important;border:4px solid var(--bg)!important;background:var(--accent)!important;box-shadow:0 10px 24px rgba(0,0,0,.18)!important;transition:transform var(--ios-press) var(--ios-ease)}
+  #qaFab.qa-fab:active{transform:translateX(-50%) scale(.92)!important}
   #bottomBar.bottom-bar{left:0!important;right:0!important;bottom:0!important;height:calc(72px + env(safe-area-inset-bottom,0px))!important;border-top:1px solid var(--rule)!important}
   [data-theme="dark"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--card-bg) 95%,transparent)!important}
   .bb-btn:active{transform:scale(.94);background:transparent!important;box-shadow:none!important}
@@ -1783,4 +1783,8 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .record-group.active{display:block}
 @media(hover:hover) and (pointer:fine){.record-seg:not(.active):hover{color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.record-seg{transition:none}}
-#bottomBar.bottom-bar{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+#bottomBar.bottom-bar{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+#bottomBar #bbHoldings{grid-column:1}
+#bottomBar #bbConsole{grid-column:2}
+#bottomBar #bbOption{grid-column:4}
+#bottomBar #bbData{grid-column:5}

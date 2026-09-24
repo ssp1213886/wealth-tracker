@@ -1,5 +1,5 @@
-// Service Worker v53 - records layout fix and search zoom fix
-var CACHE = 'wealth-v53';
+// Service Worker v54 - centered quick action button
+var CACHE = 'wealth-v54';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
