@@ -1,5 +1,5 @@
-// Service Worker v115 - option action buttons and card spacing
-var CACHE = 'wealth-v115';
+// Service Worker v116 - card labels and alignment polish
+var CACHE = 'wealth-v116';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

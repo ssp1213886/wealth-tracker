@@ -668,7 +668,7 @@ function updateDataPage(){var nc=0;nc=getNetCash();var dc=document.getElementByI
 
 
 
-function updateTradeList(){var body=document.getElementById('tradeBody');if(!body)return;var filter=document.getElementById('tradeFilterSym'),sym=filter?filter.value:'';var list=[].concat(trades).sort(function(a,b){var d=b.date.localeCompare(a.date);if(d!==0)return d;return(b.time||'').localeCompare(a.time||'')});if(sym)list=list.filter(function(t){return t.symbol===sym});if(!list.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">在操作台录入第一笔交易</td></tr>';return}body.innerHTML=list.map(function(t){return'<tr><td>'+t.date+(t.time?' '+t.time:'')+'</td><td>'+(t.tag==='assign'?'<strong style="color:var(--blue)">'+t.symbol+'</strong>':'<strong>'+t.symbol+'</strong>')+'</td><td>'+(t.shares>0?'<span class="trade-dir is-buy">买入</span>':'<span class="trade-dir is-sell">卖出</span>')+'<span class="trade-qty">'+fmtShares(t.shares)+' 股</span></td><td>@ $'+t.price.toFixed(2)+'</td><td>'+fmtFull(Math.abs(t.shares)*t.price)+'</td><td><button class="trade-del" data-id="'+t.id+'">×</button></td></tr>'}).join('')}
+function updateTradeList(){var body=document.getElementById('tradeBody');if(!body)return;var filter=document.getElementById('tradeFilterSym'),sym=filter?filter.value:'';var list=[].concat(trades).sort(function(a,b){var d=b.date.localeCompare(a.date);if(d!==0)return d;return(b.time||'').localeCompare(a.time||'')});if(sym)list=list.filter(function(t){return t.symbol===sym});if(!list.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">在操作台录入第一笔交易</td></tr>';return}body.innerHTML=list.map(function(t){return'<tr><td>'+t.date+(t.time?' '+t.time:'')+'</td><td>'+(t.tag==='assign'?'<strong style="color:var(--blue)">'+t.symbol+'</strong>':'<strong>'+t.symbol+'</strong>')+'</td><td>'+(t.shares>0?'<span class="trade-dir is-buy">买入</span>':'<span class="trade-dir is-sell">卖出</span>')+'<span class="trade-qty">'+fmtShares(t.shares)+' 股</span></td><td>$'+t.price.toFixed(2)+'</td><td>'+fmtFull(Math.abs(t.shares)*t.price)+'</td><td><button class="trade-del" data-id="'+t.id+'">×</button></td></tr>'}).join('')}
 
 
 
@@ -1356,7 +1356,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=115',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=116',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
