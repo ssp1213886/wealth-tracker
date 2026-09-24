@@ -80,7 +80,12 @@ export async function handleSyncPost(request, env) {
           `SELECT key, updated_at FROM data WHERE key IN (${placeholders})`,
         ).bind(...keys).all();
         const currentVersions = Object.fromEntries(results.map((row) => [row.key, row.updated_at]));
-        const conflicts = keys.filter((key) => Number(currentVersions[key]) !== Number(expectedVersions[key]));
+        const conflicts = keys.filter((key) => {
+          // 云端根本没有这一行（全新库、被重置、或该键从未推过）→ 不算冲突，
+          // 否则客户端带着任何版本号来推都会被拒，等于永久假冲突。
+          if (currentVersions[key] === undefined) return false;
+          return Number(currentVersions[key]) !== Number(expectedVersions[key]);
+        });
         if (conflicts.length > 0) {
           return {
             status: 409,

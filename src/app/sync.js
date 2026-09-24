@@ -14,6 +14,41 @@ export const SYNC_FIELDS = [
 ];
 
 /**
+ * 云端时间戳归一化成毫秒。
+ * 历史数据里混进过"秒"精度的 updated_at（D1 早期的 notes/options 行），
+ * 两边单位不一致会让"云端有没有变过"的判断永远为真——假冲突就是这么来的。
+ */
+export function normalizeSyncTs(value) {
+  const ts = Number(value);
+  if (!Number.isFinite(ts) || ts <= 0) return 0;
+  return ts < 1e12 ? Math.round(ts * 1000) : Math.round(ts);
+}
+
+/** 与键顺序无关的稳定序列化，用于比较本地与云端内容是否一致。 */
+function stableStringify(value) {
+  if (Array.isArray(value)) return '[' + value.map(stableStringify).join(',') + ']';
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map((key) => JSON.stringify(key) + ':' + stableStringify(value[key])).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * 判断同一个键的本地值与云端值是否等价。
+ * `normalizeStateFn` 用于 state 这类需要先补默认值再比较的结构。
+ */
+export function syncContentEqual(key, localVal, cloudVal, normalizeStateFn) {
+  try {
+    if (key === 'state' && typeof normalizeStateFn === 'function') {
+      return stableStringify(normalizeStateFn(localVal)) === stableStringify(normalizeStateFn(cloudVal));
+    }
+    return stableStringify(localVal) === stableStringify(cloudVal);
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
  * 组装同步 payload。
  * @param {object} opts
  * @param {boolean} opts.dirtyOnly 只推改动过的键（自动同步用）
@@ -34,7 +69,10 @@ export function buildSyncPayload(opts) {
     if (dirtyOnly && !dirty[key]) return;
     const getter = read[key];
     payload[key] = typeof getter === 'function' ? getter() : undefined;
-    expected[key] = cloudTs[key] || 0;
+    // 只在"确实知道云端版本"时才带期望值。
+    // 带 0 等于宣称"我期望云端没有这一行"，而云端有 → 服务端必然回 409 假冲突。
+    const known = normalizeSyncTs(cloudTs[key]);
+    if (known > 0) expected[key] = known;
   };
 
   SYNC_FIELDS.forEach(include);

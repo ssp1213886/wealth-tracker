@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=140');
+  assert.equal(manifest.start_url, '/?v=141');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v140/);
+  assert.match(serviceWorker, /wealth-v141/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=140',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=141',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -239,6 +239,21 @@ test('data health shows cloud sync, backup, and conflict state', () => {
   assert.match(appMarkup, /function setSyncConflicts\(/);
   assert.match(appMarkup, /function recordBackupTime\(/);
   assert.match(appMarkup, /syncFetchWithoutHealth=syncFetch/);
+});
+
+test('sync status bar covers uploading, done, and failure states', () => {
+  assert.match(html, /id="syncBar"/);
+  assert.match(html, /id="syncBarRetry"/);
+  assert.match(html, /id="syncBarClose"/);
+  assert.match(appMarkup, /\.sync-bar\.is-busy\{/);
+  assert.match(appMarkup, /\.sync-bar\.is-ok\{/);
+  assert.match(appMarkup, /\.sync-bar\.is-err\{/);
+  assert.match(appSource, /function setSyncBar\(state,text\)/);
+  assert.match(appSource, /function healPushConflict\(/);
+  assert.match(appSource, /function flushDirtyOnHide\(/);
+  assert.match(appSource, /function pushKeysForce\(/);
+  // 409 不再直接甩给用户，先自动核对
+  assert.doesNotMatch(appSource, /status===409\)\{autoPull\(\);showToast\('云端已有更新/);
 });
 
 test('market sparkline is built from real cached history points', () => {

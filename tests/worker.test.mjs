@@ -110,3 +110,29 @@ test('returns 409 when expected version is stale', async () => {
   assert.deepEqual(body.conflicts, ['trades']);
   assert.equal(body.currentVersions.trades, 1000);
 });
+
+test('does not 409 when the cloud has no row for that key yet', async () => {
+  // 全新库（或被重置）时，客户端带着任何版本号来推都应当直接建立基线，
+  // 否则用户会看到永远消不掉的假冲突。
+  const db = createDb();
+  const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': 'secret' };
+  const response = await worker.fetch(request('/api/sync', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      trades: [{ id: 1 }],
+      cashBalance: 3000,
+      __expectedVersions: { trades: 1790275460093, cashBalance: 1790275486762 },
+    }),
+  }), env(db));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).saved, 2);
+
+  // 已有行 + 旧版本号，仍然要拦住
+  const stale = await worker.fetch(request('/api/sync', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ trades: [{ id: 2 }], __expectedVersions: { trades: 1 } }),
+  }), env(db));
+  assert.equal(stale.status, 409);
+});
