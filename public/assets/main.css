@@ -1992,3 +1992,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar>.sb-section.sb-sync-summary.is-collapsed>*:not(.sb-sync-head){display:none!important;visibility:hidden!important}
 }
 @media(prefers-reduced-motion:reduce){.sidebar>.sb-section.sb-sync-summary>.sb-sync-head::before{transition:none}}
+
+/* ===== Sidebar sections always expanded (per request) ===== */
+.sidebar>.sb-section.sb-market>h3::after,.sidebar>.sb-section.sb-sync-summary>.sb-sync-head::before{display:none!important}
+.sidebar>.sb-section.sb-market>h3,.sidebar>.sb-section.sb-sync-summary>.sb-sync-head{cursor:default!important}
+.sidebar>.sb-section.sb-market.is-collapsed,.sidebar>.sb-section.sb-sync-summary.is-collapsed{height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
+.sidebar>.sb-section.sb-market.is-collapsed>*,.sidebar>.sb-section.sb-sync-summary.is-collapsed>*{display:revert!important;visibility:visible!important}
+.sidebar>.sb-section.sb-sync-summary.is-collapsed>.sb-health-list{display:flex!important;flex-direction:column!important}

@@ -1,5 +1,5 @@
-// Service Worker v86 - collapsible sidebar health
-var CACHE = 'wealth-v86';
+// Service Worker v87 - sidebar sections always expanded
+var CACHE = 'wealth-v87';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
