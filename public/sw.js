@@ -1,5 +1,5 @@
-// Service Worker v105 - clear remaining silent validations
-var CACHE = 'wealth-v105';
+// Service Worker v106 - force upload local data
+var CACHE = 'wealth-v106';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
