@@ -1862,3 +1862,18 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .ms-sync i{box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent)}
 .ms-sync.is-syncing i{box-shadow:none}
 @media(prefers-reduced-motion:reduce){.ms-sync i{box-shadow:none}}
+
+/* ===== Semantic status colors (independent of accent) ===== */
+:root{--ok:#1a8a55;--warn:#c9761c;--danger:#c94d45}
+[data-theme="dark"]{--ok:#4ec98a;--warn:#f0a14d;--danger:#ef776f}
+.ms-sync.sync-ok{color:var(--ok)!important}
+.ms-sync.sync-error{color:var(--danger)!important}
+.sb-sync-summary .sb-sync-head>strong{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.sb-sync-summary .sb-sync-head>strong.is-error{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.sb-sync-summary .sb-health-row.is-ok>i{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.sb-sync-summary .sb-health-row.is-warn>i{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.sb-sync-summary .sb-health-row.is-error>i{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+.sb-sync-summary .sb-health-row.is-error strong{color:var(--danger)}
+.live-dot{background:var(--ok)}
+.live-dot.pre{background:var(--warn)}
+.live-dot.post{background:var(--blue)}

@@ -1,5 +1,5 @@
-// Service Worker v79 - semantic status dots
-var CACHE = 'wealth-v79';
+// Service Worker v80 - accent-independent status colors
+var CACHE = 'wealth-v80';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
