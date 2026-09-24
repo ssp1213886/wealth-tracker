@@ -2295,8 +2295,6 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sb-price-row{background:transparent!important;border:0!important}
 .sb-health-row{background:transparent!important;border:0!important}
 .sb-portfolio-insight{background:transparent!important;border:0!important}
-.sb-market .spr-spark{color:color-mix(in srgb,var(--muted) 45%,transparent)!important}
-.sb-market .spr-spark path{stroke-width:1!important;stroke-dasharray:2 4!important}
 
 /* ===== Sidebar settings entry ===== */
 .sb-settings-entry{display:flex!important;align-items:center;gap:7px;font-size:11px!important;font-weight:600!important;letter-spacing:.06em!important;color:var(--muted)!important}
