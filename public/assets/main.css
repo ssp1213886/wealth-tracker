@@ -2285,3 +2285,15 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .ms-bell.bell-ping{animation:bell-ping 1.2s var(--ease-out) 1}
 @keyframes bell-ping{0%,100%{transform:rotate(0)}15%{transform:rotate(11deg)}30%{transform:rotate(-9deg)}45%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(2deg)}}
 @media(prefers-reduced-motion:reduce){.ms-bell.bell-ping{animation:none}}
+
+/* ===== Sidebar section icons and unified card look ===== */
+.sidebar .sb-section h3{display:flex!important;align-items:center;gap:7px;font-size:11px!important;font-weight:600!important;letter-spacing:.06em!important;color:var(--muted)!important}
+.sidebar .sb-section h3>span{margin-left:auto;font-weight:500;letter-spacing:0}
+.sb-h3-icon{display:grid;place-items:center;width:17px;height:17px;flex:0 0 auto;color:color-mix(in srgb,var(--accent) 70%,var(--muted))}
+.sb-h3-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sb-section{background:var(--card-bg)!important;border:0!important;border-radius:18px!important;box-shadow:0 1px 2px rgba(17,32,23,.025),0 10px 26px rgba(17,32,23,.045)!important}
+.sb-price-row{background:transparent!important;border:0!important}
+.sb-health-row{background:transparent!important;border:0!important}
+.sb-portfolio-insight{background:transparent!important;border:0!important}
+.sb-market .spr-spark{color:color-mix(in srgb,var(--muted) 45%,transparent)!important}
+.sb-market .spr-spark path{stroke-width:1!important;stroke-dasharray:2 4!important}

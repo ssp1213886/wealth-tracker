@@ -108,12 +108,12 @@
 
 
 
-  <!-- 配色方案 --><div class="sb-section" style="padding:8px 12px;"><h3>配色</h3><div class="accent-dots" id="accentDots"><button class="accent-dot ad-forest active" data-accent="forest" title="森林"></button><button class="accent-dot ad-ocean" data-accent="ocean" title="海洋"></button><button class="accent-dot ad-warm" data-accent="warm" title="暖阳"></button><button class="accent-dot ad-plum" data-accent="plum" title="梅紫"></button><button class="accent-dot ad-mono" data-accent="mono" title="极简"></button></div></div>
+  <!-- 配色方案 --><div class="sb-section" style="padding:8px 12px;"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9.5" r="1"/><circle cx="15" cy="9.5" r="1"/><circle cx="9.5" cy="15" r="1"/></svg></i>配色</h3><div class="accent-dots" id="accentDots"><button class="accent-dot ad-forest active" data-accent="forest" title="森林"></button><button class="accent-dot ad-ocean" data-accent="ocean" title="海洋"></button><button class="accent-dot ad-warm" data-accent="warm" title="暖阳"></button><button class="accent-dot ad-plum" data-accent="plum" title="梅紫"></button><button class="accent-dot ad-mono" data-accent="mono" title="极简"></button></div></div>
 
 
 
   <div class="sb-section sb-portfolio">
-    <div class="sb-portfolio-head"><h3>资产概览</h3><span class="sb-portfolio-currency">USD</span></div>
+    <div class="sb-portfolio-head"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="11" rx="3"/><path d="M3 11h18"/><circle cx="16.5" cy="14" r="1"/></svg></i>资产概览</h3><span class="sb-portfolio-currency">USD</span></div>
     <div class="sb-portfolio-total"><span>总资产</span><strong id="sbValue">$0.00</strong><em class="sb-today" id="sbToday">今日收益 --</em></div>
     <div class="sb-portfolio-grid">
       <div><span>持仓市值</span><strong id="sbHoldVal">$0</strong></div>
@@ -131,10 +131,10 @@
 
 
 
-  <div class="sb-section sb-allocation"><h3>目标配比</h3><div class="sb-allocation-body"><div class="sb-mini-donut"><span>目标</span></div><div class="sb-mini-legend"><span><i class="vgt"></i>VGT <b id="sbVgtPct">50%</b></span><span><i class="smh"></i>SMH <b id="sbSmhPct">30%</b></span><span><i class="btc"></i>BTC ETF <b id="sbBtcPct">20%</b></span></div></div></div>
-  <div class="sb-section sb-market" style="padding:10px 14px;"><h3>市场行情 <span id="sbMarketTime">实时</span></h3><div id="sbLivePrices" style="font-size:.7rem;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:.7rem;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div>
+  <div class="sb-section sb-allocation"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></i>目标配比</h3><div class="sb-allocation-body"><div class="sb-mini-donut"><span>目标</span></div><div class="sb-mini-legend"><span><i class="vgt"></i>VGT <b id="sbVgtPct">50%</b></span><span><i class="smh"></i>SMH <b id="sbSmhPct">30%</b></span><span><i class="btc"></i>BTC ETF <b id="sbBtcPct">20%</b></span></div></div></div>
+  <div class="sb-section sb-market" style="padding:10px 14px;"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg></i>市场行情 <span id="sbMarketTime">实时</span></h3><div id="sbLivePrices" style="font-size:.7rem;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:.7rem;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div>
   <div class="sb-section sb-sync-summary">
-    <div class="sb-sync-head"><h3>数据健康</h3><span class="sb-sync-actions"><button type="button" id="syncRetryBtn" class="sync-retry">重试</button><button type="button" id="syncForceUpload" class="sync-retry">强制上传</button><strong id="sbSyncState">本地保存</strong></span></div>
+    <div class="sb-sync-head"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4-3 7.6-7 9.5-4-1.9-7-5.5-7-9.5V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg></i>数据健康</h3><span class="sb-sync-actions"><button type="button" id="syncRetryBtn" class="sync-retry">重试</button><button type="button" id="syncForceUpload" class="sync-retry">强制上传</button><strong id="sbSyncState">本地保存</strong></span></div>
     <div class="sb-health-list">
       <div class="sb-health-row" id="sbCloudRow"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 18a4.6 4.6 0 0 1-.8-9.1A6.5 6.5 0 0 1 18.7 7 4 4 0 0 1 19 15h-1"/><path d="m9 15 3-3 3 3M12 12v9"/></svg></i><span><small>最近云同步</small><strong id="sbSyncLast">尚未配置</strong></span></div>
       <div class="sb-health-row" id="sbBackupRow"><i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg></i><span><small>最近备份</small><strong id="sbBackupLast">尚未导出</strong></span></div>
@@ -142,7 +142,7 @@
     </div>
   </div>
   <button type="button" class="sb-settings-entry" id="sbSettingsEntry" aria-controls="settingsDrawerInner" aria-expanded="false">设置<span aria-hidden="true">›</span></button>
-  <div class="sb-section sb-settings"><div class="sb-panel-head"><button type="button" id="sbSettingsBack" aria-label="返回侧栏">‹</button><span>设置</span></div><div class="settings-heading"><div><h3>快捷设置</h3><p>常用入口与高级参数</p></div></div>
+  <div class="sb-section sb-settings"><div class="sb-panel-head"><button type="button" id="sbSettingsBack" aria-label="返回侧栏">‹</button><span>设置</span></div><div class="settings-heading"><div><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M4.2 7.5l1.7 1M18.1 15.5l1.7 1M4.2 16.5l1.7-1M18.1 8.5l1.7-1"/></svg></i>快捷设置</h3><p>常用入口与高级参数</p></div></div>
     <nav class="sb-quick-menu" aria-label="快捷设置">
       <button type="button" onclick="openAdvancedSettings('price')"><svg viewBox="0 0 24 24"><path d="M12 3v18M8 7.5h6a3 3 0 0 1 0 6h-4a3 3 0 0 0 0 6h6"/></svg><span>手动行情</span><b>›</b></button>
       <button type="button" onclick="openAdvancedSettings('sync')"><svg viewBox="0 0 24 24"><path d="M7 18a4.6 4.6 0 0 1-.8-9.1A6.5 6.5 0 0 1 18.7 7 4 4 0 0 1 19 15h-1"/><path d="m9 15 3-3 3 3M12 12v9"/></svg><span>云端同步</span><b>›</b></button>
