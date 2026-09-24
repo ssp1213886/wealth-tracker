@@ -1796,3 +1796,18 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 /* ===== Bottom bar · a11y-aware refinements ===== */
 #bottomBar.bottom-bar{grid-template-columns:1fr 1fr 88px 1fr 1fr!important;box-shadow:0 -8px 24px rgba(0,0,0,.16)!important}
 #bottomBar .bb-btn.active{background-image:linear-gradient(var(--accent),var(--accent));background-size:18px 3px;background-position:center top 3px;background-repeat:no-repeat}
+
+/* ===== Per-page ambience (accent-derived) ===== */
+#tab-holding{background-image:radial-gradient(130% 62% at 50% -6%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 72%)}
+#tab-console{background-image:radial-gradient(130% 54% at 50% -6%,color-mix(in srgb,var(--accent) 7%,transparent),transparent 72%)}
+#tab-option{background-image:radial-gradient(130% 56% at 50% -6%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 72%)}
+#tab-data{background-image:radial-gradient(130% 50% at 50% -6%,color-mix(in srgb,var(--accent) 5%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-holding{background-image:radial-gradient(130% 62% at 50% -6%,color-mix(in srgb,var(--accent) 17%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-console{background-image:radial-gradient(130% 54% at 50% -6%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-option{background-image:radial-gradient(130% 56% at 50% -6%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 72%)}
+[data-theme="dark"] #tab-data{background-image:radial-gradient(130% 50% at 50% -6%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 72%)}
+
+/* ===== Bottom bar separated from cards ===== */
+#bottomBar.bottom-bar{background:color-mix(in srgb,var(--surface) 92%,transparent)!important}
+[data-theme="dark"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--surface) 94%,transparent)!important}
+:root{--bar-solid:color-mix(in srgb,var(--surface) 92%,var(--bg))}

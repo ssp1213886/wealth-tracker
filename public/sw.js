@@ -1,5 +1,5 @@
-// Service Worker v63 - active tab marker fix
-var CACHE = 'wealth-v63';
+// Service Worker v64 - per-page ambience and layered bottom bar
+var CACHE = 'wealth-v64';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
