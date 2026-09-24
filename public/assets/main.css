@@ -2058,3 +2058,15 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 @media(min-width:801px){
   .sidebar>.sb-section.sb-portfolio,.sidebar>.sb-section.sb-allocation,.sidebar>.sb-section.sb-market,.sidebar>.sb-section.sb-sync-summary,.sidebar>.sb-section.sb-settings,.sidebar>.sb-section[style*="padding:8px"]{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
 }
+
+/* ===== Desktop sidebar · breathing room ===== */
+@media(min-width:801px){
+  .sidebar>.sb-section{padding-top:13px!important;padding-bottom:15px!important}
+  .sidebar>.sb-section>h3{margin-bottom:11px!important}
+  .sidebar .sb-health-list{gap:8px!important}
+  .sidebar .sb-health-row{min-height:44px!important;padding:9px 11px!important}
+  .sidebar .sb-quick-menu button{height:34px!important}
+  .sidebar .sb-quick-menu{gap:2px!important}
+  .sidebar>.sb-section+.sb-section{border-top:1px solid var(--rule)!important}
+  .sidebar>.sb-section{border-bottom:0!important}
+}
