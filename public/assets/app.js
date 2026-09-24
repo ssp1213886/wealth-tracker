@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=98',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=99',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1363,7 +1363,7 @@ if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.
 
 
 
-function showToast(msg,type,undoFn){var t=document.getElementById('syncToast');if(!t)return;t.style.pointerEvents='auto';clearTimeout(t._timer);t.onclick=null;if(undoFn){t.className='sync-toast undo show';t.textContent=msg+' · 点击撤销';t.style.cursor='pointer';t.onclick=function(){t.className='sync-toast';undoFn()};t._timer=setTimeout(function(){t.className='sync-toast'},5000)}else{t.className='sync-toast '+(type||'')+' show';t.textContent=msg;t.style.cursor='default';t._timer=setTimeout(function(){t.className='sync-toast'},type?3000:2500)}}function showFirstTimeGuide(){if(localStorage.getItem('wealth_first_time'))return;if(!trades.length&&!cashLog.length){setTimeout(function(){var sb=document.getElementById('syncStatus');if(sb&&sb.parentElement){sb.parentElement.insertAdjacentHTML('afterbegin','<div id="ftGuide" style="padding:8px 12px;background:var(--accent-l);border-radius:8px;font-size:.7rem;color:var(--accent);margin-bottom:8px;line-height:1.6;border-left:3px solid var(--accent);">👋 <b>首次使用？</b><br>📂 有备份文件 → 📥 导入<br>☁️ 有云端Token → ⬇ 下载</div>')}},1000)}localStorage.setItem('wealth_first_time','1')}
+function showToast(msg,type,undoFn){var t=document.getElementById('syncToast');if(!t)return;if(t._undoActive&&!undoFn)return;clearTimeout(t._timer);t.onclick=null;t.style.cursor=undoFn?'default':'';var icon=type==='err'?'\u2715':(undoFn?'\u2715':'\u2713');t._undoActive=!!undoFn;if(undoFn){t.className='sync-toast toast-undo show '+(type||'');t.innerHTML='<span class="toast-icon"></span><span class="toast-msg"></span><button type="button" class="toast-action">撤销</button>';t.querySelector('.toast-msg').textContent=msg;t.querySelector('.toast-action').addEventListener('click',function(ev){ev.stopPropagation();clearTimeout(t._timer);t.className='sync-toast';t._undoActive=false;undoFn()});t._timer=setTimeout(function(){t.className='sync-toast';t._undoActive=false},8000)}else{var dur=type==='ok'?3000:2500;t.className='sync-toast show '+(type||'');t.innerHTML='<span class="toast-icon"></span><span class="toast-msg"></span>';t.querySelector('.toast-msg').textContent=msg;t._timer=setTimeout(function(){t.className='sync-toast'},dur)}}
 
 
 

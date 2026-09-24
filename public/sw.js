@@ -1,5 +1,5 @@
-// Service Worker v98 - unified destructive action flow
-var CACHE = 'wealth-v98';
+// Service Worker v99 - toast redesign and undo protection
+var CACHE = 'wealth-v99';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
