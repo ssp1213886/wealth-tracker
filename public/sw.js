@@ -1,5 +1,5 @@
-// Service Worker v55 - protruding center quick action button
-var CACHE = 'wealth-v55';
+// Service Worker v56 - half-protruding center action button
+var CACHE = 'wealth-v56';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
