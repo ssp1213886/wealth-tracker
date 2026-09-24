@@ -1,5 +1,5 @@
-// Service Worker v73 - relaxed api rate limit
-var CACHE = 'wealth-v73';
+// Service Worker v74 - stronger touch press feedback
+var CACHE = 'wealth-v74';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

@@ -1343,7 +1343,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .ms-brand,.ms-tool,.ms-eye{transition:transform var(--ios-press) var(--ios-ease),opacity var(--ios-press) var(--ios-ease)}
   .ms-brand:active,.ms-tool:active,.ms-eye:active{transform:scale(.94);opacity:.72}
   .card,.chart-card,.metric{transition:transform var(--ios-press) var(--ios-ease),border-color var(--ios-press) var(--ios-ease)}
-  .card:active,.chart-card:active,.qa-alert-item:active{transform:scale(.995)}
+  .card:active,.chart-card:active,.qa-alert-item:active{transform:scale(.984)}.metric:active{transform:scale(.984)}
   .btn{transition:transform var(--ios-press) var(--ios-ease),background-color var(--ios-press) var(--ios-ease),opacity var(--ios-press) var(--ios-ease)}
   .btn-sm{min-height:38px}
   .btn:active{transform:scale(.97)}
@@ -1835,3 +1835,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 [data-theme="dark"] body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 10%,var(--card-bg))}
 [data-theme="dark"] body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 8%,var(--card-bg))}
 [data-theme="dark"] body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 6%,var(--card-bg))}
+
+/* ===== Touch press feedback (mobile) ===== */
+@media(max-width:800px){
+  .card:active,.chart-card:active,.metric:active,.qa-alert-item:active{transform:scale(.984)!important}
+  .btn:active,.btn-sm:active{transform:scale(.96)!important}
+  .bb-btn:active{transform:scale(.92)!important}
+}
