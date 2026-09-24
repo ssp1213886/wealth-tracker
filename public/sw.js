@@ -1,5 +1,5 @@
-// Service Worker v80 - accent-independent status colors
-var CACHE = 'wealth-v80';
+// Service Worker v81 - sidebar sticky header and compaction
+var CACHE = 'wealth-v81';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
