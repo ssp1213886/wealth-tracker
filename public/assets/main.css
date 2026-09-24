@@ -2043,3 +2043,13 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar .sb-header,.sidebar>.sb-header{position:static!important;top:auto!important;z-index:auto!important;margin:0 18px!important;padding:0 0 14px!important;background:transparent!important;border-bottom:0!important}
   .sidebar .sb-settings-entry{position:static!important;bottom:auto!important;margin-top:0!important;box-shadow:none!important}
 }
+
+/* ===== Desktop sidebar · explicit section order ===== */
+@media(min-width:801px){
+  .sidebar>.sb-section[style*="padding:8px"]{order:1!important}
+  .sidebar>.sb-section.sb-portfolio{order:2!important}
+  .sidebar>.sb-section.sb-allocation{order:3!important}
+  .sidebar>.sb-section.sb-market{order:4!important}
+  .sidebar>.sb-section.sb-sync-summary{order:5!important}
+  .sidebar>.sb-section.sb-settings{order:6!important}
+}

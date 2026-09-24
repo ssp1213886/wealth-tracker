@@ -1,5 +1,5 @@
-// Service Worker v92 - mobile sidebar natural scroll
-var CACHE = 'wealth-v92';
+// Service Worker v93 - desktop sidebar section order
+var CACHE = 'wealth-v93';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
