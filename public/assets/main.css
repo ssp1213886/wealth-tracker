@@ -2101,3 +2101,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .trade-table tbody tr.is-search-hit,.res-table tbody tr.is-search-hit{background:color-mix(in srgb,var(--accent) 20%,transparent)!important;transition:background-color 200ms var(--ease-out)}
 #tab-data .record-group[data-group=log] .ds-search-card{display:none}
 @media(prefers-reduced-motion:reduce){.trade-table tbody tr.is-search-hit,.res-table tbody tr.is-search-hit{transition:none}}
+
+/* ===== Form invalid field ===== */
+.is-invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 20%,transparent)!important;transition:border-color 160ms var(--ease-out),box-shadow 160ms var(--ease-out)}
+@media(prefers-reduced-motion:reduce){.is-invalid{transition:none}}
