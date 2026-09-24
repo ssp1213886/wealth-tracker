@@ -153,7 +153,8 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(html, />导出备份<\/button>/);
   assert.match(html, />导入券商 CSV<\/button>/);
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
-  assert.match(appMarkup, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;bottom:0!important;padding:0 4px env\(safe-area-inset-bottom,0px\)!important;border:0!important;border-top:1px solid var\(--rule\)!important;background:color-mix\(in srgb,var\(--card-bg\) 95%,transparent\)!important/);
+  // 底部栏定位取最终生效规则（历史覆盖层已在 v47 收敛，被遮蔽的重复声明已移除）
+  assert.match(appMarkup, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;bottom:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;border-top:1px solid var\(--rule\)!important\}/);
   assert.match(appMarkup, /#bottomBar\.bottom-bar\{display:grid!important;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/);
   assert.match(appMarkup, /\.bb-btn\{position:static!important;top:auto!important;left:auto!important;width:100%!important;min-width:0!important;justify-self:stretch!important;height:68px!important;min-height:68px!important/);
   assert.match(appMarkup, /\.sidebar\.open\{transform:translate3d\(0,0,0\)!important\}/);
@@ -161,7 +162,7 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(appMarkup, /#qaFab\.qa-fab\{left:auto!important;right:16px!important;bottom:calc\(84px \+ env\(safe-area-inset-bottom,0px\)\)!important/);
   assert.match(appMarkup, /#tab-option \.option-type-segment\{height:42px!important/);
   assert.match(appMarkup, /\.segmented-control\{height:42px;margin-bottom:10px;border-radius:14px\}/);
-  assert.match(appMarkup, /#qaFab\.qa-fab\{bottom:calc\(6px \+ env\(safe-area-inset-bottom,0px\)\)!important;width:64px!important;height:64px!important/);
+  // 旧版的 FAB 底部居中规则已被右上角实现完全覆盖，不再要求其文本存在
   assert.match(appMarkup, /\.main\{padding:0 16px calc\(76px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
   assert.doesNotMatch(appMarkup, /fonts\.googleapis\.com/);
 });
@@ -174,7 +175,7 @@ test('mobile portfolio and quick actions prioritize active investing work', () =
   assert.doesNotMatch(appMarkup, /onclick="qaDividend\(\)"/);
   assert.doesNotMatch(appMarkup, /function qaDividend\(/);
   assert.match(html, /id="hmDividend"/);
-  assert.match(appMarkup, /\.qa-grid\{display:grid;grid-template-columns:repeat\(4,1fr\)/);
+  assert.match(appMarkup, /\.qa-grid\{display:grid!important;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/);
 });
 
 test('reminders deduplicate and sort by severity without snooze controls', () => {
