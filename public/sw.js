@@ -1,5 +1,5 @@
-// Service Worker v119 - sidebar allocation color unification
-var CACHE = 'wealth-v119';
+// Service Worker v120 - card inner detail polish
+var CACHE = 'wealth-v120';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
