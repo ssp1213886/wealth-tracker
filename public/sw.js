@@ -1,5 +1,5 @@
-// Service Worker v78 - remove status bar tap hot zone
-var CACHE = 'wealth-v78';
+// Service Worker v79 - semantic status dots
+var CACHE = 'wealth-v79';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

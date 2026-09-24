@@ -347,7 +347,7 @@ input,select,textarea{font-size:16px}
 
 
 
-@keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(46,107,80,.4)}50%{opacity:.6;box-shadow:0 0 0 6px rgba(46,107,80,0)}}@keyframes redFlash{0%,100%{background:var(--card-bg)}50%{background:rgba(217,69,53,.12)}}.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle;animation:pulse 2s ease-in-out infinite}.live-dot.pre{background:#ff9800;animation-name:none}.live-dot.post{background:#2196f3;animation-name:none}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(46,107,80,.4)}50%{opacity:.6;box-shadow:0 0 0 6px rgba(46,107,80,0)}}@keyframes redFlash{0%,100%{background:var(--card-bg)}50%{background:rgba(217,69,53,.12)}}.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:4px;vertical-align:middle;animation:pulse 2s ease-in-out infinite}.live-dot.pre{background:var(--orange);animation-name:none}.live-dot.post{background:var(--blue);animation-name:none}
 
 
 
@@ -1855,3 +1855,10 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sb-sync-actions{display:inline-flex;align-items:center;gap:6px}
 .sync-retry{min-height:24px;padding:0 9px;border:1px solid var(--rule);border-radius:999px;background:var(--card-bg);color:var(--accent);font:600 .62rem var(--font);cursor:pointer;touch-action:manipulation}
 .sync-retry[disabled]{opacity:.5;cursor:default}
+
+/* ===== Status dots · semantic colors ===== */
+.ms-sync.sync-ok{color:var(--accent)!important}
+.ms-sync.sync-error{color:var(--red)!important}
+.ms-sync i{box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent)}
+.ms-sync.is-syncing i{box-shadow:none}
+@media(prefers-reduced-motion:reduce){.ms-sync i{box-shadow:none}}
