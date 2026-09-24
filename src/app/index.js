@@ -3,6 +3,7 @@ import {computeHoldings, buildPositionRows} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations} from './store.js';
 import {buildSyncPayload, classifySyncError} from './sync.js';
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
+import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals} from './rows.js';
 var LSKEY=KEYS.dashboard,PRICE_KEY=KEYS.prices,TRADE_KEY=KEYS.trades,CB_KEY=KEYS.cash,CLOG_KEY=KEYS.cashLog;var cashBalance=0,cashLog=[];
 
 
@@ -13,7 +14,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v136';var APP_DATA_VERSION=5;
+var APP_BUILD='v137';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -634,7 +635,7 @@ function updateDataPage(){var nc=0;nc=getNetCash();var dc=document.getElementByI
 
 
 
-function updateTradeList(){var body=document.getElementById('tradeBody');if(!body)return;var filter=document.getElementById('tradeFilterSym'),sym=filter?filter.value:'';var list=[].concat(trades).sort(function(a,b){var d=b.date.localeCompare(a.date);if(d!==0)return d;return(b.time||'').localeCompare(a.time||'')});if(sym)list=list.filter(function(t){return t.symbol===sym});if(!list.length){body.innerHTML='<tr><td colspan="6">'+emptyStateHTML({title:'还没有交易记录',hint:'在操作台录入第一笔交易',compact:true,icon:'<svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/></svg>'})+'</td></tr>';return}body.innerHTML=list.map(function(t){return'<tr><td data-cell="date">'+t.date+(t.time?' '+t.time:'')+'</td><td data-cell="sym">'+(t.tag==='assign'?'<strong style="color:var(--blue)">'+t.symbol+'</strong>':'<strong>'+t.symbol+'</strong>')+'</td><td data-cell="qty">'+(t.shares>0?'<span class="trade-dir is-buy">买入</span>':'<span class="trade-dir is-sell">卖出</span>')+'<span class="trade-qty">'+fmtShares(t.shares)+' 股</span></td><td data-cell="price">$'+t.price.toFixed(2)+'</td><td data-cell="amount">'+fmtFull(Math.abs(t.shares)*t.price)+'</td><td data-cell="actions"><button class="trade-del" data-id="'+t.id+'">×</button></td></tr>'}).join('')}
+function updateTradeList(){var body=document.getElementById('tradeBody');if(!body)return;var filter=document.getElementById('tradeFilterSym'),sym=filter?filter.value:'';body.innerHTML=buildTradeRows(selectTrades(trades,sym))}
 
 
 
@@ -786,7 +787,7 @@ function updateRebalanceLock(){
 
 
 
-function loadCash(){try{var s=readRaw(CB_KEY);var n=s?parseFloat(s):0;return isNaN(n)?0:n}catch(e){if(isQuotaError(e)){var b=document.getElementById('storageBanner');if(b)b.classList.add('show')};return 0}}function saveCash(){try{if(isNaN(cashBalance))cashBalance=0;localStorage.setItem(CB_KEY,cashBalance.toString());markDirty('cashBalance');doAutoBackup();autoPushDebounce()}catch(e){if(isQuotaError(e)){var b=document.getElementById('storageBanner');if(b)b.classList.add('show')}}}function loadCashLog(){try{var s=readRaw(CLOG_KEY);return normalizeCashLogs(s?JSON.parse(s):[])}catch(e){return[]}}function saveCashLog(){try{cashLog=normalizeCashLogs(cashLog);localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));markDirty('cashLog');doAutoBackup();autoPushDebounce()}catch(e){if(isQuotaError(e)){var b=document.getElementById('storageBanner');if(b)b.classList.add('show')}}}function renderCashLog(){var b=document.getElementById("cashLogBody");if(!b)return;var f=document.getElementById('cashFilter'),fv=f?f.value:'';var list=[];for(var i=0;i<cashLog.length;i++){if(!fv||cashLog[i].type.indexOf(fv)>=0)list.push(cashLog[i])}var tin=0,tout=0;cashLog.forEach(function(l){if(l.type.indexOf('入金')>=0)tin+=l.amount;else if(l.type.indexOf('出金')>=0)tout+=l.amount});var ci=document.getElementById('cashTotalIn');if(ci)ci.textContent=fmtFull(tin);var co=document.getElementById('cashTotalOut');if(co)co.textContent=fmtFull(tout);if(!list.length){b.innerHTML="<tr><td colspan=4>"+emptyStateHTML({title:'暂无资金流水',hint:'入金、出金、股息会记录在这里',compact:true,icon:'<svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M17 8.5A4 4 0 0 0 12.5 6h-1a3 3 0 0 0 0 6h1a3 3 0 0 1 0 6h-1A4 4 0 0 1 7 15.5"/></svg>'})+"</td></tr>";return}b.innerHTML=list.slice().reverse().map(function(l){var type=escapeHtml(l.type),dt=escapeHtml(l.date+(l.time?' '+l.time:'')),sg=cashSigned(l)<0?-1:1;return"<tr><td data-cell=\"date\">"+dt+"</td><td data-cell=\"type\"><span style=\"display:inline-block;background:"+((l.type.indexOf('入金')>=0?"var(--accent-l)":(l.type.indexOf('权利金')>=0?"rgba(74,143,212,.12)":(l.type.indexOf('股息')>=0?"rgba(232,136,12,.12)":"rgba(230,53,43,.12)"))))+";color:"+((l.type.indexOf('入金')>=0?"var(--accent-d)":(l.type.indexOf('权利金')>=0?"var(--blue)":(l.type.indexOf('股息')>=0?"var(--orange)":"var(--red)"))))+";padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:500;\">"+type+"</span></td><td data-cell=\"amount\" class=\""+(sg<0?'cash-neg':'cash-pos')+"\">"+(sg<0?'-':'+')+fmtFull(Math.abs(l.amount))+"</td><td data-cell=\"actions\"><button class=\"trade-del\" data-clog=\""+l.id+"\" aria-label=\"删除流水\">×</button></td></tr>"}).join("")}function refreshCashUI(){renderCashLog();updateHoldCash();updateSidebar();updateDataPage()}function loadTrades(){try{var s=readRaw(TRADE_KEY);return normalizeTrades(s?JSON.parse(s):[])}catch(e){return[]}}
+function loadCash(){try{var s=readRaw(CB_KEY);var n=s?parseFloat(s):0;return isNaN(n)?0:n}catch(e){if(isQuotaError(e)){var b=document.getElementById('storageBanner');if(b)b.classList.add('show')};return 0}}function saveCash(){try{if(isNaN(cashBalance))cashBalance=0;localStorage.setItem(CB_KEY,cashBalance.toString());markDirty('cashBalance');doAutoBackup();autoPushDebounce()}catch(e){if(isQuotaError(e)){var b=document.getElementById('storageBanner');if(b)b.classList.add('show')}}}function loadCashLog(){try{var s=readRaw(CLOG_KEY);return normalizeCashLogs(s?JSON.parse(s):[])}catch(e){return[]}}function saveCashLog(){try{cashLog=normalizeCashLogs(cashLog);localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));markDirty('cashLog');doAutoBackup();autoPushDebounce()}catch(e){if(isQuotaError(e)){var b=document.getElementById('storageBanner');if(b)b.classList.add('show')}}}function renderCashLog(){var b=document.getElementById("cashLogBody");if(!b)return;var f=document.getElementById('cashFilter'),fv=f?f.value:'';var tot=cashTotals(cashLog),ci=document.getElementById('cashTotalIn');if(ci)ci.textContent=fmtFull(tot.totalIn);var co=document.getElementById('cashTotalOut');if(co)co.textContent=fmtFull(tot.totalOut);b.innerHTML=buildCashLogRows(selectCashLogs(cashLog,fv))}function refreshCashUI(){renderCashLog();updateHoldCash();updateSidebar();updateDataPage()}function loadTrades(){try{var s=readRaw(TRADE_KEY);return normalizeTrades(s?JSON.parse(s):[])}catch(e){return[]}}
 
 
 
@@ -1329,7 +1330,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=136',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=137',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
