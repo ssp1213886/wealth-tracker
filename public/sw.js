@@ -1,5 +1,5 @@
-// Service Worker v82 - collapsible sidebar market
-var CACHE = 'wealth-v82';
+// Service Worker v83 - mobile settings drawer
+var CACHE = 'wealth-v83';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

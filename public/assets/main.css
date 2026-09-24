@@ -1920,3 +1920,16 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   .sidebar>.sb-section.sb-market.is-collapsed>*:not(h3){display:none!important;visibility:hidden!important}
 }
 @media(prefers-reduced-motion:reduce){.sidebar>.sb-section.sb-market>h3::after{transition:none}}
+
+/* ===== Mobile settings drawer ===== */
+@media(max-width:800px){
+  .sb-settings-entry{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:54px;padding:0 22px;border:0;border-top:1px solid var(--rule);background:transparent;color:var(--fg);font:600 .8rem var(--font);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .sb-settings-entry>span{color:var(--muted);font-size:1.05rem;line-height:1}
+  .sb-section.sb-settings{position:fixed;top:0;right:0;bottom:0;left:auto;width:86vw;max-width:400px;z-index:60;margin:0!important;padding:calc(10px + env(safe-area-inset-top,0px)) 20px calc(28px + env(safe-area-inset-bottom,0px))!important;background:var(--card-bg)!important;border:0!important;border-left:1px solid var(--rule)!important;border-radius:20px 0 0 20px!important;box-shadow:var(--shadow-lg);transform:translateX(105%);transition:transform .32s var(--ease-drawer);overflow-y:auto;-webkit-overflow-scrolling:touch;display:block!important;visibility:hidden}
+  .sb-section.sb-settings.open{transform:translateX(0);visibility:visible}
+  .sb-panel-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;margin:calc(-10px - env(safe-area-inset-top,0px)) -20px 12px;padding:calc(10px + env(safe-area-inset-top,0px)) 20px 10px;background:var(--card-bg);border-bottom:1px solid var(--rule)}
+  #sbSettingsBack{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:10px;background:var(--surface);color:var(--fg);font-size:1.15rem;line-height:1;cursor:pointer;touch-action:manipulation}
+  .sb-panel-head span{font-size:.82rem;font-weight:640}
+}
+@media(min-width:801px){.sb-settings-entry,.sb-panel-head{display:none!important}}
+@media(prefers-reduced-motion:reduce){.sb-section.sb-settings{transition:none}}
