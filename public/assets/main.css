@@ -2116,3 +2116,18 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #tab-holding .card>h3,#tab-holding .chart-card>h3,#tab-option .card>h3,#tab-data .card>h3,#tab-console .card>h3{font-size:.84rem!important;font-weight:650!important;letter-spacing:-.012em!important;margin:0 0 12px!important}
   #tab-option .card>.collapsible-header+.collapsible-body>h3,#tab-data .card h3{letter-spacing:-.012em!important}
 }
+
+/* ===== Card polish 2 · inner dividers, number hierarchy, row press ===== */
+@media(max-width:800px){
+  .card .trade-table tbody td,.card .res-table tbody td{border-bottom-color:color-mix(in srgb,var(--rule) 62%,transparent)!important}
+  .card #mobileAlerts .qa-alert-item{border-color:color-mix(in srgb,var(--rule) 72%,transparent)!important}
+  .card .asset-row+.asset-row{border-top-color:color-mix(in srgb,var(--rule) 62%,transparent)!important}
+  .metric .m-val{font-size:1.06rem!important;letter-spacing:-.02em!important}
+  .metric .m-label{font-size:.66rem!important;letter-spacing:.01em!important}
+  .mobile-dca-value>b,.mobile-dca-value strong{letter-spacing:-.02em!important}
+  .asset-row:active{background:color-mix(in srgb,var(--accent) 8%,transparent)!important}
+  .price-pill:active{background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important;border-color:color-mix(in srgb,var(--accent) 24%,var(--rule))!important}
+  .sb-price-row:active{background:color-mix(in srgb,var(--accent) 6%,transparent)!important}
+}
+.asset-row,.price-pill{transition:background-color 140ms var(--ease-out),border-color 140ms var(--ease-out)}
+@media(prefers-reduced-motion:reduce){.asset-row,.price-pill{transition:none}}

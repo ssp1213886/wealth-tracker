@@ -1,5 +1,5 @@
-// Service Worker v108 - card polish
-var CACHE = 'wealth-v108';
+// Service Worker v109 - card polish 2
+var CACHE = 'wealth-v109';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
