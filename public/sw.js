@@ -1,5 +1,5 @@
-// Service Worker v96 - sidebar section separation
-var CACHE = 'wealth-v96';
+// Service Worker v97 - haptic feedback system
+var CACHE = 'wealth-v97';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

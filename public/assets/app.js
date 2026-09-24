@@ -963,7 +963,7 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
 
 
 
-  showToast('✅ 录入成功','ok')
+  haptic('success');showToast('✅ 录入成功','ok')
 
 
 
@@ -1355,7 +1355,7 @@ function initAll(){
 
 window.addEventListener('DOMContentLoaded',initAll);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=96',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=97',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1771,6 +1771,7 @@ function showApproval(opts){
   modal.addEventListener('click',function(e){if(e.target===modal)close()});
   document.addEventListener('keydown',onKey);
   document.body.appendChild(modal);
+  haptic('warning');
   requestAnimationFrame(function(){modal.classList.add('show')});
   cancelBtn.focus();
   return modal;
@@ -1948,3 +1949,7 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 
 function initSidebarHealthCollapse(){var sec=document.querySelector('.sidebar>.sb-section.sb-sync-summary');if(!sec||sec.dataset.healthCollapseReady)return;sec.dataset.healthCollapseReady='1';var head=sec.querySelector('.sb-sync-head');if(!head)return;var KEY='wealth_sidebar_health_collapsed';var apply=function(collapsed){sec.classList.toggle('is-collapsed',!!collapsed);head.setAttribute('aria-expanded',collapsed?'false':'true')};var saved=true;try{var raw=localStorage.getItem(KEY);saved=raw===null?true:raw==='1'}catch(e){}apply(saved);head.setAttribute('role','button');head.setAttribute('tabindex','0');var toggle=function(){var next=!sec.classList.contains('is-collapsed');apply(next);try{localStorage.setItem(KEY,next?'1':'0')}catch(e){}};head.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('button'))return;toggle()});head.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}})}
 /* 数据健康按要求恢复为始终展开 */
+
+function haptic(kind){try{if(!navigator||typeof navigator.vibrate!=='function')return;var map={light:8,medium:16,heavy:26,warning:[14,60,14],success:[10,40,10],danger:[18,70,18]};var v=map[kind];if(v===undefined)v=8;navigator.vibrate(v)}catch(e){}}
+function initHaptics(){document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-haptic],.btn,.bb-btn,.qa-fab,.qa-item,.accent-dot,.theme-btn,.toggle-wrap,.segment,.record-seg,.trade-del,.sb-quick-menu button,.ds-approval-btn,.sync-retry'):null;if(!t)return;var k=t.getAttribute('data-haptic')||'light';haptic(k)},true)}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initHaptics)}else{initHaptics()}
