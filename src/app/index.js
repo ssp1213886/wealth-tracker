@@ -15,7 +15,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v148';var APP_DATA_VERSION=5;
+var APP_BUILD='v149';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1286,7 +1286,7 @@ function initAll(){
 
 
 
-  var rsInput=document.getElementById('roadmapStartInput');if(rsInput){rsInput.value=state.roadmapStart||'2025-01';rsInput.addEventListener('change',function(){state.roadmapStart=rsInput.value;saveState();updateDashboardWidgets()})}
+  var rsY=document.getElementById('roadmapStartYear'),rsM=document.getElementById('roadmapStartMonth');if(rsY&&rsM){var rs=String(state.roadmapStart||'2025-01'),ry=Number(rs.slice(0,4))||2025,rm=Number(rs.slice(5,7))||1,nowY=new Date().getFullYear(),optY='';for(var yy=2020;yy<=nowY+20;yy++)optY+='<option value="'+yy+'">'+yy+' 年</option>';rsY.innerHTML=optY;var optM='';for(var mm=1;mm<=12;mm++){var mv=mm<10?'0'+mm:String(mm);optM+='<option value="'+mv+'">'+mm+' 月</option>'}rsM.innerHTML=optM;rsY.value=String(ry);rsM.value=(rm<10?'0':'')+rm;var syncRoadmapStart=function(){state.roadmapStart=rsY.value+'-'+rsM.value;saveState();updateDashboardWidgets()};rsY.addEventListener('change',syncRoadmapStart);rsM.addEventListener('change',syncRoadmapStart)}
 
 
 
@@ -1331,7 +1331,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=148',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=149',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 

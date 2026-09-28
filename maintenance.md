@@ -233,6 +233,18 @@ const steps = {
 
 ---
 
+## 设计参考（改 UI 前先对照）
+
+这三份是用户指定的参考，改控件 / 动效 / 移动端手感时按它们检查，不要凭个人偏好：
+
+| 参考 | 用法 |
+| --- | --- |
+| `mobile-native` · [github.com/emilkowalski/skills](https://github.com/emilkowalski/skills) | 手机端"像原生 App"的硬规则：**输入框字号 ≥16px**（低于 16px 时 iOS 聚焦会缩放整个页面）、按压反馈放在 `:active`/`pointerdown` 而不是 `click`、`:hover` 必须包在 `@media (hover:hover) and (pointer:fine)` 里、`100dvh`、`overscroll-behavior`、`env(safe-area-inset-*)` 配 `viewport-fit=cover`、控件文字不可长按选中 |
+| `apple-design` · 同一仓库 | Apple 式判断标准：**同外观必同行为**、每个间距/时长/对齐值都要能解释（"没有任何一个值可以是随意的"）、材质与层级（浅色半透明不要叠浅色半透明）、字号相关字距、`prefers-reduced-motion / -transparency / -contrast` 的降级 |
+| [beautifului.dev](https://www.beautifului.dev/) | 组件库的控件令牌：`--radius-control/-card/-chip` 分档、hairline ring（半透明 1px 而不是硬边框）、`font:inherit`、`focus-visible` 用 ring 不用 outline |
+
+> 已落地：v149 统一了表单控件 —— 全站输入框 `font-size:16px`（修掉筛选下拉 10.88px 导致 iOS 缩放页面的 bug）、select 自绘线性 chevron、日期图标线性化（深色反色）、隐藏数字框桌面上下箭头、输入框边框改半透明 hairline、定投起点由 `input[type=month]`（iOS 不支持）改成 年/月两个下拉。
+
 ## 当前版本
 
 线上地址：https://wealth-tracker.ssp2180481336.workers.dev
@@ -258,6 +270,7 @@ const steps = {
 | v145 | 同步提示条改为**居中悬浮胶囊**：覆盖式不推内容（原先把页面顶下去 38px）、固定宽度避开 ☰、三态加图标区分（转圈 / ✓ / !）、成功停留 1.6→2.2 秒；实测三态对比度浅色 15.35/6.86/5.82、深色 12.49/7.65/6.56 |
 | v146 | 胶囊**三态尺寸统一**：图标盒一律 13×13（转圈改成在盒内画 11px 的环，原来只有 11px 显得比对勾小）、`min-width:132px` + 内容居中、文案统一缩短（正在上传…／正在下载…／同步失败）。实测三态均为 **132×30**（原 113/136/176），位移仍为 0 |
 | v147–v148 | 加回"用大小暗示紧急度"的直觉但不动几何：失败态红色光晕 + 中心 `scale(1.04)`（视觉 137×31，布局仍 132×30）、成功态最轻、进行中居中；并**移除胶囊内的重试/关闭按钮**（原本把失败态撑到 165px），失败的可操作出口统一到横幅与数据健康，失败态 8 秒后自动收起 |
+| v149 | **表单控件统一**（对齐 mobile-native / apple-design / beautifului）：全站输入框字号 ≥16px（修掉筛选下拉 10.88px → iOS 聚焦缩放页面的 bug）、筛选下拉 36→44px/圆角 12、select 自绘线性 chevron、日期日历图标线性化（深色反色）、隐藏桌面数字箭头、输入框边框改半透明 hairline、`background:` 简写改 `background-color`（否则会重置自绘箭头）、定投起点由 `input[type=month]`（iOS Safari 不支持）改为 年/月两个下拉 |
 
 ### 已知未修问题
 

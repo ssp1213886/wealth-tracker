@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=148');
+  assert.equal(manifest.start_url, '/?v=149');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v148/);
+  assert.match(serviceWorker, /wealth-v149/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=148',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=149',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -303,6 +303,23 @@ test('sync feedback has a single channel per event', () => {
   assert.doesNotMatch(html, /id="syncDot"/);
   assert.doesNotMatch(appSource, /syncDot/);
   assert.match(appSource, /el\.textContent='已上传 '\+new Date\(\)\.toLocaleTimeString/);
+});
+
+test('form controls share one native-looking spec', () => {
+  // 依据 mobile-native 硬规则：输入框字号 <16px 会让 iOS 聚焦时缩放整个页面
+  assert.match(appMarkup, /#tab-data \.collapsible-header select\{width:auto!important;min-height:44px!important;padding:0 28px 0 10px!important;border-radius:12px!important;font-size:16px!important\}/);
+  assert.match(appMarkup, /\.header-tools select\{height:44px;min-height:44px;padding:0 28px 0 10px/);
+  assert.match(appMarkup, /\.attribution-card #attrYear\{height:44px;min-height:44px;padding:0 28px 0 10px/);
+  // 自绘下拉箭头 / 日期图标线性化 / 数字框去掉桌面上下箭头
+  assert.match(appMarkup, /select\{-webkit-appearance:none;appearance:none;background-image:url\("data:image\/svg\+xml/);
+  assert.match(appMarkup, /input\[type=date\]::-webkit-calendar-picker-indicator\{width:18px;height:18px;opacity:\.45/);
+  assert.match(appMarkup, /input\[type=number\]::-webkit-inner-spin-button\{-webkit-appearance:none;appearance:none;margin:0\}/);
+  // iOS 不支持 input[type=month]，定投起点改成 年 + 月 两个下拉
+  assert.doesNotMatch(html, /type="month"/);
+  assert.match(html, /id="roadmapStartYear"/);
+  assert.match(html, /id="roadmapStartMonth"/);
+  assert.match(appSource, /state\.roadmapStart=rsY\.value\+'-'\+rsM\.value/);
+  assert.match(appMarkup, /\.settings-split\{display:grid;grid-template-columns:1fr 1fr;gap:8px\}/);
 });
 
 test('market sparkline is built from real cached history points', () => {
