@@ -155,9 +155,14 @@ test('toExposureRows：单一底层资产（比特币）计入、其余成分股
   const vgtRest = ex.etfRest.find((r) => r.label === 'VGT 其余成分股');
   assert.equal(Math.round(vgtRest.amount), 6646);
   assert.equal(vgtRest.missPct, 66.5);
+  // 其余成分股必须也有"占持仓比例"（曾漏掉，只显示榜单外比例）
+  assert.equal(vgtRest.share, 41.2, '6646 / 16133 ≈ 41.2%');
   // 分母 = 持仓市值合计（含 BTC）
   assert.equal(ex.base, 16133);
   // 各行 + 其余成分股 ≈ 分母（允许四舍五入误差）
   const sum = ex.rows.reduce((s, r) => s + r.amount, 0) + ex.etfRest.reduce((s, r) => s + r.amount, 0);
   assert.ok(Math.abs(sum - ex.base) < 2, '合计应等于分母，实际差 ' + (sum - ex.base));
+  // 占比合计 = 100%（四舍五入误差 ±0.3）
+  const shareSum = ex.rows.reduce((s, r) => s + (r.share || 0), 0) + ex.etfRest.reduce((s, r) => s + (r.share || 0), 0);
+  assert.ok(Math.abs(shareSum - 100) < 0.3, '占比合计应为 100%，实际 ' + shareSum);
 });

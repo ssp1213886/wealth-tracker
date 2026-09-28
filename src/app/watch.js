@@ -220,11 +220,15 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
   const all = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
   const base = Object.keys(valueByEtf || {}).reduce((sum, key) => sum + (Number(valueByEtf[key]) || 0), 0) +
     (Array.isArray(extras) ? extras.reduce((sum, item) => sum + (Number(item && item.amount) || 0), 0) : 0);
+  const shareOf = (amount) => (base > 0 ? Number(((amount / base) * 100).toFixed(1)) : null);
+  const restAmount = Number(all.slice(limit).reduce((sum, row) => sum + row.amount, 0).toFixed(2));
   return {
-    rows: all.slice(0, limit).map((row) => ({ ...row, share: base > 0 ? Number(((row.amount / base) * 100).toFixed(1)) : null })),
-    rest: Number(all.slice(limit).reduce((sum, row) => sum + row.amount, 0).toFixed(2)),
+    rows: all.slice(0, limit).map((row) => ({ ...row, share: shareOf(row.amount) })),
+    rest: restAmount,
     restCount: Math.max(0, all.length - limit),
-    etfRest,
+    restShare: all.length > limit ? shareOf(restAmount) : null,
+    // 其余成分股也要给出"占我持仓的比例"（之前漏了，只给了"榜单外 X%"，两者含义不同）
+    etfRest: etfRest.map((row) => ({ ...row, share: shareOf(row.amount) })),
     covered,
     base,
   };
