@@ -146,15 +146,42 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=223');
+  assert.equal(manifest.start_url, '/?v=224');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v223/);
+  assert.match(serviceWorker, /wealth-v224/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=223',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=224',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
+});
+
+test('观察列表搜索内置名单 = S&P100 ∪ 纳斯达克100（167 条）', () => {
+  // 名单由维基百科成分表的「代码列 + 公司列」解析生成；这里钉住几支只有纳斯达克100 才有的票，
+  // 防止再退回"其实只有 S&P100 + 几个杂项"的状态。
+  const must = [
+    ['APP', 'AppLovin'],
+    ['ARM', 'Arm Holdings'],
+    ['ABNB', 'Airbnb'],
+    ['CRWD', 'CrowdStrike'],
+    ['DDOG', 'Datadog'],
+    ['MELI', 'Mercado Libre'],
+    ['PYPL', 'PayPal'],
+    ['REGN', 'Regeneron Pharmaceuticals'],
+    ['VRTX', 'Vertex Pharmaceuticals'],
+    ['WDAY', 'Workday, Inc.'],
+  ];
+  must.forEach(([sym, name]) => {
+    assert.ok(appMarkup.includes('["' + sym + '","' + name + '"]'), '内置名单缺少 ' + sym + ' ' + name);
+  });
+  const idxLine = appMarkup.split('\n').find((l) => l.trim().indexOf('var IDX=[') === 0);
+  assert.ok(idxLine, '找不到内置名单 IDX');
+  const entries = (idxLine.match(/\["[A-Z0-9.\-]+","/g) || []).length;
+  assert.equal(entries, 167, '内置名单条数');
+  ['["MRX","', '["OBX","', '["UK","', '["DAX","'].forEach((junk) => {
+    assert.ok(!appMarkup.includes(junk), '内置名单混入杂项：' + junk);
+  });
 });
 
 test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
