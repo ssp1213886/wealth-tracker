@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v219';var APP_DATA_VERSION=5;
+var APP_BUILD='v220';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=219',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=220',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2523,7 +2523,7 @@ if(typeof window!=='undefined'){
       var it=LIST[i],sym=it[0].toLowerCase(),en=String(it[1]||'').toLowerCase(),cn=String(it[2]||'').toLowerCase();
       if(sym.indexOf(q)===0||en.indexOf(q)>=0||(cn&&cn.indexOf(q)>=0))addHit(it[0],it[1]);
     }
-    for(var i4=0;i4<IDXL.length;i4+=1){var r4=IDXL[i4];if(seen[r4[0]])continue;if(r4[2].indexOf(q)===0)addHit(r4[0],r4[1]);else if(r4[2].indexOf(q)>=0||r4[3].indexOf(q)>=0){if(!JUNK.test(r4[3]))addHit(r4[0],r4[1])}}
+    for(var i4=0;i4<IDXL.length;i4+=1){var r4=IDXL[i4];if(seen[r4[0]])continue;if(r4[2]===q)addHit(r4[0],r4[1]);else if(r4[2].indexOf(q)===0||r4[3].indexOf(q)>=0){if(!JUNK.test(r4[3]))addHit(r4[0],r4[1])}}
     var hits=pre.concat(mid).slice(0,8);
     if(hits.length){hits.forEach(function(it){list.appendChild(mkRow(it[0],it[1]))});return}
     var code=q.toUpperCase();
