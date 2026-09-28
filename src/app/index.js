@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v203';var APP_DATA_VERSION=5;
+var APP_BUILD='v204';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=203',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=204',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2255,8 +2255,10 @@ if(typeof window!=='undefined'){
     return heldShares(sym);
   };
   var priceOf=function(sym){var q=watchQuotes[sym],c=readPriceCache()[sym];return Number((q&&q.price)||livePrices[sym]||(c&&c.price)||0)||0};
-  var histOf=function(sym){var c=readPriceCache()[sym];return (c&&c.history)||[]};
-  var hiOf=function(sym){var c=readPriceCache()[sym];return Number(c&&c.hi52)||0};
+  /* 本地行情缓存按"归属代码"取：BTCETF 的行情在缓存里记在 BTC 名下；现货 BTC 没有本地缓存 */
+  var dataSym=function(sym){return Object.prototype.hasOwnProperty.call(HELD_OF,sym)?HELD_OF[sym]:sym};
+  var histOf=function(sym){var k=dataSym(sym);if(!k)return [];var c=readPriceCache()[k];return (c&&c.history)||[]};
+  var hiOf=function(sym){var k=dataSym(sym);if(!k)return 0;var c=readPriceCache()[k];return Number(c&&c.hi52)||0};
   var cleanName=function(sym,q){
     if(FALLBACK[sym])return FALLBACK[sym];
     var n=String((q&&q.name)||'').replace(/\s*\([A-Za-z]{0,3}$/,'').trim();
