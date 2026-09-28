@@ -136,3 +136,28 @@ test('toExposureRows：同一标的跨两张榜单合并，并按金额排序 + 
   assert.equal(ex.covered.VGT, 33.5);
   assert.equal(ex.restCount, 0);
 });
+
+test('toExposureRows：单一底层资产（比特币）计入、其余成分股补齐、ETF 自身不出现', () => {
+  const ex = toExposureRows(
+    { VGT: { list: [{ sym: 'NVDA', name: 'NVIDIA', weight: 17.74 }, { sym: 'AAPL', name: 'Apple', weight: 15.8 }] },
+      SMH: { list: [{ sym: 'NVDA', name: 'Nvidia', weight: 19.28 }] } },
+    { VGT: 10000, SMH: 5000 },
+    10,
+    [{ sym: '比特币', amount: 1133, note: 'BTC 100%（直接持有）' }],
+  );
+  const syms = ex.rows.map((r) => r.sym);
+  assert.ok(syms.includes('比特币'), '比特币应计入');
+  assert.ok(!syms.includes('VGT') && !syms.includes('SMH'), 'ETF 自身不能作为一行（否则重复计算）');
+  assert.equal(ex.rows[0].sym, 'NVDA');
+  assert.equal(Math.round(ex.rows.find((r) => r.sym === '比特币').amount), 1133);
+  assert.deepEqual(ex.rows.find((r) => r.sym === '比特币').parts, ['BTC 100%（直接持有）']);
+  // 其余成分股：VGT 未覆盖 66.46% × 10000 + SMH 未覆盖 32.46% × 5000
+  const vgtRest = ex.etfRest.find((r) => r.label === 'VGT 其余成分股');
+  assert.equal(Math.round(vgtRest.amount), 6646);
+  assert.equal(vgtRest.missPct, 66.5);
+  // 分母 = 持仓市值合计（含 BTC）
+  assert.equal(ex.base, 16133);
+  // 各行 + 其余成分股 ≈ 分母（允许四舍五入误差）
+  const sum = ex.rows.reduce((s, r) => s + r.amount, 0) + ex.etfRest.reduce((s, r) => s + r.amount, 0);
+  assert.ok(Math.abs(sum - ex.base) < 2, '合计应等于分母，实际差 ' + (sum - ex.base));
+});

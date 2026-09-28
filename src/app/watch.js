@@ -178,9 +178,11 @@ export function collectQuoteSymbols(list, holdingsBySymbol) {
   return Array.from(set);
 }
 
-// 穿透敞口：把两张榜单里同一标的的敞口相加（如 NVDA 同时在 VGT 与 SMH 里）
-// valueByEtf = { VGT: 持仓市值, SMH: 持仓市值 }；返回前 limit 只 + 其余合计 + 每张榜单的覆盖度
-export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10) {
+// 底层资产敞口：把两张榜单里同一标的的敞口相加（如 NVDA 同时在 VGT 与 SMH 里）。
+// - 不重复计算：ETF 自身不作为一行，只出现"成分股 + 其余成分股"
+// - extras 用于"单一底层资产"（如 BTC ETF → 比特币 100%），与穿透行混排并按金额倒序
+// - etfRest 给出每支 ETF 未被榜单覆盖的部分，保证合计能对上分母
+export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras = []) {
   const map = new Map();
   const covered = {};
   Object.keys(holdingsBySymbol || {}).forEach((etf) => {
@@ -197,12 +199,32 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10) {
       map.set(item.sym, row);
     });
   });
+  (Array.isArray(extras) ? extras : []).forEach((item) => {
+    const amount = Number(item && item.amount) || 0;
+    if (amount <= 0) return;
+    const key = String((item && item.sym) || '');
+    if (!key) return;
+    const row = map.get(key) || { sym: key, name: item.name || key, amount: 0, parts: [] };
+    row.amount += amount;
+    row.parts.push(item.note || '直接持有');
+    map.set(key, row);
+  });
+  const etfRest = Object.keys(holdingsBySymbol || {}).map((etf) => {
+    const value = Number((valueByEtf && valueByEtf[etf]) || 0);
+    // 金额用未舍入的覆盖度算（否则四舍五入会在合计上对不上分母），显示时才取 1 位小数
+    const rawSum = ((holdingsBySymbol[etf] && holdingsBySymbol[etf].list) || [])
+      .reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
+    const missPct = Math.max(0, 100 - rawSum);
+    return { label: etf + ' 其余成分股', amount: (value * missPct) / 100, missPct: Number(missPct.toFixed(1)) };
+  }).filter((row) => row.amount > 0);
   const all = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
-  const base = Object.keys(valueByEtf || {}).reduce((sum, key) => sum + (Number(valueByEtf[key]) || 0), 0);
+  const base = Object.keys(valueByEtf || {}).reduce((sum, key) => sum + (Number(valueByEtf[key]) || 0), 0) +
+    (Array.isArray(extras) ? extras.reduce((sum, item) => sum + (Number(item && item.amount) || 0), 0) : 0);
   return {
     rows: all.slice(0, limit).map((row) => ({ ...row, share: base > 0 ? Number(((row.amount / base) * 100).toFixed(1)) : null })),
     rest: Number(all.slice(limit).reduce((sum, row) => sum + row.amount, 0).toFixed(2)),
     restCount: Math.max(0, all.length - limit),
+    etfRest,
     covered,
     base,
   };
