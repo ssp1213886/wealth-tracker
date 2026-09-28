@@ -8,7 +8,16 @@ const QUOTE_TTL = 60 * 1000;
 const HOLDINGS_TTL = 6 * 60 * 60 * 1000;
 const STOCK_RE = /^[A-Z][A-Z0-9.\-=]{0,9}$/;
 
-// 加密：用户指定的现货代码 → CoinGecko id
+// 加密：用户指定的现货代码 → Yahoo 交易对（主源，和股票同一条通路）
+export const CRYPTO_PAIRS = {
+  BTC: 'BTC-USD',
+  ETH: 'ETH-USD',
+  BNB: 'BNB-USD',
+  HYPE: 'HYPE32196-USD',
+  SOL: 'SOL-USD',
+};
+
+// 加密兜底源：CoinGecko（Cloudflare 出口有时会被限流，所以放在 Yahoo 之后）
 export const CRYPTO_IDS = {
   BTC: 'bitcoin',
   ETH: 'ethereum',
@@ -122,10 +131,26 @@ export async function handleQuotes(request, url) {
     invalid.push(sym);
   });
 
-  const cryptoIds = cryptos.map((sym) => CRYPTO_IDS[sym]);
+  // 加密先走 Yahoo 交易对，失败的再走 CoinGecko
+  const cryptoPairs = cryptos.map((sym) => [sym, CRYPTO_PAIRS[sym] || null]);
   const [stockPairs, cryptoMap] = await Promise.all([
     Promise.all(stocks.map(async (sym) => [sym, await fetchStockQuote(sym)])),
-    fetchCryptoQuotes(cryptoIds),
+    (async () => {
+      const viaYahoo = {};
+      await Promise.all(cryptoPairs.map(async ([sym, pair]) => {
+        if (!pair) return;
+        const quote = await fetchStockQuote(pair);
+        if (quote) viaYahoo[sym] = quote;
+      }));
+      const fallbackIds = cryptoPairs.filter(([sym]) => !viaYahoo[sym] && CRYPTO_IDS[sym]).map(([sym]) => CRYPTO_IDS[sym]);
+      const viaGecko = fallbackIds.length ? await fetchCryptoQuotes(fallbackIds) : {};
+      const out = {};
+      cryptoPairs.forEach(([sym]) => {
+        if (viaYahoo[sym]) out[sym] = viaYahoo[sym];
+        else if (CRYPTO_IDS[sym] && viaGecko[CRYPTO_IDS[sym]]) out[sym] = viaGecko[CRYPTO_IDS[sym]];
+      });
+      return out;
+    })(),
   ]);
 
   const quotes = {};
@@ -134,8 +159,8 @@ export async function handleQuotes(request, url) {
     if (quote) quotes[sym] = quote;
     else missing.push(sym);
   });
-  cryptos.forEach((sym, index) => {
-    const quote = cryptoMap[cryptoIds[index]];
+  cryptos.forEach((sym) => {
+    const quote = cryptoMap[sym];
     if (quote) {
       quotes[sym] = { ...quote, name: sym + ' 现货', currency: 'USD', marketState: '24/7' };
     } else {
