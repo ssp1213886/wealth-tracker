@@ -2464,3 +2464,20 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 /* 两条轴各自带前缀词，杜绝"不知道哪条是哪条" */
 .goal-progress-card .journey-line::before{content:'时间  '}
 .goal-progress-card .progress-meta:not(.progress-meta-final)::before{content:'资金  '}
+/* ===== v187 风格统一：按「角色」分档，不做一刀切 ===== */
+/* 硬标准：卡高变化 ≤2px / 不换行 / 不溢出；每条都实测过（见提交说明） */
+/* ① 有整行空间的完整卡头：统一到 15.2px（需要关注本就是 15.2，这里把 cc 与回撤从 15.84 收齐） */
+.cc-overview .mobile-section-title{font-size:.95rem!important}
+.drawdown-heading h3{font-size:.95rem!important}
+/* ② 路线图标题：13.44 → 14.4（只升一档；桌面那行写死 220px，不升到 15.2 以免撑破） */
+#tab-holding .goal-progress-card>h3{font-size:.9rem!important;font-weight:660!important}
+/* ③ 字重收齐到 660；字号保持不动（这几个标题的可用高度是写死的） */
+#tab-holding .holdings-card .collapsible-header h3{font-weight:660!important}
+#tab-holding .hold-title{font-weight:660}
+/* ④ 卡片间距统一 12px（仅移动端那两处 14px） */
+#tab-holding .goal-row>.card{margin-bottom:12px!important}
+/* ⑤ 敞口卡桌面塌陷修复：在 12 列网格里铺满（原来被挤成 76px 竖条） */
+@media(min-width:801px){#tab-holding #exposureSlot{grid-column:1/-1}}
+/* ⑥ 口径说明统一放卡底：标题那 4 字限定语并进卡底口径行（若导致卡底行换行则回退） */
+#tab-holding #exposureSlot .hold-title small{display:none}
+#tab-holding #exposureSlot .watch-meta::before{content:'含穿透估算 · '}
