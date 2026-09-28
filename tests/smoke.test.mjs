@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=149');
+  assert.equal(manifest.start_url, '/?v=150');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v149/);
+  assert.match(serviceWorker, /wealth-v150/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=149',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=150',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -312,7 +312,8 @@ test('form controls share one native-looking spec', () => {
   assert.match(appMarkup, /\.attribution-card #attrYear\{height:44px;min-height:44px;padding:0 28px 0 10px/);
   // 自绘下拉箭头 / 日期图标线性化 / 数字框去掉桌面上下箭头
   assert.match(appMarkup, /select\{-webkit-appearance:none;appearance:none;background-image:url\("data:image\/svg\+xml/);
-  assert.match(appMarkup, /input\[type=date\]::-webkit-calendar-picker-indicator\{width:18px;height:18px;opacity:\.45/);
+  assert.match(appMarkup, /input\[type=date\]::-webkit-calendar-picker-indicator\{width:18px;height:18px;padding:0;margin-right:4px;opacity:\.45/);
+  assert.match(appMarkup, /input\[type=date\]\{min-width:0;max-width:100%\}/, '日期框不得超出所在栅格单元');
   assert.match(appMarkup, /input\[type=number\]::-webkit-inner-spin-button\{-webkit-appearance:none;appearance:none;margin:0\}/);
   // iOS 不支持 input[type=month]，定投起点改成 年 + 月 两个下拉
   assert.doesNotMatch(html, /type="month"/);

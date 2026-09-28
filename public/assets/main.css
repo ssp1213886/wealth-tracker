@@ -2335,7 +2335,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 input[type=number]{-moz-appearance:textfield}
 
 /* 日期：日历图标线性化、不抢眼；深色主题下反色才看得见 */
-input[type=date]::-webkit-calendar-picker-indicator{width:18px;height:18px;opacity:.45;cursor:pointer}
+input[type=date]{min-width:0;max-width:100%}
+input[type=date]::-webkit-calendar-picker-indicator{width:18px;height:18px;padding:0;margin-right:4px;opacity:.45;cursor:pointer}
 input[type=date]:focus::-webkit-calendar-picker-indicator{opacity:.75}
 [data-theme='dark'] input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.5);opacity:.55}
 
