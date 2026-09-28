@@ -2437,3 +2437,15 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .allocation-card .chart-wrap{width:150px!important;min-width:150px!important;max-width:150px;min-height:150px;margin:0 auto}
 .allocation-card canvas{height:150px!important;max-height:150px!important}
 }
+
+/* ===== v185：持仓行就地展开内联明细（复用 .row-detail 家族） ===== */
+#pnlSummary .asset-row>b{transition:transform .2s ease}
+#pnlSummary .asset-row.is-open>b{transform:rotate(90deg)}
+.row-detail.hold-detail .row-detail-grid{margin-top:9px}
+.row-detail.hold-detail .positive{color:var(--accent)}
+.row-detail.hold-detail .negative{color:var(--red)}
+/* v185：桌面 ≥1160px 是固定行高的网格，展开内联明细时让持仓卡与所在行一起长高，避免压到下面的卡片 */
+@media(min-width:1160px){
+#tab-holding.active:has(.hold-detail){grid-template-rows:172px 185px auto 220px!important}
+.holdings-card:has(.hold-detail){height:auto!important}
+}

@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v184';var APP_DATA_VERSION=5;
+var APP_BUILD='v185';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=184',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=185',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1950,3 +1950,100 @@ if(typeof window!=='undefined'){
   var __globals={clearAllData:clearAllData,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
   for(var __k in __globals){try{if(typeof __globals[__k]==='function')window[__k]=__globals[__k]}catch(e){}}
 }
+
+
+
+/* ===== v185：持仓行就地展开内联明细（渲染后属性注入 + 事件委托，不改任何模板字符串） ===== */
+/* 行上的 onclick="switchTab('data')" 写在模板里，我们不改模板：每次渲染后用属性注入把它摘掉，改由自己接管点击。
+   行情刷新会重渲染 #pnlSummary，所以这里记住"当前展开的标的"，重渲染后自动恢复。 */
+(function(){
+  var host=document.getElementById('pnlSummary');
+  if(!host)return;
+  var openSym=null;
+
+  var findRow=function(sym){
+    var rows=host.querySelectorAll('.asset-row');
+    for(var i=0;i<rows.length;i+=1){
+      var s=rows[i].querySelector('.asset-identity strong');
+      if(s&&String(s.textContent).trim()===sym)return rows[i];
+    }
+    return null;
+  };
+
+  var closeAll=function(){
+    var panels=host.querySelectorAll('.hold-detail');
+    for(var i=0;i<panels.length;i+=1)panels[i].parentNode.removeChild(panels[i]);
+    var rows=host.querySelectorAll('.asset-row.is-open');
+    for(var j=0;j<rows.length;j+=1){rows[j].classList.remove('is-open');rows[j].setAttribute('aria-expanded','false')}
+  };
+
+  var detailHtml=function(sym,row){
+    var pack=computeHoldings(trades);
+    var h=(pack&&pack.holdings&&pack.holdings[sym])||{shares:0,cost:0,realized:0};
+    var shares=Number(h.shares)||0,cost=Number(h.cost)||0,realized=Number(h.realized)||0;
+    var avg=shares>0?cost/shares:0;
+    var price=Number(livePrices[sym])||0;
+    var value=price>0?shares*price:0;
+    var pnl=(price>0&&cost>0)?value-cost:null;
+    var pct=pnl===null?null:pnl/cost*100;
+    var target=sym==='VGT'?state.vgt:sym==='SMH'?state.smh:sym==='BTC'?state.btc:null;
+    var sh=Number(row.getAttribute('data-share'));
+    var meta='占比 '+(isFinite(sh)?sh.toFixed(1):'—')+'%';
+    if(target!=null&&isFinite(sh)){
+      var tv=Number(target)*100;
+      meta+=' · 目标 '+tv.toFixed(0)+'% · 偏离 '+(sh-tv>=0?'+':'')+(sh-tv).toFixed(1)+'%';
+    }
+    var pnlTxt=pnl===null?'—':fmtPnLFull(pnl)+'（'+(pct>=0?'+':'')+pct.toFixed(2)+'%）';
+    var pnlCls=pnl===null?'':(pnl>=0?'positive':'negative');
+    return ''
+      +'<div class="row-detail-grid">'
+      +'<span>均价</span><strong>'+(avg>0?'$'+avg.toFixed(2):'—')+'</strong>'
+      +'<span>现价</span><strong>'+(price>0?'$'+price.toFixed(2):'—')+'</strong>'
+      +'<span>浮动盈亏</span><strong class="'+pnlCls+'">'+pnlTxt+'</strong>'
+      +'<span>已实现盈亏</span><strong class="'+(realized>=0?'positive':'negative')+'">'+fmtPnLFull(realized)+'</strong>'
+      +'</div>'
+      +'<div class="rd-meta">'+meta+'</div>';
+  };
+
+  var openPanel=function(row,sym){
+    var panel=document.createElement('div');
+    panel.className='row-detail hold-detail';
+    panel.id='holdDetail-'+sym;
+    panel.innerHTML=detailHtml(sym,row);
+    row.parentNode.insertBefore(panel,row.nextSibling);
+    row.classList.add('is-open');
+    row.setAttribute('aria-expanded','true');
+    row.setAttribute('aria-controls',panel.id);
+  };
+
+  var afterRender=function(){
+    var rows=host.querySelectorAll('.asset-row[onclick]');
+    for(var i=0;i<rows.length;i+=1){
+      rows[i].removeAttribute('onclick');
+      if(!rows[i].hasAttribute('aria-expanded'))rows[i].setAttribute('aria-expanded','false');
+    }
+    if(!openSym)return;
+    var row=findRow(openSym);
+    if(!row)return;
+    var nxt=row.nextElementSibling;
+    if(nxt&&nxt.classList&&nxt.classList.contains('hold-detail'))return;
+    openPanel(row,openSym);
+  };
+
+  afterRender();
+  try{new MutationObserver(afterRender).observe(host,{childList:true})}catch(err){}
+
+  host.addEventListener('click',function(e){
+    var row=e.target&&e.target.closest?e.target.closest('.asset-row'):null;
+    if(!row||!host.contains(row))return;
+    var nxt=row.nextElementSibling;
+    var wasOpen=!!(nxt&&nxt.classList&&nxt.classList.contains('hold-detail'));
+    closeAll();
+    if(wasOpen){openSym=null;return}
+    var symEl=row.querySelector('.asset-identity strong');
+    var sym=String(symEl?symEl.textContent:'').trim();
+    if(!sym)return;
+    openSym=sym;
+    openPanel(row,sym);
+  });
+})();
