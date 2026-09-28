@@ -2449,3 +2449,18 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-holding.active:has(.hold-detail){grid-template-rows:172px 185px auto 220px!important}
 .holdings-card:has(.hold-detail){height:auto!important}
 }
+/* ===== 批1第2项：20 年旅程 + 目标进度 合并为「路线图」卡（两条轴并排） ===== */
+/* 上=时间（20 年旅程），下=资金（目标进度）；JS 的 id 与数值全部不动，只改呈现 */
+.goal-progress-card{display:grid;grid-template-columns:1fr;align-content:start}
+.goal-progress-card>h3{grid-column:1;grid-row:1}
+.goal-progress-card .journey-line{grid-column:1;grid-row:2;margin-bottom:5px}
+.goal-progress-card .journey-track{grid-column:1;grid-row:3;height:8px;margin:0;border-radius:999px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
+.goal-progress-card .journey-track>div{background:var(--accent)}
+.goal-progress-card .progress-meta:not(.progress-meta-final){grid-column:1;grid-row:4;margin:12px 0 5px}
+.goal-progress-card .progress-track{grid-column:1;grid-row:5;height:8px;margin:0;background:color-mix(in srgb,var(--fg) 8%,transparent)}
+.goal-progress-card .progress-track>div:first-child{background:var(--accent)}
+.goal-progress-card .progress-shimmer{display:none}
+.goal-progress-card .progress-meta-final{grid-column:1;grid-row:6;margin:9px 0 0}
+/* 两条轴各自带前缀词，杜绝"不知道哪条是哪条" */
+.goal-progress-card .journey-line::before{content:'时间  '}
+.goal-progress-card .progress-meta:not(.progress-meta-final)::before{content:'资金  '}
