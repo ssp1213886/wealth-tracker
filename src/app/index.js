@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v189';var APP_DATA_VERSION=5;
+var APP_BUILD='v190';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -435,7 +435,7 @@ function updateDonutChart(rows){var canvas=document.getElementById("chartDonut")
 
 
 
-function normalizeState(s){if(!s)s={};return{monthlyDCA:s.monthlyDCA!==undefined?s.monthlyDCA:2000,dcaOverride:s.dcaOverride||{month:'',amount:0},roadmapStart:s.roadmapStart||'2025-01',roadmapAge:s.roadmapAge!==undefined?s.roadmapAge:27,sgovTarget:s.sgovTarget!==undefined?s.sgovTarget:0,targetGoal:s.targetGoal!==undefined?s.targetGoal:2500000,vgt:s.vgt!==undefined?s.vgt:0.50,smh:s.smh!==undefined?s.smh:0.30,btc:s.btc!==undefined?s.btc:0.20}}
+function normalizeState(s){if(!s)s={};return{monthlyDCA:s.monthlyDCA!==undefined?s.monthlyDCA:2000,dcaOverride:s.dcaOverride||{month:'',amount:0},roadmapStart:s.roadmapStart||'2025-01',roadmapAge:s.roadmapAge!==undefined?s.roadmapAge:27,sgovTarget:s.sgovTarget!==undefined?s.sgovTarget:0,targetGoal:s.targetGoal!==undefined?s.targetGoal:2500000,vgt:s.vgt!==undefined?s.vgt:0.50,smh:s.smh!==undefined?s.smh:0.30,btc:s.btc!==undefined?s.btc:0.20,plan:(s.plan&&typeof s.plan==='object')?s.plan:null}}
 function loadState(){try{var s=readRaw(LSKEY);if(s)return normalizeState(JSON.parse(s))}catch(e){}return{monthlyDCA:2000,dcaOverride:{month:'',amount:0},roadmapStart:'2025-01',roadmapAge:27,sgovTarget:0,vgt:0.50,smh:0.30,btc:0.20}}
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=189',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=190',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2046,4 +2046,118 @@ if(typeof window!=='undefined'){
     openSym=sym;
     openPanel(row,sym);
   });
+})();
+
+
+/* ===== v190：策略工具（渲染 + 就地编辑，存进 state 走现有云同步） ===== */
+(function(){
+  var listIncome=document.getElementById('planIncomeList');
+  var listExit=document.getElementById('planExitList');
+  if(!listIncome&&!listExit)return;
+  var DEFAULTS={
+    income:[['起步期','$2K','$2.5K'],['增长期','$2.5K','$3.5K'],['巅峰期','$3.5K','$5K'],['冲刺期','$5K+','']],
+    exit:['持续进攻','检查退出','等待窗口','保守组合'],
+    wd:{portfolio:2270000,rate:4,ret:6,infl:2.5}
+  };
+  var WD=[['rWdPortfolio','portfolio'],['rWdRate','rate'],['rWdReturn','ret'],['rWdInfl','infl']];
+  var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+
+  var readPlan=function(){
+    var p=(state&&state.plan)||{};
+    var inc=(p.income&&p.income.length===4)?p.income.map(function(r){return [String((r&&r[0])||''),String((r&&r[1])||''),String((r&&r[2])||'')]}):DEFAULTS.income.map(function(r){return r.slice()});
+    var ex=(p.exit&&p.exit.length===4)?p.exit.map(function(v){return String(v||'')}):DEFAULTS.exit.slice();
+    var wd={};
+    ['portfolio','rate','ret','infl'].forEach(function(k){
+      var v=p.wd?Number(p.wd[k]):NaN;
+      wd[k]=isFinite(v)?v:DEFAULTS.wd[k];
+    });
+    return {income:inc,exit:ex,wd:wd};
+  };
+  var writePlan=function(d){state.plan={income:d.income,exit:d.exit,wd:d.wd};saveState()};
+
+  var applyWd=function(wd){
+    WD.forEach(function(f){
+      var el=document.getElementById(f[0]);
+      if(!el)return;
+      var v=wd[f[1]];
+      if(!isFinite(v))return;
+      el.value=v;
+      var lab=document.getElementById('v'+f[0].slice(1));
+      if(lab)lab.textContent=f[0].indexOf('Portfolio')>=0?fmt$(parseInt(el.value,10)):(parseFloat(el.value).toFixed(1)+'%');
+    });
+    try{updateWithdrawal()}catch(e){}
+  };
+
+  var renderAll=function(){
+    var d=readPlan();
+    if(listIncome){
+      listIncome.innerHTML=d.income.map(function(r,i){
+        return '<div class="plan-row">'
+          +'<span class="plan-age" id="planAge'+(i+1)+'"></span>'
+          +'<span class="plan-edit" contenteditable="true" role="textbox" aria-label="档位名称" data-plan="income" data-i="'+i+'" data-k="0">'+esc(r[0])+'</span>'
+          +'<span class="plan-amt">'
+          +'<span class="plan-edit is-num" contenteditable="true" role="textbox" aria-label="金额下限" data-plan="income" data-i="'+i+'" data-k="1">'+esc(r[1])+'</span>'
+          +'<i>–</i>'
+          +'<span class="plan-edit is-num" contenteditable="true" role="textbox" aria-label="金额上限" data-plan="income" data-i="'+i+'" data-k="2">'+esc(r[2])+'</span>'
+          +'</span></div>';
+      }).join('');
+    }
+    if(listExit){
+      listExit.innerHTML=d.exit.map(function(v,i){
+        return '<div class="plan-row is-exit">'
+          +'<span class="plan-age" id="planExit'+(i+1)+'"></span>'
+          +'<span class="plan-edit" contenteditable="true" role="textbox" aria-label="阶段动作" data-plan="exit" data-i="'+i+'" data-k="0">'+esc(v)+'</span>'
+          +'</div>';
+      }).join('');
+    }
+    try{updatePlanAges()}catch(e){}
+    applyWd(d.wd);
+  };
+
+  // 就地编辑：失焦即存（回车结束编辑）
+  document.addEventListener('focusout',function(e){
+    var el=e.target;
+    if(!el||!el.classList||!el.classList.contains('plan-edit'))return;
+    var txt=String(el.textContent||'').replace(/\s+/g,' ').trim();
+    var d=readPlan(),kind=el.getAttribute('data-plan'),i=Number(el.getAttribute('data-i')),k=Number(el.getAttribute('data-k'));
+    if(kind==='income'&&d.income[i])d.income[i][k]=txt;
+    else if(kind==='exit'&&d.exit[i]!==undefined)d.exit[i]=txt;
+    else return;
+    el.textContent=txt;
+    writePlan(d);
+  });
+  document.addEventListener('keydown',function(e){
+    var el=e.target;
+    if(!el||!el.classList||!el.classList.contains('plan-edit'))return;
+    if(e.key==='Enter'){e.preventDefault();el.blur()}
+  });
+  // 提款模拟：滑杆松手即存
+  WD.forEach(function(f){
+    var el=document.getElementById(f[0]);
+    if(!el)return;
+    el.addEventListener('change',function(){
+      var d=readPlan();
+      d.wd[f[1]]=f[0].indexOf('Portfolio')>=0?parseInt(el.value,10):parseFloat(el.value);
+      writePlan(d);
+    });
+  });
+  // 恢复默认
+  var rst=document.getElementById('planReset');
+  if(rst)rst.addEventListener('click',function(e){
+    e.stopPropagation();
+    try{delete state.plan}catch(err){state.plan=null}
+    saveState();
+    renderAll();
+    try{showToast('已恢复出厂默认')}catch(err){}
+  });
+  // 每次展开都按最新 state 重渲染（云端同步过来的值也能刷新）
+  var gh=document.querySelector('#strategyTools>.collapsible-header');
+  if(gh)gh.addEventListener('click',function(){setTimeout(renderAll,0)});
+
+  renderAll();
+  // state 由应用自己的启动流程装载，可能晚于我这段执行：就绪后再同步一次（幂等）
+  var lateSync=function(){try{renderAll()}catch(e){}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lateSync);
+  window.addEventListener('load',lateSync);
+  setTimeout(lateSync,700);
 })();
