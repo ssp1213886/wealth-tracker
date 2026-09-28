@@ -2393,7 +2393,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .hold-block{margin-bottom:12px}
 .hold-title{display:flex;align-items:baseline;gap:6px;font-weight:600;font-size:.82rem;margin:6px 0}
 .hold-title small{font-weight:450;font-size:.62rem;color:var(--muted)}
-.hold-row{display:grid;grid-template-columns:minmax(0,1fr) 52px 84px 72px;align-items:center;justify-items:end;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--fg) 6%,transparent)}
+.hold-row{display:grid;grid-template-columns:minmax(0,1fr) 84px 72px;align-items:center;justify-items:end;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--fg) 6%,transparent)}
 .watch-sym,.hold-sym{justify-self:start;min-width:0}
 .hold-sym{display:flex;flex-direction:column;font-weight:600;font-size:.78rem}
 .hold-sym small{font-weight:450;font-size:.62rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
