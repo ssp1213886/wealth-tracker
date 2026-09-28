@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v198';var APP_DATA_VERSION=5;
+var APP_BUILD='v199';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=198',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=199',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2233,5 +2233,142 @@ if(typeof window!=='undefined'){
       if(next&&next.length!==watchList.length){saveWatch(next);refreshMarket(true);showToast(sym+' 已加入观察列表')}
       else showToast(sym+' 已在观察列表中');
     }catch(err){}
+  },true);
+})();
+
+
+/* ===== v199：观察列表升级（持仓/关注分组 · 英文全名 · 迷你走势 · 决策向详情） ===== */
+(function(){
+  var host=document.getElementById('watchRows');
+  if(!host)return;
+  var KEY='wealth_watch_group_open';
+  var FALLBACK={BTC:'Bitcoin',GOLD:'Gold'};
+  var busy=false,mo=null;
+  var heldShares=function(sym){var n=0;for(var i=0;i<trades.length;i+=1){if(trades[i]&&trades[i].symbol===sym)n+=Number(trades[i].shares)||0}return n};
+  var priceOf=function(sym){var c=readPriceCache()[sym];return Number(livePrices[sym]||(c&&c.price)||0)||0};
+  var histOf=function(sym){var c=readPriceCache()[sym];return (c&&c.history)||[]};
+  var hiOf=function(sym){var c=readPriceCache()[sym];return Number(c&&c.hi52)||0};
+  var cleanName=function(sym,q){
+    var n=String((q&&q.name)||'').replace(/\s*\([A-Za-z]{0,3}$/,'').trim();
+    if(n&&!/[\u4e00-\u9fa5]/.test(n))return n;
+    return FALLBACK[sym]||sym;
+  };
+  var weightIn=function(sym){
+    var out=[];
+    Object.keys(holdingsData||{}).forEach(function(etf){
+      var list=(holdingsData[etf]&&holdingsData[etf].list)||[];
+      for(var i=0;i<list.length;i+=1){if(list[i]&&list[i].sym===sym){out.push(etf+' '+Number(list[i].weight).toFixed(2)+'%');break}}
+    });
+    return out.join(' + ');
+  };
+  var buildGroup=function(title,rows,collapsible){
+    var g=document.createElement('div');g.className='watch-group';
+    var head=document.createElement('button');head.type='button';head.className='watch-group-head';
+    head.innerHTML='<span>'+title+'</span><small>'+rows.length+'</small>'+(collapsible?'<b class="watch-group-arrow" aria-hidden="true">▸</b>':'');
+    var body=document.createElement('div');body.className='watch-group-body';
+    for(var i=0;i<rows.length;i+=1)body.appendChild(rows[i]);
+    g.appendChild(head);g.appendChild(body);
+    if(collapsible){
+      var open=false;try{open=readRaw(KEY)==='1'}catch(e){}
+      body.classList.toggle('is-collapsed',!open);
+      head.classList.toggle('is-open',open);
+      head.setAttribute('aria-expanded',open?'true':'false');
+      head.addEventListener('click',function(){
+        var collapsed=!body.classList.contains('is-collapsed');
+        body.classList.toggle('is-collapsed',collapsed);
+        head.classList.toggle('is-open',!collapsed);
+        head.setAttribute('aria-expanded',collapsed?'false':'true');
+        try{localStorage.setItem(KEY,collapsed?'0':'1')}catch(e){}
+      });
+    }
+    return g;
+  };
+  var enhance=function(){
+    if(busy)return;
+    busy=true;
+    if(mo)try{mo.disconnect()}catch(e){}
+    try{
+      var rows=[].slice.call(host.querySelectorAll('.watch-row'));
+      if(!rows.length)return;
+      var held=[],watch=[],total=0;
+      rows.forEach(function(r){
+        var s=r.querySelector('.watch-sym');
+        var sym=r.getAttribute('data-sym')||(s&&s.firstChild?String(s.firstChild.textContent).trim():'');
+        if(!sym)return;
+        r.setAttribute('data-sym',sym);
+        var sh=heldShares(sym);
+        if(sh>0){held.push(r);total+=sh*priceOf(sym)}else watch.push(r);
+      });
+      rows.forEach(function(r){
+        var sym=r.getAttribute('data-sym');
+        if(!sym)return;
+        var priceEl=r.querySelector('.watch-price'),chgEl=r.querySelector('.watch-chg');
+        var priceHTML=priceEl?priceEl.outerHTML:'<span class="watch-price">—</span>';
+        var chgHTML=chgEl?chgEl.outerHTML:'<span class="watch-chg is-flat">—</span>';
+        var sh=heldShares(sym),p=priceOf(sym),spark=sparklinePath(histOf(sym));
+        var nm=cleanName(sym,watchQuotes[sym]);
+        var sub=sh>0?(sym+' · 持有 '+fmtShares(sh)+' 股 · 占比 '+(total>0?(sh*p/total*100).toFixed(1):'0.0')+'%'):(nm===sym?'':sym);
+        r.className='watch-row'+(sh>0?' is-held':'');
+        r.innerHTML='<span class="watch-sym"><i class="watch-dot" style="background:'+getAssetColor(sym)+'"></i>'
+          +'<span class="watch-name">'+escapeHtml(nm)+'</span>'
+          +(sub?'<small>'+escapeHtml(sub)+'</small>':'')+'</span>'
+          +'<span class="watch-spark">'+(spark?'<svg viewBox="0 0 58 20" preserveAspectRatio="none" aria-hidden="true"><path d="'+spark+'"/></svg>':'<i class="watch-spark-none"></i>')+'</span>'
+          +priceHTML+chgHTML;
+      });
+      var frag=document.createDocumentFragment();
+      if(held.length)frag.appendChild(buildGroup('持仓',held,false));
+      if(watch.length)frag.appendChild(buildGroup('关注',watch,true));
+      host.textContent='';
+      host.appendChild(frag);
+    }catch(e){}finally{busy=false;if(mo)try{mo.observe(host,{childList:true})}catch(e){}}
+  };
+  try{mo=new MutationObserver(function(){setTimeout(enhance,0)});mo.observe(host,{childList:true})}catch(e){}
+  enhance();
+
+  // ④ 决策向详情（捕获阶段替换应用自带详情）
+  host.addEventListener('click',function(e){
+    var row=e.target&&e.target.closest?e.target.closest('.watch-row'):null;
+    if(!row)return;
+    e.preventDefault();
+    e.stopPropagation();
+    var nxt=row.nextElementSibling;
+    if(nxt&&nxt.classList&&nxt.classList.contains('row-detail')){nxt.remove();return}
+    var olds=host.querySelectorAll('.row-detail');
+    for(var i=0;i<olds.length;i+=1)olds[i].remove();
+    var sym=row.getAttribute('data-sym')||'';
+    var q=watchQuotes[sym]||{};
+    var sh=heldShares(sym),p=priceOf(sym),hi=hiOf(sym),w=weightIn(sym);
+    var priceTxt=(row.querySelector('.watch-price')||{}).textContent||'—';
+    var gap=(hi>0&&p>0)?((p-hi)/hi*100):null;
+    var grid='<div class="row-detail-grid">';
+    grid+=sh>0?('<span>持仓</span><strong>'+fmtShares(sh)+' 股 · '+fmtFull(sh*p)+'</strong>'):'<span>持仓</span><strong>未持有</strong>';
+    if(w)grid+='<span>ETF 权重</span><strong>'+escapeHtml(w)+'</strong>';
+    if(gap!==null)grid+='<span>距 52 周高点</span><strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%（高点 '+fmtFull(hi)+'）</strong>';
+    grid+='</div>';
+    var d=document.createElement('div');
+    d.className='row-detail watch-detail';
+    d.innerHTML='<div class="rd-top"><span class="rd-sym">'+escapeHtml(sym)+'</span><span class="rd-price">'+escapeHtml(priceTxt)+'</span></div>'
+      +'<div class="rd-sub">'+escapeHtml(cleanName(sym,q))+'</div>'+grid
+      +'<div class="rd-meta"><button type="button" class="btn btn-out btn-sm" data-trade="'+escapeHtml(sym)+'">记一笔</button></div>';
+    row.after(d);
+  },true);
+  // 「记一笔」→ 跳操作台并预填
+  host.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('[data-trade]'):null;
+    if(!b)return;
+    e.preventDefault();
+    e.stopPropagation();
+    var sym=b.getAttribute('data-trade');
+    var sel=document.getElementById('tfAsset');
+    if(sel){
+      var has=false;
+      for(var i=0;i<sel.options.length;i+=1){if(sel.options[i].value===sym){has=true;break}}
+      if(!has){var o=document.createElement('option');o.value=sym;o.textContent=sym;sel.appendChild(o)}
+      sel.value=sym;
+    }
+    var pr=priceOf(sym);
+    if(pr>0){var pi=document.getElementById('tfPrice');if(pi)pi.value=pr}
+    try{switchTab('console')}catch(err){}
+    try{showToast('已跳到操作台：'+sym)}catch(err){}
   },true);
 })();

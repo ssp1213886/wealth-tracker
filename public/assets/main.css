@@ -2531,3 +2531,22 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-console #watchCard .watch-manage{margin:0 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent) 5%,transparent)}
 #tab-console #watchCard .watch-manage .watch-manage-add{margin-bottom:8px}
 #tab-console #watchCard #btnWatchManage.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
+/* ===== v199 观察列表升级：持仓/关注分组 + 英文全名 + 迷你走势 ===== */
+#tab-console #watchCard .watch-group+.watch-group{margin-top:12px}
+#tab-console #watchCard .watch-group-head{display:flex;align-items:center;gap:6px;width:100%;padding:6px 0;border:0;background:transparent;color:var(--muted);font-size:.68rem;font-weight:640;letter-spacing:.02em;cursor:pointer;text-align:left}
+#tab-console #watchCard .watch-group-head small{font-weight:560;opacity:.85}
+#tab-console #watchCard .watch-group-arrow{margin-left:auto;font-weight:500;transition:transform .18s ease}
+#tab-console #watchCard .watch-group-head.is-open .watch-group-arrow{transform:rotate(90deg)}
+#tab-console #watchCard .watch-group-body.is-collapsed{display:none}
+#tab-console #watchCard .watch-group-body>.watch-row:first-child{border-top:0}
+#tab-console #watchCard .watch-row{grid-template-columns:minmax(0,1fr) 56px 76px 60px;gap:8px}
+#tab-console #watchCard .watch-sym{flex-direction:row;align-items:center;flex-wrap:wrap;gap:0 6px}
+#tab-console #watchCard .watch-sym small{flex:1 1 100%}
+#tab-console #watchCard .watch-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%}
+#tab-console #watchCard .watch-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;font-weight:600;line-height:1.15}
+#tab-console #watchCard .watch-spark{display:flex;align-items:center;justify-content:flex-end}
+#tab-console #watchCard .watch-spark svg{width:56px;height:20px}
+#tab-console #watchCard .watch-spark path{fill:none;stroke:var(--accent);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+#tab-console #watchCard .watch-spark-none{display:block;width:56px;height:1px;background:color-mix(in srgb,var(--fg) 9%,transparent)}
+#tab-console #watchCard .watch-detail .row-detail-grid{margin-top:8px}
+#tab-console #watchCard .watch-detail .btn{margin-top:2px}
