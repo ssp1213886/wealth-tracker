@@ -134,8 +134,10 @@ export async function handleQuotes(request, url) {
   const invalid = [];
   wanted.forEach((sym) => {
     if (CRYPTO_IDS[sym]) return cryptos.push(sym);
-    const lookup = QUOTE_ALIAS[sym] || sym;
-    if (STOCK_RE.test(lookup)) return stocks.push([sym, lookup]);
+    const alias = QUOTE_ALIAS[sym];
+    // 别名表是我们自己维护的可信映射（如 000660.KS），不套用"股票代码"格式校验
+    if (alias) return stocks.push([sym, alias]);
+    if (STOCK_RE.test(sym)) return stocks.push([sym, sym]);
     invalid.push(sym);
   });
 
