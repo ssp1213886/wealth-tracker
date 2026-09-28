@@ -2400,3 +2400,4 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .hold-weight,.hold-price{color:var(--muted);font-size:.76rem}
 .hold-weight{min-width:52px;text-align:right}
 .hold-price{min-width:70px;text-align:right}
+.watch-chg small{display:block;font-size:.58rem;font-weight:450;color:var(--muted);margin-top:1px}

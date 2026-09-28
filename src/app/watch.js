@@ -113,6 +113,19 @@ export function formatPrice(value, currency) {
   return sign + num.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
+// 行情时间：同一交易日只显示 HH:mm，跨天补上 MM-DD（避免误以为是实时）
+export function formatQuoteTime(ms) {
+  const num = Number(ms);
+  if (!Number.isFinite(num) || num <= 0) return '';
+  const d = new Date(num);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  if (sameDay) return hh + ':' + mm;
+  return String(d.getMonth() + 1) + '-' + String(d.getDate()).padStart(2, '0') + ' ' + hh + ':' + mm;
+}
+
 // 观察列表行：只有 enabled 的展示；行情缺失时也要出这一行（显示 —），不能凭空消失
 export function toWatchRows(list, quotes) {
   const source = quotes || {};
@@ -130,6 +143,7 @@ export function toWatchRows(list, quotes) {
         changeText: quote ? formatChangePct(quote.changePct) : '—',
         dir: quote && Number.isFinite(Number(quote.changePct)) ? (Number(quote.changePct) >= 0 ? 'up' : 'down') : 'flat',
         source: quote ? quote.source : null,
+        timeText: quote && quote.asOf ? formatQuoteTime(quote.asOf) : (quote && quote.marketState === '24/7' ? '实时' : ''),
       };
     });
 }
@@ -148,6 +162,7 @@ export function toHoldingRows(holdings, quotes) {
       priceText: quote ? formatPrice(quote.price, quote.currency) : '—',
       changeText: quote ? formatChangePct(quote.changePct) : '—',
       dir: quote && Number.isFinite(Number(quote.changePct)) ? (Number(quote.changePct) >= 0 ? 'up' : 'down') : 'flat',
+      timeText: quote && quote.asOf ? formatQuoteTime(quote.asOf) : '',
     };
   }).sort((a, b) => b.weight - a.weight);
 }

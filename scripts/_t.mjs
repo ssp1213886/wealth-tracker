@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+const f = 'src/app/index.js';
+let s = fs.readFileSync(f, 'utf8');
+const from = "+r.changeText+'</span>";
+const to = "+r.changeText+(r.timeText?'<small>'+r.timeText+'</small>':'')+'</span>";
+const n = s.split(from).length - 1;
+if (n !== 2) throw new Error('命中 ' + n + ' 处，期望 2');
+s = s.split(from).join(to);
+const metaFrom = "'点「刷新」获取行情';";
+const metaTo = "'点「刷新」获取行情 · 每行为该笔报价时间，美股休市时为收盘价';";
+if (s.split(metaFrom).length - 1 !== 1) throw new Error('meta 未命中');
+s = s.split(metaFrom).join(metaTo);
+fs.writeFileSync(f, s);
+console.log('两处渲染模板已加时间戳');

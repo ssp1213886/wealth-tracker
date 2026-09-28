@@ -84,6 +84,8 @@ async function fetchStockQuote(symbol) {
     name: meta.shortName || meta.longName || symbol,
     currency: meta.currency || 'USD',
     marketState: meta.marketState || '',
+    // 行情时间戳（Yahoo 给的是秒）——前端按它显示"这笔报价是什么时候的"
+    asOf: Number(meta.regularMarketTime) ? Number(meta.regularMarketTime) * 1000 : Date.now(),
     source: 'yahoo',
   };
   stockCache.set(symbol, { at: Date.now(), quote });
