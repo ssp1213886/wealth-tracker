@@ -1500,8 +1500,8 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 #tab-option .otm-stepper span{min-width:46px!important;text-align:center!important;font-size:.78rem;font-weight:680!important;color:var(--fg)!important;font-variant-numeric:tabular-nums!important}
 
 /* Cash components */
-#tab-data .cash-card{padding:var(--ds-card-padding)!important}
-#tab-data .cash-card>h3{margin:0 0 12px!important;font-size:var(--ds-title-size);font-weight:650!important;color:var(--fg)!important;letter-spacing:-.02em!important}
+#tab-data .cash-card,#tab-console .cash-card{padding:var(--ds-card-padding)!important}
+#tab-data .cash-card>h3,#tab-console .cash-card>h3{margin:0 0 12px!important;font-size:var(--ds-title-size);font-weight:650!important;color:var(--fg)!important;letter-spacing:-.02em!important}
 .cash-balance-row{display:flex;align-items:center;justify-content:space-between;min-height:46px;margin:0 0 12px;padding:0 12px;border:1px solid var(--rule);border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .cash-balance-row span{font-size:.68rem;color:var(--muted)}
 .cash-balance-row strong{font-size:.84rem;font-weight:680;color:var(--accent);font-variant-numeric:tabular-nums}
