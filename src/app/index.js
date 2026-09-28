@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v208';var APP_DATA_VERSION=5;
+var APP_BUILD='v209';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=208',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=209',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2363,6 +2363,7 @@ if(typeof window!=='undefined'){
     var sym=row.getAttribute('data-sym')||'';
     var q=watchQuotes[sym]||{};
     var sh=heldSharesFor(sym),p=priceOf(sym),hi=hiOf(sym);
+    var prev=Number((q&&q.prevClose)||0)||0;
     var priceTxt=(row.querySelector('.watch-price')||{}).textContent||'—';
     /* 实时重算（不读行上的快照：行情未加载完时打开会看到 $0.00） */
     var total=0;
@@ -2398,13 +2399,14 @@ if(typeof window!=='undefined'){
       if(pnl!==null)grid+='<span>浮动盈亏</span><strong class="'+(pnl>=0?'positive':'negative')+'">'+fmtPnLFull(pnl)+'（'+(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%）</strong>';
     }else{
       if(indirect>0)grid+='<span>间接持有</span><strong>≈ '+fmtFull(Math.round(indirect))+'（通过 '+escapeHtml(srcs.join(' + '))+'）</strong>';
-      else grid+='<span>持有</span><strong>未持有 · 不在 VGT / SMH 前十</strong>';
     }
     grid+='</div>';
     var gap=(hi>0&&p>0)?((p-hi)/hi*100):null;
     grid+='<div class="rd-sec">市场位置</div><div class="row-detail-grid watch-detail-grid">';
+    if(prev>0&&p>0)grid+='<span>昨日收盘</span><strong>'+fmtFull(prev)+'</strong>';
+    if(prev>0&&p>0)grid+='<span>今日涨跌</span><strong class="'+(p>=prev?'positive':'negative')+'">'+(p>=prev?'+':'-')+fmtFull(Math.abs(p-prev)).replace('$','$')+'（'+((p-prev)/prev*100>=0?'+':'')+((p-prev)/prev*100).toFixed(2)+'%）</strong>';
     if(gap!==null)grid+='<span>距 52 周高点</span><strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%（高点 '+fmtFull(hi)+'）</strong>';
-    else grid+='<span>52 周数据</span><strong>暂无</strong>';
+    else grid+='<span>52 周高点</span><strong>暂无数据</strong>';
     grid+='</div>';
     var bar='';
     if(gap!==null){
