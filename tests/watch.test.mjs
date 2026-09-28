@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   WATCH_DEFAULTS,
+  toExposureRows,
   normalizeWatchlist,
   toggleWatch,
   addWatch,
@@ -118,4 +119,20 @@ test('格式化：涨跌与价格', () => {
   assert.equal(formatPrice(4231.7), '$4,231.70');
   assert.equal(formatPrice(0), '—');
   assert.equal(formatPrice(undefined), '—');
+});
+
+test('toExposureRows：同一标的跨两张榜单合并，并按金额排序 + 覆盖度', () => {
+  const ex = toExposureRows(
+    { VGT: { list: [{ sym: 'NVDA', name: 'NVIDIA', weight: 17.74 }, { sym: 'AAPL', name: 'Apple', weight: 15.8 }] },
+      SMH: { list: [{ sym: 'NVDA', name: 'Nvidia', weight: 19.28 }] } },
+    { VGT: 10000, SMH: 5000 },
+    10,
+  );
+  assert.equal(ex.rows.length, 2);
+  assert.equal(ex.rows[0].sym, 'NVDA');
+  assert.equal(Math.round(ex.rows[0].amount), 2738, '10000*17.74% + 5000*19.28%');
+  assert.deepEqual(ex.rows[0].parts, ['VGT 17.74%', 'SMH 19.28%']);
+  assert.equal(ex.rows[1].sym, 'AAPL');
+  assert.equal(ex.covered.VGT, 33.5);
+  assert.equal(ex.restCount, 0);
 });

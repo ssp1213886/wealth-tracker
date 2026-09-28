@@ -178,4 +178,34 @@ export function collectQuoteSymbols(list, holdingsBySymbol) {
   return Array.from(set);
 }
 
+// 穿透敞口：把两张榜单里同一标的的敞口相加（如 NVDA 同时在 VGT 与 SMH 里）
+// valueByEtf = { VGT: 持仓市值, SMH: 持仓市值 }；返回前 limit 只 + 其余合计 + 每张榜单的覆盖度
+export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10) {
+  const map = new Map();
+  const covered = {};
+  Object.keys(holdingsBySymbol || {}).forEach((etf) => {
+    const value = Number(valueByEtf && valueByEtf[etf]) || 0;
+    const list = (holdingsBySymbol[etf] && holdingsBySymbol[etf].list) || [];
+    covered[etf] = Number(list.reduce((sum, item) => sum + (Number(item.weight) || 0), 0).toFixed(1));
+    if (value <= 0) return;
+    list.forEach((item) => {
+      const weight = Number(item.weight) || 0;
+      if (weight <= 0) return;
+      const row = map.get(item.sym) || { sym: item.sym, name: item.name, amount: 0, parts: [] };
+      row.amount += (value * weight) / 100;
+      row.parts.push(etf + ' ' + weight.toFixed(2) + '%');
+      map.set(item.sym, row);
+    });
+  });
+  const all = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
+  const base = Object.keys(valueByEtf || {}).reduce((sum, key) => sum + (Number(valueByEtf[key]) || 0), 0);
+  return {
+    rows: all.slice(0, limit).map((row) => ({ ...row, share: base > 0 ? Number(((row.amount / base) * 100).toFixed(1)) : null })),
+    rest: Number(all.slice(limit).reduce((sum, row) => sum + row.amount, 0).toFixed(2)),
+    restCount: Math.max(0, all.length - limit),
+    covered,
+    base,
+  };
+}
+
 export { KIND_LABEL };
