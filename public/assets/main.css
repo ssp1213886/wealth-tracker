@@ -2402,3 +2402,4 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .hold-price{min-width:70px;text-align:right}
 .watch-chg small{display:block;font-size:.58rem;font-weight:450;color:var(--muted);margin-top:1px}
 .watch-row,.hold-row{cursor:pointer}.watch-row:active,.hold-row:active{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.row-detail{padding:9px 11px 11px;margin:2px 0 6px;border-radius:12px;background:color-mix(in srgb,var(--fg) 4%,transparent)}.row-detail-grid{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.68rem}.row-detail-grid span{color:var(--muted)}.row-detail-grid strong{font-weight:600;font-variant-numeric:tabular-nums}
