@@ -84,6 +84,8 @@ async function fetchStockQuote(symbol) {
     prevClose: prev,
     changePct: prev ? Number((((price - prev) / prev) * 100).toFixed(2)) : null,
     name: meta.shortName || meta.longName || symbol,
+    // 52 周高点：观察列表详情要用（Yahoo chart 的 meta 里自带）
+    hi52: num(meta.fiftyTwoWeekHigh),
     currency: meta.currency || 'USD',
     marketState: meta.marketState || '',
     // 行情时间戳（Yahoo 给的是秒）——前端按它显示"这笔报价是什么时候的"
