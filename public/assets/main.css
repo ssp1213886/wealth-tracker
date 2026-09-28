@@ -2517,3 +2517,15 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 /* 上限留空时（如 $5K+）：隐藏破折号，空字段里显示淡色 + */
 .plan-edit:empty::before{content:'+';color:var(--muted);font-weight:500}
 .plan-amt i:has(+ .plan-edit:empty){display:none}
+/* ===== v191：行情与成分股合并 + 高点回撤归位 ===== */
+/* ② 移动端：回撤卡跟在持仓与分布（order:3）之后（同为 3，按 DOM 顺序排队） */
+@media(max-width:800px){
+#tab-holding .drawdown-card{order:3}
+}
+/* ② 桌面 ≥1160：第 4 行改成 路线图 | 高点回撤 | Covered Call 三张 */
+@media(min-width:1160px){
+#tab-holding .goal-row{grid-column:1/6!important;grid-template-columns:1fr!important}
+#tab-holding .drawdown-card{grid-column:6/9;grid-row:4}
+}
+/* ① 合并卡：成分股区块与观察列表之间加一条分隔（折叠头沿用控制台既有样式，无需额外规则） */
+#tab-console #watchCard>#holdingsCard{border-top:1px solid var(--rule);margin-top:10px}

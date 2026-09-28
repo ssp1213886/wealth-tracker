@@ -306,11 +306,7 @@
 
 
 
-    <div class="card drawdown-card"><div class="drawdown-heading"><h3>高点回撤</h3><span id="hmDrawdownWorst">最大 --</span></div>
-
-
-
-    <div id="hmDrawdown" class="ds-empty ds-empty-compact"><span class="ds-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M6 15l4-4 3 3 5-6"/></svg></span><span class="ds-empty-title">添加价格后显示回撤曲线</span></div><div class="drawdown-scale" id="hmDrawdownSub"><span>当前价</span><span>52周高点</span></div></div>
+    
 
 
 
@@ -324,7 +320,13 @@
 
 <div id="pnlSummary"></div><div class="holdings-foot">占比＝市值 ÷ 持仓市值合计（不含现金）</div></div></div>
 
-  <div id="exposureSlot"></div>
+  <div class="card drawdown-card"><div class="drawdown-heading"><h3>高点回撤</h3><span id="hmDrawdownWorst">最大 --</span></div>
+
+
+
+    <div id="hmDrawdown" class="ds-empty ds-empty-compact"><span class="ds-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M6 15l4-4 3 3 5-6"/></svg></span><span class="ds-empty-title">添加价格后显示回撤曲线</span></div><div class="drawdown-scale" id="hmDrawdownSub"><span>当前价</span><span>52周高点</span></div></div>
+
+<div id="exposureSlot"></div>
 <div class="card cc-overview" id="ccOverview"><div class="mobile-section-title"><span>Covered Call <small class="cc-active-badge"><strong id="ccActive">0</strong> 个活跃</small></span><button onclick="switchTab('option')" aria-label="查看全部期权">›</button></div><div class="cc-overview-grid"><div class="cc-premium"><small>本月已收权利金</small><strong id="ccMonthly">$0.00</strong><span id="ccSub">复投核心仓</span></div><div class="cc-expiry"><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></i><span><small>最近到期日</small><strong id="ccNearest">暂无待到期期权</strong></span></div></div></div>
 
 
@@ -424,13 +426,23 @@
 
 <!-- 观察列表 + ETF 前十大构成股（行情来自 Worker 的 /api/quotes、/api/holdings） -->
 <div class="card watch-card" id="watchCard">
-  <div class="watch-head"><h3>观察列表<span class="watch-cap" id="watchStatus"></span></h3><span class="watch-tools"><button type="button" class="btn btn-out btn-sm" id="btnWatchSort">默认</button><button type="button" class="btn btn-out btn-sm" id="btnWatchRefresh">↻ 刷新</button><button type="button" class="btn btn-out btn-sm" id="btnWatchManage">管理</button></span></div>
+  <div class="watch-head"><h3>行情与成分股<span class="watch-cap" id="watchStatus"></span></h3><span class="watch-tools"><button type="button" class="btn btn-out btn-sm" id="btnWatchSort">默认</button><button type="button" class="btn btn-out btn-sm" id="btnWatchRefresh">↻ 刷新</button><button type="button" class="btn btn-out btn-sm" id="btnWatchManage">管理</button></span></div>
   <div class="watch-rows" id="watchRows"><div class="table-empty">加载中…</div></div>
   <div class="watch-meta" id="watchMeta"></div>
   <div class="watch-manage" id="watchManage" hidden>
     <div class="watch-manage-add"><input class="settings-input" id="watchAddInput" placeholder="自定义代码，如 IWM" aria-label="添加观察标的"><button type="button" class="btn btn-out btn-sm" id="btnWatchAdd">添加</button></div>
     <div class="watch-manage-list" id="watchManageList"></div>
+  
+
+<div class="collapsible-card collapsed" id="holdingsCard">
+  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>前十大构成股</h3></div>
+  <div class="collapsible-body">
+    <div class="hold-block" id="holdVGT"></div>
+    <div class="hold-block" id="holdSMH"></div>
+    <div class="watch-meta" id="holdMeta"></div>
   </div>
+</div>
+</div>
 </div>
 
 </section>
@@ -568,15 +580,6 @@
 
 
 
-
-<div class="card collapsible-card collapsed" id="holdingsCard">
-  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>前十大构成股</h3></div>
-  <div class="collapsible-body">
-    <div class="hold-block" id="holdVGT"></div>
-    <div class="hold-block" id="holdSMH"></div>
-    <div class="watch-meta" id="holdMeta"></div>
-  </div>
-</div>
 
 <h2 class="section-group-title">投资规划</h2>
 
