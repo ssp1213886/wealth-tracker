@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v215';var APP_DATA_VERSION=5;
+var APP_BUILD='v216';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=215',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=216',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2454,6 +2454,21 @@ if(typeof window!=='undefined'){
     ['NVDA','NVIDIA Corp','英伟达'],['AAPL','Apple Inc','苹果'],['MSFT','Microsoft Corp','微软'],['GOOGL','Alphabet Inc','谷歌'],['AMZN','Amazon.com Inc','亚马逊'],['META','Meta Platforms Inc','脸书'],['TSLA','Tesla Inc','特斯拉'],['AVGO','Broadcom Inc','博通'],['TSM','Taiwan Semiconductor','台积电'],['AMD','Advanced Micro Devices','超威'],['MU','Micron Technology','美光'],['INTC','Intel Corp','英特尔'],['ASML','ASML Holding','阿斯麦'],['SMCI','Super Micro Computer',''],['PLTR','Palantir Technologies',''],['CRCL','Circle Internet Group',''],['MSTR','MicroStrategy Inc','微策略'],['COIN','Coinbase Global',''],['NFLX','Netflix Inc','奈飞'],['DIS','Walt Disney Co','迪士尼'],['ORCL','Oracle Corp','甲骨文'],['ADBE','Adobe Inc',''],['UBER','Uber Technologies',''],['BABA','Alibaba Group','阿里'],['PDD','PDD Holdings','拼多多'],['JD','JD.com','京东'],['V','Visa Inc',''],['MA','Mastercard Inc',''],['JPM','JPMorgan Chase','摩根大通'],['WMT','Walmart Inc','沃尔玛'],['COST','Costco Wholesale','好市多'],
     ['IBIT','iShares Bitcoin Trust',''],['FBTC','Fidelity Wise Origin Bitcoin',''],['ETHA','iShares Ethereum Trust',''],['DOGE','Dogecoin','狗狗币'],['XRP','XRP','瑞波'],['ADA','Cardano','艾达币'],['AVAX','Avalanche',''],['LINK','Chainlink','']
   ];
+  /* 补充表（v216）：常见大票与 ETF，带中文别名 */
+  var LIST2=[
+    ['BRK-B','Berkshire Hathaway B','伯克希尔'],['BRK-A','Berkshire Hathaway A','伯克希尔A'],
+    ['UNH','UnitedHealth Group','联合健康'],['XOM','Exxon Mobil','埃克森美孚'],['LLY','Eli Lilly','礼来'],['NVO','Novo Nordisk','诺和诺德'],
+    ['QCOM','Qualcomm Inc','高通'],['ARM','Arm Holdings','安谋'],['SHOP','Shopify Inc',''],
+    ['MS','Morgan Stanley','摩根士丹利'],['GS','Goldman Sachs','高盛'],['BAC','Bank of America','美国银行'],
+    ['KO','Coca-Cola','可口可乐'],['PEP','PepsiCo','百事'],['MCD','McDonalds','麦当劳'],['NKE','Nike Inc','耐克'],
+    ['SBUX','Starbucks','星巴克'],['BA','Boeing Co','波音'],['CAT','Caterpillar','卡特彼勒'],['CVX','Chevron','雪佛龙'],
+    ['TMO','Thermo Fisher','赛默飞'],['ABBV','AbbVie Inc','艾伯维'],['MRK','Merck and Co','默沙东'],['PFE','Pfizer Inc','辉瑞'],
+    ['T','AT&T',''],['VZ','Verizon',''],['CMCSA','Comcast',''],['TMUS','T-Mobile US',''],
+    ['EFA','iShares MSCI EAFE ETF','发达国家'],['EEM','iShares MSCI Emerging Markets','新兴市场'],['BND','Vanguard Total Bond Market','债券'],
+    ['VXUS','Vanguard Total International','国际'],['VNQ','Vanguard Real Estate ETF','房地产'],
+    ['XLF','Financial Select Sector SPDR','金融'],['XLE','Energy Select Sector SPDR','能源'],['XLV','Health Care Select Sector SPDR','医疗'],['XLY','Consumer Discretionary SPDR','消费']
+  ];
+  for(var li=0;li<LIST2.length;li+=1)LIST.push(LIST2[li]);
   var tools=card.querySelector('.watch-tools'),btn=document.createElement('button');
   btn.type='button';btn.className='btn btn-out btn-sm';btn.id='btnWatchSearch';btn.textContent='搜索';
   if(tools)tools.appendChild(btn);
