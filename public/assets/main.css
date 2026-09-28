@@ -2354,3 +2354,14 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 
 /* 定投起点：年 / 月两列（iOS Safari 不支持 input[type=month]） */
 .settings-split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ===== 日期框在 iOS 上会挤到相邻字段（用户实测：到期日顶到张数） =====
+   原因：iOS 的 input[type=date] 有"最小固有宽度"，而栅格项默认 min-width:auto 不允许收缩。
+   两处一起治：① 栅格项允许收缩；② 触摸设备改用自绘外观，彻底去掉原生固有宽度。
+   桌面端不受影响（下面这条包在 pointer:coarse 里，桌面保留原生日历按钮）。 */
+.field-grid>*,.option-field-grid>*,.cash-fields>*,.wd-grid>*,.tf-group{min-width:0}
+@media (pointer:coarse){
+  input[type=date]{-webkit-appearance:none;appearance:none;width:100%;min-width:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e7771' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5.5' width='17' height='15' rx='2.5'/><path d='M8 3v4M16 3v4M3.5 10.5h17'/></svg>");background-repeat:no-repeat;background-position:right 12px center;background-size:16px 16px}
+  [data-theme='dark'] input[type=date]{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5.5' width='17' height='15' rx='2.5'/><path d='M8 3v4M16 3v4M3.5 10.5h17'/></svg>")}
+  input[type=date]::-webkit-calendar-picker-indicator{display:none}
+}

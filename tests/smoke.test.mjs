@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=151');
+  assert.equal(manifest.start_url, '/?v=152');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v151/);
+  assert.match(serviceWorker, /wealth-v152/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=151',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=152',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -317,6 +317,12 @@ test('form controls share one native-looking spec', () => {
   // 侧边栏底部显示构建版本，用户可自行确认手机跑的是哪一版
   assert.match(html, /id="sbBuild"/);
   assert.match(appSource, /sbBuildEl\.textContent=APP_BUILD/);
+  // iOS 的 input[type=date] 有最小固有宽度，会把相邻字段挤开：
+  // ① 栅格项允许收缩 ② 触摸设备改用自绘外观（原生日历按钮隐藏）
+  assert.match(appMarkup, /\.field-grid>\*,\.option-field-grid>\*,[^{]*\.tf-group\{min-width:0\}/);
+  assert.match(appMarkup, /@media \(pointer:coarse\)\{/);
+  assert.match(appMarkup, /input\[type=date\]\{-webkit-appearance:none;appearance:none;width:100%;min-width:0;background-image:url\("data:image\/svg\+xml/);
+  assert.match(appMarkup, /input\[type=date\]::-webkit-calendar-picker-indicator\{display:none\}/);
   assert.match(appMarkup, /input\[type=number\]::-webkit-inner-spin-button\{-webkit-appearance:none;appearance:none;margin:0\}/);
   // iOS 不支持 input[type=month]，定投起点改成 年 + 月 两个下拉
   assert.doesNotMatch(html, /type="month"/);
