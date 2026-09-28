@@ -15,7 +15,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v152';var APP_DATA_VERSION=5;
+var APP_BUILD='v153';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1331,7 +1331,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=152',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=153',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1937,6 +1937,7 @@ function haptic(kind){try{if(!navigator||typeof navigator.vibrate!=='function')r
 function initHaptics(){document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-haptic],.btn,.bb-btn,.qa-fab,.qa-item,.accent-dot,.theme-btn,.toggle-wrap,.segment,.record-seg,.trade-del,.sb-quick-menu button,.ds-approval-btn,.sync-retry'):null;if(!t)return;var k=t.getAttribute('data-haptic')||'light';haptic(k)},true)}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initHaptics)}else{initHaptics()}
 var sbBuildEl=document.getElementById('sbBuild');if(sbBuildEl)sbBuildEl.textContent=APP_BUILD;
+(function initDateFillState(){var mark=function(el){if(el&&el.tagName==='INPUT'&&el.type==='date')el.classList.toggle('has-val',!!el.value)};var markAll=function(){document.querySelectorAll('input[type=date]').forEach(mark)};['input','change'].forEach(function(ev){document.addEventListener(ev,function(e){mark(e.target)},true)});markAll();setTimeout(markAll,900)})();
 
 function forceUploadLocal(){showApproval({title:'强制上传本地数据',message:'将用本机数据覆盖云端（包含你刚刚的删除操作）。如果其他设备有更新的改动，会被这次上传覆盖。',confirmText:'强制上传',onConfirm:function(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');if(!syncCfg||!syncCfg.token){showToast('未配置云同步','err');return}var payload={};try{SYNC_KEYS.forEach(function(k){payload[k]=localValOf(k)})}catch(e){showToast('读取本地数据失败','err');return}showBusyToast('正在上传本机数据');syncFetchWithoutHealth('POST',payload).then(function(){SYNC_KEYS.forEach(function(k){try{clearDirty(k)}catch(e){}});try{var s=loadSyncState();s.pendingConflicts=[];s.lastSyncErrorAt=0;s.lastSyncError='';s.failStreak=0;saveSyncState(s)}catch(e){}showToast('已用本机数据覆盖云端','ok');renderSyncHealth()}).catch(function(e){showToast('上传失败：'+(e&&e.message?e.message:'未知错误'),'err')})}})}function initForceUpload(){var b=document.getElementById('syncForceUpload');if(b)b.addEventListener('click',forceUploadLocal)}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initForceUpload)}else{initForceUpload()}

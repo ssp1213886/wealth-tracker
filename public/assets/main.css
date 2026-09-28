@@ -2361,7 +2361,9 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
    桌面端不受影响（下面这条包在 pointer:coarse 里，桌面保留原生日历按钮）。 */
 .field-grid>*,.option-field-grid>*,.cash-fields>*,.wd-grid>*,.tf-group{min-width:0}
 @media (pointer:coarse){
-  input[type=date]{-webkit-appearance:none;appearance:none;width:100%;min-width:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e7771' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5.5' width='17' height='15' rx='2.5'/><path d='M8 3v4M16 3v4M3.5 10.5h17'/></svg>");background-repeat:no-repeat;background-position:right 12px center;background-size:16px 16px}
+  input[type=date]{-webkit-appearance:none;appearance:none;width:100%;min-width:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e7771' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5.5' width='17' height='15' rx='2.5'/><path d='M8 3v4M16 3v4M3.5 10.5h17'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:15px 15px}
   [data-theme='dark'] input[type=date]{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5.5' width='17' height='15' rx='2.5'/><path d='M8 3v4M16 3v4M3.5 10.5h17'/></svg>")}
   input[type=date]::-webkit-calendar-picker-indicator{display:none}
+  /* 有值时不再画日历图标：iOS 原生的日期行也只显示值，避免日期末尾与图标重叠 */
+  input[type=date].has-val{background-image:none}
 }

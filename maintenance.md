@@ -289,6 +289,7 @@ const steps = {
 | v149 | **表单控件统一**（对齐 mobile-native / apple-design / beautifului）：全站输入框字号 ≥16px（修掉筛选下拉 10.88px → iOS 聚焦缩放页面的 bug）、筛选下拉 36→44px/圆角 12、select 自绘线性 chevron、日期日历图标线性化（深色反色）、隐藏桌面数字箭头、输入框边框改半透明 hairline、`background:` 简写改 `background-color`（否则会重置自绘箭头）、定投起点由 `input[type=month]`（iOS Safari 不支持）改为 年/月两个下拉 |
 | v150–v151 | 侧边栏底部显示**构建版本号**（`#sbBuild` ← `APP_BUILD`，用户可自行确认手机跑的是哪一版，排查"改了没生效"先看它）；日期图标 18→16px、右侧留白 11→19px |
 | v152 | **修 iOS 日期框挤到相邻字段**：iOS 的 `input[type=date]` 有最小固有宽度，栅格项默认 `min-width:auto` 不肯收缩，于是"到期日"顶进"张数"。处理：① 栅格项 `min-width:0`；② `@media (pointer:coarse)` 下日期框改 `appearance:none` + 自绘线性日历图标（同时隐藏原生日历按钮），彻底去掉固有宽度。**已知取舍**：触摸端不再用 iOS 原生日历按钮，点字段仍应弹原生日期滚轮（待真机确认） |
+| v153 | 触摸端日期框**有值时隐藏自绘日历图标**（`class="has-val"`，由 `input`/`change` 委托维护）——否则 iOS 的长日期文本末尾会与图标重叠；真机已确认 iOS 弹原生日期滚轮正常 |
 
 ### 已知未修问题
 

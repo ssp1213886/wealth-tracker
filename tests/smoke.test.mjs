@@ -146,13 +146,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=152');
+  assert.equal(manifest.start_url, '/?v=153');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v152/);
+  assert.match(serviceWorker, /wealth-v153/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=152',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=153',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -323,6 +323,9 @@ test('form controls share one native-looking spec', () => {
   assert.match(appMarkup, /@media \(pointer:coarse\)\{/);
   assert.match(appMarkup, /input\[type=date\]\{-webkit-appearance:none;appearance:none;width:100%;min-width:0;background-image:url\("data:image\/svg\+xml/);
   assert.match(appMarkup, /input\[type=date\]::-webkit-calendar-picker-indicator\{display:none\}/);
+  // 有值时不再画日历图标（否则日期末尾会与图标重叠；iOS 原生也是只显示值）
+  assert.match(appMarkup, /input\[type=date\]\.has-val\{background-image:none\}/);
+  assert.match(appSource, /classList\.toggle\('has-val',!!el\.value\)/);
   assert.match(appMarkup, /input\[type=number\]::-webkit-inner-spin-button\{-webkit-appearance:none;appearance:none;margin:0\}/);
   // iOS 不支持 input[type=month]，定投起点改成 年 + 月 两个下拉
   assert.doesNotMatch(html, /type="month"/);
