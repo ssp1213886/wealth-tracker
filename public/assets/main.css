@@ -2545,11 +2545,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-console #watchCard .watch-manage .watch-manage-add{margin-bottom:8px}
 #tab-console #watchCard #btnWatchManage.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
 /* ===== v199 观察列表升级：持仓/关注分组 + 英文全名 + 迷你走势 ===== */
-#tab-console #watchCard .watch-group+.watch-group{margin-top:12px}
-#tab-console #watchCard .watch-group-head{display:flex;align-items:center;gap:6px;width:100%;padding:6px 0;border:0;background:transparent;color:var(--muted);font-size:.68rem;font-weight:640;letter-spacing:.02em;cursor:pointer;text-align:left}
+#tab-console #watchCard .watch-group+.watch-group{margin-top:14px}
+#tab-console #watchCard .watch-group-head{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 2px;padding:0;border:0;background:transparent;color:var(--fg);font-size:.74rem;font-weight:660;letter-spacing:.01em;cursor:pointer;text-align:left}
 #tab-console #watchCard .watch-group-head small{font-weight:560;opacity:.85}
-#tab-console #watchCard .watch-group-arrow{margin-left:auto;font-weight:500;transition:transform .18s ease}
-#tab-console #watchCard .watch-group-head.is-open .watch-group-arrow{transform:rotate(90deg)}
+#tab-console #watchCard .watch-group-arrow{font-weight:500;transition:transform .18s ease}
+#tab-console #watchCard .watch-group-head.is-open .watch-group-arrow{transform:rotate(180deg)}
 #tab-console #watchCard .watch-group-body.is-collapsed{display:none}
 #tab-console #watchCard .watch-group-body>.watch-row:first-child{border-top:0}
 /* 名字独占第一行，走势与副标题共用第二行（原来 4 列时名字只剩 ~95px，被截太狠） */
@@ -2568,9 +2568,12 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-console #watchCard .watch-detail .row-detail-grid{margin-top:8px}
 #tab-console #watchCard .watch-detail .btn{margin-top:2px}
 /* v205：关注组头做成明显按钮 + 52 周位置条 */
-#tab-console #watchCard .watch-group-head{margin:0 0 2px;padding:9px 10px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--fg) 3%,transparent);color:var(--fg);font-size:.72rem;font-weight:640;min-height:42px}
-#tab-console #watchCard .watch-group-head small{color:var(--muted)}
-#tab-console #watchCard .watch-group-toggle{display:inline-flex;align-items:center;gap:3px;margin-left:auto;color:var(--accent);font-weight:600}
+/* v226：组标题 = 小节标题（标题 + 数量徽标 + 细分隔线 + 右侧展开开关），不再是方盒子 */
+#tab-console #watchCard .watch-group-head .wg-name{flex:0 0 auto}
+#tab-console #watchCard .watch-group-head .wg-count{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--muted);font-size:.64rem;font-weight:600;font-variant-numeric:tabular-nums}
+#tab-console #watchCard .watch-group-head::after{content:'';flex:1 1 auto;height:1px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
+#tab-console #watchCard .watch-group-toggle{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-size:.68rem;font-weight:600}
+
 #tab-console #watchCard .watch-group-head.is-open .watch-group-toggle{color:var(--muted)}
 #tab-console #watchCard .watch-range{position:relative;height:5px;margin:8px 0 2px;border-radius:999px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
 #tab-console #watchCard .watch-range i{display:block;height:100%;border-radius:inherit;background:color-mix(in srgb,var(--accent) 55%,transparent)}

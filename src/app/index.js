@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v225';var APP_DATA_VERSION=5;
+var APP_BUILD='v226';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=225',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=226',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2296,7 +2296,7 @@ if(typeof window!=='undefined'){
   var buildGroup=function(title,rows,collapsible){
     var g=document.createElement('div');g.className='watch-group';
     var head=document.createElement('button');head.type='button';head.className='watch-group-head';
-    head.innerHTML='<span>'+title+'</span><small>'+rows.length+'</small>'+(collapsible?'<span class="watch-group-toggle">展开<b class="watch-group-arrow" aria-hidden="true">▾</b></span>':'');
+    head.innerHTML='<span class="wg-name">'+title+'</span><span class="wg-count">'+rows.length+'</span>'+(collapsible?'<span class="watch-group-toggle">展开<b class="watch-group-arrow" aria-hidden="true">▾</b></span>':'');
     var body=document.createElement('div');body.className='watch-group-body';
     for(var i=0;i<rows.length;i+=1)body.appendChild(rows[i]);
     g.appendChild(head);g.appendChild(body);
@@ -2311,7 +2311,7 @@ if(typeof window!=='undefined'){
         head.classList.toggle('is-open',!collapsed);
         head.setAttribute('aria-expanded',collapsed?'false':'true');
         var tg=head.querySelector('.watch-group-toggle');
-        if(tg)tg.innerHTML=(collapsed?'展开':'收起')+'<b class="watch-group-arrow" aria-hidden="true">'+(collapsed?'▾':'▴')+'</b>';
+        if(tg)tg.innerHTML=(collapsed?'展开':'收起')+'<b class="watch-group-arrow" aria-hidden="true">▾</b>';
         try{localStorage.setItem(KEY,collapsed?'0':'1')}catch(e){}
       });
     }
