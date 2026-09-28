@@ -151,6 +151,12 @@ test('toExposureRows：单一底层资产（比特币）计入、其余成分股
   assert.equal(ex.rows[0].sym, 'NVDA');
   assert.equal(Math.round(ex.rows.find((r) => r.sym === '比特币').amount), 1133);
   assert.deepEqual(ex.rows.find((r) => r.sym === '比特币').parts, ['BTC 100%（直接持有）']);
+  // 数据层自带行类型与来源文案（界面不再显示，供点开详情使用）
+  assert.equal(ex.rows.find((r) => r.sym === '比特币').kind, 'direct');
+  assert.equal(ex.rows.find((r) => r.sym === 'NVDA').kind, 'pierce');
+  assert.equal(ex.rows.find((r) => r.sym === 'NVDA').sourceText, 'VGT 17.74% + SMH 19.28%');
+  assert.equal(ex.etfRest[0].kind, 'rest');
+  assert.equal(ex.etfRest[0].sourceText, '榜单外 66.5%');
   // 其余成分股：VGT 未覆盖 66.46% × 10000 + SMH 未覆盖 32.46% × 5000
   const vgtRest = ex.etfRest.find((r) => r.label === 'VGT 其余成分股');
   assert.equal(Math.round(vgtRest.amount), 6646);

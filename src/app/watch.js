@@ -196,6 +196,7 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
       const row = map.get(item.sym) || { sym: item.sym, name: item.name, amount: 0, parts: [] };
       row.amount += (value * weight) / 100;
       row.parts.push(etf + ' ' + weight.toFixed(2) + '%');
+      row.kind = 'pierce';
       map.set(item.sym, row);
     });
   });
@@ -207,6 +208,8 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
     const row = map.get(key) || { sym: key, name: item.name || key, amount: 0, parts: [] };
     row.amount += amount;
     row.parts.push(item.note || '直接持有');
+    row.kind = 'direct';
+    row.sourceText = item.note || '直接持有';
     map.set(key, row);
   });
   const etfRest = Object.keys(holdingsBySymbol || {}).map((etf) => {
@@ -215,7 +218,13 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
     const rawSum = ((holdingsBySymbol[etf] && holdingsBySymbol[etf].list) || [])
       .reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
     const missPct = Math.max(0, 100 - rawSum);
-    return { label: etf + ' 其余成分股', amount: (value * missPct) / 100, missPct: Number(missPct.toFixed(1)) };
+    return {
+      label: etf + ' 其余成分股',
+      amount: (value * missPct) / 100,
+      missPct: Number(missPct.toFixed(1)),
+      kind: 'rest',
+      sourceText: '榜单外 ' + Number(missPct.toFixed(1)) + '%',
+    };
   }).filter((row) => row.amount > 0);
   const all = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
   const base = Object.keys(valueByEtf || {}).reduce((sum, key) => sum + (Number(valueByEtf[key]) || 0), 0) +
@@ -223,7 +232,12 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
   const shareOf = (amount) => (base > 0 ? Number(((amount / base) * 100).toFixed(1)) : null);
   const restAmount = Number(all.slice(limit).reduce((sum, row) => sum + row.amount, 0).toFixed(2));
   return {
-    rows: all.slice(0, limit).map((row) => ({ ...row, share: shareOf(row.amount) })),
+    // sourceText 统一在这里补齐：穿透行用各 ETF 的权重拼出来（表格里不再显示，点开详情才用）
+    rows: all.slice(0, limit).map((row) => ({
+      ...row,
+      share: shareOf(row.amount),
+      sourceText: row.sourceText || row.parts.join(' + '),
+    })),
     rest: restAmount,
     restCount: Math.max(0, all.length - limit),
     restShare: all.length > limit ? shareOf(restAmount) : null,
