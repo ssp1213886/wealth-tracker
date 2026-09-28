@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v204';var APP_DATA_VERSION=5;
+var APP_BUILD='v205';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=204',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=205',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2280,7 +2280,7 @@ if(typeof window!=='undefined'){
   var buildGroup=function(title,rows,collapsible){
     var g=document.createElement('div');g.className='watch-group';
     var head=document.createElement('button');head.type='button';head.className='watch-group-head';
-    head.innerHTML='<span>'+title+'</span><small>'+rows.length+'</small>'+(collapsible?'<b class="watch-group-arrow" aria-hidden="true">▸</b>':'');
+    head.innerHTML='<span>'+title+'</span><small>'+rows.length+'</small>'+(collapsible?'<span class="watch-group-toggle">展开<b class="watch-group-arrow" aria-hidden="true">▾</b></span>':'');
     var body=document.createElement('div');body.className='watch-group-body';
     for(var i=0;i<rows.length;i+=1)body.appendChild(rows[i]);
     g.appendChild(head);g.appendChild(body);
@@ -2294,6 +2294,8 @@ if(typeof window!=='undefined'){
         body.classList.toggle('is-collapsed',collapsed);
         head.classList.toggle('is-open',!collapsed);
         head.setAttribute('aria-expanded',collapsed?'false':'true');
+        var tg=head.querySelector('.watch-group-toggle');
+        if(tg)tg.innerHTML=(collapsed?'展开':'收起')+'<b class="watch-group-arrow" aria-hidden="true">'+(collapsed?'▾':'▴')+'</b>';
         try{localStorage.setItem(KEY,collapsed?'0':'1')}catch(e){}
       });
     }
@@ -2325,6 +2327,8 @@ if(typeof window!=='undefined'){
         var nm=cleanName(sym,watchQuotes[sym]);
         var sub=sh>0?(sym+' · 持有 '+fmtShares(sh)+' 股 · 占比 '+(total>0?(sh*p/total*100).toFixed(1):'0.0')+'%'):(nm===sym?'':sym);
         r.className='watch-row'+(sh>0?' is-held':'');
+        r.setAttribute('data-hold-value',String(Math.round(sh*p)));
+        r.setAttribute('data-share',total>0?(sh*p/total*100).toFixed(1):'0.0');
         r.innerHTML='<span class="watch-sym"><i class="watch-dot" style="background:'+dotColor(sym)+'"></i>'
           +'<span class="watch-name">'+escapeHtml(nm)+'</span>'
           +(sub?'<small>'+escapeHtml(sub)+'</small>':'')+'</span>'
@@ -2341,7 +2345,7 @@ if(typeof window!=='undefined'){
   try{mo=new MutationObserver(function(){setTimeout(enhance,0)});mo.observe(host,{childList:true})}catch(e){}
   enhance();
 
-  // ④ 决策向详情（捕获阶段替换应用自带详情）
+  // ④ 决策向详情：持有 → 成本/浮动；未持有 → 穿透敞口；都带 52 周位置条（无动作按钮）
   host.addEventListener('click',function(e){
     var row=e.target&&e.target.closest?e.target.closest('.watch-row'):null;
     if(!row)return;
@@ -2350,41 +2354,56 @@ if(typeof window!=='undefined'){
     var nxt=row.nextElementSibling;
     if(nxt&&nxt.classList&&nxt.classList.contains('row-detail')){nxt.remove();return}
     var olds=host.querySelectorAll('.row-detail');
-    for(var i=0;i<olds.length;i+=1)olds[i].remove();
+    for(var oi=0;oi<olds.length;oi+=1)olds[oi].remove();
     var sym=row.getAttribute('data-sym')||'';
     var q=watchQuotes[sym]||{};
-    var sh=heldSharesFor(sym),p=priceOf(sym),hi=hiOf(sym),w=weightIn(sym);
+    var sh=heldSharesFor(sym),p=priceOf(sym),hi=hiOf(sym);
     var priceTxt=(row.querySelector('.watch-price')||{}).textContent||'—';
+    var share=row.getAttribute('data-share')||'';
+    var holdVal=Number(row.getAttribute('data-hold-value'))||0;
+    var costSym=Object.prototype.hasOwnProperty.call(HELD_OF,sym)?HELD_OF[sym]:sym;
+    var pack=costSym?computeHoldings(trades):null;
+    var h=(pack&&pack.holdings&&pack.holdings[costSym])||null;
+    var avg=(h&&h.shares>0)?h.cost/h.shares:0;
+    var pnl=(h&&avg>0&&p>0)?(p-avg)*h.shares:null;
+    var pnlPct=(pnl!==null&&h.cost>0)?pnl/h.cost*100:null;
+    var direct=sh>0;
+    var indirect=0,srcs=[];
+    ['VGT','SMH'].forEach(function(etf){
+      var esh=heldShares(etf),ep=priceOf(etf);
+      if(!(esh>0&&ep>0))return;
+      var list=(holdingsData[etf]&&holdingsData[etf].list)||[];
+      for(var i=0;i<list.length;i+=1){
+        if(list[i]&&list[i].sym===sym){
+          var w=Number(list[i].weight)||0;
+          indirect+=esh*ep*w/100;
+          srcs.push(etf+' '+w.toFixed(2)+'%');
+          break;
+        }
+      }
+    });
+    var grid='<div class="row-detail-grid watch-detail-grid">';
+    if(direct){
+      grid+='<span>持有</span><strong>'+fmtShares(sh)+' 股 · '+fmtFull(holdVal)+(share?' · 占比 '+share+'%':'')+'</strong>';
+      if(avg>0)grid+='<span>均价</span><strong>'+fmtFull(avg)+'</strong>';
+      if(pnl!==null)grid+='<span>浮动盈亏</span><strong class="'+(pnl>=0?'positive':'negative')+'">'+fmtPnLFull(pnl)+'（'+(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%）</strong>';
+    }else{
+      grid+='<span>持有</span><strong>未持有</strong>';
+      if(indirect>0)grid+='<span>间接持有</span><strong>≈ '+fmtFull(Math.round(indirect))+'（'+escapeHtml(srcs.join(' + '))+'）</strong>';
+      else grid+='<span>在 ETF 里</span><strong>不在 VGT / SMH 前十</strong>';
+    }
     var gap=(hi>0&&p>0)?((p-hi)/hi*100):null;
-    var grid='<div class="row-detail-grid">';
-    grid+=sh>0?('<span>持仓</span><strong>'+fmtShares(sh)+' 股 · '+fmtFull(sh*p)+'</strong>'):'<span>持仓</span><strong>未持有</strong>';
-    if(w)grid+='<span>ETF 权重</span><strong>'+escapeHtml(w)+'</strong>';
     if(gap!==null)grid+='<span>距 52 周高点</span><strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%（高点 '+fmtFull(hi)+'）</strong>';
     grid+='</div>';
+    var bar='';
+    if(gap!==null){
+      var fill=Math.max(2,Math.min(100,p/hi*100));
+      bar='<div class="watch-range"><i style="width:'+fill.toFixed(1)+'%"></i><b style="left:'+fill.toFixed(1)+'%"></b></div>';
+    }
     var d=document.createElement('div');
     d.className='row-detail watch-detail';
     d.innerHTML='<div class="rd-top"><span class="rd-sym">'+escapeHtml(sym)+'</span><span class="rd-price">'+escapeHtml(priceTxt)+'</span></div>'
-      +'<div class="rd-sub">'+escapeHtml(cleanName(sym,q))+'</div>'+grid
-      +'<div class="rd-meta"><button type="button" class="btn btn-out btn-sm" data-trade="'+escapeHtml(sym)+'">记一笔</button></div>';
+      +'<div class="rd-sub">'+escapeHtml(cleanName(sym,q))+'</div>'+grid+bar;
     row.after(d);
-  },true);
-  // 「记一笔」→ 跳操作台并预填
-  host.addEventListener('click',function(e){
-    var b=e.target&&e.target.closest?e.target.closest('[data-trade]'):null;
-    if(!b)return;
-    e.preventDefault();
-    e.stopPropagation();
-    var sym=b.getAttribute('data-trade');
-    var sel=document.getElementById('tfAsset');
-    if(sel){
-      var has=false;
-      for(var i=0;i<sel.options.length;i+=1){if(sel.options[i].value===sym){has=true;break}}
-      if(!has){var o=document.createElement('option');o.value=sym;o.textContent=sym;sel.appendChild(o)}
-      sel.value=sym;
-    }
-    var pr=priceOf(sym);
-    if(pr>0){var pi=document.getElementById('tfPrice');if(pi)pi.value=pr}
-    try{switchTab('console')}catch(err){}
-    try{showToast('已跳到操作台：'+sym)}catch(err){}
   },true);
 })();

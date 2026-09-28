@@ -2554,3 +2554,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-console #watchCard .watch-spark-none{display:block;width:56px;height:1px;background:color-mix(in srgb,var(--fg) 9%,transparent)}
 #tab-console #watchCard .watch-detail .row-detail-grid{margin-top:8px}
 #tab-console #watchCard .watch-detail .btn{margin-top:2px}
+/* v205：关注组头做成明显按钮 + 52 周位置条 */
+#tab-console #watchCard .watch-group-head{margin:0 0 2px;padding:9px 10px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--fg) 3%,transparent);color:var(--fg);font-size:.72rem;font-weight:640;min-height:42px}
+#tab-console #watchCard .watch-group-head small{color:var(--muted)}
+#tab-console #watchCard .watch-group-toggle{display:inline-flex;align-items:center;gap:3px;margin-left:auto;color:var(--accent);font-weight:600}
+#tab-console #watchCard .watch-group-head.is-open .watch-group-toggle{color:var(--muted)}
+#tab-console #watchCard .watch-range{position:relative;height:5px;margin:8px 0 2px;border-radius:999px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
+#tab-console #watchCard .watch-range i{display:block;height:100%;border-radius:inherit;background:color-mix(in srgb,var(--accent) 55%,transparent)}
+#tab-console #watchCard .watch-range b{position:absolute;top:-2px;width:2px;height:9px;border-radius:2px;background:var(--accent);transform:translateX(-1px)}
