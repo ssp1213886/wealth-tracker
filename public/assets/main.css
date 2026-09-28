@@ -2401,3 +2401,4 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .hold-weight{min-width:52px;text-align:right}
 .hold-price{min-width:70px;text-align:right}
 .watch-chg small{display:block;font-size:.58rem;font-weight:450;color:var(--muted);margin-top:1px}
+.watch-row,.hold-row{cursor:pointer}.watch-row:active,.hold-row:active{background:color-mix(in srgb,var(--accent) 6%,transparent)}
