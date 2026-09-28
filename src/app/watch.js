@@ -113,6 +113,11 @@ export function formatPrice(value, currency) {
   if (!Number.isFinite(num) || num <= 0) return '—';
   const cur = String(currency || 'USD').toUpperCase();
   const sign = CURRENCY_SIGN[cur] !== undefined ? CURRENCY_SIGN[cur] : cur + ' ';
+  if (cur !== 'KRW' && cur !== 'JPY' && num < 1) {
+    // 小额币价（BONK / PEPE / SHIB 这类）按数量级多给几位，否则一律显示成 $0.00
+    const small = num >= 0.01 ? 4 : num >= 0.0001 ? 6 : 8;
+    return sign + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: small });
+  }
   const digits = cur === 'KRW' || cur === 'JPY' ? 0 : 2;
   return sign + num.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }

@@ -122,6 +122,8 @@ test('格式化：涨跌与价格', () => {
   assert.equal(formatPrice(4231.7), '$4,231.70');
   assert.equal(formatPrice(0), '—');
   assert.equal(formatPrice(undefined), '—');
+  assert.equal(formatPrice(0.0934), '$0.0934', '小额币价按数量级多给几位');
+  assert.equal(formatPrice(0.00000348), '$0.00000348', '极小币价不再显示成 $0.00');
 });
 
 test('toExposureRows：同一标的跨两张榜单合并，并按金额排序 + 覆盖度', () => {
