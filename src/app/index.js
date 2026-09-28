@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v205';var APP_DATA_VERSION=5;
+var APP_BUILD='v206';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=205',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=206',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2359,8 +2359,12 @@ if(typeof window!=='undefined'){
     var q=watchQuotes[sym]||{};
     var sh=heldSharesFor(sym),p=priceOf(sym),hi=hiOf(sym);
     var priceTxt=(row.querySelector('.watch-price')||{}).textContent||'—';
-    var share=row.getAttribute('data-share')||'';
-    var holdVal=Number(row.getAttribute('data-hold-value'))||0;
+    /* 实时重算（不读行上的快照：行情未加载完时打开会看到 $0.00） */
+    var total=0;
+    ['VGT','SMH'].forEach(function(s){var n=heldShares(s);if(n>0)total+=n*priceOf(s)});
+    if(heldShares('BTC')>0)total+=heldShares('BTC')*priceOf('BTCETF');
+    var holdVal=sh*p;
+    var share=total>0?(holdVal/total*100).toFixed(1):'';
     var costSym=Object.prototype.hasOwnProperty.call(HELD_OF,sym)?HELD_OF[sym]:sym;
     var pack=costSym?computeHoldings(trades):null;
     var h=(pack&&pack.holdings&&pack.holdings[costSym])||null;
