@@ -7,6 +7,7 @@ export const SYNC_KEYS = new Set([
   'optionTrades',
   'otmSettings',
   'exit_portfolio',
+  'watchlist',
   'prices',
 ]);
 
