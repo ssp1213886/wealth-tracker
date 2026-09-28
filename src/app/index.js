@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v214';var APP_DATA_VERSION=5;
+var APP_BUILD='v215';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=214',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=215',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2440,4 +2440,102 @@ if(typeof window!=='undefined'){
       +'<div class="rd-sub">'+escapeHtml(cleanName(sym,q))+'</div>'+grid+bar;
     row.after(d);
   },true);
+})();
+
+
+/* ===== v215：观察列表搜索（代码 / 英文名 / 中文别名；搜不到用行情接口按代码兜底） ===== */
+(function(){
+  var card=document.getElementById('watchCard'),host=document.getElementById('watchRows');
+  if(!card||!host)return;
+  var LIST=[
+    ['VGT','Vanguard Information Tech ETF','先锋信息科技'],['SMH','VanEck Semiconductor ETF','半导体'],['BTCETF','Grayscale Bitcoin Mini Trust','比特币ETF'],['BTC','Bitcoin','比特币'],['ETH','Ethereum','以太坊'],['BNB','Binance Coin','币安币'],['HYPE','Hyperliquid',''],['SOL','Solana','索拉纳'],
+    ['VOO','Vanguard S&P 500 ETF','标普500'],['QQQM','Invesco Nasdaq 100 ETF','纳斯达克100'],['QQQ','Invesco QQQ Trust','纳指ETF'],['SPY','SPDR S&P 500 ETF','标普500ETF'],['DIA','SPDR Dow Jones Industrial','道指'],['IWM','iShares Russell 2000 ETF',''],['SCHD','Schwab US Dividend Equity',''],
+    ['GOLD','Gold','黄金'],['GLD','SPDR Gold Shares','黄金ETF'],['SLV','iShares Silver Trust','白银'],['TLT','iShares 20+ Year Treasury','长债'],['SGOV','iShares 0-3 Month Treasury','短债'],['ARKK','ARK Innovation ETF',''],['SOXX','iShares Semiconductor ETF','半导体ETF'],['XLK','Technology Select Sector SPDR',''],
+    ['NVDA','NVIDIA Corp','英伟达'],['AAPL','Apple Inc','苹果'],['MSFT','Microsoft Corp','微软'],['GOOGL','Alphabet Inc','谷歌'],['AMZN','Amazon.com Inc','亚马逊'],['META','Meta Platforms Inc','脸书'],['TSLA','Tesla Inc','特斯拉'],['AVGO','Broadcom Inc','博通'],['TSM','Taiwan Semiconductor','台积电'],['AMD','Advanced Micro Devices','超威'],['MU','Micron Technology','美光'],['INTC','Intel Corp','英特尔'],['ASML','ASML Holding','阿斯麦'],['SMCI','Super Micro Computer',''],['PLTR','Palantir Technologies',''],['CRCL','Circle Internet Group',''],['MSTR','MicroStrategy Inc','微策略'],['COIN','Coinbase Global',''],['NFLX','Netflix Inc','奈飞'],['DIS','Walt Disney Co','迪士尼'],['ORCL','Oracle Corp','甲骨文'],['ADBE','Adobe Inc',''],['UBER','Uber Technologies',''],['BABA','Alibaba Group','阿里'],['PDD','PDD Holdings','拼多多'],['JD','JD.com','京东'],['V','Visa Inc',''],['MA','Mastercard Inc',''],['JPM','JPMorgan Chase','摩根大通'],['WMT','Walmart Inc','沃尔玛'],['COST','Costco Wholesale','好市多'],
+    ['IBIT','iShares Bitcoin Trust',''],['FBTC','Fidelity Wise Origin Bitcoin',''],['ETHA','iShares Ethereum Trust',''],['DOGE','Dogecoin','狗狗币'],['XRP','XRP','瑞波'],['ADA','Cardano','艾达币'],['AVAX','Avalanche',''],['LINK','Chainlink','']
+  ];
+  var tools=card.querySelector('.watch-tools'),btn=document.createElement('button');
+  btn.type='button';btn.className='btn btn-out btn-sm';btn.id='btnWatchSearch';btn.textContent='搜索';
+  if(tools)tools.appendChild(btn);
+  var panel=document.createElement('div');
+  panel.className='watch-search';panel.id='watchSearchPanel';panel.hidden=true;
+  var head=document.createElement('div');head.className='watch-search-head';
+  var input=document.createElement('input');
+  input.id='watchSearchInput';input.className='settings-input';input.type='search';
+  input.placeholder='代码或名称，如 NVDA / 英伟达';input.setAttribute('aria-label','搜索标的');
+  var close=document.createElement('button');
+  close.type='button';close.className='btn btn-out btn-sm';close.id='watchSearchClose';close.textContent='关闭';
+  head.appendChild(input);head.appendChild(close);
+  var list=document.createElement('div');list.className='watch-search-list';list.id='watchSearchList';
+  panel.appendChild(head);panel.appendChild(list);
+  var manage=document.getElementById('watchManage');
+  card.insertBefore(panel,manage||host);
+  var extra={};
+  function inList(sym){for(var i=0;i<watchList.length;i+=1){if(watchList[i]&&watchList[i].sym===sym)return true}return false}
+  function priceOf2(sym){var q=watchQuotes[sym]||extra[sym];if(!q||q.price==null)return {p:'—',c:'',cls:'flat'};var n=Number(q.price);var c=Number(q.changePct);return {p:'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),c:isFinite(c)?((c>=0?'+':'')+c.toFixed(2)+'%'):'',cls:!isFinite(c)?'flat':(c>=0?'up':'down')}}
+  function mkRow(sym,name){
+    var t=priceOf2(sym),has=inList(sym),row=document.createElement('div');
+    row.className='watch-search-row';
+    var a=document.createElement('span');a.className='wsr-sym';a.textContent=sym;
+    var b=document.createElement('span');b.className='wsr-name';b.textContent=name||'';
+    var c=document.createElement('span');c.className='wsr-price';c.textContent=t.p;
+    var d=document.createElement('span');d.className='wsr-chg is-'+t.cls;d.textContent=t.c;
+    var e2=document.createElement('button');
+    e2.type='button';e2.className='btn btn-out btn-sm';e2.setAttribute('data-sym',sym);
+    e2.textContent=has?'已在 ✓':'+ 加入';
+    e2.addEventListener('click',function(){toggle(sym)});
+    row.appendChild(a);row.appendChild(b);row.appendChild(c);row.appendChild(d);row.appendChild(e2);
+    return row;
+  }
+  function render(q){
+    q=String(q||'').trim().toLowerCase();
+    list.textContent='';
+    if(!q){var em=document.createElement('div');em.className='table-empty';em.textContent='输入代码或名称开始搜索';list.appendChild(em);return}
+    var hits=[];
+    for(var i=0;i<LIST.length&&hits.length<8;i+=1){
+      var it=LIST[i],sym=it[0].toLowerCase(),en=String(it[1]||'').toLowerCase(),cn=String(it[2]||'').toLowerCase();
+      if(sym.indexOf(q)===0||en.indexOf(q)>=0||(cn&&cn.indexOf(q)>=0))hits.push(it);
+    }
+    if(hits.length){hits.forEach(function(it){list.appendChild(mkRow(it[0],it[1]))});return}
+    var code=q.toUpperCase();
+    if(inList(code)){list.appendChild(mkRow(code,'已在观察列表'));return}
+    var qr=document.createElement('div');qr.className='watch-search-row';
+    var s1=document.createElement('span');s1.className='wsr-sym';s1.textContent=code;
+    var s2=document.createElement('span');s2.className='wsr-name';s2.textContent='未收录，点右侧按代码查询行情';
+    var qb=document.createElement('button');qb.type='button';qb.className='btn btn-out btn-sm';qb.textContent='查询';
+    qb.addEventListener('click',function(){query(code)});
+    qr.appendChild(s1);qr.appendChild(s2);qr.appendChild(qb);list.appendChild(qr);
+  }
+  function toggle(sym){
+    try{
+      if(inList(sym)){saveWatch(removeWatch(watchList,sym));showToast(sym+' 已移出观察列表')}
+      else{var next=addWatch(watchList,sym);if(next&&next.length!==watchList.length){saveWatch(next);refreshMarket(true);showToast(sym+' 已加入观察列表')}else showToast(sym+' 已在观察列表中')}
+      render(input.value);
+    }catch(e){}
+  }
+  function query(code){
+    var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');
+    list.textContent='';
+    var em=document.createElement('div');em.className='table-empty';em.textContent='查询中';list.appendChild(em);
+    fetch(base+'/api/quotes?symbols='+encodeURIComponent(code)).then(function(r){return r.ok?r.json():null}).then(function(j){
+      var q=j&&j.quotes?j.quotes[code]:null;
+      list.textContent='';
+      if(!q){var e3=document.createElement('div');e3.className='table-empty';e3.textContent='没有找到 '+code+' 的行情（代码可能不存在）';list.appendChild(e3);return}
+      extra[code]=q;list.appendChild(mkRow(code,q.name||code));
+    }).catch(function(){list.textContent='';var e4=document.createElement('div');e4.className='table-empty';e4.textContent='查询失败，请稍后再试';list.appendChild(e4)});
+  }
+  btn.addEventListener('click',function(){
+    panel.hidden=!panel.hidden;btn.classList.toggle('is-open',!panel.hidden);
+    if(!panel.hidden){render(input.value);input.focus()}
+  });
+  close.addEventListener('click',function(){panel.hidden=true;btn.classList.remove('is-open')});
+  var timer=null;
+  input.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(function(){render(input.value)},150)});
+  input.addEventListener('keydown',function(e){
+    if(e.key!=='Enter')return;
+    e.preventDefault();
+    var t=String(input.value||'').trim().toUpperCase();
+    if(t&&!inList(t))query(t);
+  });
+  render('');
 })();

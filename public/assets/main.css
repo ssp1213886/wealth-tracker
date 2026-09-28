@@ -2566,3 +2566,17 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #watchRows .watch-detail .rd-sec{margin:10px 0 -4px;font-size:.6rem;font-weight:640;letter-spacing:.04em;color:var(--muted)}
 #watchRows .watch-detail .row-detail-grid{margin-top:4px}
 #watchRows .watch-detail .watch-chg{font-size:.78rem}
+/* v215 search */
+#tab-console #watchCard #btnWatchSearch.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
+.watch-search{margin:0 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent) 4%,transparent)}
+.watch-search-head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.watch-search-head input{flex:1;min-width:0}
+.watch-search-list{display:grid;gap:2px}
+.watch-search-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--fg) 6%,transparent);font-size:.74rem}
+.watch-search-row:first-child{border-top:0}
+.wsr-sym{font-weight:640}
+.wsr-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:.68rem}
+.wsr-price{font-variant-numeric:tabular-nums;font-size:.74rem}
+.wsr-chg{font-variant-numeric:tabular-nums;font-size:.72rem;font-weight:600;min-width:52px;text-align:right}
+.wsr-chg.is-up{color:var(--accent)}.wsr-chg.is-down{color:var(--red)}.wsr-chg.is-flat{color:var(--muted)}
+.watch-search-row .btn{min-height:32px;padding:0 10px;font-size:.68rem}
