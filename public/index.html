@@ -433,14 +433,6 @@
   </div>
 </div>
 
-<div class="card collapsible-card collapsed" id="holdingsCard">
-  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>前十大构成股</h3></div>
-  <div class="collapsible-body">
-    <div class="hold-block" id="holdVGT"></div>
-    <div class="hold-block" id="holdSMH"></div>
-    <div class="watch-meta" id="holdMeta"></div>
-  </div>
-</div>
 </section>
 
 
@@ -577,20 +569,33 @@
 
 
 
+<div class="card collapsible-card collapsed" id="holdingsCard">
+  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>前十大构成股</h3></div>
+  <div class="collapsible-body">
+    <div class="hold-block" id="holdVGT"></div>
+    <div class="hold-block" id="holdSMH"></div>
+    <div class="watch-meta" id="holdMeta"></div>
+  </div>
+</div>
+
 <h2 class="section-group-title">投资规划</h2>
 
 
 
 
-  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>收入渐进加码</h3></div><div class="collapsible-body"><div class="timeline"><div class="tl-phase"><div class="tl-year" id="planAge1">27-30岁</div><div class="tl-title">起步期</div><div class="tl-amt">$2K-$2.5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge2">30-35岁</div><div class="tl-title">增长期</div><div class="tl-amt">$2.5K-$3.5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge3">35-42岁</div><div class="tl-title">巅峰期</div><div class="tl-amt">$3.5K-$5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge4">42-47岁</div><div class="tl-title">冲刺期</div><div class="tl-amt">$5K+</div></div></div></div></div>
+  
+
+<div class="card collapsible-card collapsed" id="strategyTools"><div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>策略工具</h3></div><div class="collapsible-body">
+<div class="collapsible-card collapsed"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>收入渐进加码</h3></div><div class="collapsible-body"><div class="timeline"><div class="tl-phase"><div class="tl-year" id="planAge1">27-30岁</div><div class="tl-title">起步期</div><div class="tl-amt">$2K-$2.5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge2">30-35岁</div><div class="tl-title">增长期</div><div class="tl-amt">$2.5K-$3.5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge3">35-42岁</div><div class="tl-title">巅峰期</div><div class="tl-amt">$3.5K-$5K</div></div><div class="tl-phase"><div class="tl-year" id="planAge4">42-47岁</div><div class="tl-title">冲刺期</div><div class="tl-amt">$5K+</div></div></div></div></div>
 
 
 
-  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>🚪 退出策略</h3></div><div class="collapsible-body"><div class="timeline"><div class="tl-phase"><div class="tl-year" id="planExit1">40-47岁</div><div class="tl-title">持续进攻</div></div><div class="tl-phase now"><div class="tl-year" id="planExit2">47岁</div><div class="tl-title">检查退出</div></div><div class="tl-phase"><div class="tl-year" id="planExit3">47-50岁</div><div class="tl-title">等待窗口</div></div><div class="tl-phase"><div class="tl-year" id="planExit4">50岁+</div><div class="tl-title">保守组合</div><div class="tl-desc"><input type="text" id="exitPortfolio" value="60%VOO+30%IEF+10%SGOV" style="width:100%;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.7rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);text-align:center;"></div></div></div></div></div>
+  <div class="collapsible-card collapsed"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>🚪 退出策略</h3></div><div class="collapsible-body"><div class="timeline"><div class="tl-phase"><div class="tl-year" id="planExit1">40-47岁</div><div class="tl-title">持续进攻</div></div><div class="tl-phase now"><div class="tl-year" id="planExit2">47岁</div><div class="tl-title">检查退出</div></div><div class="tl-phase"><div class="tl-year" id="planExit3">47-50岁</div><div class="tl-title">等待窗口</div></div><div class="tl-phase"><div class="tl-year" id="planExit4">50岁+</div><div class="tl-title">保守组合</div><div class="tl-desc"><input type="text" id="exitPortfolio" value="60%VOO+30%IEF+10%SGOV" style="width:100%;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;font-size:.7rem;background:var(--card-bg);color:var(--fg);font-family:var(--font);text-align:center;"></div></div></div></div></div>
 
 
 
-  <div class="card collapsible-card collapsed"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>提款模拟</h3></div><div class="collapsible-body"><div class="wd-grid"><div class="wd-item"><label>Portfolio <span class="val" id="vWdPortfolio">$2.27M</span></label><input type="range" id="rWdPortfolio" min="500000" max="5000000" step="10000" value="2270000"></div><div class="wd-item"><label>Rate <span class="val" id="vWdRate">4.0%</span></label><input type="range" id="rWdRate" min="2" max="8" step="0.1" value="4.0"></div><div class="wd-item"><label>Return <span class="val" id="vWdReturn">6%</span></label><input type="range" id="rWdReturn" min="2" max="12" step="0.5" value="6"></div><div class="wd-item"><label>Inflation <span class="val" id="vWdInfl">2.5%</span></label><input type="range" id="rWdInfl" min="0" max="6" step="0.5" value="2.5"></div></div><div class="sc-grid"><div class="sc-card"><div class="sc-label">年提取</div><div class="sc-val" id="wdAnnual">--</div></div><div class="sc-card"><div class="sc-label">月提取</div><div class="sc-val" id="wdMonthly">--</div></div><div class="sc-card"><div class="sc-label">耗尽时间</div><div class="sc-val" id="wdDeplete">--</div></div><div class="sc-card"><div class="sc-label">永续率</div><div class="sc-val" id="wdPerpetual">--</div></div></div></div></div>
+  <div class="collapsible-card collapsed"><div class="collapsible-header" style="display:flex;align-items:center;gap:4px;"><span class="collapse-arrow">▼</span><h3>提款模拟</h3></div><div class="collapsible-body"><div class="wd-grid"><div class="wd-item"><label>Portfolio <span class="val" id="vWdPortfolio">$2.27M</span></label><input type="range" id="rWdPortfolio" min="500000" max="5000000" step="10000" value="2270000"></div><div class="wd-item"><label>Rate <span class="val" id="vWdRate">4.0%</span></label><input type="range" id="rWdRate" min="2" max="8" step="0.1" value="4.0"></div><div class="wd-item"><label>Return <span class="val" id="vWdReturn">6%</span></label><input type="range" id="rWdReturn" min="2" max="12" step="0.5" value="6"></div><div class="wd-item"><label>Inflation <span class="val" id="vWdInfl">2.5%</span></label><input type="range" id="rWdInfl" min="0" max="6" step="0.5" value="2.5"></div></div><div class="sc-grid"><div class="sc-card"><div class="sc-label">年提取</div><div class="sc-val" id="wdAnnual">--</div></div><div class="sc-card"><div class="sc-label">月提取</div><div class="sc-val" id="wdMonthly">--</div></div><div class="sc-card"><div class="sc-label">耗尽时间</div><div class="sc-val" id="wdDeplete">--</div></div><div class="sc-card"><div class="sc-label">永续率</div><div class="sc-val" id="wdPerpetual">--</div></div></div></div></div>
+</div></div>
 
 
 
