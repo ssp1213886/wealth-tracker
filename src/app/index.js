@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v216';var APP_DATA_VERSION=5;
+var APP_BUILD='v217';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=216',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=217',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2486,6 +2486,15 @@ if(typeof window!=='undefined'){
   var manage=document.getElementById('watchManage');
   card.insertBefore(panel,manage||host);
   var extra={};
+  /* 大索引按需加载：S&P500 + 纳斯达克（约 5900 条），失败就只用内置表 */
+  var IDX=[],idxLoaded=false;
+  function loadIdx(){
+    if(idxLoaded)return;
+    idxLoaded=true;
+    fetch('/assets/symbols.json').then(function(r){return r.ok?r.json():null}).then(function(j){
+      if(Array.isArray(j)){IDX=j;if(!panel.hidden)render(input.value)}
+    }).catch(function(){});
+  }
   function inList(sym){for(var i=0;i<watchList.length;i+=1){if(watchList[i]&&watchList[i].sym===sym)return true}return false}
   function priceOf2(sym){var q=watchQuotes[sym]||extra[sym];if(!q||q.price==null)return {p:'—',c:'',cls:'flat'};var n=Number(q.price);var c=Number(q.changePct);return {p:'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),c:isFinite(c)?((c>=0?'+':'')+c.toFixed(2)+'%'):'',cls:!isFinite(c)?'flat':(c>=0?'up':'down')}}
   function mkRow(sym,name){
@@ -2506,11 +2515,12 @@ if(typeof window!=='undefined'){
     q=String(q||'').trim().toLowerCase();
     list.textContent='';
     if(!q){var em=document.createElement('div');em.className='table-empty';em.textContent='输入代码或名称开始搜索';list.appendChild(em);return}
-    var hits=[];
+    var hits=[],seen={};
     for(var i=0;i<LIST.length&&hits.length<8;i+=1){
       var it=LIST[i],sym=it[0].toLowerCase(),en=String(it[1]||'').toLowerCase(),cn=String(it[2]||'').toLowerCase();
-      if(sym.indexOf(q)===0||en.indexOf(q)>=0||(cn&&cn.indexOf(q)>=0))hits.push(it);
+      if(sym.indexOf(q)===0||en.indexOf(q)>=0||(cn&&cn.indexOf(q)>=0)){if(!seen[it[0]]){seen[it[0]]=1;hits.push(it)}}
     }
+    for(var i4=0;i4<IDX.length&&hits.length<8;i4+=1){var s4=IDX[i4][0],n4=String(IDX[i4][1]||'');if(seen[s4])continue;if(s4.toLowerCase().indexOf(q)===0||n4.toLowerCase().indexOf(q)>=0){seen[s4]=1;hits.push([s4,n4])}}
     if(hits.length){hits.forEach(function(it){list.appendChild(mkRow(it[0],it[1]))});return}
     var code=q.toUpperCase();
     if(inList(code)){list.appendChild(mkRow(code,'已在观察列表'));return}
@@ -2541,7 +2551,7 @@ if(typeof window!=='undefined'){
   }
   btn.addEventListener('click',function(){
     panel.hidden=!panel.hidden;btn.classList.toggle('is-open',!panel.hidden);
-    if(!panel.hidden){render(input.value);input.focus()}
+    if(!panel.hidden){loadIdx();render(input.value);input.focus()}
   });
   close.addEventListener('click',function(){panel.hidden=true;btn.classList.remove('is-open')});
   var timer=null;
