@@ -3,7 +3,8 @@
 // 只读公开接口：结果只在 isolate 内存里缓存（行情 60 秒、持仓 6 小时），不落库、不影响同步数据。
 import { STATIC_HOLDINGS, HOLDINGS_SYMBOLS } from './holdings-static.js';
 
-const MAX_SYMBOLS = 20;
+// 观察列表(15) + 两张榜单去重后约 28-30 个：上限给到 40，别再把尾部代码丢掉
+const MAX_SYMBOLS = 40;
 const QUOTE_TTL = 60 * 1000;
 const HOLDINGS_TTL = 6 * 60 * 60 * 1000;
 const STOCK_RE = /^[A-Z][A-Z0-9.\-=]{0,9}$/;
