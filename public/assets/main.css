@@ -2562,3 +2562,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-console #watchCard .watch-range{position:relative;height:5px;margin:8px 0 2px;border-radius:999px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
 #tab-console #watchCard .watch-range i{display:block;height:100%;border-radius:inherit;background:color-mix(in srgb,var(--accent) 55%,transparent)}
 #tab-console #watchCard .watch-range b{position:absolute;top:-2px;width:2px;height:9px;border-radius:2px;background:var(--accent);transform:translateX(-1px)}
+/* v207：详情面板的分区标题 */
+#watchRows .watch-detail .rd-sec{margin:10px 0 -4px;font-size:.6rem;font-weight:640;letter-spacing:.04em;color:var(--muted)}
+#watchRows .watch-detail .row-detail-grid{margin-top:4px}
+#watchRows .watch-detail .watch-chg{font-size:.78rem}
