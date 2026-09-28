@@ -2323,6 +2323,8 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 .sync-bar.is-busy .sb-ic{border:0;animation:none}
 .sync-bar.is-busy .sb-ic::before{content:'';width:11px;height:11px;border-radius:50%;border:1.6px solid currentColor;border-top-color:transparent;animation:syncBarSpin .7s linear infinite}
 @keyframes syncBarSpin{to{transform:rotate(360deg)}}
+/* 侧边栏底部的构建版本号 */
+.sb-build{display:inline-block;margin-left:6px;color:var(--muted);font-size:.62rem;opacity:.75;vertical-align:middle}
 
 /* ===== 表单控件统一（v149）
    依据：apple-design（同外观必同行为、"每个值都要能解释"）、
@@ -2336,7 +2338,7 @@ input[type=number]{-moz-appearance:textfield}
 
 /* 日期：日历图标线性化、不抢眼；深色主题下反色才看得见 */
 input[type=date]{min-width:0;max-width:100%}
-input[type=date]::-webkit-calendar-picker-indicator{width:18px;height:18px;padding:0;margin-right:4px;opacity:.45;cursor:pointer}
+input[type=date]::-webkit-calendar-picker-indicator{width:16px;height:16px;padding:0;margin-right:8px;opacity:.5;cursor:pointer}
 input[type=date]:focus::-webkit-calendar-picker-indicator{opacity:.75}
 [data-theme='dark'] input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.5);opacity:.55}
 
