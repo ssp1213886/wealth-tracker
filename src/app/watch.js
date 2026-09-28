@@ -6,6 +6,7 @@ export const WATCH_DEFAULTS = [
   { sym: 'VGT', kind: 'stock' },
   { sym: 'SMH', kind: 'stock' },
   { sym: 'BTC', kind: 'crypto' },
+  { sym: 'BTCETF', kind: 'stock' },
   { sym: 'VOO', kind: 'stock' },
   { sym: 'GOLD', kind: 'gold' },
   { sym: 'QQQM', kind: 'stock' },
@@ -36,6 +37,7 @@ export function labelOf(sym) {
   const kind = kindOf(upper);
   if (kind === 'gold') return '金价';
   if (upper === 'BTC') return 'BTC 现货';
+  if (upper === 'BTCETF') return 'BTC ETF';
   return upper;
 }
 

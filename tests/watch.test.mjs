@@ -19,20 +19,23 @@ import {
   quoteSymbolOf,
 } from '../src/app/watch.js';
 
-test('默认观察列表覆盖用户指定的 15 个标的', () => {
+test('默认观察列表覆盖用户指定的标的（含 BTC ETF 行）', () => {
   const syms = WATCH_DEFAULTS.map((item) => item.sym);
-  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
+  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'BTCETF', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
   assert.equal(kindOf('GOLD'), 'gold');
   assert.equal(kindOf('ETH'), 'crypto');
   assert.equal(kindOf('NVDA'), 'stock');
+  // BTCETF：用户观察列表里的「BTC ETF」行；行情代码由 worker 的 QUOTE_ALIAS 映射到 Yahoo 的 BTC
+  assert.equal(kindOf('BTCETF'), 'stock', 'BTC ETF 不算加密现货');
   assert.equal(labelOf('GOLD'), '金价');
   assert.equal(labelOf('BTC'), 'BTC 现货');
+  assert.equal(labelOf('BTCETF'), 'BTC ETF');
   assert.equal(quoteSymbolOf('GOLD'), 'GOLD');
 });
 
 test('normalizeWatchlist：空存储播种默认；有数据时以存储为准（可真正移除）', () => {
   const seeded = normalizeWatchlist([]);
-  assert.equal(seeded.length, WATCH_DEFAULTS.length, '空存储时播种 15 个默认标的');
+  assert.equal(seeded.length, WATCH_DEFAULTS.length, '空存储时播种全部默认标的');
   assert.ok(seeded.every((item) => item.enabled));
 
   const list = normalizeWatchlist([

@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v194';var APP_DATA_VERSION=5;
+var APP_BUILD='v195';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=194',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=195',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2160,4 +2160,24 @@ if(typeof window!=='undefined'){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lateSync);
   window.addEventListener('load',lateSync);
   setTimeout(lateSync,700);
+})();
+
+
+/* ===== v195：观察列表补一行「BTC ETF」（BTCETF → Yahoo 的 BTC，即 Grayscale Bitcoin Mini Trust） ===== */
+(function(){
+  try{
+    if(!Array.isArray(watchList))return;
+    var hasSpot=false,hasEtf=false,i;
+    for(i=0;i<watchList.length;i+=1){
+      if(watchList[i]&&watchList[i].sym==='BTC')hasSpot=true;
+      if(watchList[i]&&watchList[i].sym==='BTCETF')hasEtf=true;
+    }
+    if(!hasSpot||hasEtf)return;
+    var next=watchList.slice(),idx=-1;
+    for(i=0;i<next.length;i+=1){if(next[i]&&next[i].sym==='BTC'){idx=i;break}}
+    if(idx<0)return;
+    next.splice(idx+1,0,{sym:'BTCETF',kind:'stock',enabled:true});
+    saveWatch(next);
+    if(typeof refreshMarket==='function')refreshMarket(true);
+  }catch(e){}
 })();
