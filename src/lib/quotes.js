@@ -29,6 +29,13 @@ export const CRYPTO_IDS = {
 // 金价：Yahoo 的 GC=F（COMEX 黄金期货，美元/盎司）最接近"金价"
 export const GOLD_QUOTE = 'GC=F';
 
+// 别名：用户/榜单用的显示代码 → 行情源里真实存在的代码
+// （GOLD 是我们给"金价"起的别名；SKHYV 是 VanEck 榜单里的内部简称，韩交所代码是 000660.KS）
+export const QUOTE_ALIAS = {
+  GOLD: 'GC=F',
+  SKHYV: '000660.KS',
+};
+
 const stockCache = new Map();
 const cryptoCache = new Map();
 const holdingsCache = new Map();
@@ -121,20 +128,21 @@ export async function handleQuotes(request, url) {
   if (!raw.length) return { status: 400, body: { error: 'Missing symbols' } };
   const wanted = Array.from(new Set(raw)).slice(0, MAX_SYMBOLS);
 
-  const stocks = [];
+  // 关键：**按请求的代码回键**。以前 GOLD 会以 GC=F 为键返回，前端按 GOLD 取不到 → 永久显示"—"。
+  const stocks = []; // [请求代码, 行情源代码]
   const cryptos = [];
   const invalid = [];
   wanted.forEach((sym) => {
     if (CRYPTO_IDS[sym]) return cryptos.push(sym);
-    if (sym === 'GOLD') return stocks.push(GOLD_QUOTE);
-    if (STOCK_RE.test(sym)) return stocks.push(sym);
+    const lookup = QUOTE_ALIAS[sym] || sym;
+    if (STOCK_RE.test(lookup)) return stocks.push([sym, lookup]);
     invalid.push(sym);
   });
 
   // 加密先走 Yahoo 交易对，失败的再走 CoinGecko
   const cryptoPairs = cryptos.map((sym) => [sym, CRYPTO_PAIRS[sym] || null]);
   const [stockPairs, cryptoMap] = await Promise.all([
-    Promise.all(stocks.map(async (sym) => [sym, await fetchStockQuote(sym)])),
+    Promise.all(stocks.map(async ([sym, lookup]) => [sym, await fetchStockQuote(lookup)])),
     (async () => {
       const viaYahoo = {};
       await Promise.all(cryptoPairs.map(async ([sym, pair]) => {
