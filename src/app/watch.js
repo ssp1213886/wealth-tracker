@@ -101,10 +101,16 @@ export function formatChangePct(value) {
   return (rounded > 0 ? '+' : '') + rounded.toFixed(2) + '%';
 }
 
-export function formatPrice(value) {
+const CURRENCY_SIGN = { USD: '$', KRW: '₩', EUR: '€', JPY: '¥', GBP: '£', HKD: 'HK$', CAD: 'C$', AUD: 'A$' };
+
+// 按行情自带的货币符号显示（如 SKHYV 是韩元计价），未知货币标在数字前
+export function formatPrice(value, currency) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return '—';
-  return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const cur = String(currency || 'USD').toUpperCase();
+  const sign = CURRENCY_SIGN[cur] !== undefined ? CURRENCY_SIGN[cur] : cur + ' ';
+  const digits = cur === 'KRW' || cur === 'JPY' ? 0 : 2;
+  return sign + num.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 // 观察列表行：只有 enabled 的展示；行情缺失时也要出这一行（显示 —），不能凭空消失
@@ -119,7 +125,7 @@ export function toWatchRows(list, quotes) {
         label: labelOf(item.sym),
         kind: item.kind,
         price: quote ? quote.price : null,
-        priceText: quote ? formatPrice(quote.price) : '—',
+        priceText: quote ? formatPrice(quote.price, quote.currency) : '—',
         changePct: quote ? quote.changePct : null,
         changeText: quote ? formatChangePct(quote.changePct) : '—',
         dir: quote && Number.isFinite(Number(quote.changePct)) ? (Number(quote.changePct) >= 0 ? 'up' : 'down') : 'flat',
@@ -139,7 +145,7 @@ export function toHoldingRows(holdings, quotes) {
       name: item.name || item.sym,
       weight: Number(item.weight) || 0,
       weightText: (Number(item.weight) || 0).toFixed(2) + '%',
-      priceText: quote ? formatPrice(quote.price) : '—',
+      priceText: quote ? formatPrice(quote.price, quote.currency) : '—',
       changeText: quote ? formatChangePct(quote.changePct) : '—',
       dir: quote && Number.isFinite(Number(quote.changePct)) ? (Number(quote.changePct) >= 0 ? 'up' : 'down') : 'flat',
     };
