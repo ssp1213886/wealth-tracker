@@ -4,7 +4,7 @@ export function isAuthorized(request, env) {
 }
 
 // 公开端点：行情代理与前端错误上报（启动期出错时还拿不到鉴权 token）
-const PUBLIC_API_PATHS = new Set(['/api/price', '/api/log']);
+const PUBLIC_API_PATHS = new Set(['/api/price', '/api/log', '/api/quotes', '/api/holdings']);
 
 export function authRequired(url) {
   return url.pathname.startsWith('/api/') && !PUBLIC_API_PATHS.has(url.pathname);

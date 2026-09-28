@@ -401,6 +401,25 @@
 
 
 
+<!-- 观察列表 + ETF 前十大构成股（行情来自 Worker 的 /api/quotes、/api/holdings） -->
+<div class="card watch-card" id="watchCard">
+  <div class="watch-head"><h3>观察列表</h3><span class="watch-tools"><button type="button" class="btn btn-out btn-sm" id="btnWatchRefresh">↻ 刷新</button><button type="button" class="btn btn-out btn-sm" id="btnWatchManage">管理</button></span></div>
+  <div class="watch-rows" id="watchRows"><div class="table-empty">加载中…</div></div>
+  <div class="watch-meta" id="watchMeta"></div>
+  <div class="watch-manage" id="watchManage" hidden>
+    <div class="watch-manage-add"><input class="settings-input" id="watchAddInput" placeholder="自定义代码，如 IWM" aria-label="添加观察标的"><button type="button" class="btn btn-out btn-sm" id="btnWatchAdd">添加</button></div>
+    <div class="watch-manage-list" id="watchManageList"></div>
+  </div>
+</div>
+
+<div class="card collapsible-card collapsed" id="holdingsCard">
+  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>前十大构成股</h3></div>
+  <div class="collapsible-body">
+    <div class="hold-block" id="holdVGT"></div>
+    <div class="hold-block" id="holdSMH"></div>
+    <div class="watch-meta" id="holdMeta"></div>
+  </div>
+</div>
 </section>
 
 

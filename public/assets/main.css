@@ -2367,3 +2367,35 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
   /* 有值时不再画日历图标：iOS 原生的日期行也只显示值，避免日期末尾与图标重叠 */
   input[type=date].has-val{background-image:none}
 }
+
+/* ===== 观察列表 + ETF 前十大构成股 ===== */
+.watch-card .watch-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.watch-head h3{margin:0}
+.watch-tools{display:flex;gap:6px}
+.watch-rows{display:flex;flex-direction:column}
+.watch-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid color-mix(in srgb,var(--fg) 6%,transparent)}
+.watch-row:first-child{border-top:0}
+.watch-sym{display:flex;flex-direction:column;font-weight:600;font-size:.82rem}
+.watch-sym small{font-weight:450;font-size:.66rem;color:var(--muted)}
+.watch-price,.hold-price,.hold-weight{font-variant-numeric:tabular-nums;font-size:.8rem}
+.watch-chg{min-width:64px;text-align:right;font-variant-numeric:tabular-nums;font-size:.8rem;font-weight:600}
+.watch-chg.is-up{color:var(--accent)}
+.watch-chg.is-down{color:var(--red)}
+.watch-chg.is-flat{color:var(--muted)}
+.watch-meta{margin-top:8px;font-size:.64rem;color:var(--muted)}
+.watch-manage{margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--fg) 6%,transparent)}
+.watch-manage-add{display:flex;gap:6px;margin-bottom:8px}
+.watch-manage-add .settings-input{flex:1;min-width:0}
+.watch-mrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.watch-mcheck{display:flex;align-items:center;gap:8px;font-size:.8rem}
+.watch-mtools{display:flex;gap:4px}
+.watch-mbtn{width:30px;height:30px;border:1px solid var(--rule);border-radius:9px;background:var(--card-bg);color:var(--fg);font-size:.8rem;cursor:pointer}
+.hold-block{margin-bottom:12px}
+.hold-title{display:flex;align-items:baseline;gap:6px;font-weight:600;font-size:.82rem;margin:6px 0}
+.hold-title small{font-weight:450;font-size:.62rem;color:var(--muted)}
+.hold-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,var(--fg) 6%,transparent)}
+.hold-sym{display:flex;flex-direction:column;font-weight:600;font-size:.78rem}
+.hold-sym small{font-weight:450;font-size:.62rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.hold-weight,.hold-price{color:var(--muted);font-size:.76rem}
+.hold-weight{min-width:52px;text-align:right}
+.hold-price{min-width:70px;text-align:right}

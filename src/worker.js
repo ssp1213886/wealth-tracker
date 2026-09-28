@@ -5,6 +5,7 @@ import { handlePrice } from './lib/price.js';
 import { handleSyncGet, handleSyncPost } from './lib/sync.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { handleLog } from './lib/logs.js';
+import { handleQuotes, handleHoldings } from './lib/quotes.js';
 
 const rateLimiter = createRateLimiter();
 
@@ -41,6 +42,14 @@ export default {
     }
     if (url.pathname === '/api/log') {
       const result = await handleLog(request, env);
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/quotes') {
+      const result = await handleQuotes(request, url);
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/holdings') {
+      const result = await handleHoldings(request, url);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/sync' && request.method === 'GET') {

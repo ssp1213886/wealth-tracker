@@ -1,0 +1,160 @@
+// 观察列表 + ETF 前十大构成股的纯逻辑（不碰 DOM，便于单测）。
+// 行情由 Worker 的 /api/quotes 与 /api/holdings 提供，这里只做数据整形。
+
+// 用户指定的观察标的：GOLD = 金价（后端映射成 COMEX 黄金期货 GC=F），BTC/ETH/BNB/HYPE = 现货
+export const WATCH_DEFAULTS = [
+  { sym: 'VGT', kind: 'stock' },
+  { sym: 'SMH', kind: 'stock' },
+  { sym: 'BTC', kind: 'crypto' },
+  { sym: 'VOO', kind: 'stock' },
+  { sym: 'GOLD', kind: 'gold' },
+  { sym: 'QQQM', kind: 'stock' },
+  { sym: 'NVDA', kind: 'stock' },
+  { sym: 'AAPL', kind: 'stock' },
+  { sym: 'GOOGL', kind: 'stock' },
+  { sym: 'TSLA', kind: 'stock' },
+  { sym: 'MSTR', kind: 'stock' },
+  { sym: 'CRCL', kind: 'stock' },
+  { sym: 'ETH', kind: 'crypto' },
+  { sym: 'BNB', kind: 'crypto' },
+  { sym: 'HYPE', kind: 'crypto' },
+];
+
+const CRYPTO_SET = new Set(['BTC', 'ETH', 'BNB', 'HYPE', 'SOL']);
+const KIND_LABEL = { crypto: '现货', gold: '金价', stock: '' };
+const SYM_RE = /^[A-Z][A-Z0-9.\-]{0,9}$/;
+
+export function kindOf(sym) {
+  const upper = String(sym || '').toUpperCase();
+  if (upper === 'GOLD') return 'gold';
+  if (CRYPTO_SET.has(upper)) return 'crypto';
+  return 'stock';
+}
+
+export function labelOf(sym) {
+  const upper = String(sym || '').toUpperCase();
+  const kind = kindOf(upper);
+  if (kind === 'gold') return '金价';
+  if (upper === 'BTC') return 'BTC 现货';
+  return upper;
+}
+
+export function quoteSymbolOf(sym) {
+  return kindOf(sym) === 'gold' ? 'GOLD' : String(sym || '').toUpperCase();
+}
+
+// 把存储里的原始数据整形成稳定的列表。
+// 语义：**存储里什么都没有时才播种默认列表**；一旦有数据就以存储为准
+// （否则用户"移除"掉的默认项会被自动补回来，删不掉）。
+export function normalizeWatchlist(raw, defaults = WATCH_DEFAULTS) {
+  const bySym = new Map();
+  const push = (sym, enabled, order) => {
+    const upper = String(sym || '').toUpperCase();
+    if (!SYM_RE.test(upper) || bySym.has(upper)) return;
+    bySym.set(upper, { sym: upper, kind: kindOf(upper), enabled: enabled !== false, order: Number(order) || 0 });
+  };
+  (Array.isArray(raw) ? raw : []).forEach((item, index) => {
+    if (item && typeof item === 'object') push(item.sym, item.enabled, item.order || index);
+  });
+  if (!bySym.size) defaults.forEach((item, index) => push(item.sym, true, index));
+  return Array.from(bySym.values()).sort((a, b) => a.order - b.order || a.sym.localeCompare(b.sym));
+}
+
+export function toggleWatch(list, sym) {
+  const upper = String(sym || '').toUpperCase();
+  return normalizeWatchlist(list).map((item) =>
+    item.sym === upper ? { ...item, enabled: !item.enabled } : item,
+  );
+}
+
+export function addWatch(list, sym) {
+  const upper = String(sym || '').trim().toUpperCase();
+  if (!SYM_RE.test(upper)) return null;
+  const current = normalizeWatchlist(list);
+  if (current.some((item) => item.sym === upper)) return current;
+  return [...current, { sym: upper, kind: kindOf(upper), enabled: true, order: current.length }];
+}
+
+export function removeWatch(list, sym) {
+  const upper = String(sym || '').toUpperCase();
+  return normalizeWatchlist(list).filter((item) => item.sym !== upper);
+}
+
+export function moveWatch(list, sym, delta) {
+  const upper = String(sym || '').toUpperCase();
+  const items = normalizeWatchlist(list).slice();
+  const index = items.findIndex((item) => item.sym === upper);
+  const next = index + (Number(delta) || 0);
+  if (index < 0 || next < 0 || next >= items.length) return items;
+  const [item] = items.splice(index, 1);
+  items.splice(next, 0, item);
+  return items.map((row, i) => ({ ...row, order: i }));
+}
+
+export function formatChangePct(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '—';
+  const rounded = Number(num.toFixed(2));
+  // 避免显示成 "-0.00%"
+  if (rounded === 0) return '+0.00%';
+  return (rounded > 0 ? '+' : '') + rounded.toFixed(2) + '%';
+}
+
+export function formatPrice(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return '—';
+  return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// 观察列表行：只有 enabled 的展示；行情缺失时也要出这一行（显示 —），不能凭空消失
+export function toWatchRows(list, quotes) {
+  const source = quotes || {};
+  return normalizeWatchlist(list)
+    .filter((item) => item.enabled)
+    .map((item) => {
+      const quote = source[quoteSymbolOf(item.sym)] || null;
+      return {
+        sym: item.sym,
+        label: labelOf(item.sym),
+        kind: item.kind,
+        price: quote ? quote.price : null,
+        priceText: quote ? formatPrice(quote.price) : '—',
+        changePct: quote ? quote.changePct : null,
+        changeText: quote ? formatChangePct(quote.changePct) : '—',
+        dir: quote && Number.isFinite(Number(quote.changePct)) ? (Number(quote.changePct) >= 0 ? 'up' : 'down') : 'flat',
+        source: quote ? quote.source : null,
+      };
+    });
+}
+
+// 前十大构成股：权重来自榜单（静态兜底或实时解析），涨跌来自行情
+export function toHoldingRows(holdings, quotes) {
+  const rows = (holdings && Array.isArray(holdings.list)) ? holdings.list : [];
+  const source = quotes || {};
+  return rows.map((item) => {
+    const quote = source[quoteSymbolOf(item.sym)] || null;
+    return {
+      sym: item.sym,
+      name: item.name || item.sym,
+      weight: Number(item.weight) || 0,
+      weightText: (Number(item.weight) || 0).toFixed(2) + '%',
+      priceText: quote ? formatPrice(quote.price) : '—',
+      changeText: quote ? formatChangePct(quote.changePct) : '—',
+      dir: quote && Number.isFinite(Number(quote.changePct)) ? (Number(quote.changePct) >= 0 ? 'up' : 'down') : 'flat',
+    };
+  }).sort((a, b) => b.weight - a.weight);
+}
+
+// 一次请求要拿的所有行情代码（观察列表 + 两张榜单，去重）
+export function collectQuoteSymbols(list, holdingsBySymbol) {
+  const set = new Set();
+  normalizeWatchlist(list).filter((item) => item.enabled).forEach((item) => set.add(quoteSymbolOf(item.sym)));
+  Object.keys(holdingsBySymbol || {}).forEach((key) => {
+    const holdings = holdingsBySymbol[key];
+    (holdings && holdings.list ? holdings.list : []).forEach((item) => set.add(quoteSymbolOf(item.sym)));
+  });
+  return Array.from(set);
+}
+
+export { KIND_LABEL };
