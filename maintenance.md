@@ -102,6 +102,15 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 
 > 另外 `page.screenshot()` 在**期权页**仍偶发超时；这种时候用 CDP 的 `Page.captureScreenshot`（可 `clip` 到指定区域）更稳。
 
+### ⚠️ 调试专用 Chrome 里绝对不要留生产 token
+
+调试配置目录（`C:\Users\topeasejs\ChromeDebug\profile`）会**按 origin 分别存 localStorage**。曾经因为"生产站点"那份 `wealth_sync_cfg` 还带着真实 token，只是**打开了一下线上页面**，就触发了一次真实上传：调试副本里过期的 `activities`（操作日志）和 `prices` 被推到了生产云端，覆盖掉用户真实的操作日志。
+
+**规则**：
+1. 用调试 Chrome 验证线上页面之前，先在该 origin 下把 `wealth_sync_cfg` 的 token 置空（`{"url":"","token":""}`）；只在需要测云端同步时临时填回，用完立刻清。
+2. 每个 origin 都要清（`127.0.0.1:8788` 与 `wealth-tracker.ssp2180481336.workers.dev` 是两份独立存储）。
+3. 万一把某个键写坏了，**别急着用缓存值回写**：先想"客户端哪里还有正确副本"。正确做法往往是**删掉该行**（`DELETE FROM data WHERE key='…'`）——客户端拉到"云端没有这一行"会保留本地并标记待推送，于是本地（正确的）那份会在打开 App 后自动推回去。见 v141 的"云端没有该行不判冲突"。
+
 ---
 
 ## 代码约定（血泪教训）
