@@ -21,9 +21,11 @@ export const WATCH_DEFAULTS = [
   { sym: 'HYPE', kind: 'crypto' },
 ];
 
-const CRYPTO_SET = new Set(['BTC', 'ETH', 'BNB', 'HYPE', 'SOL']);
+// 与 worker 的 CRYPTO_PAIRS 对齐（纯代码即可当币；重名的 SUI/STX/DASH 不在内）
+const CRYPTO_SET = new Set(['BTC', 'ETH', 'BNB', 'HYPE', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'LINK', 'LTC', 'DOT', 'TRX', 'XLM', 'TON', 'BCH', 'ETC', 'UNI', 'ATOM', 'NEAR', 'APT', 'ARB', 'OP', 'FIL', 'HBAR', 'ICP', 'ALGO', 'VET', 'AAVE', 'INJ', 'SEI', 'TIA', 'TAO', 'KAS', 'GRT', 'SAND', 'MANA', 'CRV', 'MKR', 'LDO', 'ENS', 'WLD', 'ENA', 'ONDO', 'JUP', 'BONK', 'WIF', 'PYTH', 'POL', 'RUNE', 'SHIB', 'PEPE', 'CRO', 'ZEC', 'XMR', 'EOS', 'FLOW', 'CHZ', 'GALA', 'IMX', 'AXS', 'THETA', 'RENDER']);
 const KIND_LABEL = { crypto: '现货', gold: '金价', stock: '' };
-const SYM_RE = /^[A-Z][A-Z0-9.\-]{0,9}$/;
+// 允许数字开头（如加密的 1INCH / 1INCH-USD）
+const SYM_RE = /^[A-Z0-9][A-Z0-9.\-]{0,9}$/;
 
 export function kindOf(sym) {
   const upper = String(sym || '').toUpperCase();

@@ -8,14 +8,79 @@ const MAX_SYMBOLS = 40;
 const QUOTE_TTL = 60 * 1000;
 const HOLDINGS_TTL = 6 * 60 * 60 * 1000;
 const STOCK_RE = /^[A-Z][A-Z0-9.\-=]{0,9}$/;
+// 纯代码（字母/数字，不带 . - = 后缀）：按股票查不到时，再用「CODE-USD」当加密现货补查一次
+const PLAIN_RE = /^[A-Z0-9]{1,10}$/;
+// 用户自己写全的加密交易对（SUI-USD / 1INCH-USD）也当加密现货处理
+const CRYPTO_PAIR_RE = /^[A-Z0-9]{1,6}-USD$/;
 
-// 加密：用户指定的现货代码 → Yahoo 交易对（主源，和股票同一条通路）
+// 加密：现货代码 → Yahoo 交易对（主源，和股票同一条通路）。
+// 关键：这张表里的代码**优先当币**——XRP / LINK / LTC / TRX / ATOM / NEAR 在 Yahoo 上都有同名美股或 ETF，
+// 不加 -USD 就会拿到错的标的（XRP 会命中 Bitwise XRP ETF、LTC 会命中 LTC Properties）。
+// 只有与知名美股重名的 SUI(太阳社区) / STX(希捷) / DASH(DoorDash) 故意不收录：纯代码仍归股票，要查币写 CODE-USD。
 export const CRYPTO_PAIRS = {
   BTC: 'BTC-USD',
   ETH: 'ETH-USD',
   BNB: 'BNB-USD',
   HYPE: 'HYPE32196-USD',
   SOL: 'SOL-USD',
+  XRP: 'XRP-USD',
+  DOGE: 'DOGE-USD',
+  ADA: 'ADA-USD',
+  AVAX: 'AVAX-USD',
+  LINK: 'LINK-USD',
+  LTC: 'LTC-USD',
+  DOT: 'DOT-USD',
+  TRX: 'TRX-USD',
+  XLM: 'XLM-USD',
+  TON: 'TON-USD',
+  BCH: 'BCH-USD',
+  ETC: 'ETC-USD',
+  UNI: 'UNI-USD',
+  ATOM: 'ATOM-USD',
+  NEAR: 'NEAR-USD',
+  APT: 'APT-USD',
+  ARB: 'ARB-USD',
+  OP: 'OP-USD',
+  FIL: 'FIL-USD',
+  HBAR: 'HBAR-USD',
+  ICP: 'ICP-USD',
+  ALGO: 'ALGO-USD',
+  VET: 'VET-USD',
+  AAVE: 'AAVE-USD',
+  INJ: 'INJ-USD',
+  SEI: 'SEI-USD',
+  TIA: 'TIA-USD',
+  TAO: 'TAO-USD',
+  KAS: 'KAS-USD',
+  GRT: 'GRT-USD',
+  SAND: 'SAND-USD',
+  MANA: 'MANA-USD',
+  CRV: 'CRV-USD',
+  MKR: 'MKR-USD',
+  LDO: 'LDO-USD',
+  ENS: 'ENS-USD',
+  WLD: 'WLD-USD',
+  ENA: 'ENA-USD',
+  ONDO: 'ONDO-USD',
+  JUP: 'JUP-USD',
+  BONK: 'BONK-USD',
+  WIF: 'WIF-USD',
+  PYTH: 'PYTH-USD',
+  POL: 'POL-USD',
+  RUNE: 'RUNE-USD',
+  SHIB: 'SHIB-USD',
+  PEPE: 'PEPE-USD',
+  CRO: 'CRO-USD',
+  ZEC: 'ZEC-USD',
+  XMR: 'XMR-USD',
+  EOS: 'EOS-USD',
+  FLOW: 'FLOW-USD',
+  CHZ: 'CHZ-USD',
+  GALA: 'GALA-USD',
+  IMX: 'IMX-USD',
+  AXS: 'AXS-USD',
+  THETA: 'THETA-USD',
+  RENDER: 'RENDER-USD',
 };
 
 // 加密兜底源：CoinGecko（Cloudflare 出口有时会被限流，所以放在 Yahoo 之后）
@@ -25,6 +90,64 @@ export const CRYPTO_IDS = {
   BNB: 'binancecoin',
   HYPE: 'hyperliquid',
   SOL: 'solana',
+  XRP: 'ripple',
+  DOGE: 'dogecoin',
+  ADA: 'cardano',
+  AVAX: 'avalanche-2',
+  LINK: 'chainlink',
+  LTC: 'litecoin',
+  DOT: 'polkadot',
+  TRX: 'tron',
+  XLM: 'stellar',
+  TON: 'the-open-network',
+  BCH: 'bitcoin-cash',
+  ETC: 'ethereum-classic',
+  UNI: 'uniswap',
+  ATOM: 'cosmos',
+  NEAR: 'near',
+  APT: 'aptos',
+  ARB: 'arbitrum',
+  OP: 'optimism',
+  FIL: 'filecoin',
+  HBAR: 'hedera-hashgraph',
+  ICP: 'internet-computer',
+  ALGO: 'algorand',
+  VET: 'vechain',
+  AAVE: 'aave',
+  INJ: 'injective-protocol',
+  SEI: 'sei-network',
+  TIA: 'celestia',
+  TAO: 'bittensor',
+  KAS: 'kaspa',
+  GRT: 'the-graph',
+  SAND: 'the-sandbox',
+  MANA: 'decentraland',
+  CRV: 'curve-dao-token',
+  MKR: 'maker',
+  LDO: 'lido-dao',
+  ENS: 'ethereum-name-service',
+  WLD: 'worldcoin-wld',
+  ENA: 'ethena',
+  ONDO: 'ondo-finance',
+  JUP: 'jupiter-exchange-solana',
+  BONK: 'bonk',
+  WIF: 'dogwifcoin',
+  PYTH: 'pyth-network',
+  POL: 'polygon-ecosystem-token',
+  RUNE: 'thorchain',
+  SHIB: 'shiba-inu',
+  PEPE: 'pepe',
+  CRO: 'crypto-com-chain',
+  ZEC: 'zcash',
+  XMR: 'monero',
+  EOS: 'eos',
+  FLOW: 'flow',
+  CHZ: 'chiliz',
+  GALA: 'gala',
+  IMX: 'immutable-x',
+  AXS: 'axie-infinity',
+  THETA: 'theta-token',
+  RENDER: 'render-token',
 };
 
 // 金价：Yahoo 的 GC=F（COMEX 黄金期货，美元/盎司）最接近"金价"
@@ -129,6 +252,12 @@ async function fetchCryptoQuotes(ids) {
   return out;
 }
 
+// Yahoo 的加密对名字形如 "Dogecoin USD" / "ARbit USD"：去掉尾部 USD 给前端当副标题
+function cryptoNameOf(sym, quote) {
+  const name = String((quote && quote.name) || '').replace(/\s*USD$/i, '').trim();
+  return name || sym;
+}
+
 export async function handleQuotes(request, url) {
   if (request.method !== 'GET') return { status: 405, body: { error: 'Method not allowed' } };
   const raw = (url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
@@ -138,13 +267,17 @@ export async function handleQuotes(request, url) {
   // 关键：**按请求的代码回键**。以前 GOLD 会以 GC=F 为键返回，前端按 GOLD 取不到 → 永久显示"—"。
   const stocks = []; // [请求代码, 行情源代码]
   const cryptos = [];
+  const plain = []; // 纯代码：先按股票查，查不到再按 CODE-USD 当加密现货补查
   const invalid = [];
   wanted.forEach((sym) => {
-    if (CRYPTO_IDS[sym]) return cryptos.push(sym);
+    if (CRYPTO_PAIRS[sym]) return cryptos.push(sym);
     const alias = QUOTE_ALIAS[sym];
     // 别名表是我们自己维护的可信映射（如 000660.KS），不套用"股票代码"格式校验
     if (alias) return stocks.push([sym, alias]);
-    if (STOCK_RE.test(sym)) return stocks.push([sym, sym]);
+    // 直接写 CODE-USD 也照收（含数字开头的 1INCH-USD）
+    if (STOCK_RE.test(sym) || CRYPTO_PAIR_RE.test(sym)) return stocks.push([sym, sym]);
+    // 数字开头的纯代码（如 1INCH）不按股票查，但仍允许按加密对补查一次
+    if (PLAIN_RE.test(sym)) return plain.push(sym);
     invalid.push(sym);
   });
 
@@ -172,14 +305,23 @@ export async function handleQuotes(request, url) {
 
   const quotes = {};
   const missing = [];
+  // 股票查不到的纯代码，统一按「加密现货」补查一次：用户直接写 XRP / BONK 就行，不需要自己加 -USD
+  const retryLater = [];
+  const asCrypto = (sym, quote) => ({ ...quote, name: cryptoNameOf(sym, quote), currency: 'USD', marketState: '24/7', crypto: true });
   stockPairs.forEach(([sym, quote]) => {
-    if (quote) quotes[sym] = quote;
+    if (quote) quotes[sym] = CRYPTO_PAIR_RE.test(sym) ? asCrypto(sym, quote) : quote;
+    else if (PLAIN_RE.test(sym)) retryLater.push(sym);
+    else missing.push(sym);
+  });
+  const retried = await Promise.all(plain.concat(retryLater).map(async (sym) => [sym, await fetchStockQuote(sym + '-USD')]));
+  retried.forEach(([sym, quote]) => {
+    if (quote) quotes[sym] = asCrypto(sym, quote);
     else missing.push(sym);
   });
   cryptos.forEach((sym) => {
     const quote = cryptoMap[sym];
     if (quote) {
-      quotes[sym] = { ...quote, name: sym + ' 现货', currency: 'USD', marketState: '24/7' };
+      quotes[sym] = asCrypto(sym, quote);
     } else {
       missing.push(sym);
     }

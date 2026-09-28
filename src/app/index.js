@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v221';var APP_DATA_VERSION=5;
+var APP_BUILD='v222';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=221',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=222',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2280,9 +2280,11 @@ if(typeof window!=='undefined'){
     return Number((c&&c.hi52)||(q2&&q2.hi52)||0)||0;
   };
   /* 加密标的：接口只给"现货"这种中文标签，这里补英文全名并标注现货（与 BTC ETF 行区分） */
-  var CRYPTO_NAME={BTC:'Bitcoin',ETH:'Ethereum',BNB:'Binance Coin',HYPE:'Hyperliquid',SOL:'Solana'};
+  /* 加密全名（后端给 crypto:true 的行情会自动补" · 现货"；这里只把品牌名写准） */
+  var CRYPTO_NAME={BTC:'Bitcoin',ETH:'Ethereum',BNB:'Binance Coin',HYPE:'Hyperliquid',SOL:'Solana',XRP:'Ripple',DOGE:'Dogecoin',ADA:'Cardano',AVAX:'Avalanche',LINK:'Chainlink',LTC:'Litecoin',DOT:'Polkadot',TRX:'TRON',XLM:'Stellar',TON:'Toncoin',BCH:'Bitcoin Cash',ETC:'Ethereum Classic',UNI:'Uniswap',ATOM:'Cosmos',NEAR:'NEAR Protocol',APT:'Aptos',ARB:'Arbitrum',OP:'Optimism',FIL:'Filecoin',HBAR:'Hedera',ICP:'Internet Computer',ALGO:'Algorand',VET:'VeChain',AAVE:'Aave',INJ:'Injective',SEI:'Sei',TIA:'Celestia',TAO:'Bittensor',KAS:'Kaspa',GRT:'The Graph',SAND:'The Sandbox',MANA:'Decentraland',CRV:'Curve',MKR:'Maker',LDO:'Lido',ENS:'Ethereum Name Service',WLD:'Worldcoin',ENA:'Ethena',ONDO:'Ondo',JUP:'Jupiter',BONK:'Bonk',WIF:'dogwifhat',PYTH:'Pyth Network',POL:'Polygon',RUNE:'THORChain',SHIB:'Shiba Inu',PEPE:'Pepe',CRO:'Cronos',ZEC:'Zcash',XMR:'Monero',EOS:'EOS',FLOW:'Flow',CHZ:'Chiliz',GALA:'Gala',IMX:'Immutable',AXS:'Axie Infinity',THETA:'Theta',RENDER:'Render'};
   var cleanName=function(sym,q){
     if(CRYPTO_NAME[sym])return CRYPTO_NAME[sym]+' · 现货';
+    if(q&&q.crypto)return (String(q.name||sym).replace(/\s*USD$/,'').trim()||sym)+' · 现货';
     if(FALLBACK[sym])return FALLBACK[sym];
     var n=String((q&&q.name)||'').replace(/\s*\([A-Za-z]{0,3}$/,'').trim();
     if(n&&!/[\u4e00-\u9fa5]/.test(n))return n;
@@ -2507,8 +2509,24 @@ if(typeof window!=='undefined'){
     e2.type='button';e2.className='btn btn-out btn-sm';e2.setAttribute('data-sym',sym);
     e2.textContent=has?'已在 ✓':'+ 加入';
     e2.addEventListener('click',function(){toggle(sym)});
+    row.setAttribute('data-sym',sym);
     row.appendChild(a);row.appendChild(b);row.appendChild(c);row.appendChild(d);row.appendChild(e2);
     return row;
+  }
+  function baseUrl(){return (syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'')}
+  var hydratedKey='';
+  /* 结果行只要有没行情的，就批量拉一次（最多 8 条，远低于接口 40 上限），拿到后重绘 */
+  function hydrate(){
+    var rows=list.querySelectorAll('.watch-search-row[data-sym]'),need=[];
+    for(var i=0;i<rows.length;i+=1){var s=rows[i].getAttribute('data-sym');if(!(watchQuotes[s]||extra[s])&&need.indexOf(s)<0)need.push(s)}
+    if(!need.length)return;
+    var key=need.join(',');
+    if(hydratedKey===key)return;
+    hydratedKey=key;
+    fetch(baseUrl()+'/api/quotes?symbols='+encodeURIComponent(key)).then(function(r){return r.ok?r.json():null}).then(function(j){
+      if(j&&j.quotes){for(var k in j.quotes)extra[k]=j.quotes[k]}
+      render(input.value);
+    }).catch(function(){});
   }
   function render(q){
     q=String(q||'').trim().toLowerCase();
@@ -2522,9 +2540,9 @@ if(typeof window!=='undefined'){
     }
     for(var i4=0;i4<IDXL.length;i4+=1){var r4=IDXL[i4];if(seen[r4[0]])continue;if(r4[2]===q)addHit(r4[0],r4[1]);else if(r4[2].indexOf(q)===0||r4[3].indexOf(q)>=0){if(!JUNK.test(r4[3]))addHit(r4[0],r4[1])}}
     var hits=pre.concat(mid).slice(0,8);
-    if(hits.length){hits.forEach(function(it){list.appendChild(mkRow(it[0],it[1]))});return}
+    if(hits.length){hits.forEach(function(it){list.appendChild(mkRow(it[0],it[1]))});hydrate();return}
     var code=q.toUpperCase();
-    if(inList(code)){list.appendChild(mkRow(code,'已在观察列表'));return}
+    if(inList(code)){list.appendChild(mkRow(code,'已在观察列表'));hydrate();return}
     var qr=document.createElement('div');qr.className='watch-search-row';
     var s1=document.createElement('span');s1.className='wsr-sym';s1.textContent=code;
     var s2=document.createElement('span');s2.className='wsr-name';s2.textContent='未收录，点右侧按代码查询行情';
@@ -2540,7 +2558,7 @@ if(typeof window!=='undefined'){
     }catch(e){}
   }
   function query(code){
-    var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');
+    var base=baseUrl();
     list.textContent='';
     var em=document.createElement('div');em.className='table-empty';em.textContent='查询中';list.appendChild(em);
     fetch(base+'/api/quotes?symbols='+encodeURIComponent(code)).then(function(r){return r.ok?r.json():null}).then(function(j){
