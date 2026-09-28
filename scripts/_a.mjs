@@ -9,7 +9,7 @@ function cut(from, to, n = 1) {
   log.push(from.slice(0, 40));
 }
 // ① 去掉每行的时间小字（拥挤的根源）
-cut("+(r.timeText?'<small>'+r.timeText+'</small>':'')", '');
+cut("+(r.timeText?'<small>'+r.timeText+'</small>':'')", '', 2);
 // ② 汇总一行说清新鲜度
 cut(
   "'更新于 '+syncClockText()+' · 共 '+rows.length+' 项 · 每行为该笔报价时间；美股休市时为收盘价，加密 7×24'",
