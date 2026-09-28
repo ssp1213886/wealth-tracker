@@ -95,6 +95,13 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 
 > e2e 与专项脚本依赖**调试专用 Chrome**（`C:\Users\topeasejs\ChromeDebug\profile`，端口 9222）和 `npm run preview:lan` 起的本地服务。用法见 `.codex/skills/chrome-debug`。
 
+### 截图调试的两个坑（踩过两次）
+
+1. **页面有 `scroll-behavior: smooth`**：`scrollIntoView` 是动画，Playwright 的 `page.screenshot()` 会一直等"元素稳定"直到超时（日志停在 `fonts loaded` 之后）。截图前先 `document.documentElement.style.scrollBehavior='auto'` + 给滚动容器也设 `auto`。
+2. **Service Worker 对 `/assets/*` 是 cache-first**：改完 CSS/JS 直接重载，页面跑的还是旧产物（会出现"改了没效果"的假象）。脚本里必须先 `navigator.serviceWorker.getRegistrations()` 全部 unregister + 清 `caches`，再带 `?t=时间戳` 重新打开。
+
+> 另外 `page.screenshot()` 在**期权页**仍偶发超时；这种时候用 CDP 的 `Page.captureScreenshot`（可 `clip` 到指定区域）更稳。
+
 ---
 
 ## 代码约定（血泪教训）
