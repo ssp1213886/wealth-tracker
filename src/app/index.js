@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v195';var APP_DATA_VERSION=5;
+var APP_BUILD='v196';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=195',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=196',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2180,4 +2180,58 @@ if(typeof window!=='undefined'){
     saveWatch(next);
     if(typeof refreshMarket==='function')refreshMarket(true);
   }catch(e){}
+})();
+
+
+/* ===== v196：①「管理」点了要看得见 ②成分股行没有行情时也能点开 ===== */
+(function(){
+  var mb=document.getElementById('btnWatchManage'),box=document.getElementById('watchManage');
+  if(mb&&box){
+    mb.addEventListener('click',function(){
+      var open=!box.hidden;
+      mb.textContent=open?'收起':'管理';
+      mb.classList.toggle('is-open',open);
+      if(open){try{box.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){box.scrollIntoView()}}
+    });
+  }
+  // 成分股行：没有行情数据也能展开（名称 / 榜单权重 / 穿透金额 / 加入观察）
+  document.addEventListener('click',function(e){
+    var row=e.target&&e.target.closest?e.target.closest('#holdingsCard .hold-row'):null;
+    if(!row)return;
+    var symEl=row.querySelector('.hold-sym');
+    var sym=String(symEl&&symEl.childNodes[0]?symEl.childNodes[0].textContent:'').trim();
+    if(!sym)return;
+    if(watchQuotes[sym])return;            // 有行情时沿用原有详情
+    e.preventDefault();
+    e.stopPropagation();
+    var nxt=row.nextElementSibling;
+    if(nxt&&nxt.classList&&nxt.classList.contains('row-detail')){nxt.remove();return}
+    var olds=document.querySelectorAll('#holdingsCard .row-detail');
+    for(var i=0;i<olds.length;i+=1)olds[i].remove();
+    var weight=(symEl.querySelector('small')||{}).textContent||'—';
+    var name=row.getAttribute('data-name')||'';
+    var amt=(row.querySelector('.hold-price')||{}).textContent||'';
+    var inList=false;
+    for(var k=0;k<watchList.length;k+=1){if(watchList[k]&&watchList[k].sym===sym){inList=true;break}}
+    var d=document.createElement('div');
+    d.className='row-detail';
+    d.innerHTML='<div class="rd-top"><span class="rd-sym">'+escapeHtml(sym)+'</span><span class="rd-price">'+escapeHtml(amt)+'</span></div>'
+      +(name?'<div class="rd-sub">'+escapeHtml(name)+'</div>':'')
+      +'<div class="row-detail-grid"><span>榜单权重</span><strong>'+escapeHtml(weight)+'</strong></div>'
+      +'<div class="rd-meta">'+(inList?'已在观察列表':'<button type="button" class="btn btn-out btn-sm" data-watch-add="'+escapeHtml(sym)+'">加入观察</button>')+'</div>';
+    row.after(d);
+  },true);
+  // 「加入观察」
+  document.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('[data-watch-add]'):null;
+    if(!b)return;
+    e.preventDefault();
+    e.stopPropagation();
+    var sym=b.getAttribute('data-watch-add');
+    try{
+      var next=addWatch(watchList,sym);
+      if(next&&next.length!==watchList.length){saveWatch(next);refreshMarket(true);showToast(sym+' 已加入观察列表')}
+      else showToast(sym+' 已在观察列表中');
+    }catch(err){}
+  },true);
 })();

@@ -2529,3 +2529,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 }
 /* ① 合并卡：成分股区块与观察列表之间加一条分隔（折叠头沿用控制台既有样式，无需额外规则） */
 #tab-console #watchCard>#holdingsCard{border-top:1px solid var(--rule);margin-top:10px}
+/* ===== v196：管理面板移到卡头下方（点了立刻可见）；成分股行可点 ===== */
+#tab-console #watchCard .watch-manage{margin:0 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent) 5%,transparent)}
+#tab-console #watchCard .watch-manage .watch-manage-add{margin-bottom:8px}
+#tab-console #watchCard #btnWatchManage.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
+/* 成分股行：给出可点的反馈 */
+#tab-console #holdingsCard .hold-row{cursor:pointer}
+#tab-console #holdingsCard .hold-row:active{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+#tab-console #holdingsCard .row-detail .btn{margin-top:2px}
