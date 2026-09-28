@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v220';var APP_DATA_VERSION=5;
+var APP_BUILD='v221';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=220',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=221',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2487,16 +2487,13 @@ if(typeof window!=='undefined'){
   card.insertBefore(panel,manage||host);
   var extra={};
   /* 大索引按需加载：S&P500 + 纳斯达克（约 5900 条），失败就只用内置表 */
-  var IDX=[],IDXL=[],idxLoaded=false;
-  /* 噪音：杠杆/反向/日频 ETF（只在按名字命中时过滤；直接打代码不受影响） */
+  /* 内置名单：S&P 100（市值前 100）+ 纳斯达克 100，共 111 条；名单外代码用「按代码查询」兜底 */
+  var IDX=[["AAPL","Apple Inc."],["ABBV","AbbVie"],["ABT","Abbott Laboratories"],["ACN","Accenture"],["ADBE","Adobe Inc."],["ADP","Automatic Data Processing"],["AEP","American Electric Power"],["AMAT","Applied Materials"],["AMD","Advanced Micro Devices"],["AMGN","Amgen"],["AMT","American Tower"],["AMZN","Amazon"],["ANET","Arista Networks"],["ASML","ASML Holding N.V."],["AVGO","Broadcom"],["AXP","American Express"],["BA","Boeing"],["BAC","Bank of America"],["BKNG","Booking Holdings"],["BLK","BlackRock"],["BMY","Bristol Myers Squibb"],["BNY","BNY Mellon"],["BRK-B","Berkshire Hathaway"],["BX","Blackstone Inc."],["C","Citigroup"],["CAT","Caterpillar Inc."],["CMCSA","Comcast"],["COF","Capital One"],["COP","ConocoPhillips"],["COST","Costco"],["CRM","Salesforce"],["CSCO","Cisco"],["CSX","CSX Corporation"],["CVS","CVS Health"],["CVX","Chevron Corporation"],["DAX","Global X DAX Germany ETF"],["DE","Deere & Company"],["DELL","Dell Technologies"],["DHR","Danaher Corporation"],["DIS","Walt Disney Company (The)"],["DUK","Duke Energy"],["EMR","Emerson Electric"],["FDX","FedEx"],["GD","General Dynamics"],["GE","GE Aerospace"],["GEV","GE Vernova"],["GILD","Gilead Sciences"],["GM","General Motors"],["GOOG","Alphabet Inc. (Class C)"],["GOOGL","Alphabet Inc. (Class A)"],["GS","Goldman Sachs"],["HD","Home Depot (The)"],["IBM","IBM"],["INTC","Intel"],["INTU","Intuit"],["ISRG","Intuitive Surgical"],["JNJ","Johnson & Johnson"],["JPM","JPMorgan Chase"],["KO","Coca-Cola Company (The)"],["LIN","Linde plc"],["LLY","Lilly (Eli)"],["LMT","Lockheed Martin"],["LOW","Lowe's"],["LRCX","Lam Research"],["MA","Mastercard"],["MCD","McDonald's"],["MDLZ","Mondelez International"],["MDT","Medtronic"],["META","Meta Platforms"],["MMM","3M"],["MO","Altria"],["MRK","Merck & Co."],["MRX","Marex Group Limited"],["MS","Morgan Stanley"],["MSFT","Microsoft"],["MU","Micron Technology"],["NEE","NextEra Energy"],["NFLX","Netflix"],["NOW","ServiceNow"],["NVDA","Nvidia"],["OBX","Obsidian Therapeutics, Inc."],["ORCL","Oracle Corporation"],["PANW","Palo Alto Networks"],["PEP","PepsiCo"],["PFE","Pfizer"],["PG","Procter & Gamble"],["PLTR","Palantir Technologies"],["PM","Philip Morris International"],["PSX","Phillips 66"],["QCOM","Qualcomm"],["RTX","RTX Corporation"],["SBUX","Starbucks"],["SCHW","Charles Schwab Corporation"],["SNDK","Sandisk"],["SO","Southern Company"],["T","AT&T"],["TMO","Thermo Fisher Scientific"],["TMUS","T-Mobile US"],["TSLA","Tesla, Inc."],["TXN","Texas Instruments"],["UBER","Uber"],["UK","Ucommune International Ltd"],["UNH","UnitedHealth Group"],["UNP","Union Pacific Corporation"],["UPS","United Parcel Service"],["USB","U.S. Bancorp"],["V","Visa Inc."],["VZ","Verizon"],["WFC","Wells Fargo"],["WMT","Walmart"],["XOM","ExxonMobil"]];
+  var IDXL=IDX.map(function(r){return [r[0],r[1],String(r[0]||'').toLowerCase(),String(r[1]||'').toLowerCase()]});
+  var idxLoaded=true;
+  /* 噪音：杠杆/反向/日频 ETF（仅代码完全相同时放行） */
   var JUNK=/2x|3x|short|leverage|inverse|ultra|bull|bear|daily/i;
-  function loadIdx(){
-    if(idxLoaded)return;
-    idxLoaded=true;
-    fetch('/assets/symbols.json').then(function(r){return r.ok?r.json():null}).then(function(j){
-      if(Array.isArray(j)){IDX=j;IDXL=IDX.map(function(r){return [r[0],r[1],String(r[0]||'').toLowerCase(),String(r[1]||'').toLowerCase()]});if(!panel.hidden)render(input.value)}
-    }).catch(function(){});
-  }
+  function loadIdx(){}
   function inList(sym){for(var i=0;i<watchList.length;i+=1){if(watchList[i]&&watchList[i].sym===sym)return true}return false}
   function priceOf2(sym){var q=watchQuotes[sym]||extra[sym];if(!q||q.price==null)return {p:'—',c:'',cls:'flat'};var n=Number(q.price);var c=Number(q.changePct);return {p:'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),c:isFinite(c)?((c>=0?'+':'')+c.toFixed(2)+'%'):'',cls:!isFinite(c)?'flat':(c>=0?'up':'down')}}
   function mkRow(sym,name){
