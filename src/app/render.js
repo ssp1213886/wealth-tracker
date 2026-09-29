@@ -14,6 +14,7 @@ export function emptyStateHTML(opts){
   return html+'</div>';
 }
 
-export function renderAlertItem(a,icons){var icon=icons[a.type]||icons.blue;return '<div class="qa-alert-item qa-alert-'+a.type+'" data-alert-id="'+escapeHtml(a.id)+'" data-alert-severity="'+escapeHtml(a.severity)+'"><button type="button" class="qa-alert-main" data-alert-action="'+escapeHtml(a.action)+'"><span class="alert-leading"><i class="alert-icon">'+icon+'</i><span class="alert-copy"><strong>'+escapeHtml(a.title||'待办事项')+'</strong><small>'+escapeHtml(a.detail||'点击查看详情')+'</small></span></span><b aria-hidden="true">›</b></button>'+(a.dismiss?'<button type="button" class="qa-alert-dismiss" data-alert-dismiss="'+escapeHtml(a.dismiss)+'" aria-label="今天不再提醒">×</button>':'')+'</div>'}
+// （v229 清理：原来还渲染了 data-alert-id / data-alert-severity，全代码库没人读，已删）
+export function renderAlertItem(a,icons){var icon=icons[a.type]||icons.blue;return '<div class="qa-alert-item qa-alert-'+a.type+'"><button type="button" class="qa-alert-main" data-alert-action="'+escapeHtml(a.action)+'"><span class="alert-leading"><i class="alert-icon">'+icon+'</i><span class="alert-copy"><strong>'+escapeHtml(a.title||'待办事项')+'</strong><small>'+escapeHtml(a.detail||'点击查看详情')+'</small></span></span><b aria-hidden="true">›</b></button>'+(a.dismiss?'<button type="button" class="qa-alert-dismiss" data-alert-dismiss="'+escapeHtml(a.dismiss)+'" aria-label="今天不再提醒">×</button>':'')+'</div>'}
 
 export function alertSignature(list){try{return (list||[]).map(function(a){return String(a&&a.id)+':'+String(a&&a.severity)}).sort().join('|')}catch(e){return ''}}
