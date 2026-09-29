@@ -2138,6 +2138,8 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #tab-data .trade-table tbody tr:last-child td,#tab-option .trade-table tbody tr:last-child td{border-bottom-color:transparent!important}
 }
 
+/* v230：搜索过滤靠 tr.is-hidden-row 生效——手机端那几条强制 grid 的规则必须用 :not(.is-hidden-row) 排开，
+   否则最高优先级会盖掉行内 display:none，手机上「搜了没反应」 */
 /* ===== Card polish · stronger (per request) ===== */
 @media(max-width:800px){
   .card,.chart-card,.metric{background-image:linear-gradient(180deg,rgba(255,255,255,.92) 0,rgba(255,255,255,0) 110px)!important}
@@ -2156,8 +2158,8 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 
 /* ===== Record cards - mobile layout ===== */
 @media(max-width:800px){
-  #tab-data #tradeBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:6px 8px!important;padding:13px 14px!important;height:auto!important}
-  #tab-data #holdBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:8px 8px!important;padding:14px 15px!important;height:auto!important;border-left:3px solid var(--row-accent,var(--rule))!important;border-radius:4px 12px 12px 4px!important}
+  #tab-data #tradeBody tr:not(.is-hidden-row){display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:6px 8px!important;padding:13px 14px!important;height:auto!important}
+  #tab-data #holdBody tr:not(.is-hidden-row){display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:8px 8px!important;padding:14px 15px!important;height:auto!important;border-left:3px solid var(--row-accent,var(--rule))!important;border-radius:4px 12px 12px 4px!important}
   #tab-data #holdBody td,#tab-data #tradeBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.5!important;text-align:left}
   #tab-data #holdBody td::before,#tab-data #tradeBody td::before{display:none!important}
   #tab-data #holdBody td[data-cell="sym"]{grid-area:1/1/2/5;font-size:.9rem!important;font-weight:660}
@@ -2192,7 +2194,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 
 /* ===== Cash log cards - mobile layout ===== */
 @media(max-width:800px){
-  #tab-data #cashLogBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px 6px!important;padding:11px 13px!important;height:auto!important}
+  #tab-data #cashLogBody tr:not(.is-hidden-row){display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:3px 6px!important;padding:11px 13px!important;height:auto!important}
   #tab-data #cashLogBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.42!important;text-align:left}
   #tab-data #cashLogBody td::before{display:none!important}
   #tab-data #cashLogBody td[data-cell="type"]{grid-area:1/1/2/5}
@@ -2222,7 +2224,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
 
 /* ===== Option holdings - mobile layout ===== */
 @media(max-width:800px){
-  #tab-option #holdingsBody tr{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:10px 8px!important;padding:15px 16px!important;height:auto!important;opacity:1!important}
+  #tab-option #holdingsBody tr:not(.is-hidden-row){display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:10px 8px!important;padding:15px 16px!important;height:auto!important;opacity:1!important}
   #tab-option #holdingsBody td{display:block!important;border:0!important;padding:0!important;min-width:0;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis;font-size:.72rem!important;line-height:1.5!important;text-align:left}
   #tab-option #holdingsBody td::before{display:none!important}
   #tab-option #holdingsBody td[data-cell="sym"]{grid-area:1/1/2/3;font-size:.9rem!important;font-weight:670}

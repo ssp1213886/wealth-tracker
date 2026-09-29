@@ -16,7 +16,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v229';var APP_DATA_VERSION=5;
+var APP_BUILD='v230';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1332,7 +1332,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=229',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=230',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1784,7 +1784,7 @@ function showApproval(opts){
 }
 
 var dsSearchQuery="";
-function applyTableSearch(){var q=dsSearchQuery.trim().toLowerCase(),total=0,matched=0,first=null;['holdBody','tradeBody','cashLogBody'].forEach(function(id){var tb=document.getElementById(id);if(!tb)return;[].forEach.call(tb.querySelectorAll('tr'),function(tr){if(tr.querySelector('.table-empty')||tr.querySelector('.ds-empty'))return;total++;var hit=!q||tr.textContent.toLowerCase().indexOf(q)>=0;tr.style.display=hit?'':'none';if(hit){matched++;if(!first&&q)first=tr}})});var counter=document.getElementById('dsSearchCount');if(counter)counter.textContent=q?(matched+' 条'):'';var clearBtn=document.getElementById('dsSearchClear');if(clearBtn)clearBtn.hidden=!q;var tip=document.getElementById('dsSearchEmpty');if(tip)tip.hidden=!(q&&matched===0);if(q&&first){first.classList.add('is-search-hit');setTimeout(function(){first.classList.remove('is-search-hit')},1200);if(!first._jumpLock){first._jumpLock=true;try{first.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){first.scrollIntoView()}setTimeout(function(){first._jumpLock=false},1400)}}}
+function applyTableSearch(){var q=dsSearchQuery.trim().toLowerCase(),total=0,matched=0,first=null;['holdBody','tradeBody','cashLogBody'].forEach(function(id){var tb=document.getElementById(id);if(!tb)return;[].forEach.call(tb.querySelectorAll('tr'),function(tr){if(tr.querySelector('.table-empty')||tr.querySelector('.ds-empty'))return;total++;var hit=!q||tr.textContent.toLowerCase().indexOf(q)>=0;tr.style.display=hit?'':'none';tr.classList.toggle('is-hidden-row',!hit);if(hit){matched++;if(!first&&q)first=tr}})});var counter=document.getElementById('dsSearchCount');if(counter)counter.textContent=q?(matched+' 条'):'';var clearBtn=document.getElementById('dsSearchClear');if(clearBtn)clearBtn.hidden=!q;var tip=document.getElementById('dsSearchEmpty');if(tip)tip.hidden=!(q&&matched===0);if(q&&first){first.classList.add('is-search-hit');setTimeout(function(){first.classList.remove('is-search-hit')},1200);if(!first._jumpLock){first._jumpLock=true;try{first.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){first.scrollIntoView()}setTimeout(function(){first._jumpLock=false},1400)}}}
 function initTableSearch(){
   var input=document.getElementById("dsSearchInput");
   if(!input)return;
