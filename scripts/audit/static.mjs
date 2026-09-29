@@ -60,8 +60,14 @@ const builtins = new Set(['location', 'window', 'document', 'alert', 'confirm', 
 const missingGlobals = [...called].filter((n) => !exported.has(n) && !builtins.has(n));
 if (missingGlobals.length) problems.push('inline onclick 调用了没导出到 window 的函数（点了会 ReferenceError）：' + missingGlobals.join(', '));
 
+/* ④ 空 catch：静默吞异常，历史上藏过"同步失败没提示"这类问题，禁止新增 */
+const emptyCatches = app.match(/catch\s*\(\s*\w+\s*\)\s*\{\s*\}|catch\s*\{\s*\}/g) || [];
+if (emptyCatches.length) {
+  problems.push('有 ' + emptyCatches.length + ' 处空 catch（静默吞异常）——请写成 catch(e){logSwallowed("函数名",e)} 之类，至少留下痕迹');
+}
+
 /* 输出 */
-console.log('静态审计：JS 引用 ' + jsIds.size + ' 个 id，渲染 button/属性 ' + written.size + ' 种');
+console.log('静态审计：JS 引用 ' + jsIds.size + ' 个 id，渲染 button/属性 ' + written.size + ' 种，空 catch ' + emptyCatches.length + ' 处');
 notes.forEach((n) => n && console.log('  · ' + n));
 if (problems.length) {
   console.error('\n发现问题：\n  - ' + problems.join('\n  - '));
