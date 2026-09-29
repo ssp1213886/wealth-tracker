@@ -91,6 +91,17 @@ for (const sec of ['sync', 'price', 'data', 'preferences']) {
 }
 await step('观察-搜索面板', clickId, 700, 'btnWatchAddOpen');
 await step('观察-搜索输入', () => { const i = document.getElementById('watchSearchInput'); i.value = 'nvda'; i.dispatchEvent(new Event('input', { bubbles: true })); }, 1800);
+// 搜索模块抽出后，这里顺便钉住"能按名称搜到票"（回归 BRK-B 这类别名）
+await ev(() => {
+  const i = document.getElementById('watchSearchInput');
+  i.value = 'berkshire';
+  i.dispatchEvent(new Event('input', { bubbles: true }));
+});
+await p.waitForTimeout(1600);
+const searchTop = await ev(() => {
+  const row = document.querySelector('#watchSearchList .watch-search-row');
+  return row ? (row.querySelector('.wsr-sym') || {}).textContent : null;
+});
 await step('观察-关搜索', clickId, 500, 'btnWatchAddOpen');
 await step('观察-⋯菜单', clickId, 500, 'btnWatchMore');
 await step('观察-管理面板', clickId, 900, 'watchMenuManage');
@@ -127,6 +138,7 @@ if (summary.bootFailed) failures.push('页面出现「启动失败」兜底页')
 if (summary.watchRows < 15) failures.push('观察列表没渲染出来（' + summary.watchRows + ' 行）');
 if (summary.activityRows < 2) failures.push('操作日志没渲染出来（' + summary.activityRows + ' 行）');
 if (summary.optionRows < 1) failures.push('期权持仓没渲染出来（' + summary.optionRows + ' 行）');
+if (searchTop !== 'BRK-B') failures.push('搜索 berkshire 第一行应为 BRK-B，实际 ' + searchTop);
 console.log('爬查完成：' + summary.build + ' · 观察 ' + summary.watchRows + ' 行 · 日志 ' + summary.activityRows + ' 行 · 期权 ' + summary.optionRows + ' 行');
 if (failures.length) {
   console.error('爬查发现问题 ' + failures.length + ' 条：\n  - ' + failures.join('\n  - '));

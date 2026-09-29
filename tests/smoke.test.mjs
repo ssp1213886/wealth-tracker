@@ -16,10 +16,12 @@ const syncSource = fs.readFileSync('src/app/sync.js', 'utf8').replace(/^export /
 const renderSource = fs.readFileSync('src/app/render.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const rowsSource = fs.readFileSync('src/app/rows.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const timeSource = fs.readFileSync('src/app/time.js', 'utf8').replace(/^export /gm, '');
+// 观察列表搜索名单已抽到 symbols.js（v234）；断言仍按"源码里能看到名单"来钉，所以这里要带上它
+const symbolsSource = fs.readFileSync('src/app/symbols.js', 'utf8').replace(/^export /gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
   utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
-  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + indexSource;
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -146,13 +148,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=233');
+  assert.equal(manifest.start_url, '/?v=234');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v233/);
+  assert.match(serviceWorker, /wealth-v234/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=233',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=234',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -175,7 +177,8 @@ test('观察列表搜索内置名单 = S&P100 ∪ 纳斯达克100（167 条）',
   must.forEach(([sym, name]) => {
     assert.ok(appMarkup.includes('["' + sym + '","' + name + '"]'), '内置名单缺少 ' + sym + ' ' + name);
   });
-  const idxLine = appMarkup.split('\n').find((l) => l.trim().indexOf('var IDX=[') === 0);
+  // 名单已抽到 src/app/symbols.js（v234），声明可能是 const/var，两种都认
+  const idxLine = appMarkup.split('\n').find((l) => /^(var|const) IDX=\[/.test(l.trim()));
   assert.ok(idxLine, '找不到内置名单 IDX');
   const entries = (idxLine.match(/\["[A-Z0-9.\-]+","/g) || []).length;
   assert.equal(entries, 167, '内置名单条数');
