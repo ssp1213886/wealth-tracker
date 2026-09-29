@@ -391,6 +391,11 @@ const steps = {
 > 只在运行到那条路径时 ReferenceError。当时是 `switchTab` 里的 `setMobileSettings`，靠 `npm run e2e` 的全页爬查抓到。
 > 已加护栏：`scripts/audit/static.mjs` ⑤ —— 名字是别的模块的导出、本文件在调用它、但既没 import 也没本地声明 → 直接报错
 > （同样用"临时删掉 import"验证过它抓得住）。
+>
+> **拆出一个新的 DOM 模块时，固定要改三处**（v247 / v249 / v250 连着踩了三次，已形成清单）：
+> 1. `scripts/audit/static.mjs` 的 `appFiles` —— 不加，它引用的 id 会被算成"死 id"，审计数字会凭空掉一截；
+> 2. `tests/smoke.test.mjs` 的 `appSource` 拼接 —— 不加，靠源码形状断言的用例会红（v250 的 `drawdown-track` 就是这么红的）；
+> 3. `scripts/audit` 的 ⑤ 号守卫会主动提醒漏掉的 import（这条不用改，但一定会响）。
 
 **拆分收尾（v234–v239）**：`index.js` 从 212.3KB 降到 ~199KB，新增 5 个纯逻辑模块（symbols/plan/rows/watch/options/settings），单测从 105 项涨到 153 项。
 
