@@ -68,6 +68,42 @@ if (emptyCatches.length) {
   problems.push('有 ' + emptyCatches.length + ' 处空 catch（静默吞异常）——请写成 catch(e){logSwallowed("函数名",e)} 之类，至少留下痕迹');
 }
 
+/* ⑤ 跨模块调用必须 import。
+   v248 踩过：把函数搬到新模块后，index.js 的调用点忘了补 import ——
+   打包不会报错（ESM 里那只是个"全局变量"引用），只在运行到那条路径时 ReferenceError
+   （当时是 switchTab 里的 setMobileSettings，靠 e2e 全页爬查才抓到）。
+   判据：某个名字是别的模块的导出、本文件在调用它，但既没 import 也没在本文件声明。 */
+{
+  const dir = new URL('src/app/', ROOT);
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.js'));
+  const sources = new Map(files.map((f) => [f, fs.readFileSync(new URL(f, dir), 'utf8')]));
+  const exported = new Set();
+  sources.forEach((src) => {
+    for (const m of src.matchAll(/export\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) exported.add(m[1]);
+  });
+  const missing = [];
+  sources.forEach((src, file) => {
+    const imported = new Set();
+    for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from/g)) {
+      m[1].split(',').forEach((part) => {
+        const t = part.trim();
+        if (!t) return;
+        const alias = t.split(/\s+as\s+/);
+        imported.add((alias[1] || alias[0]).trim());
+      });
+    }
+    for (const m of src.matchAll(/import\s+\*\s+as\s+([A-Za-z_$][\w$]*)/g)) imported.add(m[1]);
+    const local = new Set();
+    for (const m of src.matchAll(/(?:function\s+|const\s+|let\s+|var\s+|class\s+)([A-Za-z_$][\w$]*)/g)) local.add(m[1]);
+    exported.forEach((name) => {
+      if (imported.has(name) || local.has(name)) return;
+      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp('(^|[^.\\w$])' + esc + '\\s*\\(', 'm').test(src)) missing.push(file + ' → ' + name);
+    });
+  });
+  if (missing.length) problems.push('调用了别的模块的导出却没 import（运行到那条路径会 ReferenceError）：' + missing.join(', '));
+}
+
 /* 输出 */
 console.log('静态审计：JS 引用 ' + jsIds.size + ' 个 id，渲染 button/属性 ' + written.size + ' 种，空 catch ' + emptyCatches.length + ' 处');
 notes.forEach((n) => n && console.log('  · ' + n));

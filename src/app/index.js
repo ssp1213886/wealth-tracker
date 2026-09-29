@@ -1,4 +1,4 @@
-import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal} from './util.js';
+import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed} from './util.js';
 import {computeHoldings, buildPositionRows} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations} from './store.js';
 import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, SYNC_FIELDS} from './sync.js';
@@ -9,9 +9,10 @@ import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, op
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
+import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
-import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, fmtSmallPrice, searchRowPrice, pricePillHTML} from './watch-view.js';
+import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
@@ -24,7 +25,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v247';var APP_DATA_VERSION=5;
+var APP_BUILD='v248';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -66,16 +67,13 @@ function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+
 var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC ETF',SGOV:'SGOV'},ETF_SYMS=TRADE_SYMBOLS,ALL_SYMS=TRADE_SYMBOLS;
 
 
-var AD={VGT:{ret:0.12,vol:0.22},SMH:{ret:0.14,vol:0.28},BTC:{ret:0.18,vol:0.65}};
 
 
 function getAssetColor(sym){var css=getComputedStyle(document.documentElement),map={VGT:css.getPropertyValue('--violet').trim(),SMH:css.getPropertyValue('--blue').trim(),BTC:css.getPropertyValue('--orange').trim()};return map[sym]||css.getPropertyValue('--muted').trim()}
 
 
-/* ===== 投资组合计算 ===== */
 
 
-function calcPortfolio(){var vs=safeNum(state.vgt),ss=safeNum(state.smh),bs=safeNum(state.btc),total=vs+ss+bs;if(total<0.001)return{ret:0.05,vol:0.15};var w={v:vs/total,s:ss/total,b:bs/total};return{ret:w.v*AD.VGT.ret+w.s*AD.SMH.ret+w.b*AD.BTC.ret,vol:Math.sqrt(Math.max(0,Math.pow(w.v*AD.VGT.vol,2)+Math.pow(w.s*AD.SMH.vol,2)+Math.pow(w.b*AD.BTC.vol,2)+2*0.75*w.v*AD.VGT.vol*w.s*AD.SMH.vol+2*0.2*(w.v*AD.VGT.vol*w.b*AD.BTC.vol+w.s*AD.SMH.vol*w.b*AD.BTC.vol)))}}
 
 
 function updateSidebar(){
@@ -562,13 +560,11 @@ function initTradeIds(){var max=0;for(var i=0;i<trades.length;i++){if(trades[i].
 /* ===== 主题 & UI ===== */
 
 
-function refreshVisualPalette(){if(typeof updatePortfolio==='function')updatePortfolio();if(typeof updateSidebar==='function')updateSidebar()}function updateThemeMeta(){var dark=document.documentElement.dataset.theme==='dark',meta=document.querySelector('meta[name="theme-color"]'),label=document.getElementById('desktopThemeLabel');if(meta)meta.content=dark?'#000000':'#f5f6f3';if(label)label.textContent=dark?'深色模式':'浅色模式'}function toggleTheme(){var h=document.documentElement,cur=h.dataset.theme;h.dataset.theme=cur==='dark'?'light':'dark';updateThemeMeta();refreshVisualPalette();try{localStorage.setItem(LSKEY+'_theme',h.dataset.theme)}catch(e){logSwallowed("toggleTheme",e)}setTimeout(function(){try{document.activeElement.blur()}catch(e){logSwallowed("toggleTheme",e)}},0)}document.getElementById('btnTheme').addEventListener('click',toggleTheme);window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(e){var t=readRaw(LSKEY+'_theme');if(!t||t==='system'){document.documentElement.dataset.theme=e.matches?'dark':'light';updateThemeMeta();refreshVisualPalette()}});
+function refreshVisualPalette(){if(typeof updatePortfolio==='function')updatePortfolio();if(typeof updateSidebar==='function')updateSidebar()}
+configureSettingsView({refreshVisualPalette:refreshVisualPalette});
+bindShellControls();
 
 
-function setAccent(name){var h=document.documentElement;h.dataset.accent=name;document.querySelectorAll('.accent-dot').forEach(function(d){d.classList.toggle('active',d.dataset.accent===name)});refreshVisualPalette();try{localStorage.setItem(LSKEY+'_accent',name)}catch(e){logSwallowed("setAccent",e)}}
-
-
-document.getElementById('accentDots').addEventListener('click',function(e){var dot=e.target.closest('.accent-dot');if(!dot)return;setAccent(dot.dataset.accent)});
 
 
 
@@ -578,25 +574,15 @@ document.getElementById('accentDots').addEventListener('click',function(e){var d
 
 
 
-document.getElementById('sidebarToggle').addEventListener('click',function(){var sb=document.querySelector('.sidebar');sb.classList.toggle('collapsed');var btn=document.getElementById('sidebarToggle');var arrow=btn.querySelector('.arrow');if(sb.classList.contains('collapsed')){arrow.textContent='▶';btn.style.left='6px';this.title='展开侧边栏'}else{arrow.textContent='◀';btn.style.left='266px';this.title='收起侧边栏'};try{localStorage.setItem(LSKEY+'_sidebar',sb.classList.contains('collapsed')?'1':'0')}catch(e){logSwallowed("setAccent",e)}});
 
 
-(function(){try{if(readRaw(LSKEY+'_sidebar')==='1'){var sb=document.querySelector('.sidebar');sb.classList.add('collapsed');var a=document.querySelector('.sidebar-toggle .arrow');if(a)a.textContent='▶';var btn=document.getElementById('sidebarToggle');if(btn)btn.style.left='6px'}}catch(e){logSwallowed("setAccent",e)}})();
 
 
 // Mobile settings drawer
 
 
-function setMobileSettings(open){var sb=document.querySelector('.sidebar'),ov=document.getElementById('sbOverlay'),hb=document.getElementById('mobHamburger'),isOpen=!!open;if(!sb)return;sb.classList.toggle('open',isOpen);document.body.classList.toggle('drawer-open',isOpen);if(ov)ov.classList.toggle('show',isOpen);if(hb){hb.classList.toggle('sidebar-close',isOpen);hb.setAttribute('aria-expanded',String(isOpen));hb.setAttribute('aria-label',isOpen?'关闭设置':'打开设置');hb.title=isOpen?'关闭设置':'打开设置'}if(window.innerWidth<=800)sb.setAttribute('aria-hidden',String(!isOpen))}
-function openMobileSettings(){if(window.innerWidth<=800){setMobileSettings(true);return}var btn=document.getElementById('sidebarToggle');if(btn)btn.click()}
-function openAdvancedSettings(section){var details=document.querySelector('.advanced-settings');if(!details)return;details.open=true;var panels={},panelId=SETTINGS_PANEL_IDS[section];if(panelId)panels[section]=document.getElementById(panelId);var panel=panels[section]||details,targetId=SETTINGS_FOCUS_IDS[section],target=targetId?document.getElementById(targetId):panel;if(section==='sync'){var sync=document.getElementById('syncPanel');if(sync)sync.classList.add('open')}document.querySelectorAll('.settings-panel.is-highlighted').forEach(function(el){el.classList.remove('is-highlighted')});if(panel.classList)panel.classList.add('is-highlighted');setTimeout(function(){var scroller=panel.closest('.sb-section.sb-settings')||panel.closest('.sidebar');if(scroller){var sr=scroller.getBoundingClientRect(),pr=panel.getBoundingClientRect(),next=scroller.scrollTop+(pr.top-sr.top)-64;scroller.scrollTo({top:Math.max(0,next),behavior:'smooth'})}else{panel.scrollIntoView({behavior:'smooth',block:'center'})}if(target&&typeof target.focus==='function'&&(section==='price'||section==='preferences'))target.focus({preventScroll:true});setTimeout(function(){if(panel.classList)panel.classList.remove('is-highlighted')},900)},240)}
-function togglePrivacy(){document.body.classList.toggle('privacy-mode')}
-document.getElementById('mobHamburger').addEventListener('click',function(){setMobileSettings(!document.querySelector('.sidebar').classList.contains('open'))});
 
 
- document.getElementById('sbOverlay').addEventListener('click',function(){setMobileSettings(false)});
-document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.querySelector('.sidebar.open'))setMobileSettings(false)});
-window.addEventListener('resize',function(){if(window.innerWidth>800&&document.querySelector('.sidebar.open'))setMobileSettings(false)});
 
 
 // ---- TABS ----
@@ -673,10 +659,8 @@ document.getElementById('csvImport').addEventListener('change',function(){var fi
 
 
 
-function loadAccent(){try{var a=readRaw(LSKEY+'_accent');if(a){document.documentElement.dataset.accent=a;document.querySelectorAll('.accent-dot').forEach(function(d){d.classList.toggle('active',d.dataset.accent===a)})}}catch(e){logSwallowed("loadAccent",e)}}
 
 
-function loadTheme(){try{var t=readRaw(LSKEY+'_theme'),isDark=false;if(t==='dark')isDark=true;else if(t==='light')isDark=false;else isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.theme=isDark?'dark':'light';updateThemeMeta()}catch(e){logSwallowed("loadTheme",e)}}
 
 
 
@@ -850,25 +834,6 @@ function initOptionEntryControls(){
   asset.addEventListener('change',syncOptionControls);
   syncOptionControls();
 }
-function fillTradeForm(sym,price){
-
-
-  var se=document.getElementById('tfAsset');if(se)se.value=sym;syncTradeControls();
-
-
-  var de=document.getElementById('tfDate');if(de)de.value=marketDate();
-
-
-  var pe=document.getElementById('tfPrice');if(pe&&price)pe.value=price.toFixed(2);updateTradeEstimate();
-
-
-  var qe=document.getElementById('tfShares');if(qe)qe.focus();syncTradeControls();
-
-
-  var tb=document.querySelector('.tab-btn[data-tab="holding"]');if(tb)tb.click();
-
-
-}
 
 
 var _ptrEl=document.getElementById("pullHint");if(_ptrEl)_ptrEl.style.display="none";/* 顶部状态栏不再响应点击刷新，避免误触；刷新入口在操作台的刷新按钮 */
@@ -953,7 +918,6 @@ function initAll(){
 
 
 window.addEventListener('DOMContentLoaded',initAll);
-function logSwallowed(where,error){try{console.warn("[wealth] 已忽略异常 · "+where,error&&error.message?error.message:error)}catch(_e){logSwallowed("logSwallowed",_e)}}
 function reportError(message,detail){try{var msg=String(message||'unknown').slice(0,300),det=String(detail||'').slice(0,1500);window.__lastError=msg+' | '+det;var key='wealth_err_'+msg.slice(0,60);var last=Number(sessionStorage.getItem(key)||0);if(Date.now()-last<300000)return;sessionStorage.setItem(key,String(Date.now()));fetch('/api/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:APP_BUILD,message:msg,detail:det,ua:navigator.userAgent,ts:Date.now()})}).catch(function(){})}catch(e){logSwallowed("reportError",e)}}
 function copyDiagnostics(){try{var info=['版本 '+APP_BUILD,'时间 '+new Date().toISOString(),'URL '+location.href,'UA '+navigator.userAgent,'最近错误 '+(window.__lastError||'无')].join('\n');var fallback=function(){try{prompt('复制以下信息反馈：',info)}catch(e){logSwallowed("copyDiagnostics",e)}};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(info).then(function(){try{showToast('诊断信息已复制')}catch(e){logSwallowed("copyDiagnostics",e)}},fallback)}else fallback()}catch(e){logSwallowed("copyDiagnostics",e)}}
 window.addEventListener('error',function(e){reportError((e&&e.message)||'error',(e&&e.error&&e.error.stack)||((e&&e.filename)||'')+':'+((e&&e.lineno)||0))});
@@ -961,7 +925,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=247',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=248',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1472,24 +1436,13 @@ function updateSyncBanner(){applySyncBanner(document,syncBannerView(loadSyncStat
 function initSyncBanner(){bindSyncBanner({doc:document,onRetry:function(){if(typeof autoPull==='function')try{autoPull()}catch(e){logSwallowed("initSyncBanner",e)}},onExport:function(){var b=document.getElementById('btnExportData');if(b)b.click()},onDismiss:function(){var s=loadSyncState();s.bannerDismissedAt=Date.now();saveSyncState(s)}})}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initSyncBanner)}else{initSyncBanner()}
 
-function initSidebarMarketCollapse(){var sec=document.querySelector('.sidebar>.sb-section.sb-market');if(!sec||sec.dataset.collapseReady)return;sec.dataset.collapseReady='1';var h3=sec.querySelector('h3');var KEY='wealth_sidebar_market_collapsed';var apply=function(collapsed){sec.classList.toggle('is-collapsed',!!collapsed);if(h3)h3.setAttribute('aria-expanded',collapsed?'false':'true')};var saved=true;try{var raw=readRaw(KEY);saved=raw===null?true:raw==='1'}catch(e){logSwallowed("initSidebarMarketCollapse",e)}apply(saved);if(h3){h3.setAttribute('role','button');h3.setAttribute('tabindex','0');h3.addEventListener('click',function(){var next=!sec.classList.contains('is-collapsed');apply(next);try{localStorage.setItem(KEY,next?'1':'0')}catch(e){logSwallowed("initSidebarMarketCollapse",e)}});h3.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();h3.click()}})}}
-/* 市场行情按要求恢复为始终展开 */
 
-function initMobileSettingsDrawer(){var entry=document.getElementById('sbSettingsEntry');if(!entry)return;var overlay=null;var panelHead=document.getElementById('sbSettingsBack');function panel(){return document.querySelector('.sb-section.sb-settings')}function ensureOverlay(){if(!overlay){overlay=document.createElement('div');overlay.className='sb-overlay';overlay.id='sbSettingsOverlay';overlay.addEventListener('click',function(){close()});document.body.appendChild(overlay)}return overlay}function open(){placeSettingsPanel(true);var sec=panel();if(!sec)return;sec.classList.add('open');entry.setAttribute('aria-expanded','true');if(typeof setMobileSettings==='function')setMobileSettings(false);var ov=ensureOverlay();requestAnimationFrame(function(){ov.classList.add('show')})}function close(){var sec=panel();if(sec)sec.classList.remove('open');entry.setAttribute('aria-expanded','false');if(overlay)overlay.classList.remove('show')}entry.addEventListener('click',open);if(panelHead)panelHead.addEventListener('click',close);document.addEventListener('keydown',function(e){if(e.key==='Escape'){var sec=panel();if(sec&&sec.classList.contains('open')){e.preventDefault();close()}}})}
-function placeSettingsPanel(mobile){var sec=document.querySelector('.sb-section.sb-settings');if(!sec)return;var wantMobile=typeof mobile==='boolean'?mobile:window.matchMedia('(max-width:800px)').matches;if(wantMobile){if(sec.parentElement!==document.body)document.body.appendChild(sec);sec.setAttribute('id','settingsDrawerInner')}else{if(sec.parentElement===document.body){var host=document.querySelector('.sidebar');if(host)host.appendChild(sec)}var s=document.getElementById('sbSettingsOverlay');if(s)s.classList.remove('show');sec.classList.remove('open')}}
-function syncSettingsPanelPlacement(){placeSettingsPanel(window.matchMedia('(max-width:800px)').matches)}
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){syncSettingsPanelPlacement();initMobileSettingsDrawer()})}else{syncSettingsPanelPlacement();initMobileSettingsDrawer()}
-window.addEventListener('resize',function(){syncSettingsPanelPlacement()});
+/* v248：设置面板搬移 / 整屏抽屉 / 手机端手风琴（含各自的启动时机与 resize 监听） */
+bindSettingsPanel();
 
-function setupInlineQuickSettings(){if(!window.matchMedia('(max-width:800px)').matches)return;var menu=document.querySelector('.sb-quick-menu');if(!menu||menu.dataset.inlineReady)return;menu.dataset.inlineReady='1';var map=[['price','settingsPrice'],['sync','settingsSync'],['data','settingsData'],['preferences','settingsPreferences']];map.forEach(function(pair){var key=pair[0],id=pair[1];var btn=menu.querySelector('button[onclick*="'+key+'"]');var sec=document.getElementById(id);if(!btn||!sec)return;var wrap=document.createElement('div');wrap.className='quick-acc';wrap.hidden=true;wrap.appendChild(sec);btn.insertAdjacentElement('afterend',wrap);btn.removeAttribute('onclick');btn.style.setProperty('padding-left','0');btn.addEventListener('click',function(){var wasOpen=!wrap.hidden;menu.querySelectorAll('.quick-acc').forEach(function(w){w.hidden=true});menu.querySelectorAll('button').forEach(function(b){b.classList.remove('is-open')});if(!wasOpen){wrap.hidden=false;btn.classList.add('is-open')}})});var details=document.querySelector('.advanced-settings');if(details){var body=details.querySelector('.advanced-settings-body');if(body&&!body.querySelector('.settings-panel'))details.remove()}}
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',setupInlineQuickSettings)}else{setupInlineQuickSettings()}
 
-function initSidebarHealthCollapse(){var sec=document.querySelector('.sidebar>.sb-section.sb-sync-summary');if(!sec||sec.dataset.healthCollapseReady)return;sec.dataset.healthCollapseReady='1';var head=sec.querySelector('.sb-sync-head');if(!head)return;var KEY='wealth_sidebar_health_collapsed';var apply=function(collapsed){sec.classList.toggle('is-collapsed',!!collapsed);head.setAttribute('aria-expanded',collapsed?'false':'true')};var saved=true;try{var raw=readRaw(KEY);saved=raw===null?true:raw==='1'}catch(e){logSwallowed("initSidebarHealthCollapse",e)}apply(saved);head.setAttribute('role','button');head.setAttribute('tabindex','0');var toggle=function(){var next=!sec.classList.contains('is-collapsed');apply(next);try{localStorage.setItem(KEY,next?'1':'0')}catch(e){logSwallowed("initSidebarHealthCollapse",e)}};head.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('button'))return;toggle()});head.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}})}
-/* 数据健康按要求恢复为始终展开 */
-
-function haptic(kind){try{if(!navigator||typeof navigator.vibrate!=='function')return;var map={light:8,medium:16,heavy:26,warning:[14,60,14],success:[10,40,10],danger:[18,70,18]};var v=map[kind];if(v===undefined)v=8;navigator.vibrate(v)}catch(e){logSwallowed("haptic",e)}}
-function initHaptics(){document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-haptic],.btn,.bb-btn,.qa-fab,.qa-item,.accent-dot,.theme-btn,.toggle-wrap,.segment,.record-seg,.trade-del,.sb-quick-menu button,.ds-approval-btn,.sync-retry'):null;if(!t)return;var k=t.getAttribute('data-haptic')||'light';haptic(k)},true)}
-if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initHaptics)}else{initHaptics()}
+/* v248：触感委托（haptic 定义已搬到 settings-view.js） */
+bindHaptics();
 var sbBuildEl=document.getElementById('sbBuild');if(sbBuildEl)sbBuildEl.textContent=APP_BUILD;
 /* ===== 观察列表 + ETF 前十大构成股（数据来自 Worker，只读，不进同步） ===== */var WATCH_KEY='wealth_watchlist_v1';var watchList=normalizeWatchlist((function(){try{return JSON.parse(readRaw(WATCH_KEY)||'[]')}catch(e){return[]}})());var watchQuotes={},holdingsData={},watchFetchedAt=0,watchRefreshing=false,watchInvalid=[],watchMissing=[],watchSort='default';function saveWatch(next){watchList=normalizeWatchlist(next);try{localStorage.setItem(WATCH_KEY,JSON.stringify(watchList))}catch(e){logSwallowed("saveWatch",e)}renderWatch();renderWatchManage();try{markDirty('watchlist');autoPushDebounce()}catch(e){logSwallowed("saveWatch",e)}}function paintWatchSort(){var sg=document.querySelectorAll('[data-watch-sort]');for(var i=0;i<sg.length;i+=1){sg[i].classList.toggle('is-on',sg[i].getAttribute('data-watch-sort')===watchSort)}}function renderWatch(){var box=document.getElementById('watchRows');if(!box)return;var rows=toWatchRows(watchList,watchQuotes);if(watchSort==='chg')rows.sort(function(a,b){return (Number(b.changePct)||-999)-(Number(a.changePct)||-999)});else if(watchSort==='price')rows.sort(function(a,b){return (Number(b.price)||0)-(Number(a.price)||0)});if(!rows.length){box.innerHTML='<div class="table-empty">还没有观察标的，点「＋ 添加」搜代码或名称</div>';return}box.innerHTML=rows.map(function(r){return '<div class="watch-row"><span class="watch-sym">'+escapeHtml(r.sym)+(r.label!==r.sym?'<small>'+escapeHtml(r.label)+'</small>':'')+'</span><span class="watch-price">'+r.priceText+'</span><span class="watch-chg is-'+r.dir+'">'+r.changeText+'</span></div>'}).join('');var cap=document.getElementById('watchStatus');if(cap){var bad=watchMissing.length+watchInvalid.length;cap.textContent=!watchFetchedAt?'—':bad?bad+' 项无数据':'行情正常';cap.className='watch-cap'+(watchFetchedAt?(bad?' is-warn':' is-ok'):'')}var meta=document.getElementById('watchMeta');if(meta)meta.textContent=watchFetchedAt?('行情 '+syncClockText()+' · 共 '+rows.length+' 项 · 点这里刷新'):'点这里刷新行情 · 美股非交易时段显示收盘价';}function renderWatchManage(){var box=document.getElementById('watchManageList');if(!box)return;box.innerHTML=normalizeWatchlist(watchList).map(function(item,i){return '<div class="watch-mrow"><label class="watch-mcheck"><input type="checkbox" data-watch-toggle="'+item.sym+'"'+(item.enabled?' checked':'')+'><span>'+escapeHtml(item.sym)+'</span></label><span class="watch-mtools"><button type="button" class="watch-mbtn" data-watch-move="'+item.sym+'" data-dir="-1" aria-label="上移">↑</button><button type="button" class="watch-mbtn" data-watch-move="'+item.sym+'" data-dir="1" aria-label="下移">↓</button><button type="button" class="watch-mbtn" data-watch-remove="'+item.sym+'" aria-label="移除">×</button></span></div>'}).join('')}function renderHoldings(){['VGT','SMH'].forEach(function(sym){var box=document.getElementById('hold'+sym);if(!box)return;var data=holdingsData[sym];if(!data||!data.list||!data.list.length){box.innerHTML='<div class="hold-title">'+sym+' 前十大</div><div class="table-empty">暂无数据</div>';return}var rows=toHoldingRows(data,watchQuotes);box.innerHTML='<div class="hold-title">'+sym+' 前十大<small>'+(data.source==='yahoo'?'实时抓取':'榜单 '+ (data.asOf||'') )+'</small></div>'+rows.map(function(r){return '<div class="hold-row" data-name="'+escapeHtml(r.name)+'"><span class="hold-sym">'+escapeHtml(r.sym)+'<small>'+r.weightText+'</small></span><span class="hold-price">'+r.priceText+'</span><span class="watch-chg is-'+r.dir+'">'+r.changeText+'</span></div>'}).join('');});var exBox=document.getElementById('holdExpose');if(!exBox){var hb=document.getElementById('exposureSlot')||document.querySelector('#holdingsCard .collapsible-body');if(hb){exBox=document.createElement('div');exBox.id='holdExpose';exBox.className='card hold-block';hb.appendChild(exBox)}}if(exBox){var shx={};trades.forEach(function(t){shx[t.symbol]=(shx[t.symbol]||0)+Number(t.shares||0)});var vV=(shx.VGT||0)*(livePrices.VGT||0),vS=(shx.SMH||0)*(livePrices.SMH||0),vB=(shx.BTC||0)*(livePrices.BTC||0);var ex=toExposureRows(holdingsData,{VGT:vV,SMH:vS},10,[{sym:'比特币',amount:vB,note:((watchQuotes&&watchQuotes.BTC&&watchQuotes.BTC.name&&String(watchQuotes.BTC.name).indexOf('现货')<0)?String(watchQuotes.BTC.name):'Grayscale Bitcoin Mini Trust')+'（代码 BTC）· 1:1 跟踪比特币'}]);var m$=function(n){return '$'+Math.round(n).toLocaleString('en-US')};var rh=function(label,note,amount,share,cls){var direct=String(note||'').indexOf('\u76f4\u63a5\u6301\u6709')>=0||String(note||'').indexOf('1:1')>=0;var kind=cls==='exp-rest'?'rest':(direct?'direct':'pierce');var bar=(typeof share==='number'&&share>0)?'<span class="exp-bar"><i style="width:'+Math.min(100,share)+'%"></i></span>':'';return '<div class="hold-row '+cls+'" data-kind="'+kind+'" data-src="'+escapeHtml(note||'')+'" data-amount="'+Math.round(amount)+'" data-share="'+(typeof share==='number'?share:'')+'"><span class="hold-sym">'+escapeHtml(label)+bar+'</span><span class="hold-price">≈ '+m$(amount)+'</span><span class="watch-chg is-flat">'+(typeof share==='number'?share+'%':(share||''))+'</span></div>'};var eb=ex.rows.map(function(r){return rh(r.sym,r.parts.join(' + '),r.amount,r.share,'exp-row')}).join('');ex.etfRest.forEach(function(r){eb+=rh(r.label,'榜单外 '+r.missPct+'%',r.amount,r.share,'exp-rest')});if(ex.restCount)eb+=rh('其余 '+ex.restCount+' 只','',ex.rest,ex.restShare,'exp-rest');exBox.innerHTML='<div class="hold-title">底层资产敞口<small>含穿透估算</small></div>'+eb+'<div class="watch-meta">分母 = 持仓市值合计 '+m$(ex.base)+'（不含现金） · 覆盖度 VGT '+(ex.covered.VGT||0)+'% / SMH '+(ex.covered.SMH||0)+'%</div>'}
 }function fetchMarketData(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');var holdReqs=['VGT','SMH'].map(function(sym){return fetch(base+'/api/holdings?symbol='+sym).then(function(r){return r.ok?r.json():null}).catch(function(){return null})});return Promise.all(holdReqs).then(function(list){list.forEach(function(item){if(item&&item.ok&&item.list)holdingsData[item.symbol]=item});var symbols=collectQuoteSymbols(watchList,holdingsData);if(!symbols.length){watchFetchedAt=Date.now();renderWatch();renderHoldings();return}return fetch(base+'/api/quotes?symbols='+encodeURIComponent(symbols.join(','))).then(function(r){return r.ok?r.json():null}).then(function(data){if(data&&data.ok&&data.quotes){for(var k in data.quotes){watchQuotes[k]=data.quotes[k]}watchInvalid=data.invalid||[];watchMissing=data.missing||[];watchFetchedAt=Date.now()}}).catch(function(){})}).then(function(){renderWatch();renderHoldings()})}function refreshMarket(force){if(watchRefreshing)return;if(!force&&Date.now()-watchFetchedAt<60000)return;watchRefreshing=true;fetchMarketData().then(function(){watchRefreshing=false},function(){watchRefreshing=false})}(function initWatchUI(){var more=document.getElementById('btnWatchMore'),menu=document.getElementById('watchMenu');function closeMenu(){if(!menu)return;menu.hidden=true;if(more){more.setAttribute('aria-expanded','false');more.classList.remove('is-open')}}if(more&&menu)more.addEventListener('click',function(e){e.stopPropagation();var open=menu.hidden;menu.hidden=!open;more.setAttribute('aria-expanded',String(open));more.classList.toggle('is-open',open);if(open){var sp=document.getElementById('watchSearchPanel');if(sp){sp.hidden=true;var ab2=document.getElementById('btnWatchAddOpen');if(ab2)ab2.setAttribute('aria-expanded','false')}}});document.body.addEventListener('click',function(e){if(!menu||menu.hidden)return;var t=e.target;if((menu.contains&&menu.contains(t))||(more&&more.contains&&more.contains(t)))return;closeMenu()});var segs=document.querySelectorAll('[data-watch-sort]');for(var si=0;si<segs.length;si+=1){(function(sb){sb.addEventListener('click',function(){watchSort=sb.getAttribute('data-watch-sort')||'default';paintWatchSort();renderWatch();closeMenu()})})(segs[si])}var mm=document.getElementById('watchMenuManage');if(mm)mm.addEventListener('click',function(){var box=document.getElementById('watchManage');if(!box)return;box.hidden=false;renderWatchManage();closeMenu();try{box.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){logSwallowed("closeMenu",e)}});var mr=document.getElementById('watchMenuRefresh');if(mr)mr.addEventListener('click',function(){refreshMarket(true);closeMenu()});var mc=document.getElementById('btnWatchManageClose');if(mc)mc.addEventListener('click',function(){var box=document.getElementById('watchManage');if(box)box.hidden=true});var metaEl=document.getElementById('watchMeta');if(metaEl)metaEl.addEventListener('click',function(){refreshMarket(true)});paintWatchSort();document.body.addEventListener('change',function(e){var t=e.target;if(!t||!t.getAttribute)return;var sym=t.getAttribute('data-watch-toggle');if(sym)saveWatch(toggleWatch(watchList,sym))});document.body.addEventListener('click',function(e){var t=e.target;if(!t||!t.getAttribute)return;var mv=t.getAttribute('data-watch-move');if(mv){saveWatch(moveWatch(watchList,mv,Number(t.getAttribute('data-dir'))));return}var rm=t.getAttribute('data-watch-remove');if(rm)saveWatch(removeWatch(watchList,rm))});var header=document.querySelector('#holdingsCard .collapsible-header');if(header)header.addEventListener('click',function(){refreshMarket(false)});var obs=new MutationObserver(function(){if(document.body.dataset.activeTab==='console'||document.body.dataset.activeTab==='holding')refreshMarket(false)});obs.observe(document.body,{attributes:true,attributeFilter:['data-active-tab']});renderWatch();renderWatchManage();renderHoldings();setTimeout(function(){refreshMarket(true)},1200);setInterval(function(){if(document.visibilityState!=='visible')return;var probe=watchQuotes.VGT||watchQuotes.SMH;if(!probe||Date.now()-(Number(probe.asOf)||0)>30*60*1000)return;refreshMarket(false)},60000);document.body.addEventListener('click',function(e){var row=e.target&&e.target.closest?e.target.closest('.watch-row,.hold-row'):null;if(!row)return;var next=row.nextElementSibling;if(next&&next.classList&&next.classList.contains('row-detail')){next.remove();return}var ek=row.getAttribute('data-kind');if(ek){var es=row.querySelector('.watch-sym,.hold-sym');var el2=String(es&&es.childNodes[0]?es.childNodes[0].textContent:'').trim();var ea=Number(row.getAttribute('data-amount'))||0,esr=row.getAttribute('data-share')||'—',en=row.getAttribute('data-src')||'';var ex2=ek==='direct'?(en||'ETF 1:1 跟踪底层资产，无成分股拆解'):(ek==='rest'?('补全榜单即可看到明细 · '+(en||'榜单未覆盖的部分')):('来自 ETF 成分股 · '+(en||'前十大')));var ed=document.createElement('div');ed.className='row-detail';ed.innerHTML='<div class="rd-top"><span class="rd-sym">'+escapeHtml(el2)+'</span><span class="rd-price">≈ $'+ea.toLocaleString('en-US')+'</span></div>'+'<div class="rd-sub">占持仓 '+esr+'%</div>'+'<div class="rd-exp"><div class="rd-exp-row"><span>来源</span></div><div class="rd-exp-note">'+escapeHtml(ex2)+'</div></div>';row.after(ed);return}var symEl=row.querySelector('.watch-sym,.hold-sym');if(!symEl)return;var sym=String(symEl.childNodes[0]?symEl.childNodes[0].textContent:'').trim();if(!sym)return;var q=watchQuotes[sym];if(!q){showToast(sym+'：'+(watchInvalid.indexOf(sym)>=0?'该代码暂无行情源':watchMissing.indexOf(sym)>=0?'抓取失败，点「↻ 刷新」重试':'暂无数据'),'err');return}var pEl=row.querySelector('.watch-price,.hold-price'),cEl=row.querySelector('.watch-chg'),wEl=row.querySelector('.hold-sym small'),nEl=row.getAttribute('data-name');var when=q.asOf?new Date(q.asOf).toLocaleString('zh-CN',{month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';var fixed=function(v){var n=Number(v);return Number.isFinite(n)&&n>0?(q.currency==='KRW'||q.currency==='JPY'?'₩':'$')+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):'—'};var sh={};trades.forEach(function(t){sh[t.symbol]=(sh[t.symbol]||0)+Number(t.shares||0)});var box=row.closest('#holdVGT')?'VGT':(row.closest('#holdSMH')?'SMH':null);var etfVal=box?(sh[box]||0)*(livePrices[box]||0):0,w=wEl?parseFloat(wEl.textContent)||0:0;var fixed=function(v){var n=Number(v);return Number.isFinite(n)&&n>0?(q.currency==='KRW'||q.currency==='JPY'?'₩':'$')+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):'—'};var money=function(n){return '$'+Math.round(n).toLocaleString('en-US')};var d=document.createElement('div');d.className='row-detail';var html='';html+=(nEl?'<div class="rd-sub">'+escapeHtml(nEl)+'</div>':'');if(etfVal>0&&w>0){html+='<div class="rd-exp"><div class="rd-exp-row"><span>穿透敞口</span><strong>≈ '+money(etfVal*w/100)+'</strong></div><div class="rd-exp-note">'+box+' '+money(etfVal)+' × '+w.toFixed(2)+'%</div><div class="rd-bar"><i style="width:'+Math.min(100,w)+'%"></i></div></div>'}html+='<div class="rd-meta">昨收 '+fixed(q.prevClose)+' · 行情 '+when+' · '+(q.source==='coingecko'?'CoinGecko':'Yahoo')+'<br>币种 '+(q.currency||'USD')+(w>0?' · 权重 '+w.toFixed(2)+'%':'')+'</div>';d.innerHTML=html;row.after(d)})})();
@@ -1955,7 +1908,6 @@ if(typeof window!=='undefined'){
   /* 内置名单：S&P 100 ∪ 纳斯达克100 共 167 条（解析自维基百科成分表的「代码列 + 公司列」） */
   /* 名单内按代码/名称都能搜到；名单外用「按代码查询」兜底（加密纯代码即可，自动按 CODE-USD 解析） */
   function inList(sym){for(var i=0;i<watchList.length;i+=1){if(watchList[i]&&watchList[i].sym===sym)return true}return false}
-  function fmtSmall(n){return fmtSmallPrice(n)}
   function priceOf2(sym){return searchRowPrice(watchQuotes[sym]||extra[sym])}
   function mkRow(sym,name){
     var t=priceOf2(sym),has=inList(sym),row=document.createElement('div');

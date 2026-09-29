@@ -9,6 +9,13 @@ export function fmtFull(n){n=safeNum(n);return'$'+n.toLocaleString('en-US',{mini
 
 export function fmtShares(n){var v=Math.abs(Number(n)||0);if(!isFinite(v))v=0;var s=v.toFixed(4);if(s.indexOf('.')>=0)s=s.replace(/0+$/,'').replace(/\.$/,'');return s||'0'}
 
+/**
+ * 记录"被有意吞掉的异常"（以前散在各处 catch 里，出问题完全没痕迹）。
+ * v248 从 index.js 搬到 util.js：它只用 console，属于纯工具，抽出来后各模块都能共用一份实现。
+ * 注意是 console.warn 不是静默：排查"为什么没生效"先看这里。
+ */
+export function logSwallowed(where,error){try{console.warn("[wealth] 已忽略异常 · "+where,error&&error.message?error.message:error)}catch(_e){logSwallowed("logSwallowed",_e)}}
+
 export function fmtPnLFull(n){if(!isFinite(n))return'-';return(n>=0?'+':'')+fmtFull(n)}
 
 export function cashSigned(l){var t=l.type||'',a=l.amount||0;return (t==='出金'||t.indexOf('权利金退回')>=0)?-a:a}
