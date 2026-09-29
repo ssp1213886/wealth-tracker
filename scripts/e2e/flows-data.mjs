@@ -50,6 +50,24 @@ const snap = () => ev(() => ({
 }));
 const failures = [];
 
+/* 启动引导：本地有数据、云端为空 → 必须把本地标脏，并在关闭页面时补推上去。
+   v240 抽取同步决策层时漏掉了 saveSyncState(ss)，导致这条链路整段失效（线上 v240–v245），
+   所以这里用「关页面后云端必须收到 trades」把它钉住。 */
+const bootDirty = await ev(() => (JSON.parse(localStorage.getItem('wealth_sync_state') || '{}').dirty) || {});
+if (!bootDirty.trades || !bootDirty.cashBalance) {
+  failures.push('启动后本地数据没有标脏（dirty=' + JSON.stringify(bootDirty) + '）');
+}
+await p.waitForTimeout(1200);
+await p.evaluate(() => { window.dispatchEvent(new Event('pagehide')); });
+await p.waitForTimeout(1500);
+{
+  const bootCloud = await (await fetch(CLOUD + '/_log')).json();
+  const bootKeys = Object.keys(bootCloud.store);
+  ['trades', 'cashBalance'].forEach((k) => {
+    if (!bootKeys.includes(k)) failures.push('启动时的待同步数据没有补推到云端：缺 ' + k + '（云端只有 ' + (bootKeys.join(',') || '空') + '）');
+  });
+}
+
 /* 买入 VGT 10 股 @580 */
 await ev(() => document.getElementById('bbConsole').click());
 await p.waitForTimeout(1500);
