@@ -28,10 +28,12 @@ const chartsSource = fs.readFileSync('src/app/charts.js', 'utf8').replace(/^expo
 const syncViewSource = fs.readFileSync('src/app/sync-view.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 // 持仓视图层已抽到 portfolio-view.js（v250）：指标卡/盈亏明细/持仓表/目标进度/回撤面板/行情胶囊
 const portfolioViewSource = fs.readFileSync('src/app/portfolio-view.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
+// 待办提醒视图层已抽到 alerts-view.js（v253）：normalizeAlerts 等按函数名切片做断言
+const alertsViewSource = fs.readFileSync('src/app/alerts-view.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
   utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
-  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + syncViewSource + '\n' + portfolioViewSource + '\n' + indexSource;
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + syncViewSource + '\n' + portfolioViewSource + '\n' + alertsViewSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -167,13 +169,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=252');
+  assert.equal(manifest.start_url, '/?v=253');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v252/);
+  assert.match(serviceWorker, /wealth-v253/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=252',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=253',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

@@ -340,9 +340,17 @@ const steps = {
    > 真正的还债方式是**重写层叠**（把 base 规则里靠 `!important` 压制的写法，换成明确的特异性/变量），属于独立工程；工具已就位：`scripts/e2e/style-fingerprint.mjs` 可在每次改动前后做四种组合的计算样式对比。
    > 已实测：**机械删除走不通**。用四种组合（手机/桌面 × 明/暗）的计算样式指纹逐批验证，1608 条里只有 25 条能在"零视觉差异"前提下直接删掉——其余都在支撑移动端覆盖层（删了桌面就崩）。真正还债要按"合并重复规则组 + 重组覆盖层"来做，属独立工程。
    > 指纹工具已入库：`scripts/e2e/style-fingerprint.mjs`（改 CSS 前后各跑一次，比对 1731 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
-4. `src/app/index.js` 已从 212.3KB 拆到 **157.7KB**（v234–v252 共 18 轮），剩下的主要是**重耦合的渲染型函数**；
-   按大小排的下一个候选：`initAll`(6.5K)、`updateRebalance`(4.5K)、`updateAlerts`(3.6K)、
-   `renderOpt`(2.4K)、`switchTab`(1.9K)、`updateMobStatusBar`(1.9K)、观察列表的搜索面板 UI(~2K)
+4. ~~`src/app/index.js` 还很大~~ → **v253 起拆分告一段落**：212.3KB → **152.4KB**（v234–v253 共 20 轮）。
+   **为什么停在这里（实测的性价比）**：
+   - 前 3 轮（sync-view / settings-view / watch-ui）每轮减 **6–12KB**，边界清晰、拆完立刻能测；
+     后几轮降到 4.5 / 2.7 / 1.0 / 5.3KB，收益明显递减。
+   - **`src/app` 总代码量反而从 244.7KB 涨到 ~300KB** —— 拆分不减少代码，只是重新分配；多出来的部分是
+     import/导出、`configureXxx` 注入样板和注释。代价是"读一处逻辑要跳两个文件"。
+   - 真正的产出是**可测性**：单测 105 → 269 项。这几轮抓到的真问题（v240 漏 `saveSyncState`、
+     v238 悬空变量、v253 漏 `return alerts`）都是靠测试网发现的，不是靠"文件变小"。
+   - 剩下候选多为**装配或纯 DOM**：`initAll`(6.5K，只是按顺序调 30 个 init)、`updateRebalance`(4.5K)、
+     `renderOpt`(2.4K)、`switchTab`(1.9K)、`updateMobStatusBar`(1.9K)、搜索面板 UI(~2K)。**暂不再拆**。
+   下一阶段转向：**文档同步（D1–D4）→ 样式债 C1（`!important` 层叠重写）**。
 5. 源码里还有约 60 处 `catch(e){}` 空捕获，失败会被静默吞掉（排查时最容易踩）
 
 > 已修/已过时（v229–v232 期间处理，保留记录避免重复排查）：
@@ -375,6 +383,7 @@ const steps = {
 | v250 | **持仓视图层**：把 `updatePortfolio` 里的 DOM 写入整段分出——顶部指标卡、今日涨跌/总盈亏/浮动·已实现·权利金徽章、持仓表、目标进度条、距高点回撤面板、行情胶囊；计算（computeHoldings/portfolioTotals/dailyChange/goalProgress/回撤循环）全部留在 index.js，三个宿主函数（资产色/行情胶囊/金额缩写）用 `configurePortfolioView` 注入 | 新增 `src/app/portfolio-view.js` | 11 项单测（钉数字→文案/类名/进度宽度/空态）＋ 47 项回归 ＋ 指纹零差异 |
 | v251 | **侧栏行情行**：`updateSidebarPrices`（价格行 + 迷你走势 + 涨跌配色 + 更新时间文案）与它专用的 `formatChinaTime` 搬进观察/行情视图层；`ETF_SYMS` / `liveQuoteData` 用 host getter 注入，价格缓存键改用 `store.js` 的 `KEYS.prices` | 并入 `src/app/watch-ui.js` | 3 项单测（价格行/涨跌色/走势/等待态、ts→time 迁移、时间文案三态）＋ 47 项回归 ＋ 指纹零差异 |
 | v252 | **备份纯逻辑**：导出数据组装（`buildBackupPayload`）与导入计划（`planBackupImport`：坏文件/版本校验、四类列表归一、摘要文案、`has` 覆盖标记、OTM 裁剪、主题配色白名单、价格缓存清洗）抽成模块；confirm 与逐字段写回仍留 index.js | 新增 `src/app/backup.js` | 10 项单测（含"字符串数组观察列表会回落默认名单"这条既有行为）＋ 备份往返专项 5/5 ＋ 47 项回归 ＋ 指纹零差异 |
+| v253 | **待办提醒**：严重度表、`normalizeAlerts`（同 id 留最严重 + 排序）、已读签名、铃铛角标、期权"今天不再提醒"标记，以及 `updateAlerts` 拆成**纯函数 `buildAlerts`**（行权价逼近 / 期权临期 / 本月定投差额三类判定）+ `renderAlerts`；`qaToggle` 与页面级事件委托仍留 index.js | 新增 `src/app/alerts-view.js` | 11 项单测（三类判定的边界 + 标记读写）＋ 47 项回归 ＋ 指纹零差异；**单测当场抓到搬移时漏写的 `return alerts`** |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
@@ -393,6 +402,7 @@ const steps = {
    （只搬 DOM 写入；计算仍全在 index.js，`configurePortfolioView()` 注入资产色/行情胶囊/金额缩写）
 10. ~~侧栏行情行（价格行/迷你走势/更新时间）→ 并入 `src/app/watch-ui.js`~~ ✅ v251
 11. ~~备份纯逻辑（导出组装 / 导入校验·归一·摘要·价格清洗）→ `src/app/backup.js`~~ ✅ v252
+12. ~~待办提醒（严重度归一 / 三类判定 `buildAlerts` / 角标 / 提醒标记）→ `src/app/alerts-view.js`~~ ✅ v253 —— **拆分到此收尾**
 
 > v247 的副作用之一：`scripts/audit/static.mjs` 的扫描清单要跟着 DOM 模块走。
 > 新模块里 `modal.id = 'conflictModal'`（带空格）没被"动态创建"的正则认出来，于是报成死 id。
