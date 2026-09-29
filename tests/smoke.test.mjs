@@ -20,10 +20,12 @@ const timeSource = fs.readFileSync('src/app/time.js', 'utf8').replace(/^export /
 const symbolsSource = fs.readFileSync('src/app/symbols.js', 'utf8').replace(/^export /gm, '');
 // 期权纯计算已抽到 options.js（v238）；它按函数名切片做断言，所以要一起拼进来
 const optionsSource = fs.readFileSync('src/app/options.js', 'utf8').replace(/^export /gm, '');
+// 记录域规整与 CSV 解析已抽到 records-import.js（v244），同样按函数名切片
+const recordsSource = fs.readFileSync('src/app/records-import.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
   utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
-  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + indexSource;
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -51,6 +53,7 @@ const context = vm.createContext({
   HOME_TIME_ZONE: 'Asia/Shanghai',
   MARKET_TIME_ZONE: 'America/New_York',
   ETF_SYMS: ['VGT', 'SMH', 'BTC'],
+  TRADE_SYMBOLS: ['VGT', 'SMH', 'BTC'],
   trades: [],
   tradeIdCounter: 1,
 });
@@ -127,8 +130,6 @@ test('option IDs cannot inject markup or inline handlers', () => {
 });
 
 test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', () => {
-  context.trades.length = 0;
-  context.tradeIdCounter = 1;
   const csv = [
     'Date,Action,Symbol,Quantity,Price',
     '07/18/2026,Buy,BTC,10,"$28.38"',
@@ -136,10 +137,20 @@ test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', (
     '07/18/2026,Buy,BTC-USD,1,"$118,000.00"',
     '07/18/2026,Buy,BTC,10,"$28.38"',
   ].join('\n');
-  assert.equal(context.parseSchwabCSV(csv), 2);
-  assert.equal(context.trades.length, 2);
-  assert.equal(context.trades[0].symbol, 'BTC');
-  assert.equal(context.trades[1].shares, -1);
+  // v244：解析已抽到 records-import.js（纯函数，返回待插入的行；id 与写入留给 index.js 的包装层）
+  const parsed = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'BTC'], existingTrades: [] });
+  assert.equal(parsed.imported, 2, '重复行与非白名单代码应被剔除');
+  assert.equal(parsed.rows.length, 2);
+  assert.equal(parsed.rows[0].symbol, 'BTC');
+  assert.equal(parsed.rows[0].shares, 10, 'Buy 记正股数');
+  assert.equal(parsed.rows[1].symbol, 'VGT');
+  assert.equal(parsed.rows[1].shares, -1, 'Sell 记负股数');
+  assert.ok(parsed.rows.every((r) => r.id === undefined), '纯函数不分配 id');
+  // 与已有交易按「日期|代码|股数|价格」去重
+  const dup = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'BTC'], existingTrades: [{ date: '2026-07-18', symbol: 'BTC', shares: 10, price: 28.38 }] });
+  assert.equal(dup.imported, 1);
+  // 包装层仍负责分配 id 并写入 trades（结构性断言）
+  assert.match(indexSource, /parseSchwabCSVIn\(text,\{symbols:ETF_SYMS,existingTrades:trades\}\)/);
 });
 
 test('PWA metadata and worker quote boundary stay valid', () => {
@@ -150,13 +161,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=242');
+  assert.equal(manifest.start_url, '/?v=243');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v242/);
+  assert.match(serviceWorker, /wealth-v243/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=242',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=243',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

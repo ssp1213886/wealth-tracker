@@ -8,6 +8,8 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
+import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
+import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
 import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS, WATCH_HELD_OF, resolveHeldSymbol, mergeWatchlist, splitByHolding} from './watch.js';
@@ -19,13 +21,13 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v242';var APP_DATA_VERSION=5;
+var APP_BUILD='v243';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
-function normalizeTrades(list){if(!Array.isArray(list))return[];var used={};return list.map(function(t,i){var sym=cleanText(t&&t.symbol,12).toUpperCase();var date=normalizeDateValue(t&&t.date);var shares=Number(t&&t.shares),price=Number(t&&t.price);if(!ETF_SYMS.includes(sym)||!date||!isFinite(shares)||shares===0||!isFinite(price)||price<=0)return null;var id=Number(t.id);if(!isFinite(id)||used[id])id=Date.now()+i+Math.random();used[id]=1;return{id:id,symbol:sym,date:date,time:cleanText(t.time,12),shares:shares,price:price,type:shares<0?'sell':'buy',tag:t.tag==='assign'?'assign':''}}).filter(Boolean)}
-function normalizeCashLogs(list){if(!Array.isArray(list))return[];return list.map(function(l,i){var date=normalizeDateValue(l&&l.date),amount=Number(l&&l.amount),type=cleanText(l&&l.type,40);if(!date||!type||!isFinite(amount))return null;return{id:Number(l.id)||Date.now()+i+Math.random(),date:date,time:cleanText(l.time,12),type:type,amount:amount}}).filter(Boolean)}
-function normalizeActivities(list){if(!Array.isArray(list))return[];return list.slice(-200).map(function(a,i){var date=normalizeDateValue(a&&a.date);if(!date)return null;return{id:Number(a.id)||Date.now()+i+Math.random(),date:date,time:cleanText(a.time,12),action:cleanText(a.action,120),detail:cleanText(a.detail,240)}}).filter(Boolean)}
+function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
+function normalizeCashLogs(list){return normalizeCashLogsIn(list)}
+function normalizeActivities(list){return normalizeActivitiesIn(list)}
 
 function createBackupData(){return{version:APP_DATA_VERSION,date:new Date().toISOString(),state:normalizeState(state),trades:trades,cashBalance:safeNum(cashBalance),cashLog:cashLog,activities:normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]')),optionTrades:normalizeOptions(JSON.parse(readRaw('wealth_options_v2')||'[]')),otmSettings:JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":5}'),exitPortfolio:readRaw('exit_portfolio')||'',watchlist:normalizeWatchlist(watchList),prices:JSON.parse(readRaw(PRICE_KEY)||'{}'),theme:document.documentElement.dataset.theme||'light',accent:document.documentElement.dataset.accent||'forest'}}
 
@@ -58,7 +60,7 @@ function animateVal(el,to){if(!el)return;var from=parseFloat(el.dataset.v||"0")|
 function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+'%'}
 
 
-var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC ETF',SGOV:'SGOV'},ETF_SYMS=['VGT','SMH','BTC'],ALL_SYMS=['VGT','SMH','BTC'];
+var ETF_NAMES={VGT:'VGT',SMH:'SMH',BTC:'BTC ETF',SGOV:'SGOV'},ETF_SYMS=TRADE_SYMBOLS,ALL_SYMS=TRADE_SYMBOLS;
 
 
 var AD={VGT:{ret:0.12,vol:0.22},SMH:{ret:0.14,vol:0.28},BTC:{ret:0.18,vol:0.65}};
@@ -178,19 +180,18 @@ function updatePortfolio(){
   var totalPnLUnreal=hasPriced?totalValue-totalCost:null;
 
 
-  var realizedOptionPremium=0;try{optionTrades.forEach(function(o){realizedOptionPremium+=(o.premium||0)*(o.contracts||1)})}catch(e){logSwallowed("updatePortfolio",e)}var totalPnL=hasPriced&&totalPnLUnreal!=null?totalPnLUnreal+totalRealized+realizedOptionPremium:null;
-
-
-  var totalPct=(hasPriced&&totalInvested>0)?totalPnL/totalInvested:null;
+  var realizedOptionPremium=0;try{realizedOptionPremium=optionTotals(optionTrades).total}catch(e){logSwallowed("updatePortfolio",e)}
+  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,optionPremium:realizedOptionPremium,netCash:getNetCash()});
+  var totalPnL=totals.total,totalPct=totals.pct;
 
 
   
 
 
-  document.getElementById('hmValue').textContent=hasPriced?fmtFull(totalValue):'-';var totalAssetValue=totalValue+getNetCash(),ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalAssetValue);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=(totalAssetValue>0?getNetCash()/totalAssetValue*100:0).toFixed(2)+'%';
+  document.getElementById('hmValue').textContent=hasPriced?fmtFull(totalValue):'-';var totalAssetValue=totals.totalAssets,ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalAssetValue);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=totals.cashPct.toFixed(2)+'%';
 
 
-  var dailyChg=0;rows.forEach(function(r){if(r.priced&&liveChanges[r.sym]!=null)dailyChg+=r.shares*liveChanges[r.sym]});var yesterdayVal=totalValue-dailyChg;var dailyPct=yesterdayVal>0?(dailyChg/yesterdayVal*100):null;var hu=document.getElementById('hmUnreal');if(hu){hu.textContent=hasPriced?fmtPnLFull(dailyChg):'-';hu.className='m-val '+(hasPriced?(dailyChg>=0?'pnl-pos':'pnl-neg'):'')}
+  var daily=dailyChange(rows,liveChanges,totalValue),dailyChg=daily.change,dailyPct=daily.pct;var hu=document.getElementById('hmUnreal');if(hu){hu.textContent=hasPriced?fmtPnLFull(dailyChg):'-';hu.className='m-val '+(hasPriced?(dailyChg>=0?'pnl-pos':'pnl-neg'):'')}
 
 
   var hup=document.getElementById('hmUnrealPct');if(hup){if(hasPriced&&dailyPct!=null){var s2=dailyPct>=0?'+':'';hup.innerHTML='<span style=color:'+(dailyPct>=0?'var(--accent)':'var(--red)')+';font-weight:550>'+s2+dailyPct.toFixed(2)+'% 今日</span>'}else{hup.textContent='按实时价估算'}}
@@ -217,7 +218,7 @@ function updatePortfolio(){
   updateDonutChart(rows);updateSidebar();updateSidebarPrices();updateHoldCash();updateDCA();updateDashboardWidgets();updatePnlSummary();updateTradeList();updateAlerts();
 
 
-  var target=state.targetGoal||2500000,totalAssets=totalValue;totalAssets+=getNetCash();var pctVal=Math.min(100,totalAssets/target*100),gap=Math.max(0,target-totalAssets);
+  var target=state.targetGoal||2500000,totalAssets=totalValue+getNetCash();var goal=goalProgress(totalAssets,target),pctVal=goal.pct,gap=goal.gap;
 
 
   document.getElementById('prBar').style.width=pctVal+'%';document.getElementById('prPct').textContent=pctVal.toFixed(1)+'%';document.getElementById('prGap').textContent=fmtFull(gap);document.getElementById('prGap').style.color=gap>0?'var(--red)':'var(--accent)';document.getElementById('prCostInline').textContent=hasPriced?fmtFull(totalAssets):fmtFull(totalAssets);var tgt=document.getElementById('targetName');if(tgt)tgt.textContent=fmt$(target);var tl2=document.getElementById('targetLabel');if(tl2)tl2.textContent=fmt$(target);var pti=document.getElementById('prTargetInline');if(pti)pti.textContent=fmt$(target);
@@ -236,24 +237,12 @@ function updatePortfolio(){
 
 
     var cp=livePrices[sym];if(!cp||cp<=0)return;hasPrice=true;
-
-
-    var key='peak_'+sym,peakP=parseFloat(readRaw(key)||'0');if(peakP>cp*5)peakP=0;
-
-
-    var cd=JSON.parse(readRaw(PRICE_KEY)||'{}');if(cd[sym]&&cd[sym].hi52&&cd[sym].hi52>peakP&&cd[sym].hi52<cp*5)peakP=cd[sym].hi52;
-
-
-    if(!peakP||cp>peakP)peakP=cp;
-
-
-    localStorage.setItem(key,peakP.toString());
-
-
-    var dd=((peakP-cp)/peakP*100);
-
-
-    ddLines.push({sym:sym,dd:dd,peak:peakP,price:cp})
+    var key='peak_'+sym,peakP=parseFloat(readRaw(key)||'0');
+    var cd=JSON.parse(readRaw(PRICE_KEY)||'{}');
+    var line=drawdownLine(sym,cp,peakP,cd[sym]&&cd[sym].hi52);if(!line)return;
+    localStorage.setItem(key,line.peak.toString());
+    ddLines.push(line)
+  
 
 
   });
@@ -489,7 +478,9 @@ function updateDataPage(){var totals=dataPageTotals(trades,cashLog);var dc=docum
 function updateTradeList(){var body=document.getElementById('tradeBody');if(!body)return;var filter=document.getElementById('tradeFilterSym'),sym=filter?filter.value:'';body.innerHTML=buildTradeRows(selectTrades(trades,sym))}
 
 
-function updatePnlSummary(){var el=document.getElementById('pnlSummary');if(!el)return;var bySym={};trades.forEach(function(t){bySym[t.symbol]=(bySym[t.symbol]||0)+t.shares});var rows=[];['VGT','SMH','BTC'].forEach(function(sym){var sh=Math.max(0,bySym[sym]||0),p=livePrices[sym]||0;if(sh<=0)return;var cost=0,holds=0;for(var i=0;i<trades.length;i++){var t=trades[i];if(t.symbol!==sym)continue;if(t.shares>0){cost+=t.shares*t.price;holds+=t.shares}else{var avg=holds>0?cost/holds:t.price;cost-=Math.abs(t.shares)*avg;holds+=t.shares}}var value=p>0?holds*p:0,pnl=cost>0?value-cost:0,pct=cost>0?pnl/cost*100:0;rows.push({sym:sym,shares:holds,price:p,value:value,pnl:pnl,pct:pct})});var total=rows.reduce(function(s,r){return s+r.value},0);el.innerHTML=rows.map(function(r){var color=getAssetColor(r.sym),width=total>0?r.value/total*100:0;return '<button class="asset-row" onclick="switchTab(\'data\')"><span class="asset-identity"><i style="background:'+color+'"></i><span><strong>'+r.sym+'</strong><small>'+r.shares.toFixed(2)+' 股</small></span></span><span class="asset-allocation"><i style="width:'+width.toFixed(1)+'%;background:'+color+'"></i></span><span class="asset-result"><strong>'+fmtFull(r.value)+'</strong><small class="'+(r.pct>=0?'positive':'negative')+'">'+(r.pct>=0?'+':'')+r.pct.toFixed(2)+'%</small></span><b>›</b></button>'}).join('')||'<div class="asset-empty">暂无持仓，在操作台录入第一笔交易</div>';var ars=el.querySelectorAll('.asset-row');rows.forEach(function(r,i){var b=ars[i];if(!b)return;var share=total>0?r.value/total*100:0;var tgt=(r.sym==='VGT'?state.vgt:r.sym==='SMH'?state.smh:state.btc)*100;var dev=share-tgt;b.setAttribute('data-share',share.toFixed(1));b.setAttribute('data-tgt','目标 '+tgt.toFixed(0)+'%');b.setAttribute('data-dev','偏离 '+(dev>=0?'+':'')+dev.toFixed(1)+'%');b.style.setProperty('--tgt',Math.max(0,Math.min(100,tgt)).toFixed(1)+'%')})}
+function updatePnlSummary(){var el=document.getElementById('pnlSummary');if(!el)return;
+  var rows=summaryRows(trades,livePrices,['VGT','SMH','BTC']);
+  var total=rows.reduce(function(s,r){return s+r.value},0);el.innerHTML=rows.map(function(r){var color=getAssetColor(r.sym),width=total>0?r.value/total*100:0;return '<button class="asset-row" onclick="switchTab(\'data\')"><span class="asset-identity"><i style="background:'+color+'"></i><span><strong>'+r.sym+'</strong><small>'+r.shares.toFixed(2)+' 股</small></span></span><span class="asset-allocation"><i style="width:'+width.toFixed(1)+'%;background:'+color+'"></i></span><span class="asset-result"><strong>'+fmtFull(r.value)+'</strong><small class="'+(r.pct>=0?'positive':'negative')+'">'+(r.pct>=0?'+':'')+r.pct.toFixed(2)+'%</small></span><b>›</b></button>'}).join('')||'<div class="asset-empty">暂无持仓，在操作台录入第一笔交易</div>';var ars=el.querySelectorAll('.asset-row');rows.forEach(function(r,i){var b=ars[i];if(!b)return;var share=total>0?r.value/total*100:0;var tgt=(r.sym==='VGT'?state.vgt:r.sym==='SMH'?state.smh:state.btc)*100;var dev=share-tgt;b.setAttribute('data-share',share.toFixed(1));b.setAttribute('data-tgt','目标 '+tgt.toFixed(0)+'%');b.setAttribute('data-dev','偏离 '+(dev>=0?'+':'')+dev.toFixed(1)+'%');b.style.setProperty('--tgt',Math.max(0,Math.min(100,tgt)).toFixed(1)+'%')})}
 
 
 // ---- 侧边栏小组件 ----
@@ -1025,7 +1016,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=242',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=243',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1261,38 +1252,12 @@ document.getElementById('syncPanelHeader').addEventListener('click',function(){d
 /* ===== CSV 导入 ===== */
 
 
-function parseCSVRow(line){var out=[],cur='',quoted=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){cur+='"';i++}else quoted=!quoted}else if(ch===','&&!quoted){out.push(cur.trim());cur=''}else cur+=ch}out.push(cur.trim());return out}
-function parseMoneyValue(v){return Number(cleanText(v,40).replace(/[$,]/g,''))||0}
+
+
 function parseSchwabCSV(text){
-  var lines=String(text||'').split(/\r?\n/).filter(function(l){return l.trim().length>0});
-  var colMap={},imported=0,headerFound=false,seen={};
-  trades.forEach(function(t){seen[[t.date,t.symbol,t.shares,t.price].join('|')]=true});
-  for(var i=0;i<lines.length;i++){
-    var row=parseCSVRow(lines[i]);
-    if(!headerFound){
-      colMap={date:-1,sym:-1,qty:-1,price:-1,action:-1};
-      for(var ci=0;ci<row.length;ci++){
-        var h=row[ci].toLowerCase();
-        if(h.indexOf('date')>=0||h==='日期')colMap.date=ci;
-        if(h.indexOf('symbol')>=0||h.indexOf('ticker')>=0||h==='代码'||h==='标的')colMap.sym=ci;
-        if(h.indexOf('action')>=0||h.indexOf('description')>=0||h==='方向')colMap.action=ci;
-        if(h.indexOf('quantity')>=0||h.indexOf('shares')>=0||h.indexOf('数量')>=0||h.indexOf('qty')>=0)colMap.qty=ci;
-        if(h.indexOf('price')>=0||h==='价格'||h==='成交价')colMap.price=ci;
-      }
-      if(colMap.date>=0&&colMap.sym>=0&&colMap.qty>=0&&colMap.price>=0){headerFound=true;continue}
-      continue;
-    }
-    var date=normalizeDateValue(row[colMap.date]),sym=cleanText(row[colMap.sym],12).toUpperCase();
-    var qty=Math.abs(parseMoneyValue(row[colMap.qty])),price=parseMoneyValue(row[colMap.price]);
-    var action=colMap.action>=0?cleanText(row[colMap.action],80).toLowerCase():'';
-    if(!date||!ETF_SYMS.includes(sym)||qty<=0||price<=0)continue;
-    var isSell=action.indexOf('sell')>=0||action.indexOf('sold')>=0||action.indexOf('卖')>=0,shares=isSell?-qty:qty;
-    var fingerprint=[date,sym,shares,price].join('|');if(seen[fingerprint])continue;seen[fingerprint]=true;
-    trades.push({id:tradeIdCounter++,symbol:sym,date:date,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),shares:shares,price:price,type:isSell?'sell':'buy'});
-    imported++;
-  }
-  if(!headerFound)throw new Error('未找到 Date、Symbol、Quantity、Price 列');
-  return imported;
+  var parsed=parseSchwabCSVIn(text,{symbols:ETF_SYMS,existingTrades:trades});
+  parsed.rows.forEach(function(r){r.id=tradeIdCounter++;trades.push(r)});
+  return parsed.imported;
 }
 
 
