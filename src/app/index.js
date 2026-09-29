@@ -10,6 +10,7 @@ import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSumma
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI} from './watch-ui.js';
+import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
@@ -26,7 +27,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v249';var APP_DATA_VERSION=5;
+var APP_BUILD='v250';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -166,6 +167,8 @@ var holdSort={col:'value',asc:false};function sortHoldRows(rows){var c=holdSort.
 /* ===== 持仓渲染 ===== */
 
 
+/* v250：持仓视图层需要三个宿主函数（资产色 / 行情胶囊 / 金额缩写），index.js 里都在用，改为注入 */
+configurePortfolioView({getAssetColor:getAssetColor,pricePill:pricePill,fmtMoney:fmt$});
 function updatePortfolio(){
 
 
@@ -190,28 +193,28 @@ function updatePortfolio(){
   
 
 
-  document.getElementById('hmValue').textContent=hasPriced?fmtFull(totalValue):'-';var totalAssetValue=totals.totalAssets,ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalAssetValue);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=totals.cashPct.toFixed(2)+'%';
+  renderMetricsTop(document,{hasPriced:hasPriced,totalValue:totalValue,totals:totals});
 
 
-  var daily=dailyChange(rows,liveChanges,totalValue),dailyChg=daily.change,dailyPct=daily.pct;var hu=document.getElementById('hmUnreal');if(hu){hu.textContent=hasPriced?fmtPnLFull(dailyChg):'-';hu.className='m-val '+(hasPriced?(dailyChg>=0?'pnl-pos':'pnl-neg'):'')}
-
-
-  var hup=document.getElementById('hmUnrealPct');if(hup){if(hasPriced&&dailyPct!=null){var s2=dailyPct>=0?'+':'';hup.innerHTML='<span style=color:'+(dailyPct>=0?'var(--accent)':'var(--red)')+';font-weight:550>'+s2+dailyPct.toFixed(2)+'% 今日</span>'}else{hup.textContent='按实时价估算'}}
-
-
-  var hp=document.getElementById('hmPnL');if(hp){hp.textContent=hasPriced&&totalPnL!=null?fmtPnLFull(totalPnL):'-';hp.className='m-val '+(hasPriced&&totalPnL!=null?(totalPnL>=0?'pnl-pos':'pnl-neg'):'')}
-
-
-  var hpp=document.getElementById('hmPnLPct');if(hpp){var s='';if(hasPriced&&totalPct!=null){s+=fmtPnLPctParen(totalPct)+'<br>'}else if(unpriced.length>0){s+='需设价:'+unpriced.join(',')+'<br>'}var uc=totalPnLUnreal||0,rc=totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.7rem;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.7rem;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:.7rem;margin-top:2px;background:'+(realizedOptionPremium>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(realizedOptionPremium>=0?'var(--accent-d)':'#b53a2a')+';">权利金 '+fmtPnLFull(realizedOptionPremium)+'</span>';hpp.innerHTML=s;}
+  var daily=dailyChange(rows,liveChanges,totalValue),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,realizedOptionPremium:realizedOptionPremium,dailyChg:dailyChg,dailyPct:dailyPct});
 
 
 
 
 
-  var hb=document.getElementById('holdBody');
 
 
-  if(hb)hb.innerHTML=rows.length?rows.map(function(r){return'<tr style="--row-accent:'+getAssetColor(r.sym)+'"><td data-cell="sym">'+r.sym+'</td><td data-cell="shares">'+Math.abs(r.shares).toFixed(2)+'</td><td data-cell="avg">$'+r.avgCost.toFixed(2)+'</td><td data-cell="value">'+(r.priced?fmtFull(r.value):'<span style="color:orange;">-</span>')+'</td><td data-cell="pnl" class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.unrealPnL!=null?fmtPnLFull(r.unrealPnL):'-')+'</td><td data-cell="pct" class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.pnlPct!=null?((r.pnlPct>=0?'+':'')+(r.pnlPct*100).toFixed(1)+'%'):'-')+'</td><td data-cell="actions"><button class="trade-del" data-hold="'+r.sym+'" title="清仓" aria-label="清仓该标的">×</button></td></tr>'}).join(''):'<tr><td colspan="7">'+emptyStateHTML({title:'暂无持仓',hint:'录入第一笔交易后会显示在这里',compact:true,icon:'<svg viewBox="0 0 24 24"><path d="M4 19V6"/><path d="M4 19h16"/><path d="m8 15 3-3 3 3 4-6"/></svg>'})+'</td></tr>';
+
+
+
+
+
+
+
+  renderHoldingsBody(document,rows);
+
+
+
 
 
 
@@ -223,7 +226,7 @@ function updatePortfolio(){
   var target=state.targetGoal||2500000,totalAssets=totalValue+getNetCash();var goal=goalProgress(totalAssets,target),pctVal=goal.pct,gap=goal.gap;
 
 
-  document.getElementById('prBar').style.width=pctVal+'%';document.getElementById('prPct').textContent=pctVal.toFixed(1)+'%';document.getElementById('prGap').textContent=fmtFull(gap);document.getElementById('prGap').style.color=gap>0?'var(--red)':'var(--accent)';document.getElementById('prCostInline').textContent=hasPriced?fmtFull(totalAssets):fmtFull(totalAssets);var tgt=document.getElementById('targetName');if(tgt)tgt.textContent=fmt$(target);var tl2=document.getElementById('targetLabel');if(tl2)tl2.textContent=fmt$(target);var pti=document.getElementById('prTargetInline');if(pti)pti.textContent=fmt$(target);
+  renderGoalProgress(document,{pctVal:pctVal,gap:gap,hasPriced:hasPriced,totalAssets:totalAssets,target:target});
 
 
   // Rebalance alert
@@ -250,16 +253,16 @@ function updatePortfolio(){
   });
 
 
-  var tc=document.getElementById('hmDrawdown'),ts=document.getElementById('hmDrawdownSub'),tw=document.getElementById('hmDrawdownWorst');
+  renderDrawdownPanel(document,{lines:ddLines});
 
 
-  if(ddLines.length>0){tc.className='drawdown-visual';var worst=ddLines.reduce(function(a,b){return a.dd>b.dd?a:b});tc.innerHTML=ddLines.map(function(d){var currentPct=Math.max(2,Math.min(100,100-d.dd)),gapPct=Math.max(0,Math.min(98,d.dd)),barColor=d.dd>=20?'var(--red)':d.dd>=10?'var(--orange)':'var(--accent)';return '<div class="drawdown-row" style="--drawdown-color:'+barColor+'"><span class="drawdown-symbol"><strong>'+escapeHtml(d.sym)+'</strong><small>$'+d.price.toFixed(2)+' / $'+d.peak.toFixed(2)+'</small></span><div class="drawdown-track" aria-label="'+escapeHtml(d.sym)+' 距离52周高点 '+d.dd.toFixed(1)+'%"><i class="drawdown-gap" style="width:'+gapPct+'%"></i><i class="drawdown-marker" style="left:'+currentPct+'%"></i></div><span class="drawdown-value">-'+d.dd.toFixed(1)+'%</span></div>'}).join('');if(tw)tw.textContent='最大 -'+worst.dd.toFixed(1)+'%';if(ts)ts.style.display='flex'}else{tc.className='drawdown-empty';tc.textContent='添加价格后显示';if(tw)tw.textContent='最大 --';if(ts)ts.style.display='none'}
 
 
-  document.getElementById('hmPricesCompact').setAttribute('aria-busy','false');document.getElementById('hmPricesCompact').innerHTML=ETF_SYMS.map(function(sym){return livePrices[sym]?pricePill(sym,livePrices[sym],liveChanges[sym],liveSources[sym]||''):'<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>'}).join('');
+
+  renderPricePills(document,{symbols:ETF_SYMS,prices:livePrices,changes:liveChanges,sources:liveSources});
 
 
-  var ct=document.getElementById('hmPriceTime');if(ct&&!ct.textContent)ct.textContent='更新 '+new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
 
 
 }
@@ -546,7 +549,7 @@ function saveTrades(){try{trades=normalizeTrades(trades);localStorage.setItem(TR
 
 
 
-function fmtPnLPctParen(n){if(!isFinite(n)||isNaN(n))return'';return'('+(n>=0?'+':'')+(n*100).toFixed(1)+'%)'}
+
 
 
 
@@ -926,7 +929,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=249',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=250',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */

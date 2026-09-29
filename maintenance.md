@@ -332,9 +332,9 @@ const steps = {
    > 真正的还债方式是**重写层叠**（把 base 规则里靠 `!important` 压制的写法，换成明确的特异性/变量），属于独立工程；工具已就位：`scripts/e2e/style-fingerprint.mjs` 可在每次改动前后做四种组合的计算样式对比。
    > 已实测：**机械删除走不通**。用四种组合（手机/桌面 × 明/暗）的计算样式指纹逐批验证，1608 条里只有 25 条能在"零视觉差异"前提下直接删掉——其余都在支撑移动端覆盖层（删了桌面就崩）。真正还债要按"合并重复规则组 + 重组覆盖层"来做，属独立工程。
    > 指纹工具已入库：`scripts/e2e/style-fingerprint.mjs`（改 CSS 前后各跑一次，比对 1731 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
-4. `src/app/index.js` 已从 212.3KB 拆到 **165.9KB**（v234–v249 共 15 轮），剩下的主要是**重耦合的渲染型函数**；
-   按大小排的下一个候选：`updatePortfolio`(7.3K)、`initAll`(6.5K)、`updateRebalance`(4.5K)、`updateAlerts`(3.6K)、
-   `importBackupData`(3.0K)、`renderOpt`(2.4K)、`updateSidebarPrices`(2.3K)、`switchTab`(1.9K)、观察列表的搜索面板 UI(~2K)
+4. `src/app/index.js` 已从 212.3KB 拆到 **161.4KB**（v234–v250 共 16 轮），剩下的主要是**重耦合的渲染型函数**；
+   按大小排的下一个候选：`initAll`(6.5K)、`updateRebalance`(4.5K)、`updateAlerts`(3.6K)、`importBackupData`(3.0K)、
+   `renderOpt`(2.4K)、`updateSidebarPrices`(2.3K)、`switchTab`(1.9K)、观察列表的搜索面板 UI(~2K)
 5. 源码里还有约 60 处 `catch(e){}` 空捕获，失败会被静默吞掉（排查时最容易踩）
 
 > 已修/已过时（v229–v232 期间处理，保留记录避免重复排查）：
@@ -364,6 +364,7 @@ const steps = {
 | v247 | **同步视图层**：状态条胶囊（三态类名/图标/停留时长）、数据健康四行（`healthRowStatuses` 判定 + `applyHealthRows` 写入）、失败横幅（显示判定 + 四个出口接线）、冲突弹窗（行 HTML/外壳/单选项读取）、数据健康整块可点跳转；引擎、网络、409 决策一行未动 | 新增 `src/app/sync-view.js` | 17 项单测（纯函数 + 轻量假 doc 钉 DOM 契约）＋ 47 项回归 ＋ 四种组合指纹零差异（只剩 `#roadBar` 时间噪声） |
 | v248 | **设置/主题视图层**：主题（翻转/跟随系统/随主题换地址栏配色）、配色圆点、移动端整屏设置抽屉与 aria、桌面设置面板搬移、手机端快捷菜单手风琴、侧栏折叠、触感反馈；顺带把 `logSwallowed` 从 index.js 搬到 util.js（各模块共用一份）；**并清掉 5 个"只定义从不调用"的遗留函数**（`calcPortfolio`＋它专用的 `AD`、`fillTradeForm`、`initSidebarMarketCollapse`、`initSidebarHealthCollapse`、搜索里的 `fmtSmall`） | 新增 `src/app/settings-view.js` | 14 项单测（含假 DOM 钉 aria/类名/落库键）＋ 47 项回归 ＋ 指纹零差异；审计新增「跨模块调用必须 import」守卫（见下） |
 | v249 | **观察列表视图层**：行情行渲染（含排序与状态胶囊）、管理面板（勾选/上下移/移除）、排序按钮高亮、更多菜单、刷新触发、行内详情（穿透敞口）；状态与网络留在 index.js，用 `configureWatchUI` 注入（状态走 getter，保证读到最新值） | 新增 `src/app/watch-ui.js` | 10 项单测（假 DOM 钉 innerHTML/胶囊文案/排序）＋ 47 项回归 ＋ 指纹零差异；审计扫描清单补上 new DOM 模块 |
+| v250 | **持仓视图层**：把 `updatePortfolio` 里的 DOM 写入整段分出——顶部指标卡、今日涨跌/总盈亏/浮动·已实现·权利金徽章、持仓表、目标进度条、距高点回撤面板、行情胶囊；计算（computeHoldings/portfolioTotals/dailyChange/goalProgress/回撤循环）全部留在 index.js，三个宿主函数（资产色/行情胶囊/金额缩写）用 `configurePortfolioView` 注入 | 新增 `src/app/portfolio-view.js` | 11 项单测（钉数字→文案/类名/进度宽度/空态）＋ 47 项回归 ＋ 指纹零差异 |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
@@ -378,6 +379,8 @@ const steps = {
    （`refreshVisualPalette` 这类依赖渲染函数的钩子用 `configureSettingsView()` 注入）
 8. ~~观察列表视图层（行情行/管理面板/排序/更多菜单/行内详情）→ `src/app/watch-ui.js`~~ ✅ v249
    （状态与网络仍在 index.js：`configureWatchUI()` 注入 getter + `saveWatch`/`refreshMarket` 回调）
+9. ~~持仓视图层（指标卡/盈亏明细/持仓表/目标进度/回撤面板/行情胶囊）→ `src/app/portfolio-view.js`~~ ✅ v250
+   （只搬 DOM 写入；计算仍全在 index.js，`configurePortfolioView()` 注入资产色/行情胶囊/金额缩写）
 
 > v247 的副作用之一：`scripts/audit/static.mjs` 的扫描清单要跟着 DOM 模块走。
 > 新模块里 `modal.id = 'conflictModal'`（带空格）没被"动态创建"的正则认出来，于是报成死 id。
