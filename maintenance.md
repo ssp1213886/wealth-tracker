@@ -120,6 +120,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 | 端到端（CI 自动） | push 后由 `.github/workflows/ci.yml` 的 `e2e` job 跑（假云端 + runner 自带 Chrome，`npm i --no-save playwright-core`） | 与本地同一套场景 |
 | 全站回归（46 项起） | `E2E_PORT=8788 npm … 然后 node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | **47/47** |
 | 渲染指纹 | `FP_OUT=tmp/x.json E2E_BASE=http://127.0.0.1:8788/ node scripts/e2e/driver.mjs --file scripts/e2e/style-fingerprint.mjs` | 手机/桌面 × 明/暗 四种组合，与基线构建对比；动样式必跑（`#roadBar` 随时间变化，已排除） |
+| 线上完整验证（只读） | `E2E_BASE=https://<域名>/ … --file scripts/e2e/prod-full.mjs` | 双视口 × 双主题 + PWA（manifest 字段 / sw 注册）+ API 鉴权（`/api/sync` 无 token 必须 401）+ 非法代码防护 + 无 console 报错；**全程只读、不留 token** |
 | 专项：期权 | `… --file scripts/test-options.mjs` | 5/5（行权拦截、行权成交、删除退权利金、到期结算） |
 | 专项：备份 | `… --file scripts/test-backup.mjs` | 5/5（导出→清空→导入，含 watchlist） |
 | 专项：分析卡 | `… --file scripts/test-analytics.mjs` | 数值与回撤正常，无报错 |
