@@ -109,16 +109,17 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 > 需要亲眼看画面时：`E2E_USE_DEBUG_CHROME=1 npm run e2e`（这时才依赖调试专用 Chrome + `scripts/e2e-full.mjs` 那套 cdp 驱动）。
 > 假云端见 `scripts/e2e/mock-cloud.mjs`（`/_log` 看它收到了什么、`/_reset` 清空）；每个场景开始前都会 reset，避免互相污染。
 
-### 完整测试矩阵（v239 收尾时全量跑过一遍）
+### 完整测试矩阵（v253 收尾时全量跑过一遍）
 
 | 层级 | 命令 | 结果 |
 | --- | --- | --- |
-| 单元测试 | `npm test` | **153 项全绿** |
-| 样式债守卫 | `npm run lint` | `!important 1608/1608 · :hover 15/15` |
+| 单元测试 | `npm test` | **269 项全绿** |
+| 样式债守卫 | `npm run lint` | `!important 1605/1605 · :hover 16/16` |
 | 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出 onclick / 空 catch 均为 0 |
 | 端到端（无头） | `npm run e2e` | 爬查零报错 + 数据流 + 交互流，3/3 |
 | 端到端（CI 自动） | push 后由 `.github/workflows/ci.yml` 的 `e2e` job 跑（假云端 + runner 自带 Chrome，`npm i --no-save playwright-core`） | 与本地同一套场景 |
 | 全站回归（46 项起） | `E2E_PORT=8788 npm … 然后 node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | **47/47** |
+| 渲染指纹 | `FP_OUT=tmp/x.json E2E_BASE=http://127.0.0.1:8788/ node scripts/e2e/driver.mjs --file scripts/e2e/style-fingerprint.mjs` | 手机/桌面 × 明/暗 四种组合，与基线构建对比；动样式必跑（`#roadBar` 随时间变化，已排除） |
 | 专项：期权 | `… --file scripts/test-options.mjs` | 5/5（行权拦截、行权成交、删除退权利金、到期结算） |
 | 专项：备份 | `… --file scripts/test-backup.mjs` | 5/5（导出→清空→导入，含 watchlist） |
 | 专项：分析卡 | `… --file scripts/test-analytics.mjs` | 数值与回撤正常，无报错 |
@@ -161,7 +162,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 
 ### 2. 不要新增 `!important`
 
-`npm run lint` 会输出并校验 `!important` 数量（当前基线 1608，**只减不增**：想加一条就得先还掉一条）。需要覆盖既有样式时，用更具体的语义选择器（如 `#tab-data #holdBody td[data-cell="pnl"]`），而不是堆 `!important`。同一条 lint 还会拦"没包在 `@media (hover:hover) and (pointer:fine)` 里的 `:hover`"（触摸端会粘住高亮）。
+`npm run lint` 会输出并校验 `!important` 数量（当前基线 **1605**，**只减不增**：想加一条就得先还掉一条）。需要覆盖既有样式时，用更具体的语义选择器（如 `#tab-data #holdBody td[data-cell="pnl"]`），而不是堆 `!important`。同一条 lint 还会拦"没包在 `@media (hover:hover) and (pointer:fine)` 里的 `:hover`"（触摸端会粘住高亮）。
 
 ### 3. 改完必须构建
 
@@ -351,12 +352,27 @@ const steps = {
    - 剩下候选多为**装配或纯 DOM**：`initAll`(6.5K，只是按顺序调 30 个 init)、`updateRebalance`(4.5K)、
      `renderOpt`(2.4K)、`switchTab`(1.9K)、`updateMobStatusBar`(1.9K)、搜索面板 UI(~2K)。**暂不再拆**。
    下一阶段转向：**文档同步（D1–D4）→ 样式债 C1（`!important` 层叠重写）**。
-5. 源码里还有约 60 处 `catch(e){}` 空捕获，失败会被静默吞掉（排查时最容易踩）
+5. ~~源码里还有约 60 处 `catch(e){}` 空捕获~~ → **实测 0 处**（v253 全仓库复扫：143 个 `catch` 关键字全都写了内容，
+   大多是 `logSwallowed("函数名",e)` 留痕）。此后由 `npm run audit` 的 ④ 号守卫持续兜住，新增空 catch 会直接报错。
 
 > 已修/已过时（v229–v232 期间处理，保留记录避免重复排查）：
 > - ~~`forceUploadLocal()` 没有调用点~~ → 实际已接到设置的"强制上传"按钮上
 > - ~~观察列表改动不会推送~~、~~操作日志单条删除点不动~~、~~手机端记录页搜索过滤失效~~、~~备份漏观察列表~~ → 均已修复并有 e2e 覆盖
 > - ~~JS 引用的死 id / 死代码（sbDonut、pillYear、holdMeta）~~ → 已清理，`npm run audit` 会持续守
+
+### 已知限制（能力边界，不是待办）
+
+这些是"当前架构下做不到 / 只能手工"的事，不是 bug；列在这里避免重复排查：
+
+1. **SMH 前十大只能季度手工维护** —— VanEck 的页面是 JS 渲染，抓不到；VGT 走 Yahoo 实时抓取。静态榜单在
+   `src/lib/holdings-static.js`（带 `asOf` 字段，界面会显示"榜单 2026-06-30"这样的日期）。
+2. **拿不到盘前/盘后价** —— Yahoo 的 chart 接口没有这个字段；要做得另接 Finnhub / Nasdaq 这类带 key 的数据源。
+3. **加密行情走 Yahoo 交易对**（`BTC-USD` / `ETH-USD` / `BNB-USD` / `HYPE32196-USD`），CoinGecko 仅作兜底 ——
+   Cloudflare 出口访问 CoinGecko 会被限流，所以它不能当主力。
+4. **`/api/quotes` 单次上限 40 个代码** —— 超出的会被静默丢弃（历史事故：PLTR/TSM/TXN 显示成 `—`）。
+   观察列表 + 成分股拼出来的代码数要留意这个上限。
+5. **`GOLD` 在金价上不是"黄金"** —— Yahoo 上的 `GOLD` 是 Gold.com 这只个股；我们的金价用的是 `GC=F`
+   （COMEX 黄金期货，美元/盎司）。
 
 ### index.js 拆分路线图（进行中）
 

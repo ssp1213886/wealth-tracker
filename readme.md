@@ -10,7 +10,7 @@ VGT + SMH + BTC ETF（美股代码 `BTC`，非现货 BTC）永久核心仓 + Cov
 
 > 前端**已经不是单文件**了。改前端请改 `src/app/*`，**永远不要直接编辑 `public/assets/app.js`** —— 它是 esbuild 的构建产物，下次构建就被覆盖。
 
-- **前端源码**：`src/app/`（`index.js` 页面逻辑 + 8 个纯函数模块）
+- **前端源码**：`src/app/`（`index.js` 页面逻辑 + 23 个模块：纯逻辑、视图层、存储与同步）
 - **前端产物**：`public/assets/app.js`（由 `npm run build` 生成）；`public/assets/main.css` 是手写的
 - **改完必须构建**：`npm run build`，否则线上不会有任何变化
 - **后端**：`src/worker.js` + `src/lib/*`
@@ -132,8 +132,10 @@ npm run preview:lan  # 局域网静态预览，手机可访问（调移动端用
 
 ```bash
 npm run build        # 打包 src/app/* → public/assets/app.js（改完前端必跑）
-npm test             # 单元测试（85 项）
-npm run lint         # 语法检查 + !important 预算守卫（当前上限 1609，只减不增）
+npm test             # 单元测试（269 项）
+npm run lint         # 语法检查 + !important 预算守卫（当前上限 1605，只减不增）
+npm run audit        # 静态审计：死 id / 死按钮 / 空 catch / 跨模块漏 import
+npm run e2e          # 无头端到端（自带假云端，不碰生产数据）
 npm run bump         # 版本号 +1（改 5 处）→ 重新打包 → 跑测试
 npm run deploy       # 构建 + 部署到 Cloudflare（不会漏构建）
 npm run check        # test + build + wrangler deploy --dry-run
@@ -160,9 +162,9 @@ npm run deploy
 | `public/icon.png` | 应用图标 |
 | `src/worker.js` | Worker 入口（路由 + 鉴权 + 限流） |
 | `src/lib/` | 后端模块：auth / assets / http / price / sync / logs / rate-limit |
-| `src/app/` | **前端源码**：`index.js`（页面逻辑）+ calc / util / store / sync / render / rows / time |
+| `src/app/` | **前端源码**：`index.js`（页面逻辑与装配）+ 纯逻辑（calc / portfolio / options / plan / rows / records-import / symbols / charts / time / util）+ 视图层（sync-view / settings-view / watch-ui / portfolio-view / alerts-view）+ 数据（store / sync / sync-engine / backup / watch / watch-view / settings） |
 | `scripts/` | bundle / bump / lint / build / lan-preview + e2e 与专项测试脚本 |
-| `tests/` | 单元测试（`node --test`，85 项） |
+| `tests/` | 单元测试（`node --test`，269 项） |
 | `schema.sql` | D1 建表语句 |
 | `wrangler.toml` | Cloudflare Workers 配置 |
 | `INVESTMENT_STRATEGY.md` | 投资策略定义（AI 助手读取） |
@@ -174,8 +176,10 @@ npm run deploy
 
 | 层级 | 命令 | 覆盖 |
 | --- | --- | --- |
-| 单元测试 | `npm test` | 85 项：工具函数、持仓计算与成本结转、存储容错、迁移链、同步 payload 与 409 分类、转义安全、时区与交易日 |
-| 端到端回归 | `node <cdp.mjs> --file scripts/e2e-full.mjs` | 47 项：仪表盘 / 操作台 / 期权 / 记录页 / 侧边栏 / 主题 / 响应式 |
+| 单元测试 | `npm test` | 269 项：工具函数、持仓计算与成本结转、组合/期权/计划纯计算、存储容错、迁移链、同步 payload 与 409 分类、备份导入计划、待办判定、转义安全、时区与交易日 |
+| 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出的 inline onclick / 空 catch / 跨模块漏 import，纯 Node，CI 会跑 |
+| 端到端（无头） | `npm run e2e` | 全页爬查零报错 + 数据流（买入/入金/卖 CALL 落库并同步）+ 交互流（搜索/撤销/结算/备份） |
+| 端到端回归 | `node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | 47 项：仪表盘 / 操作台 / 期权 / 记录页 / 侧边栏 / 主题 / 响应式 |
 | 专项验证 | `scripts/test-options.mjs` 等 | 期权行权与结算、备份往返、分析卡片数值与手算比对 |
 
 > e2e 脚本依赖调试专用 Chrome（端口 9222）与 `npm run preview:lan` 起的本地服务，用法见 `.codex/skills/chrome-debug`。
