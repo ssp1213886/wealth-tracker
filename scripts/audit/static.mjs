@@ -8,7 +8,8 @@ import fs from 'node:fs';
 
 const ROOT = new URL('../../', import.meta.url);
 const read = (p) => fs.readFileSync(new URL(p, ROOT), 'utf8');
-const appFiles = ['src/app/index.js', 'src/app/rows.js', 'src/app/render.js', 'src/app/watch.js'];
+// DOM 相关的模块都要扫：漏一个，它创建的动态 id 就会被当成"死 id"（v247 踩过）
+const appFiles = ['src/app/index.js', 'src/app/rows.js', 'src/app/render.js', 'src/app/watch.js', 'src/app/sync-view.js'];
 const html = read('public/index.html');
 const app = appFiles.map(read).join('\n');
 
@@ -22,7 +23,8 @@ const jsIds = new Set([
   ...[...app.matchAll(/getElementById\("([A-Za-z0-9_-]+)"\)/g)].map((m) => m[1]),
 ]);
 const dynamicIds = new Set([
-  ...[...app.matchAll(/\.id='([A-Za-z0-9_-]+)'/g)].map((m) => m[1]),
+  // 动态创建的 id：`el.id='x'` / `el.id = "x"` 都要认（v247：新模块里带空格就漏了）
+  ...[...app.matchAll(/\.id\s*=\s*['"]([A-Za-z0-9_-]+)['"]/g)].map((m) => m[1]),
   ...[...app.matchAll(/id="([A-Za-z0-9_-]+)"/g)].map((m) => m[1]), // 动态 innerHTML 里写的 id
 ]);
 const deadIds = [...jsIds].filter((id) => !htmlIds.has(id) && !dynamicIds.has(id));

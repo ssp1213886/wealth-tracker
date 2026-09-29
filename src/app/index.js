@@ -8,6 +8,7 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
+import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, fmtSmallPrice, searchRowPrice, pricePillHTML} from './watch-view.js';
@@ -23,7 +24,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v246';var APP_DATA_VERSION=5;
+var APP_BUILD='v247';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -960,7 +961,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=246',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=247',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1032,12 +1033,10 @@ var SYNC_STATE_KEY=KEYS.syncState;
 var SYNC_KEYS=SYNC_FIELDS.slice();   // 与 payload 组装共用同一份清单，避免再次漂移
 function loadSyncState(){try{var s=JSON.parse(readRaw(SYNC_STATE_KEY)||'{}');s.dirty=s.dirty||{};s.cloudTs=s.cloudTs||{};s.pendingConflicts=Array.isArray(s.pendingConflicts)?s.pendingConflicts:[];s.lastSyncAt=Number(s.lastSyncAt)||0;s.lastSyncErrorAt=Number(s.lastSyncErrorAt)||0;s.lastSyncDirection=s.lastSyncDirection||'';s.lastPushAt=Number(s.lastPushAt)||0;s.lastPullAt=Number(s.lastPullAt)||0;return s}catch(e){return{dirty:{},cloudTs:{},pendingConflicts:[],lastSyncAt:0,lastSyncErrorAt:0,lastSyncDirection:'',lastPushAt:0,lastPullAt:0}}}
 function saveSyncState(s){try{localStorage.setItem(SYNC_STATE_KEY,JSON.stringify(s))}catch(e){logSwallowed("saveSyncState",e)}if(document.readyState!=='loading')renderSyncHealth()}
-function formatHealthTime(timestamp){var ts=Number(timestamp)||0;if(!ts)return '';return new Date(ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
-function setHealthRow(id,status){var row=document.getElementById(id);if(!row)return;row.classList.remove('is-ok','is-warn','is-error');if(status)row.classList.add('is-'+status)}
 function recordSyncSuccess(direction,timestamp){var s=loadSyncState();s.lastSyncAt=Number(timestamp)||Date.now();s.lastSyncDirection=direction||'check';if(s.lastSyncDirection==='push')s.lastPushAt=s.lastSyncAt;else if(s.lastSyncDirection==='pull')s.lastPullAt=s.lastSyncAt;s.lastSyncErrorAt=0;s.lastSyncError='';s.failStreak=0;saveSyncState(s);renderSyncHealth()}
 function recordSyncFailure(timestamp,message){var s=loadSyncState();s.lastSyncErrorAt=Number(timestamp)||Date.now();s.lastSyncError=String(message||'').slice(0,200);s.failStreak=(Number(s.failStreak)||0)+1;saveSyncState(s);renderSyncHealth()}
 function setSyncConflicts(conflicts){var s=loadSyncState();s.pendingConflicts=Array.from(new Set(conflicts||[]));saveSyncState(s);renderSyncHealth()}
-function renderSyncHealth(){var s=loadSyncState();var h=syncHealthSummary(s,{configured:!!(typeof syncCfg!=='undefined'&&syncCfg&&syncCfg.token),keys:SYNC_KEYS,backupAt:Number(readRaw('lastBackupTime'))||0,formatTime:formatHealthTime});var stateText=h.stateText,mobileText=h.mobileText,pullText=h.pullText,pushText=h.pushText,backupText=h.backupText,pullAt=h.pullAt,pushAt=h.pushAt,failed=h.failed,conflictCount=h.conflictCount,configured=h.configured,dirtyCount=h.dirtyCount,backupAt=h.backupAt;var stateEl=document.getElementById('sbSyncState'),cloudEl=document.getElementById('sbSyncLast'),backupEl=document.getElementById('sbBackupLast'),pushEl=document.getElementById('sbLastPush'),conflictEl=document.getElementById('sbConflictState'),mobileEl=document.getElementById('msSyncText');if(stateEl){stateEl.textContent=stateText;stateEl.classList.toggle('is-error',failed||conflictCount>0)}if(cloudEl){cloudEl.textContent=pullText;cloudEl.title=pullAt?new Date(pullAt).toLocaleString('zh-CN'):''}if(backupEl)backupEl.textContent=backupText;if(pushEl){pushEl.textContent=pushText;pushEl.title=pushAt?new Date(pushAt).toLocaleString('zh-CN'):''}if(conflictEl)conflictEl.textContent=h.conflictText;if(mobileEl){mobileEl.textContent=mobileText;var syncHost=mobileEl.parentElement;var syncBad=failed||conflictCount>0;syncHost.classList.toggle('sync-error',syncBad);syncHost.classList.toggle('sync-ok',!syncBad&&configured&&dirtyCount===0)}setHealthRow('sbCloudRow',!configured?'':failed&&s.lastSyncErrorAt>pullAt?'error':pullAt?'ok':'warn');setHealthRow('sbBackupRow',backupAt?'ok':'warn');setHealthRow('sbPushRow',!configured?'':failed&&s.lastSyncErrorAt>pushAt?'error':pushAt?'ok':'warn');setHealthRow('sbConflictRow',conflictCount?'error':'ok');updateSyncBanner()}
+function renderSyncHealth(){var s=loadSyncState();var h=syncHealthSummary(s,{configured:!!(typeof syncCfg!=='undefined'&&syncCfg&&syncCfg.token),keys:SYNC_KEYS,backupAt:Number(readRaw('lastBackupTime'))||0,formatTime:formatHealthTime});renderSyncHealthView(document,h,{state:s,afterRender:updateSyncBanner})}
 function markDirty(key){var s=loadSyncState();if(!s.dirty[key]){s.dirty[key]=true;saveSyncState(s)}}
 function clearDirty(key){var s=loadSyncState();s.dirty[key]=false;saveSyncState(s)}
 function setCloudTs(key,ts){var s=loadSyncState();s.cloudTs[key]=normalizeSyncTs(ts)||Date.now();saveSyncState(s)}
@@ -1118,21 +1117,17 @@ function clearAllData(){
 
 function showSyncConflict(conflicts,pendingCloud){
   setSyncConflicts(conflicts);
-  var existing=document.getElementById('conflictModal');if(existing)existing.remove();
-  var labels={trades:'交易记录',cashBalance:'现金余额',cashLog:'资金流水',state:'投资参数',activities:'操作日志',optionTrades:'期权持仓',otmSettings:'OTM百分比',exit_portfolio:'退出策略',watchlist:'观察列表'};
-  var rows=conflicts.map(function(k){var lbl=labels[k]||k;return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);"><span style="font-size:.7rem;font-weight:540;">'+lbl+'</span><span style="display:flex;gap:10px;font-size:.7rem;"><label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" name="cf_'+k+'" value="local" checked><span>保留本地</span></label><label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" name="cf_'+k+'" value="cloud"><span>使用云端</span></label></span></div>'}).join('');
-  var modal=document.createElement('div');modal.id='conflictModal';modal.style.cssText='position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);padding:20px;';modal.innerHTML='<div style="background:var(--card-bg);border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.3);"><h3 style="font-size:.78rem;font-weight:600;margin-bottom:6px;color:var(--orange);">数据冲突</h3><p style="font-size:.7rem;color:var(--muted);margin-bottom:10px;line-height:1.5;">云端和本地都有更新,请选择保留哪一边。默认保留本地(当前设备的改动)。</p>'+rows+'<div style="display:flex;gap:8px;margin-top:14px;"><button id="cfCancel" class="btn btn-out" style="flex:1;font-size:.7rem;">全部保留本地</button><button id="cfOk" class="btn btn-pri" style="flex:1;font-size:.7rem;">确定</button></div></div>';document.body.appendChild(modal);
-  document.getElementById('cfCancel').onclick=function(){var payload={};try{SYNC_KEYS.forEach(function(k){payload[k]=localValOf(k)})}catch(e){logSwallowed("showSyncConflict",e)}showBusyToast('正在以本机数据覆盖云端');syncFetchWithoutHealth('POST',payload).then(function(){conflicts.forEach(function(k){try{clearDirty(k)}catch(e){logSwallowed("showSyncConflict",e)}});var st=loadSyncState();st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);modal.remove();showToast('已用本机数据覆盖云端','ok');renderSyncHealth()}).catch(function(e){showToast('上传失败：'+(e&&e.message?e.message:'未知错误'),'err')})};
-  document.getElementById('cfOk').onclick=function(){var applied=[],kept=[];conflicts.forEach(function(k){var chosen=document.querySelector('input[name="cf_'+k+'"]:checked');if(chosen&&chosen.value==='cloud'){applyCloudVal(k,pendingCloud[k]);clearDirty(k);applied.push(k)}else{markDirty(k);kept.push(k)}});setSyncConflicts([]);modal.remove();if(applied.length){initTradeIds();updatePortfolio();updateSidebar();renderCashLog();updateAllO();updateOtm();showToast('已使用云端: '+applied.map(function(k){return labels[k]||k}).join(', '),'ok');autoPushDebounce()}if(kept.length)pushKeysForce(kept,'已用本机数据覆盖云端');else if(!applied.length)showToast('已保留本地数据','ok')}
+  openConflictModal({doc:document,conflicts:conflicts,labels:SYNC_KEY_LABELS,
+    onAllLocal:function(modal){var payload={};try{SYNC_KEYS.forEach(function(k){payload[k]=localValOf(k)})}catch(e){logSwallowed("showSyncConflict",e)}showBusyToast('正在以本机数据覆盖云端');syncFetchWithoutHealth('POST',payload).then(function(){conflicts.forEach(function(k){try{clearDirty(k)}catch(e){logSwallowed("showSyncConflict",e)}});var st=loadSyncState();st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);modal.remove();showToast('已用本机数据覆盖云端','ok');renderSyncHealth()}).catch(function(e){showToast('上传失败：'+(e&&e.message?e.message:'未知错误'),'err')})},
+    onConfirm:function(modal,picks){var applied=[],kept=[];conflicts.forEach(function(k){if(picks[k]==='cloud'){applyCloudVal(k,pendingCloud[k]);clearDirty(k);applied.push(k)}else{markDirty(k);kept.push(k)}});setSyncConflicts([]);modal.remove();if(applied.length){initTradeIds();updatePortfolio();updateSidebar();renderCashLog();updateAllO();updateOtm();showToast('已使用云端: '+applied.map(function(k){return SYNC_KEY_LABELS[k]||k}).join(', '),'ok');autoPushDebounce()}if(kept.length)pushKeysForce(kept,'已用本机数据覆盖云端');else if(!applied.length)showToast('已保留本地数据','ok')}})
 }
 
 function stableStr(v){if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';if(v&&typeof v==='object'){return '{'+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+':'+stableStr(v[k])}).join(',')+'}'}return JSON.stringify(v)}var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg||!syncCfg.url||!syncCfg.token)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,700)}
 function pushSoon(delay){if(!syncCfg||!syncCfg.url||!syncCfg.token)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,delay===undefined?60:delay)}
 function pushNow(){pushSoon(0)}
-function syncBarEl(){return document.getElementById('syncBar')}
 var syncBarTimer=null;
-function setSyncBar(state,text){var el=syncBarEl();if(!el)return;clearTimeout(syncBarTimer);if(!state){el.className='sync-bar';return}el.className='sync-bar show is-'+state;var msg=el.querySelector('.sync-bar-text');if(msg)msg.textContent=text||'';var ic=el.querySelector('.sb-ic');if(ic)ic.textContent=state==='ok'?'✓':state==='err'?'!':'';if(state==='ok')syncBarTimer=setTimeout(function(){setSyncBar('')},2200);else if(state==='err')syncBarTimer=setTimeout(function(){setSyncBar('')},8000)}
-function syncClockText(){try{return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}}
+function setSyncBar(state,text){clearTimeout(syncBarTimer);var r=applySyncBar(document,state,text);if(r.holdMs)syncBarTimer=setTimeout(function(){setSyncBar('')},r.holdMs)}
+function syncClockText(){return syncClockTime()}
 function pushPendingSoon(delay){try{if(pendingDirtyKeys(loadSyncState(),SYNC_KEYS).length>0)pushSoon(delay)}catch(e){logSwallowed("pushPendingSoon",e)}}
 function pushedKeysOf(data){return pushedKeysList(data,SYNC_KEYS)}
 function pushKeysForce(keys,label){if(!keys||!keys.length)return;if(!syncCfg||!syncCfg.url||!syncCfg.token)return;var payload={};keys.forEach(function(k){payload[k]=localValOf(k)});setSyncBar('busy','正在覆盖云端…');syncFetchWithoutHealth('POST',payload).then(function(r){var st=loadSyncState();keys.forEach(function(k){clearDirty(k);if(r&&r.ts)setCloudTs(k,r.ts)});st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);setSyncBar('ok','已覆盖云端 '+syncClockText());showToast(label||'已用本机数据覆盖云端','ok')}).catch(function(e){setSyncBar('err','覆盖失败：'+((e&&e.message)||'未知错误'))})}
@@ -1156,34 +1151,8 @@ var syncFetchWithoutHealth=syncFetch;
 syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');var clearSpin=function(){if(host)host.classList.remove('is-syncing')};if(host)host.classList.add('is-syncing');setSyncBar('busy',method==='GET'?'正在下载…':'正在上传…');var spinTimer=setTimeout(clearSpin,12000);var done=function(){clearTimeout(spinTimer);clearSpin()};try{return syncFetchWithoutHealth(method,body).then(function(result){if(method!=='GET'&&result&&result.ts&&body){try{Object.keys(body).forEach(function(k){if(k!=='__expectedVersions')setCloudTs(k,result.ts)})}catch(e){logSwallowed("syncPull",e)}}recordSyncSuccess(method==='GET'?'pull':'push',Date.now());setSyncBar('ok','已同步 '+syncClockText());done();return result}).catch(function(error){recordSyncFailure(Date.now(),error&&error.message);if(error&&console&&console.warn)console.warn('[sync]',error.message);if(error&&error.status===409)setSyncBar('busy','正在核对…');else setSyncBar('err','同步失败');done();throw error})}catch(e){done();throw e}};
 document.getElementById('syncToken').addEventListener('change',renderSyncHealth);
 /* v242：数据健康整块可点 → 直达同步设置（原来要经过 设置 → 云端同步 → 连接配置 三层） */
-(function initHealthJump(){
-  /* v242：数据健康整块可点 → 直达同步设置。
-     移动端要注意：设置区在移动端会被搬到 body 上作为整屏面板（#settingsDrawerInner），
-     只开侧栏抽屉是看不到它的，所以要先点「设置」入口把它叫出来。 */
-  var open=function(ev){
-    if(ev&&ev.target&&ev.target.closest&&ev.target.closest('button'))return;
-    var settingsSection=document.querySelector('.sb-section.sb-settings');
-    if(window.innerWidth<=800){
-      /* 移动端：设置区是整屏面板，四个面板被 setupInlineQuickSettings 改成了"快捷菜单里的手风琴"
-         （<details class="advanced-settings"> 已被移除），所以要按原生路径走：
-         打开设置 → 点「云端同步」那一项把它展开。 */
-      if(!settingsSection||!settingsSection.classList.contains('open')){var entry=document.getElementById('sbSettingsEntry');if(entry)entry.click()}
-      var syncPanel=document.getElementById('settingsSync');
-      var wrap=syncPanel&&syncPanel.closest?syncPanel.closest('.quick-acc'):null;
-      var accBtn=wrap&&wrap.previousElementSibling;
-      if(accBtn&&wrap.hidden)accBtn.click();
-      if(wrap)wrap.hidden=false;
-    }else{
-      try{openMobileSettings()}catch(e){logSwallowed("initHealthJump",e)}
-      try{openAdvancedSettings('sync')}catch(e){logSwallowed("initHealthJump",e)}
-    }
-    var panel=document.getElementById('syncPanel');if(panel)panel.classList.add('open');
-  };
-  var list=document.querySelector('.sb-health-list');
-  if(list){list.style.cursor='pointer';list.addEventListener('click',open)}
-  var head=document.querySelector('.sb-section.sb-sync-summary h3');
-  if(head){head.style.cursor='pointer';head.title='点这里打开同步设置';head.addEventListener('click',open)}
-})();
+/* v242：数据健康整块可点 → 直达同步设置（DOM 细节在 sync-view.js） */
+bindHealthJump({doc:document,win:window,desktopOpen:function(){try{openMobileSettings()}catch(e){logSwallowed("initHealthJump",e)}try{openAdvancedSettings('sync')}catch(e){logSwallowed("initHealthJump",e)}}});
 document.getElementById('syncPanelHeader').addEventListener('click',function(){document.getElementById('syncPanel').classList.toggle('open')});
 
 
@@ -1499,8 +1468,8 @@ document.addEventListener('click',function(event){var target=event.target;if(!ta
 function updatePresentationMeta(){var dateEl=document.getElementById('desktopDate'),now=new Date(),cn=zonedDateParts(now,HOME_TIME_ZONE),ny=zonedDateParts(now,MARKET_TIME_ZONE),cnWeek={Sun:'星期日',Mon:'星期一',Tue:'星期二',Wed:'星期三',Thu:'星期四',Fri:'星期五',Sat:'星期六'};if(dateEl)dateEl.textContent='北京时间 '+Number(cn.month)+'月'+Number(cn.day)+'日 · '+cnWeek[cn.weekday]+' · '+cn.hour+':'+cn.minute;var mins=(Number(ny.hour)||0)*60+(Number(ny.minute)||0),weekday=['Mon','Tue','Wed','Thu','Fri'].indexOf(ny.weekday)>=0,isSession=weekday&&mins>=570&&mins<960,stateEl=document.getElementById('desktopMarketState'),stateWrap=stateEl&&stateEl.closest('.market-open');if(stateEl)stateEl.textContent='美东 '+ny.month+'/'+ny.day+' '+ny.hour+':'+ny.minute+' · '+(isSession?MARKET_SESSION_LABELS.open:MARKET_SESSION_LABELS.closed);if(stateWrap)stateWrap.classList.toggle('is-closed',!isSession)}
 (function initPresentationMeta(){updatePresentationMeta();setInterval(updatePresentationMeta,60000);var labels={otype:'期权类型',osym:'期权标的',oexpiry:'期权到期日',ocontracts:'期权合约数量',divSym:'股息标的',tradeFilterSym:'交易标的筛选',cashFilter:'资金流水筛选',attrYear:'年度归因年份'};Object.keys(labels).forEach(function(id){var el=document.getElementById(id);if(el&&!el.getAttribute('aria-label'))el.setAttribute('aria-label',labels[id])})})();
 
-function updateSyncBanner(){var el=document.getElementById('syncFailBanner');if(!el)return;var s=loadSyncState(),streak=Number(s.failStreak)||0,dismissedAt=Number(s.bannerDismissedAt)||0,quiet=Date.now()-dismissedAt<600000;var show=streak>=2&&!quiet;if(show){var r=document.getElementById('syncBannerReason');if(r)r.textContent=s.lastSyncError?('原因：'+s.lastSyncError+' · 数据仅存本机'):'数据仅存本机，建议导出备份'}el.hidden=!show}
-function initSyncBanner(){var el=document.getElementById('syncFailBanner');if(!el)return;var retry=document.getElementById('syncBannerRetry');if(retry)retry.addEventListener('click',function(){retry.disabled=true;retry.textContent='重试中…';if(typeof autoPull==='function')try{autoPull()}catch(e){logSwallowed("initSyncBanner",e)}setTimeout(function(){retry.disabled=false;retry.textContent='重试'},4000)});var exp=document.getElementById('syncBannerExport');if(exp)exp.addEventListener('click',function(){var b=document.getElementById('btnExportData');if(b)b.click()});var close=document.getElementById('syncBannerClose');if(close)close.addEventListener('click',function(){var s=loadSyncState();s.bannerDismissedAt=Date.now();saveSyncState(s);el.hidden=true});var panelRetry=document.getElementById('syncRetryBtn');if(panelRetry)panelRetry.addEventListener('click',function(){panelRetry.disabled=true;if(typeof autoPull==='function')try{autoPull()}catch(e){logSwallowed("initSyncBanner",e)}setTimeout(function(){panelRetry.disabled=false},4000)})}
+function updateSyncBanner(){applySyncBanner(document,syncBannerView(loadSyncState(),Date.now()))}
+function initSyncBanner(){bindSyncBanner({doc:document,onRetry:function(){if(typeof autoPull==='function')try{autoPull()}catch(e){logSwallowed("initSyncBanner",e)}},onExport:function(){var b=document.getElementById('btnExportData');if(b)b.click()},onDismiss:function(){var s=loadSyncState();s.bannerDismissedAt=Date.now();saveSyncState(s)}})}
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',initSyncBanner)}else{initSyncBanner()}
 
 function initSidebarMarketCollapse(){var sec=document.querySelector('.sidebar>.sb-section.sb-market');if(!sec||sec.dataset.collapseReady)return;sec.dataset.collapseReady='1';var h3=sec.querySelector('h3');var KEY='wealth_sidebar_market_collapsed';var apply=function(collapsed){sec.classList.toggle('is-collapsed',!!collapsed);if(h3)h3.setAttribute('aria-expanded',collapsed?'false':'true')};var saved=true;try{var raw=readRaw(KEY);saved=raw===null?true:raw==='1'}catch(e){logSwallowed("initSidebarMarketCollapse",e)}apply(saved);if(h3){h3.setAttribute('role','button');h3.setAttribute('tabindex','0');h3.addEventListener('click',function(){var next=!sec.classList.contains('is-collapsed');apply(next);try{localStorage.setItem(KEY,next?'1':'0')}catch(e){logSwallowed("initSidebarMarketCollapse",e)}});h3.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();h3.click()}})}}

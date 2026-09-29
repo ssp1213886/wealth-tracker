@@ -332,8 +332,8 @@ const steps = {
    > 真正的还债方式是**重写层叠**（把 base 规则里靠 `!important` 压制的写法，换成明确的特异性/变量），属于独立工程；工具已就位：`scripts/e2e/style-fingerprint.mjs` 可在每次改动前后做四种组合的计算样式对比。
    > 已实测：**机械删除走不通**。用四种组合（手机/桌面 × 明/暗）的计算样式指纹逐批验证，1608 条里只有 25 条能在"零视觉差异"前提下直接删掉——其余都在支撑移动端覆盖层（删了桌面就崩）。真正还债要按"合并重复规则组 + 重组覆盖层"来做，属独立工程。
    > 指纹工具已入库：`scripts/e2e/style-fingerprint.mjs`（改 CSS 前后各跑一次，比对 1731 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
-4. `src/app/index.js` 已从 212KB 拆到 ~191KB（v234–v245 共 12 轮），剩下的主要是**渲染型函数**（updatePortfolio、initAll、initWatchUI 等）与全局状态耦合；
-   下一步按域继续：`sync-view.js`（同步 UI 26.3K）→ 设置/主题面板 → 观察列表渲染 DOM 部分
+4. `src/app/index.js` 已从 212KB 拆到 ~191KB（v234–v247 共 13 轮），剩下的主要是**渲染型函数**（updatePortfolio、initAll、initWatchUI 等）与全局状态耦合；
+   下一步按域继续：设置/主题面板 → 观察列表渲染 DOM 部分
 5. 源码里还有约 60 处 `catch(e){}` 空捕获，失败会被静默吞掉（排查时最容易踩）
 
 > 已修/已过时（v229–v232 期间处理，保留记录避免重复排查）：
@@ -360,6 +360,7 @@ const steps = {
 | v244 | **图表数据整形**：纪律热力的月度（完成判定/连续月数/state·icon）、年度矩阵（权利金贡献率/年末持股/CAGR/目标差额）、甜甜圈切片、热力色阶 | 新增 `src/app/charts.js` | 6 项单测 + 47 项回归 + 指纹零差异 |
 | v245 | **观察/行情视图模型**：显示名派生（加密品牌名/现货标记/括号剥离）、现价取值优先级、52 周与历史缓存取值、小额价格格式化、搜索结果价格、价格胶囊 HTML | 新增 `src/app/watch-view.js` | 9 项单测 + 47 项回归 + 指纹零差异 |
 | v246 | **修 v240 引入的同步回归**：抽取 `planPullSync` 时漏掉了 `saveSyncState(ss)`，拉取算出的 dirty/cloudTs 不再落盘 → 「云端没有该行但本地有数据」不标脏、关页面也不补推（线上 v240–v245 共 6 个版本存在） | `src/app/index.js` + `scripts/e2e/flows-data.mjs` | e2e 新增启动引导断言（关页面后云端必须收到 trades/cashBalance）＋ 四种组合指纹 v233 → v246 从 26 处差异收敛到 0（只剩随时间变化的 `#roadBar`） |
+| v247 | **同步视图层**：状态条胶囊（三态类名/图标/停留时长）、数据健康四行（`healthRowStatuses` 判定 + `applyHealthRows` 写入）、失败横幅（显示判定 + 四个出口接线）、冲突弹窗（行 HTML/外壳/单选项读取）、数据健康整块可点跳转；引擎、网络、409 决策一行未动 | 新增 `src/app/sync-view.js` | 17 项单测（纯函数 + 轻量假 doc 钉 DOM 契约）＋ 47 项回归 ＋ 四种组合指纹零差异（只剩 `#roadBar` 时间噪声） |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
@@ -368,6 +369,13 @@ const steps = {
 3. ~~观察列表状态机 → `watch.js`~~ ✅ v237（增删改排序本来就在 watch.js；这轮把归属映射、云端并集、分组也搬了过去）
 4. ~~期权纯计算 → `src/app/options.js`~~ ✅ v238
 5. ~~设置抽屉与同步条 → `src/app/settings.js`~~ ✅ v239（DOM 事件绑定仍留 index.js，纯逻辑已抽出）
+6. ~~同步视图层（状态条 / 数据健康 / 失败横幅 / 冲突弹窗）→ `src/app/sync-view.js`~~ ✅ v247
+   （只搬渲染：判定用 `sync-engine.js`、文案用 `settings.js`、状态与网络仍在 index.js）
+
+> v247 的副作用之一：`scripts/audit/static.mjs` 的扫描清单要跟着 DOM 模块走。
+> 新模块里 `modal.id = 'conflictModal'`（带空格）没被"动态创建"的正则认出来，于是报成死 id。
+> 已修：把 `sync-view.js` 加进扫描清单，并让 `.id = "x"` 这类带空格的写法也能识别；
+> 顺手用"注释里塞一个假 id"验证过审计仍抓得住真问题（v247 起，DOM 模块拆出去时记得同步这个清单）。
 
 **拆分收尾（v234–v239）**：`index.js` 从 212.3KB 降到 ~199KB，新增 5 个纯逻辑模块（symbols/plan/rows/watch/options/settings），单测从 105 项涨到 153 项。
 

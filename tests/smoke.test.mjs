@@ -24,10 +24,12 @@ const optionsSource = fs.readFileSync('src/app/options.js', 'utf8').replace(/^ex
 const recordsSource = fs.readFileSync('src/app/records-import.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 // 图表数据整形已抽到 charts.js（v245）
 const chartsSource = fs.readFileSync('src/app/charts.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
+// 同步视图层已抽到 sync-view.js（v247）：状态条/数据健康/失败横幅/冲突弹窗的渲染
+const syncViewSource = fs.readFileSync('src/app/sync-view.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
   utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
-  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + indexSource;
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + syncViewSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -163,13 +165,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=246');
+  assert.equal(manifest.start_url, '/?v=247');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v246/);
+  assert.match(serviceWorker, /wealth-v247/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=246',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=247',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -282,7 +284,10 @@ test('data health shows cloud sync, backup, and conflict state', () => {
   assert.match(appMarkup, /id="sbPushRow"/);
   assert.match(appMarkup, /id="sbLastPush"/);
   assert.match(appSource, /if\(s\.lastSyncDirection==='push'\)s\.lastPushAt=s\.lastSyncAt;/);
-  assert.match(appSource, /setHealthRow\('sbPushRow'/);
+  // v247：四行状态类的判定与写入搬到 sync-view.js（纯函数 healthRowStatuses + applyHealthRows，另有单测）
+  assert.match(appSource, /const HEALTH_ROW_IDS = \{ cloud: 'sbCloudRow', backup: 'sbBackupRow', push: 'sbPushRow', conflict: 'sbConflictRow' \};/);
+  assert.match(appSource, /function healthRowStatuses\(summary, lastSyncErrorAt\)/);
+  assert.match(appSource, /push: !configured \? '' : \(failed && erroredAt > pushAt\) \? 'error' : pushAt \? 'ok' : 'warn'/);
   // 上传 / 下载两条通道各自记时间，命名与侧边栏按钮统一
   assert.match(appSource, /else if\(s\.lastSyncDirection==='pull'\)s\.lastPullAt=s\.lastSyncAt;/);
   assert.match(appSource, /s\.lastPullAt=Number\(s\.lastPullAt\)\|\|0/);
@@ -306,6 +311,10 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(appMarkup, /\.sync-bar\.is-ok\{/);
   assert.match(appMarkup, /\.sync-bar\.is-err\{/);
   assert.match(appSource, /function setSyncBar\(state,text\)/);
+  // v247：三态的类名/图标/自动收起时长搬到 sync-view.js 的 syncBarAttrs（另有单测钉住 2.2s / 8s）
+  assert.match(appSource, /icon: state === 'ok' \? '✓' : state === 'err' \? '!' : ''/);
+  assert.match(appSource, /holdMs: state === 'ok' \? 2200 : state === 'err' \? 8000 : 0/);
+  assert.match(appSource, /function applySyncBar\(doc, state, text\)/);
   assert.match(appSource, /function healPushConflict\(/);
   assert.match(appSource, /function flushDirtyOnHide\(/);
   assert.match(appSource, /function pushKeysForce\(/);
@@ -320,8 +329,9 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.doesNotMatch(appMarkup, /\.sync-bar\{margin-left:50px\}/, '旧的避让式左缩进应已删除');
   // 三态图标
   assert.match(html, /class="sb-ic"/);
-  assert.match(appSource, /state==='ok'\?'✓':state==='err'\?'!':''/);
-  assert.match(appSource, /setSyncBar\(''\)\},2200\)/, '成功态停留 2.2 秒');
+  // v247：图标与停留时长都搬到 sync-view.js 的 syncBarAttrs（上面已断言 2200/8000 映射）
+  assert.match(appSource, /icon: state === 'ok' \? '✓' : state === 'err' \? '!' : ''/);
+  assert.match(appSource, /setTimeout\(function\(\)\{setSyncBar\(''\)\},r\.holdMs\)/, '成功态停留 2.2 秒（时长由 syncBarAttrs 给）');
 
   // 三态尺寸要落在同一档：统一最小宽度 + 图标盒统一 13px（转圈在盒内画 11px 的环）
   assert.match(appMarkup, /justify-content:center;gap:8px;min-width:132px/);
@@ -336,7 +346,9 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.doesNotMatch(appSource, /正在上传到云端/);
   assert.doesNotMatch(appSource, /同步失败 · 数据仅存本机/);
   // 失败态 8 秒后自动收起（横幅继续常驻）
-  assert.match(appSource, /else if\(state==='err'\)syncBarTimer=setTimeout\(function\(\)\{setSyncBar\(''\)\},8000\)/);
+  // v247：时长改由 sync-view.js 的 syncBarAttrs 给出（8000），index.js 只负责起计时器
+  assert.match(appSource, /holdMs: state === 'ok' \? 2200 : state === 'err' \? 8000 : 0/);
+  assert.match(appSource, /if\(r\.holdMs\)syncBarTimer=setTimeout\(function\(\)\{setSyncBar\(''\)\},r\.holdMs\)/);
 });
 
 test('sync feedback has a single channel per event', () => {
