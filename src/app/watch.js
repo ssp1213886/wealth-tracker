@@ -176,6 +176,61 @@ export function toHoldingRows(holdings, quotes) {
   }).sort((a, b) => b.weight - a.weight);
 }
 
+/* ---------------- 观察列表的"状态机"：归属映射 / 云端并集 / 持仓-关注分组 ---------------- */
+
+/**
+ * 行情与持仓的归属映射：观察列表里的 BTCETF 行，行情/成本实际记在 BTC 名下；
+ * 而 BTC 行是加密现货（值空串 = 不属于你的持仓）。其它标的按自身代码。
+ */
+export const WATCH_HELD_OF = { BTCETF: 'BTC', BTC: '' };
+
+/** 某个观察标的对应的"底层代码"；返回 '' 表示它只是行情关注项，不算持仓。 */
+export function resolveHeldSymbol(sym, heldOf) {
+  const map = heldOf || WATCH_HELD_OF;
+  const upper = String(sym || '').toUpperCase();
+  if (Object.prototype.hasOwnProperty.call(map, upper)) return map[upper];
+  return upper;
+}
+
+/**
+ * 云端观察列表合并：**并集**，绝不丢标的。
+ * 云端项在前、本地独有的补在后面，按代码去重，最后统一走 normalizeWatchlist。
+ * （历史决策：并集意味着"A 设备删掉的标的"会在 B 设备拉取时被并回来，换取"绝不丢"。）
+ */
+export function mergeWatchlist(local, cloud) {
+  const seen = new Set();
+  const merged = [];
+  const push = (item) => {
+    const sym = item && item.sym ? String(item.sym).toUpperCase() : '';
+    if (!sym || seen.has(sym)) return;
+    seen.add(sym);
+    merged.push(item);
+  };
+  (Array.isArray(cloud) ? cloud : []).forEach(push);
+  (Array.isArray(local) ? local : []).forEach(push);
+  return normalizeWatchlist(merged);
+}
+
+/**
+ * 按"持有市值"把观察列表分成 持仓组 / 关注组，并给出持仓合计。
+ * valueOf(item) 返回该项的持有市值（> 0 才算持仓；现价拿不到时为 0，会落到关注组）。
+ */
+export function splitByHolding(items, valueOf) {
+  const held = [];
+  const watch = [];
+  let total = 0;
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const value = Number(valueOf ? valueOf(item) : 0) || 0;
+    if (value > 0) {
+      held.push(item);
+      total += value;
+    } else {
+      watch.push(item);
+    }
+  });
+  return { held, watch, total };
+}
+
 // 一次请求要拿的所有行情代码（观察列表 + 两张榜单，去重）
 export function collectQuoteSymbols(list, holdingsBySymbol) {
   const set = new Set();

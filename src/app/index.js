@@ -7,7 +7,7 @@ import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
-import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS} from './watch.js';
+import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS, WATCH_HELD_OF, resolveHeldSymbol, mergeWatchlist, splitByHolding} from './watch.js';
 var LSKEY=KEYS.dashboard,PRICE_KEY=KEYS.prices,TRADE_KEY=KEYS.trades,CB_KEY=KEYS.cash,CLOG_KEY=KEYS.cashLog;var cashBalance=0,cashLog=[];
 
 
@@ -18,7 +18,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v236';var APP_DATA_VERSION=5;
+var APP_BUILD='v237';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -1312,7 +1312,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=236',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=237',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -1454,15 +1454,7 @@ function applyCloudVal(key,val){
   else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:7,smh:5};localStorage.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
   else if(key==='exit_portfolio'){localStorage.setItem('exit_portfolio',val);var ep=document.getElementById('exitPortfolio');if(ep)ep.value=val}
   else if(key==='watchlist'){
-    /* 并集：云端项在前，本地独有的补在后面，按代码去重 */
-    var seenW={},mergedW=[];
-    [].concat(normalizeWatchlist(Array.isArray(val)?val:[]),watchList||[]).forEach(function(it){
-      var k=it&&it.sym?String(it.sym).toUpperCase():'';
-      if(!k||seenW[k])return;
-      seenW[k]=1;
-      mergedW.push(it);
-    });
-    watchList=normalizeWatchlist(mergedW);
+    watchList=mergeWatchlist(watchList,val);   // 并集：云端项在前，本地独有的补上，按代码去重
     localStorage.setItem(WATCH_KEY,JSON.stringify(watchList));
     renderWatch();renderWatchManage();
   }
@@ -2218,17 +2210,11 @@ if(typeof window!=='undefined'){
   var busy=false,mo=null;
   var heldShares=function(sym){var n=0;for(var i=0;i<trades.length;i+=1){if(trades[i]&&trades[i].symbol===sym)n+=Number(trades[i].shares)||0}return n};
   /* 持仓归属：观察列表里的 BTC 是加密现货（不属于你的持仓）；你的比特币持仓是 BTC ETF（交易代码 BTC） */
-  var HELD_OF={BTCETF:'BTC',BTC:''};
-  var heldSharesFor=function(sym){
-    if(Object.prototype.hasOwnProperty.call(HELD_OF,sym)){
-      var src=HELD_OF[sym];
-      return src?heldShares(src):0;
-    }
-    return heldShares(sym);
-  };
+  var HELD_OF=WATCH_HELD_OF;
+  var heldSharesFor=function(sym){var src=resolveHeldSymbol(sym);return src?heldShares(src):0};
   var priceOf=function(sym){var q=watchQuotes[sym],c=readPriceCache()[sym];return Number((q&&q.price)||livePrices[sym]||(c&&c.price)||0)||0};
   /* 本地行情缓存按"归属代码"取：BTCETF 的行情在缓存里记在 BTC 名下；现货 BTC 没有本地缓存 */
-  var dataSym=function(sym){return Object.prototype.hasOwnProperty.call(HELD_OF,sym)?HELD_OF[sym]:sym};
+  var dataSym=function(sym){return resolveHeldSymbol(sym)};
   var histOf=function(sym){var k=dataSym(sym);if(!k)return [];var c=readPriceCache()[k];return (c&&c.history)||[]};
   var hiOf=function(sym){
     var k=dataSym(sym);
@@ -2290,15 +2276,13 @@ if(typeof window!=='undefined'){
     try{
       var rows=[].slice.call(host.querySelectorAll('.watch-row'));
       if(!rows.length)return;
-      var held=[],watch=[],total=0;
-      rows.forEach(function(r){
+      rows.forEach(function(r){   // 补 data-sym
         var s=r.querySelector('.watch-sym');
         var sym=r.getAttribute('data-sym')||(s&&s.firstChild?String(s.firstChild.textContent).trim():'');
-        if(!sym)return;
-        r.setAttribute('data-sym',sym);
-        var sh=heldSharesFor(sym);
-        if(sh>0){held.push(r);total+=sh*priceOf(sym)}else watch.push(r);
+        if(sym)r.setAttribute('data-sym',sym);
       });
+      var groups=splitByHolding(rows,function(r){var sym=r.getAttribute('data-sym');return sym?heldSharesFor(sym)*priceOf(sym):0});
+      var held=groups.held,watch=groups.watch,total=groups.total;
       rows.forEach(function(r){
         var sym=r.getAttribute('data-sym');
         if(!sym)return;

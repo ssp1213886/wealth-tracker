@@ -183,6 +183,40 @@ if (planAfter.tier0 !== '起步期E2E') failures.push('档位就地编辑没写�
 if (planAfter.rate !== 3.5) failures.push('提款滑杆没写进 state.plan.wd.rate（读到 ' + planAfter.rate + '）');
 if (!planAfter.annual || planAfter.annual === '$0.00') failures.push('提款模拟没算出年提款额');
 
+/* G) 观察列表状态机：添加一只标的 → 落库 + 进「关注」组 + 推到云端（v237 抽到 watch.js） */
+const watchBefore = await ev(() => JSON.parse(localStorage.getItem('wealth_watchlist_v1') || '[]').map((x) => x.sym));
+await ev(() => document.getElementById('btnWatchAddOpen').click());
+await p.waitForTimeout(500);
+await ev(() => {
+  const i = document.getElementById('watchSearchInput');
+  i.value = 'spy';
+  i.dispatchEvent(new Event('input', { bubbles: true }));
+});
+await p.waitForTimeout(1500);
+const addRow = await ev(() => {
+  const rows = Array.from(document.querySelectorAll('#watchSearchList .watch-search-row'));
+  const hit = rows.filter((r) => ((r.querySelector('.wsr-sym') || {}).textContent || '') === 'SPY')[0];
+  const btn = hit && hit.querySelector('button');
+  if (btn) btn.click();
+  return { found: !!hit, btnText: btn ? btn.textContent.trim() : null };
+});
+await p.waitForTimeout(2000);
+const watchAfter = await ev(() => {
+  const list = JSON.parse(localStorage.getItem('wealth_watchlist_v1') || '[]').map((x) => x.sym);
+  const rows = Array.from(document.querySelectorAll('#watchRows .watch-row')).map((r) => r.getAttribute('data-sym'));
+  const groups = Array.from(document.querySelectorAll('#watchRows .watch-group')).map((g) => ({
+    title: (g.querySelector('.wg-name') || {}).textContent,
+    count: (g.querySelector('.wg-count') || {}).textContent,
+  }));
+  return { list, rows, groups };
+});
+await p.waitForTimeout(1500);
+const cloudWatch = await (await fetch(CLOUD + '/_log')).json();
+await ev(() => document.getElementById('btnWatchAddOpen').click());
+if (!watchAfter.list.includes('SPY')) failures.push('添加 SPY 没写进本地观察列表（现有 ' + watchAfter.list.join(',') + '）');
+if (!watchAfter.rows.includes('SPY')) failures.push('添加后列表里没有 SPY 行');
+if (!(cloudWatch.store.watchlist || []).some((x) => x.sym === 'SPY')) failures.push('观察列表改动没推到云端');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -192,6 +226,7 @@ await p.close();
 console.log('交互流：搜索 ' + search.total + ' 行→可见 ' + search.visible + '（隐藏 ' + search.hidden + '）· 清空 ' + tradesBefore + '→' + cleared + '→撤销 ' + undone + ' · 结算按钮 ' + settleBtns + ' 个 · 备份含观察列表 ' + backup.hasWatchlist);
 console.log('记录页汇总：累计入金 ' + totals.dep + ' · 累计买入 ' + totals.buy + ' · 累计卖出 ' + totals.sel);
 console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
+console.log('观察列表：' + watchBefore.length + ' → ' + watchAfter.list.length + ' 项（添加 SPY：按钮="' + addRow.btnText + '"，分组 ' + watchAfter.groups.map((g) => g.title + g.count).join('/') + '，云端 ' + (cloudWatch.store.watchlist || []).length + ' 项）');
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('交互流测试失败：\n  - ' + failures.join('\n  - '));

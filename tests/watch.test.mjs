@@ -17,6 +17,10 @@ import {
   kindOf,
   labelOf,
   quoteSymbolOf,
+  WATCH_HELD_OF,
+  resolveHeldSymbol,
+  mergeWatchlist,
+  splitByHolding,
 } from '../src/app/watch.js';
 
 test('默认观察列表覆盖用户指定的标的（含 BTC ETF 行）', () => {
@@ -176,4 +180,54 @@ test('toExposureRows：单一底层资产（比特币）计入、其余成分股
   // 占比合计 = 100%（四舍五入误差 ±0.3）
   const shareSum = ex.rows.reduce((s, r) => s + (r.share || 0), 0) + ex.etfRest.reduce((s, r) => s + (r.share || 0), 0);
   assert.ok(Math.abs(shareSum - 100) < 0.3, '占比合计应为 100%，实际 ' + shareSum);
+});
+
+test('resolveHeldSymbol：BTCETF 归到 BTC，BTC 现货不算持仓，其它按自身', () => {
+  assert.deepEqual(WATCH_HELD_OF, { BTCETF: 'BTC', BTC: '' });
+  assert.equal(resolveHeldSymbol('BTCETF'), 'BTC');
+  assert.equal(resolveHeldSymbol('btcetf'), 'BTC', '大小写不敏感');
+  assert.equal(resolveHeldSymbol('BTC'), '', '现货 BTC 不参与持仓');
+  assert.equal(resolveHeldSymbol('NVDA'), 'NVDA');
+  assert.equal(resolveHeldSymbol(''), '');
+  assert.equal(resolveHeldSymbol('VGT', { VGT: 'QQQ' }), 'QQQ', '可传入自定义映射');
+});
+
+test('mergeWatchlist：并集、云端在前、按代码去重、不丢本地独有', () => {
+  const local = [{ sym: 'VGT', enabled: true, order: 0 }, { sym: 'IWM', enabled: true, order: 1 }];
+  const cloud = [{ sym: 'vgt', enabled: false, order: 5 }, { sym: 'SMH', enabled: true, order: 6 }];
+  const merged = mergeWatchlist(local, cloud);
+  const syms = merged.map((x) => x.sym);
+  assert.deepEqual(syms.slice().sort(), ['IWM', 'SMH', 'VGT'], '三方都在，一个不丢');
+  // 顺序按 order 字段（normalizeWatchlist 的既有语义）：IWM(1) → VGT(5) → SMH(6)
+  assert.deepEqual(syms, ['IWM', 'VGT', 'SMH']);
+  assert.equal(merged.filter((x) => x.sym === 'VGT')[0].enabled, false, '重复项以云端那份为准');
+});
+
+test('mergeWatchlist：容忍脏数据（null / 缺 sym / 非数组）', () => {
+  // 两边都没有 → 与 normalizeWatchlist([]) 一样会播种默认列表（这是既有语义，不是 bug）
+  assert.deepEqual(mergeWatchlist(null, null).map((x) => x.sym), normalizeWatchlist([]).map((x) => x.sym));
+  const merged = mergeWatchlist([{ sym: 'VGT' }, null, {}, { sym: '' }], [{ bad: 1 }]);
+  assert.deepEqual(merged.map((x) => x.sym), ['VGT']);
+  assert.equal(mergeWatchlist([{ sym: 'vgt' }], 'not-an-array').length, 1);
+});
+
+test('splitByHolding：有持仓市值的进持仓组并合计，其余进关注组，顺序不变', () => {
+  const items = [{ sym: 'VGT' }, { sym: 'BTC' }, { sym: 'SMH' }, { sym: 'IWM' }];
+  const valueOf = (it) => ({ VGT: 1000, SMH: 0, BTC: 0, IWM: 500 }[it.sym] || 0);
+  const groups = splitByHolding(items, valueOf);
+  assert.deepEqual(groups.held.map((x) => x.sym), ['VGT', 'IWM']);
+  assert.deepEqual(groups.watch.map((x) => x.sym), ['BTC', 'SMH']);
+  assert.equal(groups.total, 1500);
+});
+
+test('splitByHolding：现价拿不到（0）时落到关注组，脏数据不炸', () => {
+  const g1 = splitByHolding([{ sym: 'VGT' }], () => 0);
+  assert.equal(g1.held.length, 0);
+  assert.equal(g1.watch.length, 1);
+  assert.equal(g1.total, 0);
+  const g2 = splitByHolding(null, () => 1);
+  assert.deepEqual(g2, { held: [], watch: [], total: 0 });
+  const g3 = splitByHolding([{ sym: 'A' }, { sym: 'B' }], (it) => (it.sym === 'A' ? 'abc' : -5));
+  assert.equal(g3.held.length, 0, '非法/负值都算关注');
+  assert.equal(g3.watch.length, 2);
 });

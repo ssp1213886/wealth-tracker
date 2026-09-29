@@ -320,13 +320,14 @@ const steps = {
 | v234 | 观察列表搜索名单（别名表 62 条 + S&P100∪纳指100 共 167 条）与匹配逻辑 | `src/app/symbols.js` | 6 项单测 + e2e 断言（搜 berkshire 首行必须是 BRK-B） |
 | v235 | 策略工具与提款模拟的纯逻辑（默认档位、`readPlan` 归并、就地编辑、提款耗尽年数） | `src/app/plan.js` | 9 项单测 + e2e 断言（档位就地编辑与提款滑杆要写进 `state.plan`） |
 | v236 | 记录页的表格搜索匹配与顶部汇总金额（累计入金/买入/卖出） | 并入 `src/app/rows.js` | 4 项单测 + e2e 断言（搜索过滤生效、汇总数字正确） |
+| v237 | 观察列表状态机：归属映射（BTCETF↔BTC）、云端**并集**合并、持仓/关注分组 | 并入 `src/app/watch.js` | 5 项单测 + e2e 断言（添加标的 → 落库 + 进关注组 + 推到云端） |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
 1. ~~策略工具与提款模拟的纯逻辑 → `src/app/plan.js`~~ ✅ v235
 2. ~~记录页的行数据整形与筛选排序~~ ✅ v236（`selectTrades`/`selectCashLogs` 早就在 rows.js；这轮把表格搜索匹配与汇总金额也搬了过去，并统一了"入金"判定口径）
-3. 观察列表状态机（增删改排序 + 云端并集）→ 和现有 `watch.js` 合并成 `watchlist.js` ← 下一步
-4. 期权纯计算（`isActiveOption` / 到期状态 / 距现价）→ `src/app/options.js`
+3. ~~观察列表状态机 → `watch.js`~~ ✅ v237（增删改排序本来就在 watch.js；这轮把归属映射、云端并集、分组也搬了过去）
+4. 期权纯计算（`isActiveOption` / 到期状态 / 距现价）→ `src/app/options.js` ← 下一步
 5. 设置抽屉与同步条的 DOM 绑定集中到 `src/app/settings.js`
 
 验收标准：每步做完 `index.js` 明显变小、新模块有单测、e2e 与（动样式时）样式指纹均无差异。
