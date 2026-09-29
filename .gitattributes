@@ -1,0 +1,6 @@
+# 统一换行为 LF（仓库内一致，避免脚本按行匹配时被 CRLF 坑到）
+* text=auto eol=lf
+
+# 二进制资源不做换行转换
+*.png binary
+*.ico binary
