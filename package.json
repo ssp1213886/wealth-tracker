@@ -10,6 +10,8 @@
     "preview:lan": "node scripts/lan-preview.mjs",
     "test": "node --test tests/*.test.mjs",
     "lint": "node scripts/lint.mjs",
+    "audit": "node scripts/audit/static.mjs",
+    "e2e": "node scripts/e2e/run.mjs",
     "build": "node scripts/bundle.mjs && node scripts/build.mjs",
     "bump": "node scripts/bump.mjs"
   },

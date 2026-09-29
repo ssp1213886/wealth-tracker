@@ -62,8 +62,10 @@ wealth-tracker/
 
 ```bash
 npm run build        # 打包 src/app/* → public/assets/app.js
-npm test             # 单元测试（85 项）
-npm run lint         # 语法检查 + !important 预算守卫
+npm test             # 单元测试（项数以输出为准）
+npm run lint         # 语法检查 + 样式债守卫（!important 只减不增、:hover 必须包裹）
+npm run audit        # 静态审计：死 id / 死按钮 / 未导出的 inline onclick（纯 Node，CI 会跑）
+npm run e2e          # 端到端：无头 Chrome 跑爬查 + 数据流 + 交互流（不弹窗、不占用调试窗口）
 npm run bump         # 版本 +1：改 5 处版本号 → 重新打包 → 跑测试
 npm run deploy       # 构建 + 部署到 Cloudflare（不会漏构建）
 npm run preview:lan  # 局域网预览（手机可访问）
@@ -85,15 +87,18 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 
 ## 测试体系
 
-三层，各有用途：
+四层，各有用途：
 
 | 层级 | 命令 | 覆盖 |
 | --- | --- | --- |
-| **单元测试** | `npm test` | 85 项：工具函数、持仓计算、存储容错、迁移链、同步 payload、转义安全、时区边界 |
-| **端到端回归** | `node …/cdp.mjs --file scripts/e2e-full.mjs` | 47 项：仪表盘/操作台/期权/记录页/侧边栏/主题/响应式 |
-| **专项验证** | `scripts/test-*.mjs` | 期权行权与结算、备份往返、分析卡片数值 |
+| **单元测试** | `npm test` | 工具函数、持仓计算、存储容错、迁移链、同步 payload、样式债守卫、转义安全、时区边界 |
+| **静态审计** | `npm run audit` | 死 id（JS 引用了不存在的元素）、死按钮（渲染了但没监听器）、inline onclick 未导出到 window；纯 Node，**CI 会跑** |
+| **端到端（无头）** | `npm run e2e` | 全页爬查零报错 + 数据流（买入/入金/卖 CALL 落库并同步）+ 交互流（搜索过滤/清空撤销/期权结算/备份结构）；自带假云端，**不碰生产数据** |
+| **专项验证** | `scripts/test-*.mjs`、`scripts/e2e-full.mjs` | 期权行权与结算、备份往返、分析卡片数值、47 项全站回归 |
 
-> e2e 与专项脚本依赖**调试专用 Chrome**（`C:\Users\topeasejs\ChromeDebug\profile`，端口 9222）和 `npm run preview:lan` 起的本地服务。用法见 `.codex/skills/chrome-debug`。
+> `npm run e2e` 默认用**无头 Chrome**（`scripts/e2e/driver.mjs`）：不弹窗、不占用你正在用的调试窗口，也不弹原生确认框。
+> 需要亲眼看画面时：`E2E_USE_DEBUG_CHROME=1 npm run e2e`（这时才依赖调试专用 Chrome + `scripts/e2e-full.mjs` 那套 cdp 驱动）。
+> 假云端见 `scripts/e2e/mock-cloud.mjs`（`/_log` 看它收到了什么、`/_reset` 清空）；每个场景开始前都会 reset，避免互相污染。
 
 ### 截图调试的两个坑（踩过两次）
 
