@@ -1,7 +1,8 @@
 // 云同步的纯逻辑：payload 组装与结果分类。
 // 不做任何网络请求，也不碰全局状态——读数据的动作由调用方以函数形式注入，方便单测。
 
-// 同步用的键（与后端 SYNC_KEYS 对齐）
+// 同步用的键。**这是唯一清单**：前端 push/pull 与后端白名单（src/lib/http.js）都以此为准。
+// 历史事故：这里漏了 watchlist（只加在了前端的 SYNC_KEYS 上），导致"观察列表改了 → 推送空 payload → dirty 永远清不掉"。
 export const SYNC_FIELDS = [
   'trades',
   'cashBalance',
@@ -11,6 +12,7 @@ export const SYNC_FIELDS = [
   'optionTrades',
   'otmSettings',
   'exit_portfolio',
+  'watchlist',
 ];
 
 /**

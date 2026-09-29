@@ -2,6 +2,7 @@
 // 这两块正是"云端已有更新"这类问题的高发区，抽出来之后可以离线验证。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   buildSyncPayload,
   classifySyncError,
@@ -27,6 +28,7 @@ const sampleValues = {
   optionTrades: [],
   otmSettings: { vgt: 7, smh: 5 },
   exit_portfolio: '',
+  watchlist: [{ sym: 'VGT', enabled: true }],
 };
 
 test('buildSyncPayload: 全量模式下带上所有同步键与版本戳', () => {
@@ -116,6 +118,38 @@ test('buildSyncPayload: 缺少读取函数时字段为 undefined 而不是抛错
   const payload = buildSyncPayload({ dirtyOnly: false, read: {}, readPrices: () => ({}) });
   SYNC_FIELDS.forEach((key) => assert.equal(payload[key], undefined));
   assert.deepEqual(payload.prices, {});
+});
+
+test('SYNC_FIELDS: 前端同步清单必须与后端白名单完全一致（防再次漂移）', () => {
+  // 历史事故：v214 只把 watchlist 加进了前端的 SYNC_KEYS，payload 组装器 SYNC_FIELDS 没加，
+  // 结果「观察列表改了 → 推送空 payload → dirty 永远清不掉」。
+  const source = fs.readFileSync('src/lib/http.js', 'utf8');
+  const block = source.match(/export const SYNC_KEYS = new Set\(\[([\s\S]*?)\]\);/);
+  assert.ok(block, '没解析到后端 SYNC_KEYS 白名单');
+  const backend = block[1].split(',').map((s) => s.replace(/[^A-Za-z0-9_]/g, '')).filter(Boolean).sort();
+  const backendSet = new Set(backend);
+  SYNC_FIELDS.forEach((key) => {
+    assert.ok(backendSet.has(key), '后端白名单缺少前端同步键：' + key);
+  });
+  // prices 走特殊通道（每次随包上传、不带版本戳、不参与冲突判定），所以不在 SYNC_FIELDS 里
+  assert.deepEqual(
+    backend.filter((key) => key !== 'prices' && SYNC_FIELDS.indexOf(key) < 0),
+    [],
+    '后端白名单里有前端不知道的键',
+  );
+});
+
+test('buildSyncPayload: 观察列表改动能被推送（回归 v214 → v227）', () => {
+  const watchTs = 1790274411112;
+  const payload = buildSyncPayload({
+    dirtyOnly: true,
+    dirty: { watchlist: true },
+    cloudTs: { watchlist: watchTs },
+    read: reader(sampleValues),
+    readPrices: () => ({}),
+  });
+  assert.deepEqual(payload.watchlist, [{ sym: 'VGT', enabled: true }], 'watchlist 必须带上内容');
+  assert.equal(payload.__expectedVersions.watchlist, watchTs);
 });
 
 test('classifySyncError: 区分冲突、鉴权、限流与一般错误', () => {
