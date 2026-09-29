@@ -89,6 +89,13 @@ await step('设置抽屉', () => { if (typeof openMobileSettings === 'function')
 for (const sec of ['sync', 'price', 'data', 'preferences']) {
   await step('设置-' + sec, (s) => { if (typeof openAdvancedSettings === 'function') openAdvancedSettings(s); }, 700, sec);
 }
+// 数据健康那几行文案来自 settings.js 的纯逻辑（v239），这里钉住它们确实渲染出来了
+const healthText = await ev(() => ({
+  state: (document.getElementById('sbSyncState') || {}).textContent,
+  cloud: (document.getElementById('sbSyncLast') || {}).textContent,
+  push: (document.getElementById('sbLastPush') || {}).textContent,
+  conflict: (document.getElementById('sbConflictState') || {}).textContent,
+}));
 await step('观察-搜索面板', clickId, 700, 'btnWatchAddOpen');
 await step('观察-搜索输入', () => { const i = document.getElementById('watchSearchInput'); i.value = 'nvda'; i.dispatchEvent(new Event('input', { bubbles: true })); }, 1800);
 // 搜索模块抽出后，这里顺便钉住"能按名称搜到票"（回归 BRK-B 这类别名）
@@ -134,11 +141,16 @@ await p.evaluate(() => {
 await p.close();
 
 const failures = [...problems];
+// 启动期（第一步之前）的报错不会被"每步增量"统计到，这里兜住
+if (consoleErrors.length) failures.push('控制台报错 ' + consoleErrors.length + ' 条：' + consoleErrors.slice(0, 3).join(' | '));
 if (summary.bootFailed) failures.push('页面出现「启动失败」兜底页');
 if (summary.watchRows < 15) failures.push('观察列表没渲染出来（' + summary.watchRows + ' 行）');
 if (summary.activityRows < 2) failures.push('操作日志没渲染出来（' + summary.activityRows + ' 行）');
 if (summary.optionRows < 1) failures.push('期权持仓没渲染出来（' + summary.optionRows + ' 行）');
 if (searchTop !== 'BRK-B') failures.push('搜索 berkshire 第一行应为 BRK-B，实际 ' + searchTop);
+if (!healthText.state) failures.push('数据健康的「同步状态」没有渲染');
+if (!healthText.conflict) failures.push('数据健康的「冲突状态」没有渲染');
+if (!healthText.cloud) failures.push('数据健康的「最近下载」没有渲染');
 console.log('爬查完成：' + summary.build + ' · 观察 ' + summary.watchRows + ' 行 · 日志 ' + summary.activityRows + ' 行 · 期权 ' + summary.optionRows + ' 行');
 if (failures.length) {
   console.error('爬查发现问题 ' + failures.length + ' 条：\n  - ' + failures.join('\n  - '));

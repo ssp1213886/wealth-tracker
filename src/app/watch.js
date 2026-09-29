@@ -213,15 +213,19 @@ export function mergeWatchlist(local, cloud) {
 
 /**
  * 按"持有市值"把观察列表分成 持仓组 / 关注组，并给出持仓合计。
- * valueOf(item) 返回该项的持有市值（> 0 才算持仓；现价拿不到时为 0，会落到关注组）。
+ * - valueOf(item) 返回持有市值，用于"持仓合计"
+ * - isHeldOf(item) 可选，判定是否算持仓；默认按 value > 0
+ *   ⚠️ 线上必须传"持有股数 > 0"而不是"> 0 市值"：拿不到现价（停牌/盘前/接口失败）时
+ *   市值会算成 0，用市值判定会把持仓行错误地丢进"关注"组（v237 曾这样回归，靠样式指纹抓到）。
  */
-export function splitByHolding(items, valueOf) {
+export function splitByHolding(items, valueOf, isHeldOf) {
   const held = [];
   const watch = [];
   let total = 0;
   (Array.isArray(items) ? items : []).forEach((item) => {
     const value = Number(valueOf ? valueOf(item) : 0) || 0;
-    if (value > 0) {
+    const isHeld = typeof isHeldOf === 'function' ? !!isHeldOf(item) : value > 0;
+    if (isHeld) {
       held.push(item);
       total += value;
     } else {

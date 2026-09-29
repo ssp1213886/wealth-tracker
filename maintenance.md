@@ -322,6 +322,7 @@ const steps = {
 | v236 | 记录页的表格搜索匹配与顶部汇总金额（累计入金/买入/卖出） | 并入 `src/app/rows.js` | 4 项单测 + e2e 断言（搜索过滤生效、汇总数字正确） |
 | v237 | 观察列表状态机：归属映射（BTCETF↔BTC）、云端**并集**合并、持仓/关注分组 | 并入 `src/app/watch.js` | 5 项单测 + e2e 断言（添加标的 → 落库 + 进关注组 + 推到云端） |
 | v238 | 期权纯计算：记录校验、到期状态（美东 16:00 收盘判定）、行内派生值（剩余天数/虚值实值/距现价）、权利金汇总、OTM 建议行权价；`normalizeDateValue` 从 index.js 移到 time.js | 新增 `src/app/options.js` | 10 项单测 + e2e 断言（卖 CALL 后权利金汇总与行内状态正确） |
+| v239 | 设置抽屉与云同步面板：面板映射、同步配置解析、数据健康文案判定（冲突>失败>未配置>待同步>正常） | 新增 `src/app/settings.js` | 6 项单测 + e2e 断言（数据健康三行必须渲染） |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
@@ -329,6 +330,12 @@ const steps = {
 2. ~~记录页的行数据整形与筛选排序~~ ✅ v236（`selectTrades`/`selectCashLogs` 早就在 rows.js；这轮把表格搜索匹配与汇总金额也搬了过去，并统一了"入金"判定口径）
 3. ~~观察列表状态机 → `watch.js`~~ ✅ v237（增删改排序本来就在 watch.js；这轮把归属映射、云端并集、分组也搬了过去）
 4. ~~期权纯计算 → `src/app/options.js`~~ ✅ v238
-5. 设置抽屉与同步条的 DOM 绑定集中到 `src/app/settings.js` ← 下一步（拆分收尾）
+5. ~~设置抽屉与同步条 → `src/app/settings.js`~~ ✅ v239（DOM 事件绑定仍留 index.js，纯逻辑已抽出）
+
+**拆分收尾（v234–v239）**：`index.js` 从 212.3KB 降到 ~199KB，新增 5 个纯逻辑模块（symbols/plan/rows/watch/options/settings），单测从 105 项涨到 153 项。
+
+**收尾时靠"最完整测试"抓到的两个真问题**（都已修，并补了护栏）：
+1. **v237 引入的分组回归**：持仓判定被写成"持有市值 > 0"，导致**拿不到现价的持仓行会掉进「关注」组**。靠"重构前后计算样式指纹对比"抓到（v233 → v239 四种组合从 80 处差异收敛到 0）。现在 `splitByHolding` 支持显式传入"是否持仓"谓词，线上传的是"持有股数 > 0"，并补了单测。
+2. **v239 改写 `renderSyncHealth` 留下悬空变量**（`configured`/`dirtyCount`/`backupAt` 与状态对象 `s`），运行期 ReferenceError 让同步健康面板与 OTM 步进失效。靠仓库里既有的 `scripts/e2e-full.mjs`（47 项）抓到。同时补上 `crawl.mjs` 的覆盖率漏洞：**启动期**的 console 报错以前不计入失败。
 
 验收标准：每步做完 `index.js` 明显变小、新模块有单测、e2e 与（动样式时）样式指纹均无差异。

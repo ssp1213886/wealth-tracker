@@ -7,7 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PUB = fileURLToPath(new URL('../../public/', import.meta.url));
+// 默认发当前仓库的 public/；可用 E2E_PUBLIC=<目录> 发别的目录（例如用 git worktree 拉出旧版本做对比）
+const PUB = process.env.E2E_PUBLIC ? path.resolve(process.env.E2E_PUBLIC) : fileURLToPath(new URL('../../public/', import.meta.url));
 const PORT = Number(process.env.E2E_PORT || 8790);
 const store = {};
 const log = [];

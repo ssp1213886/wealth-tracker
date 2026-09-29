@@ -231,3 +231,18 @@ test('splitByHolding：现价拿不到（0）时落到关注组，脏数据不�
   assert.equal(g3.held.length, 0, '非法/负值都算关注');
   assert.equal(g3.watch.length, 2);
 });
+
+test('splitByHolding：可按"持有股数"判定持仓，市值只用于合计（v237 回归的护栏）', () => {
+  // 有持仓但拿不到现价 → 市值 0，也必须留在"持仓"组（线上就是这么用的）
+  const items = [{ sym: 'VGT' }, { sym: 'BTCETF' }, { sym: 'IWM' }];
+  const shares = { VGT: 8.62, BTCETF: 13.62, IWM: 0 };
+  const price = { VGT: 0, BTCETF: 0, IWM: 100 };   // 前两只没行情
+  const groups = splitByHolding(
+    items,
+    (it) => shares[it.sym] * (price[it.sym] || 0),
+    (it) => shares[it.sym] > 0,
+  );
+  assert.deepEqual(groups.held.map((x) => x.sym), ['VGT', 'BTCETF'], '没行情的持仓仍属持仓组');
+  assert.deepEqual(groups.watch.map((x) => x.sym), ['IWM']);
+  assert.equal(groups.total, 0, '合计按市值算，无行情就是 0');
+});
