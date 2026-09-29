@@ -83,6 +83,14 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 ```
 
 > 本机 git 与部分外网请求需要走代理（见上行命令），否则会超时。
+>
+> **bump 之后提交，别漏文件**：`npm run bump` 一次改 5 处版本号 ——
+> `public/sw.js`、`public/manifest.json`、`src/app/index.js`（APP_BUILD + sw 注册 URL）、
+> **`tests/smoke.test.mjs`（3 处断言）**。
+> v251 那次提交只 add 了源码与产物、漏了 `tests/smoke.test.mjs`：本地 `npm test` 全绿（工作区里那 3 处已经改好），
+> 但**干净检出（CI）直接红在 `npm test`** —— 断言还指望 v250，而 manifest 已经是 v251。
+> 固定动作：**提交前先 `git status`**，确认 bump 碰过的文件都在待提交列表里；
+> 定位这类"本地绿、CI 红"最省事的办法是 `git worktree add <临时目录> <提交号>`，在干净检出里跑一遍同一个命令。
 
 ---
 
