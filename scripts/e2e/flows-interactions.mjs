@@ -217,6 +217,25 @@ if (!watchAfter.list.includes('SPY')) failures.push('添加 SPY 没写进本地�
 if (!watchAfter.rows.includes('SPY')) failures.push('添加后列表里没有 SPY 行');
 if (!(cloudWatch.store.watchlist || []).some((x) => x.sym === 'SPY')) failures.push('观察列表改动没推到云端');
 
+/* H) 拉取路径：模拟另一台设备改云端 → 本机应自动拉下来（v240 抽了同步决策层） */
+await fetch(CLOUD + '/_seed', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    state: {
+      monthlyDCA: 4321, dcaOverride: { month: '', amount: 0 }, roadmapStart: '2025-01', roadmapAge: 27,
+      sgovTarget: 0, targetGoal: 2500000, vgt: 0.5, smh: 0.3, btc: 0.2, plan: null,
+    },
+  }),
+});
+await ev(() => {
+  // 页面本来就可见，这里显式派发一次让 autoPull 跑起来
+  document.dispatchEvent(new Event('visibilitychange'));
+});
+await p.waitForTimeout(2600);
+const pulledDca = await ev(() => JSON.parse(localStorage.getItem('wealth_dashboard_v2') || '{}').monthlyDCA);
+if (pulledDca !== 4321) failures.push('云端更新后没有自动拉取（monthlyDCA 应为 4321，实际 ' + pulledDca + '）');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');

@@ -109,6 +109,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 | 样式债守卫 | `npm run lint` | `!important 1608/1608 · :hover 15/15` |
 | 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出 onclick / 空 catch 均为 0 |
 | 端到端（无头） | `npm run e2e` | 爬查零报错 + 数据流 + 交互流，3/3 |
+| 端到端（CI 自动） | push 后由 `.github/workflows/ci.yml` 的 `e2e` job 跑（假云端 + runner 自带 Chrome，`npm i --no-save playwright-core`） | 与本地同一套场景 |
 | 全站回归（46 项起） | `E2E_PORT=8788 npm … 然后 node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | **47/47** |
 | 专项：期权 | `… --file scripts/test-options.mjs` | 5/5（行权拦截、行权成交、删除退权利金、到期结算） |
 | 专项：备份 | `… --file scripts/test-backup.mjs` | 5/5（导出→清空→导入，含 watchlist） |
@@ -342,6 +343,7 @@ const steps = {
 | v237 | 观察列表状态机：归属映射（BTCETF↔BTC）、云端**并集**合并、持仓/关注分组 | 并入 `src/app/watch.js` | 5 项单测 + e2e 断言（添加标的 → 落库 + 进关注组 + 推到云端） |
 | v238 | 期权纯计算：记录校验、到期状态（美东 16:00 收盘判定）、行内派生值（剩余天数/虚值实值/距现价）、权利金汇总、OTM 建议行权价；`normalizeDateValue` 从 index.js 移到 time.js | 新增 `src/app/options.js` | 10 项单测 + e2e 断言（卖 CALL 后权利金汇总与行内状态正确） |
 | v239 | 设置抽屉与云同步面板：面板映射、同步配置解析、数据健康文案判定（冲突>失败>未配置>待同步>正常） | 新增 `src/app/settings.js` | 6 项单测 + e2e 断言（数据健康三行必须渲染） |
+| v240 | 同步决策层：拉取逐键判定 `decidePullAction`、整轮拉取计划 `planPullSync`、409 核对计划 `planConflictHeal`、推送脏键与跳过判断 | 新增 `src/app/sync-engine.js` | 10 项单测（覆盖七个判定分支）+ e2e 新增「模拟另一台设备改云端 → 本机自动拉取」 |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 

@@ -23,8 +23,18 @@ function findPlaywrightCore() {
   }
   return null;
 }
-const CHROME = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-if (!existsSync(CHROME)) fail('找不到 Chrome：' + CHROME + '（可用 CHROME_PATH 指定）');
+// 兼容三种环境：本机（默认路径）、CI（linux 上的 google-chrome / chromium）、显式 CHROME_PATH
+const CHROME_CANDIDATES = [
+  process.env.CHROME_PATH,
+  'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+].filter(Boolean);
+const CHROME = CHROME_CANDIDATES.find((p) => existsSync(p));
+if (!CHROME) fail('找不到 Chrome，可用 CHROME_PATH 指定（试过：' + CHROME_CANDIDATES.join(', ') + '）');
 
 const argv = process.argv.slice(2);
 let file = null;
@@ -34,7 +44,7 @@ for (let i = 0; i < argv.length; i += 1) {
 if (!file || !existsSync(file)) fail('用法：node scripts/e2e/driver.mjs --file <脚本>');
 const code = readFileSync(file, 'utf8');
 
-const pwPath = findPlaywrightCore();
+const pwPath = findPlaywrightCore() || (existsSync('node_modules/playwright-core/index.js') ? 'node_modules/playwright-core' : null);
 if (!pwPath) fail('找不到 playwright-core，可用环境变量 PW_CORE_PATH 指定路径');
 const require = createRequire(import.meta.url);
 const { chromium } = require(pwPath);
