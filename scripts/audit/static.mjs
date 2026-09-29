@@ -9,7 +9,7 @@ import fs from 'node:fs';
 const ROOT = new URL('../../', import.meta.url);
 const read = (p) => fs.readFileSync(new URL(p, ROOT), 'utf8');
 // DOM 相关的模块都要扫：漏一个，它创建的动态 id 就会被当成"死 id"（v247 踩过）
-const appFiles = ['src/app/index.js', 'src/app/rows.js', 'src/app/render.js', 'src/app/watch.js', 'src/app/sync-view.js'];
+const appFiles = ['src/app/index.js', 'src/app/rows.js', 'src/app/render.js', 'src/app/watch.js', 'src/app/sync-view.js', 'src/app/watch-ui.js', 'src/app/settings-view.js'];
 const html = read('public/index.html');
 const app = appFiles.map(read).join('\n');
 
