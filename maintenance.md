@@ -66,6 +66,7 @@ npm test             # 单元测试（项数以输出为准）
 npm run lint         # 语法检查 + 样式债守卫（!important 只减不增、:hover 必须包裹）
 npm run audit        # 静态审计：死 id / 死按钮 / 未导出的 inline onclick（纯 Node，CI 会跑）
 npm run e2e          # 端到端：无头 Chrome 跑爬查 + 数据流 + 交互流（不弹窗、不占用调试窗口）
+npm run test:all     # 上面四项串起来跑一遍（单测 → lint → 审计 → e2e）
 npm run bump         # 版本 +1：改 5 处版本号 → 重新打包 → 跑测试
 npm run deploy       # 构建 + 部署到 Cloudflare（不会漏构建）
 npm run preview:lan  # 局域网预览（手机可访问）
@@ -99,6 +100,24 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 > `npm run e2e` 默认用**无头 Chrome**（`scripts/e2e/driver.mjs`）：不弹窗、不占用你正在用的调试窗口，也不弹原生确认框。
 > 需要亲眼看画面时：`E2E_USE_DEBUG_CHROME=1 npm run e2e`（这时才依赖调试专用 Chrome + `scripts/e2e-full.mjs` 那套 cdp 驱动）。
 > 假云端见 `scripts/e2e/mock-cloud.mjs`（`/_log` 看它收到了什么、`/_reset` 清空）；每个场景开始前都会 reset，避免互相污染。
+
+### 完整测试矩阵（v239 收尾时全量跑过一遍）
+
+| 层级 | 命令 | 结果 |
+| --- | --- | --- |
+| 单元测试 | `npm test` | **153 项全绿** |
+| 样式债守卫 | `npm run lint` | `!important 1608/1608 · :hover 15/15` |
+| 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出 onclick / 空 catch 均为 0 |
+| 端到端（无头） | `npm run e2e` | 爬查零报错 + 数据流 + 交互流，3/3 |
+| 全站回归（46 项起） | `E2E_PORT=8788 npm … 然后 node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | **47/47** |
+| 专项：期权 | `… --file scripts/test-options.mjs` | 5/5（行权拦截、行权成交、删除退权利金、到期结算） |
+| 专项：备份 | `… --file scripts/test-backup.mjs` | 5/5（导出→清空→导入，含 watchlist） |
+| 专项：分析卡 | `… --file scripts/test-analytics.mjs` | 数值与回撤正常，无报错 |
+| 渲染回归 | `style-fingerprint.mjs` 对比重构前构建 | **四种组合 0 差异**（用 git worktree 拉出 v233 构建对比） |
+| 线上冒烟 | `E2E_BASE=<线上域名> … prod-smoke.mjs` | 版本号/关键区块/无报错，通过 |
+
+> 这套矩阵就是 v234–v239 拆分的安全网：抓到了 2 个真回归（持仓分组谓词、`renderSyncHealth` 悬空变量），
+> 其中第二个是仓库里既有的 `e2e-full.mjs` 抓到的——所以每次大改都值得把整张表跑一遍。
 
 ### 截图调试的两个坑（踩过两次）
 
