@@ -9,6 +9,7 @@ import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, op
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
+import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
@@ -21,7 +22,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v243';var APP_DATA_VERSION=5;
+var APP_BUILD='v244';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -266,7 +267,7 @@ function updatePortfolio(){
 
 
 
-function updateDonutChart(rows){var canvas=document.getElementById("chartDonut"),legend=document.getElementById("donutLegend");if(!canvas)return;var dpr=window.devicePixelRatio||1,size=220;canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+"px";canvas.style.height=size+"px";var ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,size,size);if(!rows.length||rows.every(function(r){return!r.priced})){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">暂无数据</div>";return}var priced=rows.filter(function(r){return r.priced&&r.value>0});if(!priced.length){if(legend)legend.innerHTML="<div style=\"color:var(--muted);padding:20px;\">请先设价</div>";return}var total=priced.reduce(function(s,r){return s+r.value},0),cx=size/2,cy=90,r=82,angle=-Math.PI/2;var slices=[];priced.forEach(function(row){var slice=row.value/total*2*Math.PI,color=getAssetColor(row.sym);slices.push({sym:row.sym,value:row.value,pct:row.value/total,color:color});ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.stroke();angle+=slice});var dark=document.documentElement.dataset.theme==="dark";ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);var grd=ctx.createRadialGradient(cx,cy,45,cx,cy,60);grd.addColorStop(0,dark?"#222522":"#faf9f5");grd.addColorStop(1,dark?"#1a1d1a":"#f0ede5");ctx.fillStyle=grd;ctx.fill();ctx.fillStyle=dark?"#e4e4e0":"#1a1a1a";ctx.font="bold 20px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(fmt$(total),cx,cy-2);ctx.font="10px sans-serif";ctx.fillStyle=dark?"#999":"#777";ctx.fillText("总市值",cx,cy+14);if(!legend)return;var h="";slices.forEach(function(s){h+="<div style=\"display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;border-radius:var(--radius-sm);background:var(--surface);\"><span style=\"width:10px;height:10px;border-radius:50%;background:"+s.color+";flex-shrink:0;\"></span><span style=\"flex:1;margin-left:8px;font-weight:520;font-size:.7rem;\">"+s.sym+"</span><span style=\"font-size:.7rem;color:var(--fg);font-weight:520;\">"+(s.pct*100).toFixed(1)+"%</span><span style=\"font-size:.7rem;color:var(--muted);margin-left:6px;\">"+fmtFull(s.value)+"</span></div>"});legend.innerHTML=h}var rebalanceMode="swap";function updateRebalance(rows,totalValue){
+function updateDonutChart(rows){var canvas=document.getElementById("chartDonut"),legend=document.getElementById("donutLegend");if(!canvas)return;var dpr=window.devicePixelRatio||1,size=220;canvas.width=size*dpr;canvas.height=size*dpr;canvas.style.width=size+"px";canvas.style.height=size+"px";var ctx=canvas.getContext("2d");ctx.scale(dpr,dpr);ctx.clearRect(0,0,size,size);var pack=donutSlices(rows);if(pack.reason!=='ok'){if(legend)legend.innerHTML=pack.reason==='no-data'?'<div style="color:var(--muted);padding:20px;">暂无数据</div>':'<div style="color:var(--muted);padding:20px;">请先设价</div>';return}var priced=pack.slices,total=pack.total,cx=size/2,cy=90,r=82,angle=-Math.PI/2;var slices=[];priced.forEach(function(row){var slice=row.value/total*2*Math.PI,color=getAssetColor(row.sym);slices.push({sym:row.sym,value:row.value,pct:row.value/total,color:color});ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.stroke();angle+=slice});var dark=document.documentElement.dataset.theme==="dark";ctx.beginPath();ctx.arc(cx,cy,52,0,2*Math.PI);var grd=ctx.createRadialGradient(cx,cy,45,cx,cy,60);grd.addColorStop(0,dark?"#222522":"#faf9f5");grd.addColorStop(1,dark?"#1a1d1a":"#f0ede5");ctx.fillStyle=grd;ctx.fill();ctx.fillStyle=dark?"#e4e4e0":"#1a1a1a";ctx.font="bold 20px "+getComputedStyle(document.body).fontFamily;ctx.textAlign="center";ctx.fillText(fmt$(total),cx,cy-2);ctx.font="10px sans-serif";ctx.fillStyle=dark?"#999":"#777";ctx.fillText("总市值",cx,cy+14);if(!legend)return;var h="";slices.forEach(function(s){h+="<div style=\"display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;border-radius:var(--radius-sm);background:var(--surface);\"><span style=\"width:10px;height:10px;border-radius:50%;background:"+s.color+";flex-shrink:0;\"></span><span style=\"flex:1;margin-left:8px;font-weight:520;font-size:.7rem;\">"+s.sym+"</span><span style=\"font-size:.7rem;color:var(--fg);font-weight:520;\">"+(s.pct*100).toFixed(1)+"%</span><span style=\"font-size:.7rem;color:var(--muted);margin-left:6px;\">"+fmtFull(s.value)+"</span></div>"});legend.innerHTML=h}var rebalanceMode="swap";function updateRebalance(rows,totalValue){
 
 
   var el=document.getElementById('rebalanceBody');if(!el)return;
@@ -355,27 +356,7 @@ function renderLogHeatmap(){
   var container=document.getElementById('logHeatmap');if(!container)return;
 
 
-  var curYM=marketDate().slice(0,7),now=new Date(Number(curYM.slice(0,4)),Number(curYM.slice(5,7))-1,1),dca=getEffectiveDCA();
-
-
-  // Month data
-
-
-  var months=[];
-
-
-  for(var i=-11;i<=0;i++){var d=new Date(now.getFullYear(),now.getMonth()+i,1);months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),label:d.getMonth()+1+'月',isFuture:false})}
-
-
-  months.forEach(function(mt){if(mt.ym>curYM)mt.isFuture=true;var buys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,7)===mt.ym}),bs={};buys.forEach(function(t){bs[t.symbol]=(bs[t.symbol]||0)+t.shares*t.price});mt.totalV=(bs.VGT||0)+(bs.SMH||0)+(bs.BTC||0);mt.complete=!mt.isFuture&&mt.totalV>=dca*0.7&&buys.length>0;mt.hasBuy=buys.length>0});
-
-
-  // Streak: count backward from last month
-
-
-  var streak=0;for(var i=months.length-1;i>=0;i--){var m=months[i];if(m.isFuture||(m.ym===curYM&&!m.complete))continue;if(m.complete)streak++;else break}
-
-
+  var dca=getEffectiveDCA(),pack=disciplineMonths({trades:trades,dca:dca,symbols:ETF_SYMS}),months=pack.months,streak=pack.streak;
   var sc=document.getElementById('streakCount');if(sc)sc.textContent=streak;
 
 
@@ -385,19 +366,19 @@ function renderLogHeatmap(){
   var htm='';months.forEach(function(mt){var bg,txt,icon;
 
 
-    if(mt.isFuture){bg='transparent';txt='var(--rule)';icon=''}
+    if(mt.isFuture){bg='transparent';txt='var(--rule)';icon=mt.icon}
 
 
-    else if(!mt.hasBuy){bg='rgba(217,69,53,.08)';txt='var(--red)';icon='✕'}
+    else if(!mt.hasBuy){bg='rgba(217,69,53,.08)';txt='var(--red)';icon=mt.icon}
 
 
-    else if(mt.complete){bg='var(--accent)';txt='#fff';icon='✓'}
+    else if(mt.complete){bg='var(--accent)';txt='#fff';icon=mt.icon}
 
 
-    else{bg='var(--orange)';txt='#fff';icon='~'}
+    else{bg='var(--orange)';txt='#fff';icon=mt.icon}
 
 
-    var state=mt.isFuture?'':mt.ym===curYM?'is-current':!mt.hasBuy?'is-empty':mt.complete?'is-done':'is-partial';htm+='<div class="discipline-month '+state+'" title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'"><span>'+mt.label+'</span>'+(icon?'<strong>'+icon+'</strong>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm
+    var state=mt.state;htm+='<div class="discipline-month '+state+'" title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'"><span>'+mt.label+'</span>'+(icon?'<strong>'+icon+'</strong>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm
 
 
 }
@@ -407,50 +388,12 @@ function renderAnnualMatrix(){
   var grid=document.getElementById('annualMatrixGrid'),stats=document.getElementById('annualMatrixStats');
   if(!grid||!stats)return;
 
-  // Find the first year with any buy trade or cash deposit
-  var allDates=[].concat(trades.map(function(t){return t.date})).concat(cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).map(function(l){return l.date}));
-if(!allDates.length){grid.innerHTML=emptyStateHTML({title:'暂无纪律数据',hint:'记录第一笔买入后，这里会自动生成月度热力图'});stats.innerHTML='';return}
-  allDates.sort();
-  var startYear=parseInt(allDates[0].slice(0,4));
-  var now=new Date(),endYear=now.getFullYear();
-  var maxYears=20,totalYears=Math.min(maxYears,endYear-startYear+1);
-  var cells=[];
-
-  for(var i=0;i<totalYears;i++){
-    var y=startYear+i,ys=String(y);
-    var yBuys=trades.filter(function(t){return t.shares>0&&t.date.slice(0,4)===ys});
-    var yPrem=optionTrades.filter(function(o){return o.added&&o.added.slice(0,4)===ys}).reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);
-    var dcaTotal=yBuys.reduce(function(s,t){return s+t.shares*t.price},0);
-    var premRate=dcaTotal>0?yPrem/dcaTotal*100:0;
-
-    var endHolds={};trades.filter(function(t){return t.date.slice(0,4)<=ys}).forEach(function(t){endHolds[t.symbol]=(endHolds[t.symbol]||0)+t.shares});
-    var vgtSh=Math.max(0,endHolds.VGT||0),smhSh=Math.max(0,endHolds.SMH||0),btcSh=Math.max(0,endHolds.BTC||0);
-    var fmtSh=function(n){return n===Math.floor(n)?n.toFixed(0):n.toFixed(1)};
-
-    cells.push({ym:ys,prem:yPrem,dca:dcaTotal,rate:premRate,vgt:vgtSh,smh:smhSh,btc:btcSh,hasData:dcaTotal>0});
-  }
-
-  var totalInvested=cashLog.filter(function(l){return l.type.indexOf('入金')>=0}).reduce(function(s,l){return s+l.amount},0);
-  var activeYears=cells.filter(function(c){return c.hasData}).length;
-  var nc=getNetCash();
-  var totalHoldings={};trades.forEach(function(t){totalHoldings[t.symbol]=(totalHoldings[t.symbol]||0)+t.shares});var totalMktV=0;ETF_SYMS.forEach(function(sym){var sh=Math.max(0,totalHoldings[sym]||0);totalMktV+=sh*(livePrices[sym]||0)});var totalAssets=totalMktV+nc;
-  var cagr=totalInvested>0&&activeYears>0?Math.pow(totalAssets/totalInvested,1/activeYears)-1:0;
-  var targetGap=Math.max(0,(state.targetGoal||2500000)-totalAssets);
-
-  function heatColor(rate,hasData){
-    if(!hasData)return['#f0f0ec','#888','rgba(0,0,0,.3)','rgba(0,0,0,.25)'];
-    if(rate>=100)return['#6c0a1e','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.6)'];
-    if(rate>=50)return['#922b3e','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.6)'];
-    if(rate>=25)return['#c0392b','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
-    if(rate>=12)return['#e67e22','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
-    if(rate>=10)return['#e67e22','#fff','rgba(255,255,255,.75)','rgba(255,255,255,.65)'];
-    if(rate>=8)return['#f0ad4e','#2c2c2c','rgba(0,0,0,.5)','rgba(0,0,0,.4)'];
-    if(rate>=6)return['#f9e79f','#2c2c2c','rgba(0,0,0,.45)','rgba(0,0,0,.35)'];
-    if(rate>=3)return['#aed6f1','#1a5276','rgba(0,0,0,.45)','rgba(0,0,0,.35)'];
-    if(rate>=0.1)return['#d6eaf8','#2e86c1','rgba(0,0,0,.45)','rgba(0,0,0,.35)'];
-    return['#5b6d8a','#fff','rgba(255,255,255,.7)','rgba(255,255,255,.6)'];
-  }
-
+  var pack=annualMatrix({trades:trades,optionTrades:optionTrades,cashLog:cashLog,prices:livePrices,netCash:getNetCash(),targetGoal:state.targetGoal||2500000,symbols:ETF_SYMS,now:new Date()});
+  if(pack.empty){grid.innerHTML=emptyStateHTML({title:'暂无纪律数据',hint:'记录第一笔买入后，这里会自动生成月度热力图'});stats.innerHTML='';return}
+ var cells=pack.cells,totalInvested=pack.totalInvested,activeYears=pack.activeYears,totalAssets=pack.totalAssets,cagr=pack.cagr,targetGap=pack.targetGap,totalMktV=pack.totalMktV;
+  var heatColor=heatColorFor;   /* v245：色阶来自 charts.js（别名保留，渲染处不改） */
+  var fmtSh=function(n){return n===Math.floor(n)?n.toFixed(0):n.toFixed(1)};
+  
   var htm='';
   cells.forEach(function(c){
     var h=heatColor(c.rate,c.hasData);
@@ -1016,7 +959,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=243',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=244',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */

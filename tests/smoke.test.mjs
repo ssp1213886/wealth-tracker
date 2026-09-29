@@ -22,10 +22,12 @@ const symbolsSource = fs.readFileSync('src/app/symbols.js', 'utf8').replace(/^ex
 const optionsSource = fs.readFileSync('src/app/options.js', 'utf8').replace(/^export /gm, '');
 // 记录域规整与 CSV 解析已抽到 records-import.js（v244），同样按函数名切片
 const recordsSource = fs.readFileSync('src/app/records-import.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
+// 图表数据整形已抽到 charts.js（v245）
+const chartsSource = fs.readFileSync('src/app/charts.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
   utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
-  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + indexSource;
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -161,13 +163,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=243');
+  assert.equal(manifest.start_url, '/?v=244');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v243/);
+  assert.match(serviceWorker, /wealth-v244/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=243',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=244',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -423,7 +425,9 @@ test('desktop UI states stay data-consistent and scrollable', () => {
   assert.doesNotMatch(appMarkup, /sparkTransform|paths=\{VGT:/);
   assert.match(appMarkup, /historyRange:'1mo'/);
   assert.match(appMarkup, /color=getAssetColor\(row\.sym\)/);
-  assert.match(appMarkup, /for\(var i=-11;i<=0;i\+\+\)/);
+  // v245：12 个月纪律热力的月度数据已抽到 charts.js，这里钉"模块函数 + 调用点"
+  assert.match(appMarkup, /function disciplineMonths\(input\)/);
+  assert.match(appMarkup, /disciplineMonths\(\{trades:trades,dca:dca,symbols:ETF_SYMS\}\)/);
   assert.match(appMarkup, /#logHeatmap\{display:grid!important/);
   assert.doesNotMatch(appMarkup, /\+' · BTC ETF'/);
   assert.match(appMarkup, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
