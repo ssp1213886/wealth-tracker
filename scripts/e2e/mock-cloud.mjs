@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 // 默认发当前仓库的 public/；可用 E2E_PUBLIC=<目录> 发别的目录（例如用 git worktree 拉出旧版本做对比）
 const PUB = process.env.E2E_PUBLIC ? path.resolve(process.env.E2E_PUBLIC) : fileURLToPath(new URL('../../public/', import.meta.url));
 const PORT = Number(process.env.E2E_PORT || 8790);
+// 可选：设了 E2E_AUTH_TOKEN 就校验 X-Auth-Token（用于测"坏令牌 → 401"这条路径）
+const AUTH_TOKEN = process.env.E2E_AUTH_TOKEN || '';
 const store = {};
 const meta = {};          // 每个键的"云端版本号"（毫秒），与真 worker 的 updated_at 语义一致
 const log = [];
@@ -64,6 +66,11 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === '/api/sync') {
+    // 可选鉴权：设了 E2E_AUTH_TOKEN 就校验（用于测"坏令牌"路径）；不设则全放行，既有场景不受影响
+    if (AUTH_TOKEN && (req.headers['x-auth-token'] || '') !== AUTH_TOKEN) {
+      res.writeHead(401, cors);
+      return res.end(JSON.stringify({ ok: false, error: 'unauthorized' }));
+    }
     if (req.method === 'GET') {
       res.writeHead(200, cors);
       return res.end(JSON.stringify({ ok: true, data: store, ts: Date.now(), meta: meta }));
@@ -76,6 +83,27 @@ const server = http.createServer((req, res) => {
         try { json = JSON.parse(body); } catch (e) { /* 忽略坏 JSON，按空包处理 */ }
         const keys = Object.keys(json).filter((k) => k !== '__expectedVersions' && k !== 'prices');
         const syncTs = Date.now();
+        // 版本冲突判定必须与真 worker（src/lib/sync.js）逐字一致，否则会造出假警报：
+        //   ① 空对象 {} 直接跳过检查（前端"不知道云端版本"时就会发这个）；
+        //   ② 只校验 __expectedVersions 里**列出的键**，不是本次推送的所有键；
+        //   ③ 云端没有这一行不算冲突（同步不变量 3）。
+        const expected = json.__expectedVersions;
+        if (expected && typeof expected === 'object') {
+          const expectedKeys = Object.keys(expected);
+          const conflicted = expectedKeys.length > 0 && expectedKeys.some((k) => {
+            if (meta[k] === undefined) return false;
+            return Number(meta[k]) !== Number(expected[k]);
+          });
+          if (conflicted) {
+            log.push({
+              at: new Date().toISOString(), keys, expected: expected, conflict: true,
+              metaSnapshot: Object.assign({}, meta),
+              detail: keys.map((k) => k + ': meta=' + meta[k] + ' expected=' + (Number(expected[k]) || 0)).join(' | '),
+            });
+            res.writeHead(409, cors);
+            return res.end(JSON.stringify({ ok: false, error: 'conflict' }));
+          }
+        }
         keys.forEach((k) => { store[k] = json[k]; meta[k] = syncTs; });
         log.push({ at: new Date().toISOString(), keys, expected: json.__expectedVersions || null });
         res.writeHead(200, cors);

@@ -121,6 +121,9 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 | 全站回归（46 项起） | `E2E_PORT=8788 npm … 然后 node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | **47/47** |
 | 渲染指纹 | `FP_OUT=tmp/x.json E2E_BASE=http://127.0.0.1:8788/ node scripts/e2e/driver.mjs --file scripts/e2e/style-fingerprint.mjs` | 手机/桌面 × 明/暗 四种组合，与基线构建对比；动样式必跑（`#roadBar` 随时间变化，已排除） |
 | 线上完整验证（只读） | `E2E_BASE=https://<域名>/ … --file scripts/e2e/prod-full.mjs` | 双视口 × 双主题 + PWA（manifest 字段 / sw 注册）+ API 鉴权（`/api/sync` 无 token 必须 401）+ 非法代码防护 + 无 console 报错；**全程只读、不留 token** |
+| 真机模拟（触摸端） | `… --file scripts/e2e/driver-engine.mjs --device "iPhone 13" --file scripts/e2e/mobile-real.mjs` | 触摸事件（tap）/ 粗指针媒体分支 `pointer:coarse` / 触摸目标尺寸 / iOS 输入框 ≥16px 门槛 / 触摸端日期框样式 / 横向溢出 |
+| 同步全链路 | `E2E_AUTH_TOKEN=good-token node scripts/e2e/mock-cloud.mjs`（8790）→ `E2E_BASE=… E2E_AUTH_TOKEN=good-token … --file scripts/e2e/sync-full.mjs` | 两台设备（独立 context）：推送 / 新设备拉取 / 双向同步 / **409 冲突弹窗** / **坏令牌 401** / 云端清空后自愈 |
+| 长时运行 | `SOAK_MINUTES=3 … --file scripts/e2e/soak.mjs` | 3 分钟 20 秒一轮交互：DOM 节点零增长、堆内存无异常增长、无报错 |
 | 专项：期权 | `… --file scripts/test-options.mjs` | 5/5（行权拦截、行权成交、删除退权利金、到期结算） |
 | 专项：备份 | `… --file scripts/test-backup.mjs` | 5/5（导出→清空→导入，含 watchlist） |
 | 专项：分析卡 | `… --file scripts/test-analytics.mjs` | 数值与回撤正常，无报错 |
@@ -452,6 +455,17 @@ const steps = {
 > 1. `scripts/audit/static.mjs` 的 `appFiles` —— 不加，它引用的 id 会被算成"死 id"，审计数字会凭空掉一截；
 > 2. `tests/smoke.test.mjs` 的 `appSource` 拼接 —— 不加，靠源码形状断言的用例会红（v250 的 `drawdown-track` 就是这么红的）；
 > 3. `scripts/audit` 的 ⑤ 号守卫会主动提醒漏掉的 import（这条不用改，但一定会响）。
+
+### 测试装置的两条铁律（v256 补测时踩到）
+
+1. **假云端必须与真 worker 的行为逐字一致**，否则会造出假警报。
+   v256 给 `mock-cloud.mjs` 加 409 校验时，我按"本次推送的所有键"去比版本，而真 worker（`src/lib/sync.js`）是
+   **只校验 `__expectedVersions` 里列出的键、且空对象直接跳过** —— 结果 `flows-data` 立刻变红，看着像产品 bug，
+   实际是我的装置比生产严格。**改 mock 之前先读一遍真实现**。
+   （顺带确认：前端在不知道云端版本时会发 `__expectedVersions: {}`，真 worker 会跳过 → 无害。）
+2. **Windows 上别用 PowerShell 直接做带 `$` 的文本替换**：`$'`、`$1`、`$&` 都会被吃掉或改写
+   （v251 踩 `$'` 把新模块写坏，v256 踩 `$1` 把脚本里的变量名吃掉）。一律写成 **Node 脚本文件**再跑，
+   并且每次都带"命中次数断言"。
 
 **拆分收尾（v234–v239）**：`index.js` 从 212.3KB 降到 ~199KB，新增 5 个纯逻辑模块（symbols/plan/rows/watch/options/settings），单测从 105 项涨到 153 项。
 
