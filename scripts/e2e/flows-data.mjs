@@ -105,6 +105,23 @@ const afterOpt = await snap();
 if (afterOpt.options - beforeOpt.options !== 1) failures.push('卖 CALL 没有落库');
 if (afterOpt.cash - beforeOpt.cash !== 120) failures.push('卖 CALL 的权利金没有入账（+' + (afterOpt.cash - beforeOpt.cash) + '，应为 +120）');
 
+/* 期权页：权利金汇总 + 行内状态（v238 把这块计算抽到了 options.js） */
+await ev(() => document.getElementById('bbOption').click());
+await p.waitForTimeout(1500);
+const optUi = await ev(() => ({
+  total: (document.getElementById('trev') || {}).textContent,
+  month: (document.getElementById('mrev') || {}).textContent,
+  status: (document.getElementById('optStatus') || {}).textContent,
+  calls: (document.getElementById('ccSub') || {}).textContent,
+  nearest: (document.getElementById('ccNearest') || {}).textContent,
+  rows: document.querySelectorAll('#tab-option tbody tr').length,
+}));
+if (optUi.total !== '$120.00') failures.push('累计权利金应为 $120.00，实际 ' + optUi.total);
+if (optUi.month !== '$120.00') failures.push('本月权利金应为 $120.00，实际 ' + optUi.month);
+if (!/天/.test(optUi.status || '')) failures.push('期权状态没显示剩余天数：' + optUi.status);
+if (!/CALL/.test(optUi.calls || '')) failures.push('"复投核心仓"那行没显示 CALL 张数：' + optUi.calls);
+if (optUi.rows < 1) failures.push('期权行没渲染出来');
+
 /* 云端是否真的收到 */
 await p.waitForTimeout(1500);
 const cloud = await (await fetch(CLOUD + '/_log')).json();
@@ -122,6 +139,7 @@ await p.evaluate(() => {
 await p.close();
 
 console.log('数据流：买入 ' + beforeBuy.trades + '→' + afterBuy.trades + ' 笔 · 现金 ' + beforeDep.cash + '→' + afterDep.cash + ' · 期权 ' + beforeOpt.options + '→' + afterOpt.options);
+console.log('期权页：累计权利金 ' + optUi.total + ' · 本月 ' + optUi.month + ' · 状态 "' + optUi.status + '" · 最近到期 "' + optUi.nearest + '"');
 console.log('推送记录：' + pushes.join('  |  '));
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
