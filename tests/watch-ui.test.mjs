@@ -3,8 +3,9 @@
 // 把"渲染出什么 innerHTML、状态胶囊写什么字、排序按钮点亮哪一颗"钉住。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings } from '../src/app/watch-ui.js';
+import { configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, updateSidebarPrices } from '../src/app/watch-ui.js';
 import { WATCH_DEFAULTS } from '../src/app/watch.js';
+import { KEYS } from '../src/app/store.js';
 
 function makeEl(extra) {
   const classes = new Set();
@@ -223,4 +224,76 @@ test('renderHoldings：没有数据时两块都显示空态，不抛错', () => 
   withDoc({ holdVGT: vgt, holdSMH: smh, holdExpose: makeEl() }, () => renderHoldings());
   assert.match(vgt.innerHTML, /暂无数据/);
   assert.match(smh.innerHTML, /暂无数据/);
+});
+
+/** 侧栏行情要用到 localStorage（readRaw / 迁移写回），单独包一层。 */
+function withStorage(store, fn) {
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const ls = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+  };
+  Object.defineProperty(globalThis, 'localStorage', { value: ls, configurable: true, writable: true });
+  try {
+    return fn(store);
+  } finally {
+    if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
+    else delete globalThis.localStorage;
+  }
+}
+
+test('updateSidebarPrices：渲染价格行（涨跌配色 / 迷你走势 / 等待报价）', () => {
+  configureWatchUI(host({
+    ETF_SYMS: ['VGT', 'SMH', 'BTC'],
+    liveQuoteData: {
+      VGT: { price: 108.62, change: 1.2, history: [100, 102, 101, 106, 108] },
+      SMH: { price: 402.1, change: -3.5 },
+    },
+  }));
+  const live = makeEl();
+  const marketTime = makeEl();
+  const priceMeta = makeEl();
+  const hmTime = makeEl();
+  withStorage({}, () => withDoc(
+    { sbLivePrices: live, sbMarketTime: marketTime, sbPriceMeta: priceMeta, hmPriceTime: hmTime },
+    () => updateSidebarPrices(),
+  ));
+  assert.equal((live.innerHTML.match(/class="sb-price-row"/g) || []).length, 3);
+  assert.match(live.innerHTML, /Vanguard 信息科技/);
+  assert.match(live.innerHTML, /\$108\.62/);
+  assert.match(live.innerHTML, /spr-spark/, '有历史数据要画迷你走势');
+  assert.match(live.innerHTML, /color:var\(--accent\)/, '上涨用强调色');
+  assert.match(live.innerHTML, /color:var\(--red\)/, '下跌用红色');
+  assert.match(live.innerHTML, /等待报价/, 'BTC 没数据给等待态');
+  assert.equal((live.innerHTML.match(/spr-spark/g) || []).length, 1, '只有 VGT 带历史');
+});
+
+test('updateSidebarPrices：老的 ts 字段会迁移成 time 并写回缓存', () => {
+  configureWatchUI(host({ ETF_SYMS: ['VGT'], liveQuoteData: {} }));
+  const store = {};
+  store[KEYS.prices] = JSON.stringify({ VGT: { price: 100, change: 0, ts: 1700000000000 } });
+  const live = makeEl();
+  withStorage(store, () => withDoc({ sbLivePrices: live }, () => updateSidebarPrices()));
+  const saved = JSON.parse(store[KEYS.prices] || '{}');
+  assert.equal(saved.VGT.time, 1700000000000, 'ts 要迁移成 time');
+  assert.ok(!('ts' in saved.VGT) || saved.VGT.ts === undefined || saved.VGT.ts === 1700000000000);
+});
+
+test('updateSidebarPrices：更新时间文案（等待 / 已更新 / 延迟）', () => {
+  const mk = () => ({ sbLivePrices: makeEl(), sbMarketTime: makeEl(), sbPriceMeta: makeEl(), hmPriceTime: makeEl() });
+  // 没有时间戳 → 等待
+  configureWatchUI(host({ ETF_SYMS: ['VGT'], liveQuoteData: {} }));
+  const els1 = mk();
+  withStorage({}, () => withDoc(els1, () => updateSidebarPrices()));
+  assert.equal(els1.sbMarketTime.textContent, '等待');
+  assert.match(els1.sbPriceMeta.textContent, /等待历史数据/);
+  // 刚刚更新 → 已更新 + 北京时间
+  configureWatchUI(host({ ETF_SYMS: ['VGT'], liveQuoteData: { VGT: { price: 100, change: 0, time: Date.now() } } }));
+  const els2 = mk();
+  withStorage({}, () => withDoc(els2, () => updateSidebarPrices()));
+  assert.equal(els2.sbMarketTime.textContent, '已更新');
+  assert.match(els2.sbPriceMeta.textContent, /北京时间/);
+  assert.match(els2.sbPriceMeta.textContent, /刚刚/);
+  assert.match(els2.hmPriceTime.textContent, /^北京时间 /);
 });

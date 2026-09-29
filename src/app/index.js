@@ -9,7 +9,7 @@ import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, op
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
-import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI} from './watch-ui.js';
+import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices} from './watch-ui.js';
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
@@ -27,7 +27,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v250';var APP_DATA_VERSION=5;
+var APP_BUILD='v251';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -51,7 +51,7 @@ function chinaDate(d){return zonedDate(d,HOME_TIME_ZONE)}
 
 
 
-function formatChinaTime(d){d=d||new Date();try{return new Intl.DateTimeFormat('zh-CN',{timeZone:HOME_TIME_ZONE,month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)}catch(e){return d.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}}
+
 
 
 
@@ -929,7 +929,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=250',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=251',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -990,7 +990,7 @@ document.getElementById('btnClearActivity').addEventListener('click',function(){
 
 
 
-function updateSidebarPrices(){var c={};try{c=JSON.parse(readRaw(PRICE_KEY)||'{}')}catch(e){logSwallowed("updateSidebarPrices",e)}var migrated=false;for(var k in c){if(c[k]&&c[k].ts&&!c[k].time){c[k].time=c[k].ts;migrated=true}}if(migrated)try{localStorage.setItem(PRICE_KEY,JSON.stringify(c))}catch(e){logSwallowed("updateSidebarPrices",e)}var names={VGT:'Vanguard 信息科技',SMH:'VanEck 半导体',BTC:'Bitcoin ETF'},h='',hasAnyHistory=false;ETF_SYMS.forEach(function(s){var d=liveQuoteData[s]||c[s],name=names[s]||s;if(d&&d.price){var ch2=Number(d.change)||0,prev=d.price-ch2,pct=prev>0?ch2/prev*100:0,isFlat=Math.abs(ch2)<.0001,chClr=isFlat?'var(--muted)':ch2>0?'var(--accent)':'var(--red)',chSign=ch2>0?'+':'',sparkPath=sparklinePath(d.history),hasHistory=!!sparkPath,title=hasHistory?'近一月真实日线收盘走势':'暂无历史走势';hasAnyHistory=hasAnyHistory||hasHistory;h+='<div class="sb-price-row"><span class="spr-id"><strong>'+s+'</strong><small>'+name+'</small></span>'+(hasHistory?'<svg class="spr-spark" viewBox="0 0 58 22" role="img" aria-label="'+title+'" style="color:'+chClr+'"><path d="'+sparkPath+'"/></svg>':'')+'<span class="spr-quote"><b class="spr-price">$'+Number(d.price).toFixed(2)+'</b><small class="spr-chg" style="color:'+chClr+'">'+chSign+pct.toFixed(2)+'%</small></span></div>'}else{h+='<div class="sb-price-row"><span class="spr-id"><strong>'+s+'</strong><small>'+name+'</small></span><span class="spr-quote"><b class="spr-price">--</b><small class="spr-chg">等待报价</small></span></div>'}});var live=document.getElementById('sbLivePrices');if(live)live.innerHTML=h||'暂无';var quoteValues=Object.values(Object.assign({},c,liveQuoteData)),t=quoteValues.map(function(d){return d&&(d.time||d.ts)}).filter(Boolean).sort().pop(),age='',ts='',m=Infinity;if(t){m=Math.max(0,Math.round((Date.now()-t)/60000));var relative=m<1?'刚刚':m<60?m+'分钟前':m<1440?Math.floor(m/60)+'小时前':Math.floor(m/1440)+'天前';age=m>5?'数据延迟 · '+relative:relative;ts=formatChinaTime(new Date(t))}var marketTime=document.getElementById('sbMarketTime');if(marketTime)marketTime.textContent=!t?'等待':m>5?'延迟':'已更新';var meta=document.getElementById('sbPriceMeta');if(meta)meta.textContent=t?'北京时间 '+ts+' ('+age+') · '+(hasAnyHistory?'近一月日线':'历史曲线待更新'):'曲线等待历史数据';var pt=document.getElementById('hmPriceTime');if(pt)pt.textContent=t?'北京时间 '+ts+' ('+age+')':''}
+
 
 
 
@@ -1450,7 +1450,7 @@ bindHaptics();
 var sbBuildEl=document.getElementById('sbBuild');if(sbBuildEl)sbBuildEl.textContent=APP_BUILD;
 /* ===== 观察列表 + ETF 前十大构成股（数据来自 Worker，只读，不进同步） ===== */var WATCH_KEY='wealth_watchlist_v1';var watchList=normalizeWatchlist((function(){try{return JSON.parse(readRaw(WATCH_KEY)||'[]')}catch(e){return[]}})());var watchQuotes={},holdingsData={},watchFetchedAt=0,watchRefreshing=false,watchInvalid=[],watchMissing=[],watchSort='default';function saveWatch(next){watchList=normalizeWatchlist(next);try{localStorage.setItem(WATCH_KEY,JSON.stringify(watchList))}catch(e){logSwallowed("saveWatch",e)}renderWatch();renderWatchManage();try{markDirty('watchlist');autoPushDebounce()}catch(e){logSwallowed("saveWatch",e)}}
 /* v249：观察列表的状态与写操作注入给视图层（getter 保证读的是最新值） */
-configureWatchUI({get watchList(){return watchList},get watchQuotes(){return watchQuotes},get holdingsData(){return holdingsData},get watchFetchedAt(){return watchFetchedAt},get watchInvalid(){return watchInvalid},get watchMissing(){return watchMissing},get trades(){return trades},get livePrices(){return livePrices},saveWatch:saveWatch,refreshMarket:refreshMarket,showToast:showToast});
+configureWatchUI({get watchList(){return watchList},get watchQuotes(){return watchQuotes},get holdingsData(){return holdingsData},get watchFetchedAt(){return watchFetchedAt},get watchInvalid(){return watchInvalid},get watchMissing(){return watchMissing},get trades(){return trades},get livePrices(){return livePrices},get liveQuoteData(){return liveQuoteData},get ETF_SYMS(){return ETF_SYMS},saveWatch:saveWatch,refreshMarket:refreshMarket,showToast:showToast});
 function fetchMarketData(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');var holdReqs=['VGT','SMH'].map(function(sym){return fetch(base+'/api/holdings?symbol='+sym).then(function(r){return r.ok?r.json():null}).catch(function(){return null})});return Promise.all(holdReqs).then(function(list){list.forEach(function(item){if(item&&item.ok&&item.list)holdingsData[item.symbol]=item});var symbols=collectQuoteSymbols(watchList,holdingsData);if(!symbols.length){watchFetchedAt=Date.now();renderWatch();renderHoldings();return}return fetch(base+'/api/quotes?symbols='+encodeURIComponent(symbols.join(','))).then(function(r){return r.ok?r.json():null}).then(function(data){if(data&&data.ok&&data.quotes){for(var k in data.quotes){watchQuotes[k]=data.quotes[k]}watchInvalid=data.invalid||[];watchMissing=data.missing||[];watchFetchedAt=Date.now()}}).catch(function(){})}).then(function(){renderWatch();renderHoldings()})}function refreshMarket(force){if(watchRefreshing)return;if(!force&&Date.now()-watchFetchedAt<60000)return;watchRefreshing=true;fetchMarketData().then(function(){watchRefreshing=false},function(){watchRefreshing=false})}initWatchUI();
 (function initDateFillState(){var mark=function(el){if(el&&el.tagName==='INPUT'&&el.type==='date')el.classList.toggle('has-val',!!el.value)};var markAll=function(){document.querySelectorAll('input[type=date]').forEach(mark)};['input','change'].forEach(function(ev){document.addEventListener(ev,function(e){mark(e.target)},true)});markAll();setTimeout(markAll,900)})();
 
