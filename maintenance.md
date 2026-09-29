@@ -329,7 +329,7 @@ const steps = {
    > 真正的还债方式是**重写层叠**（把 base 规则里靠 `!important` 压制的写法，换成明确的特异性/变量），属于独立工程；工具已就位：`scripts/e2e/style-fingerprint.mjs` 可在每次改动前后做四种组合的计算样式对比。
    > 已实测：**机械删除走不通**。用四种组合（手机/桌面 × 明/暗）的计算样式指纹逐批验证，1608 条里只有 25 条能在"零视觉差异"前提下直接删掉——其余都在支撑移动端覆盖层（删了桌面就崩）。真正还债要按"合并重复规则组 + 重组覆盖层"来做，属独立工程。
    > 指纹工具已入库：`scripts/e2e/style-fingerprint.mjs`（改 CSS 前后各跑一次，比对 1731 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
-4. `src/app/index.js` 已从 212KB 拆到 ~197KB（v234–v244 共 10 轮），剩下的主要是**渲染型函数**（updatePortfolio、initAll、initWatchUI 等）与全局状态耦合；
+4. `src/app/index.js` 已从 212KB 拆到 ~197KB（v234–v243 共 10 轮），剩下的主要是**渲染型函数**（updatePortfolio、initAll、initWatchUI 等）与全局状态耦合；
    下一步按域继续：`charts.js`（年度矩阵/回撤 8.6K）→ `watch-view.js`（观察行情 17.9K）→ `sync-view.js`
 5. 源码里还有约 60 处 `catch(e){}` 空捕获，失败会被静默吞掉（排查时最容易踩）
 
@@ -353,8 +353,7 @@ const steps = {
 | v240 | 同步决策层：拉取逐键判定 `decidePullAction`、整轮拉取计划 `planPullSync`、409 核对计划 `planConflictHeal`、推送脏键与跳过判断 | 新增 `src/app/sync-engine.js` | 10 项单测（覆盖七个判定分支）+ e2e 新增「模拟另一台设备改云端 → 本机自动拉取」 |
 | v241 | 样式债：删掉同选择器组内的 38 条死声明（含 3 个 `!important`），`!important` 基线 1608 → 1605；并把"机械删 / 同选择器合并 / 重复规则"三次实验结论写进文档 | `public/assets/main.css` | 四种组合渲染指纹零差异 + 全站回归 47/47 |
 | v242 | 两处入口体验：① 现金不足时提示差额并自动跳到「现金管理」入金框；② 侧边栏「数据健康」整块可点直达同步设置（移动端自动打开整屏设置面板并展开「云端同步」） | `src/app/index.js` + `main.css` | e2e 新增两项断言（焦点落到入金框 / 移动端同步面板真的可见）+ 指纹零差异 |
-| v243 | 持仓/组合纯计算：总盈亏与现金占比、今日变动、目标进度、距高点回撤、盈亏摘要行；**统一了 `updatePnlSummary` 里重复的成本结转**（改走 calc.js） | 新增 `src/app/portfolio.js` | 7 项单测 + e2e/47 项回归 + 指纹零差异 |
-| v244 | 记录域规整与 CSV 导入：交易/流水/日志的规整（含白名单、日期归一、id 去重、日志 200 条上限）与 Schwab CSV 解析（表头识别/去重/买卖方向）；`TRADE_SYMBOLS` 成为唯一白名单来源 | 新增 `src/app/records-import.js` | 8 项单测（另把两条 smoke 测试改成新接口）+ 47 项回归 + 指纹零差异 |
+| v243 | 拆分第二轮：**持仓/组合**纯计算（总盈亏与现金占比、今日变动、目标进度、距高点回撤、盈亏摘要；并统一了 `updatePnlSummary` 里重复的成本结转）→ `src/app/portfolio.js`；**记录域**规整与 CSV 导入（白名单/日期归一/id 去重/日志 200 上限、Schwab 表头识别与买卖方向）→ `src/app/records-import.js`；`TRADE_SYMBOLS` 成为唯一白名单来源 | 新增 2 个模块 | 15 项单测（另把两条 smoke 改成新接口）+ 47 项回归 + 四种组合指纹零差异 |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
