@@ -137,6 +137,43 @@ const backup = await ev(() => {
 });
 if (!backup.hasWatchlist) failures.push('备份文件里没有 watchlist');
 
+/* F) 策略工具：档位就地编辑 + 提款滑杆 → 写进 state.plan（v235 把这块逻辑抽成了 plan.js） */
+await ev(() => document.getElementById('bbConsole').click());
+await p.waitForTimeout(1400);
+await ev(() => {
+  const card = document.getElementById('strategyTools');
+  if (card && card.classList.contains('collapsed')) card.querySelector('.collapsible-header').click();
+});
+await p.waitForTimeout(900);
+const planBefore = await ev(() => JSON.parse(localStorage.getItem('wealth_dashboard_v2') || '{}').plan || null);
+await ev(() => {
+  const el = document.querySelector('.plan-edit[data-plan="income"][data-i="0"][data-k="0"]');
+  if (!el) return;
+  el.textContent = '起步期E2E';
+  el.dispatchEvent(new Event('focusout', { bubbles: true }));
+});
+await p.waitForTimeout(800);
+await ev(() => {
+  const el = document.getElementById('rWdRate');
+  if (!el) return;
+  el.value = '3.5';
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+});
+await p.waitForTimeout(900);
+const planAfter = await ev(() => {
+  const p = JSON.parse(localStorage.getItem('wealth_dashboard_v2') || '{}').plan || {};
+  return {
+    tier0: p.income && p.income[0] ? p.income[0][0] : null,
+    rate: p.wd ? p.wd.rate : null,
+    deplete: (document.getElementById('wdDeplete') || {}).textContent,
+    annual: (document.getElementById('wdAnnual') || {}).textContent,
+  };
+});
+if (planAfter.tier0 !== '起步期E2E') failures.push('档位就地编辑没写进 state.plan（读到 ' + planAfter.tier0 + '）');
+if (planAfter.rate !== 3.5) failures.push('提款滑杆没写进 state.plan.wd.rate（读到 ' + planAfter.rate + '）');
+if (!planAfter.annual || planAfter.annual === '$0.00') failures.push('提款模拟没算出年提款额');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -144,6 +181,7 @@ await p.evaluate(() => {
 await p.close();
 
 console.log('交互流：搜索 ' + search.total + ' 行→可见 ' + search.visible + '（隐藏 ' + search.hidden + '）· 清空 ' + tradesBefore + '→' + cleared + '→撤销 ' + undone + ' · 结算按钮 ' + settleBtns + ' 个 · 备份含观察列表 ' + backup.hasWatchlist);
+console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('交互流测试失败：\n  - ' + failures.join('\n  - '));

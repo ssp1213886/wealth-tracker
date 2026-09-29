@@ -4,6 +4,7 @@ import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, r
 import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, SYNC_FIELDS} from './sync.js';
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
 import {searchSymbols} from './symbols.js';
+import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals} from './rows.js';
 import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS} from './watch.js';
@@ -17,7 +18,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v234';var APP_DATA_VERSION=5;
+var APP_BUILD='v235';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -986,7 +987,7 @@ cashBalance=loadCash();cashLog=loadCashLog();function initPortfolio(){initTradeI
 
 
 
-function updateWithdrawal(){var p=parseInt(document.getElementById('rWdPortfolio').value),rate=parseFloat(document.getElementById('rWdRate').value)/100,wr=parseFloat(document.getElementById('rWdReturn').value)/100,inf=parseFloat(document.getElementById('rWdInfl').value)/100;var annual=p*rate;document.getElementById('wdAnnual').textContent=fmt$(annual);document.getElementById('wdMonthly').textContent=fmt$(annual/12);var rr=wr-inf,dep='永续',bal=p,y=0;if(rate>rr||rr<=0){while(bal>0&&y<80){bal=bal*(1+rr)-annual;y++}if(y<80)dep=y+' 年'}document.getElementById('wdDeplete').textContent=dep;document.getElementById('wdPerpetual').textContent=rr>0?fmtPct(rr):'不可'}
+function updateWithdrawal(){var out=computeWithdrawal({portfolio:parseInt(document.getElementById('rWdPortfolio').value),ratePct:parseFloat(document.getElementById('rWdRate').value),returnPct:parseFloat(document.getElementById('rWdReturn').value),inflPct:parseFloat(document.getElementById('rWdInfl').value)});document.getElementById('wdAnnual').textContent=fmt$(out.annual);document.getElementById('wdMonthly').textContent=fmt$(out.monthly);document.getElementById('wdDeplete').textContent=out.depletionYears===null?'永续':out.depletionYears+' 年';document.getElementById('wdPerpetual').textContent=out.realReturn>0?fmtPct(out.realReturn):'不可'}
 
 
 
@@ -1311,7 +1312,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=234',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=235',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 
@@ -2049,25 +2050,11 @@ if(typeof window!=='undefined'){
   var listIncome=document.getElementById('planIncomeList');
   var listExit=document.getElementById('planExitList');
   if(!listIncome&&!listExit)return;
-  var DEFAULTS={
-    income:[['起步期','$2K','$2.5K'],['增长期','$2.5K','$3.5K'],['巅峰期','$3.5K','$5K'],['冲刺期','$5K+','']],
-    exit:['持续进攻','检查退出','等待窗口','保守组合'],
-    wd:{portfolio:2270000,rate:4,ret:6,infl:2.5}
-  };
-  var WD=[['rWdPortfolio','portfolio'],['rWdRate','rate'],['rWdReturn','ret'],['rWdInfl','infl']];
-  var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+  var DEFAULTS=PLAN_DEFAULTS;
+  var WD=WD_FIELDS;
+  var esc=escapeHtml;   // 和 render.js 的转义统一，去掉重复实现
 
-  var readPlan=function(){
-    var p=(state&&state.plan)||{};
-    var inc=(p.income&&p.income.length===4)?p.income.map(function(r){return [String((r&&r[0])||''),String((r&&r[1])||''),String((r&&r[2])||'')]}):DEFAULTS.income.map(function(r){return r.slice()});
-    var ex=(p.exit&&p.exit.length===4)?p.exit.map(function(v){return String(v||'')}):DEFAULTS.exit.slice();
-    var wd={};
-    ['portfolio','rate','ret','infl'].forEach(function(k){
-      var v=p.wd?Number(p.wd[k]):NaN;
-      wd[k]=isFinite(v)?v:DEFAULTS.wd[k];
-    });
-    return {income:inc,exit:ex,wd:wd};
-  };
+  var readPlan=function(){return readPlanOf(state)};
   var writePlan=function(d){state.plan={income:d.income,exit:d.exit,wd:d.wd};saveState()};
 
   var applyWd=function(wd){
@@ -2115,11 +2102,10 @@ if(typeof window!=='undefined'){
     if(!el||!el.classList||!el.classList.contains('plan-edit'))return;
     var txt=String(el.textContent||'').replace(/\s+/g,' ').trim();
     var d=readPlan(),kind=el.getAttribute('data-plan'),i=Number(el.getAttribute('data-i')),k=Number(el.getAttribute('data-k'));
-    if(kind==='income'&&d.income[i])d.income[i][k]=txt;
-    else if(kind==='exit'&&d.exit[i]!==undefined)d.exit[i]=txt;
-    else return;
+    var next=setPlanText(d,kind,i,k,txt);
+    if(!next)return;
     el.textContent=txt;
-    writePlan(d);
+    writePlan(next);
   });
   document.addEventListener('keydown',function(e){
     var el=e.target;

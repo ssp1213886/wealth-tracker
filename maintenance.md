@@ -318,11 +318,12 @@ const steps = {
 | 版本 | 抽出内容 | 新模块 | 覆盖 |
 | --- | --- | --- | --- |
 | v234 | 观察列表搜索名单（别名表 62 条 + S&P100∪纳指100 共 167 条）与匹配逻辑 | `src/app/symbols.js` | 6 项单测 + e2e 断言（搜 berkshire 首行必须是 BRK-B） |
+| v235 | 策略工具与提款模拟的纯逻辑（默认档位、`readPlan` 归并、就地编辑、提款耗尽年数） | `src/app/plan.js` | 9 项单测 + e2e 断言（档位就地编辑与提款滑杆要写进 `state.plan`） |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
-1. 策略工具与提款模拟的纯逻辑（默认档位、`readPlan` 归并、提款公式）→ `src/app/plan.js`
-2. 记录页的行数据整形与筛选排序（`rows.js` 已有一半，把筛选也搬过去）
+1. ~~策略工具与提款模拟的纯逻辑 → `src/app/plan.js`~~ ✅ v235
+2. 记录页的行数据整形与筛选排序（`rows.js` 已有一半，把筛选也搬过去）← 下一步
 3. 观察列表状态机（增删改排序 + 云端并集）→ 和现有 `watch.js` 合并成 `watchlist.js`
 4. 期权纯计算（`isActiveOption` / 到期状态 / 距现价）→ `src/app/options.js`
 5. 设置抽屉与同步条的 DOM 绑定集中到 `src/app/settings.js`
