@@ -114,7 +114,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 | 层级 | 命令 | 结果 |
 | --- | --- | --- |
 | 单元测试 | `npm test` | **269 项全绿** |
-| 样式债守卫 | `npm run lint` | `!important 1605/1605 · :hover 16/16` |
+| 样式债守卫 | `npm run lint` | `!important 1519/1519 · :hover 16/16` |
 | 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出 onclick / 空 catch 均为 0 |
 | 端到端（无头） | `npm run e2e` | 爬查零报错 + 数据流 + 交互流，3/3 |
 | 端到端（CI 自动） | push 后由 `.github/workflows/ci.yml` 的 `e2e` job 跑（假云端 + runner 自带 Chrome，`npm i --no-save playwright-core`） | 与本地同一套场景 |
@@ -162,7 +162,7 @@ git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 pus
 
 ### 2. 不要新增 `!important`
 
-`npm run lint` 会输出并校验 `!important` 数量（当前基线 **1605**，**只减不增**：想加一条就得先还掉一条）。需要覆盖既有样式时，用更具体的语义选择器（如 `#tab-data #holdBody td[data-cell="pnl"]`），而不是堆 `!important`。同一条 lint 还会拦"没包在 `@media (hover:hover) and (pointer:fine)` 里的 `:hover`"（触摸端会粘住高亮）。
+`npm run lint` 会输出并校验 `!important` 数量（当前基线 **1519**，**只减不增**：想加一条就得先还掉一条）。需要覆盖既有样式时，用更具体的语义选择器（如 `#tab-data #holdBody td[data-cell="pnl"]`），而不是堆 `!important`。同一条 lint 还会拦"没包在 `@media (hover:hover) and (pointer:fine)` 里的 `:hover`"（触摸端会粘住高亮）。
 
 ### 3. 改完必须构建
 
@@ -332,15 +332,25 @@ const steps = {
 
 1. ~~新用户现金为 0 时录入买入会被拦，提示未引导"先去入金"~~ → v242：提示会说明差额，并**自动跳到「现金管理」入金输入框**
 2. ~~同步设置是三层嵌套，入口偏深~~ → v242：点侧边栏「数据健康」任意一行即可直达（移动端会自动打开设置面板并展开「云端同步」）
-3. `main.css` 仍有 **1605 个 `!important`**（基线只减不增）——这是最大的样式债
+3. `main.css` 仍有 **1519 个 `!important`**（基线只减不增）——这是最大的样式债
    > **v241 的三次实验结论（都有指纹验证）**：
-   > ① 机械删 `!important`：严格按"手机/桌面 × 明/暗"四种组合验证，1608 个里只有 25 个能零差异删除；
+   > ① ~~机械删 `!important`：1608 个里只有 25 个能零差异删除~~ → **v254 推翻了这个数字**（见下）；
    > ② 同选择器规则合并（构造上安全的那类）：能删 **38 条死声明（含 3 个 `!important`）**，已落地（1608 → 1605）；
    > ③ 完全重复的整条规则：**0 条**。
-   > 结构数据：`!important` 里 **247 个在 `@media(max-width:800px)` 覆盖层**，**1361 个在非手机规则里**——所以"把手机覆盖层挪到最后"也解决不了大头。
-   > 真正的还债方式是**重写层叠**（把 base 规则里靠 `!important` 压制的写法，换成明确的特异性/变量），属于独立工程；工具已就位：`scripts/e2e/style-fingerprint.mjs` 可在每次改动前后做四种组合的计算样式对比。
-   > 已实测：**机械删除走不通**。用四种组合（手机/桌面 × 明/暗）的计算样式指纹逐批验证，1608 条里只有 25 条能在"零视觉差异"前提下直接删掉——其余都在支撑移动端覆盖层（删了桌面就崩）。真正还债要按"合并重复规则组 + 重组覆盖层"来做，属独立工程。
-   > 指纹工具已入库：`scripts/e2e/style-fingerprint.mjs`（改 CSS 前后各跑一次，比对 1731 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
+   > **v254 的 C1 第一批（做法可复用，已落地 1605 → 1519）**：
+   > 关键词是"逐条判定"，不是"批量删完再看指纹"——后者会互相影响，所以 v241 只能得出"25 个"。
+   > 1. `_important-audit.mjs`（仓库外工具）：在真实页面里用 CSSOM **逐条**把某个 `!important` 临时去掉，
+   >    只采样它命中元素的计算值；一样就说明这条 `!important` 冗余。要求**手机/桌面 × 明/暗四种组合都无变化**。
+   >    → 交集 418 条（静态选择器 390 条，含状态类的 28 条先排除）。
+   > 2. `_important-interactive.mjs`：再用 CDP `CSS.forcePseudoState` 强制 `:hover / :focus / :active`，
+   >    在四种组合下重验一遍（默认态无变化 ≠ 交互态无变化）。→ 通过 368 条。
+   > 3. `_apply-important.mjs`：按**源码声明粒度**去掉 `!important` 标记（注意 CSSOM 会把 `padding` 这类简写
+   >    展开成 4 个 longhand，所以要反过来按源码声明判断"它的每个 longhand 都在候选里"；多值简写保守跳过）。
+   >    → 实际去掉 **86 个标记**（覆盖 368 个 longhand），1605 → **1519**。
+   > 4. 验证：四种组合指纹**零差异** + 269 单测 + 47 项回归 + 专项 + 线上冒烟。
+   > 指纹工具在仓库内：`scripts/e2e/style-fingerprint.mjs`（比对 1732 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
+   > 剩下的 1519 个里，**手机覆盖层（`@media(max-width:800px)`）那部分是真在压制竞争声明**，
+   > 想继续降只能"重写层叠"（把 base 规则的特异性调对，让覆盖层不必加 `!important`），属独立工程。
 4. ~~`src/app/index.js` 还很大~~ → **v253 起拆分告一段落**：212.3KB → **152.4KB**（v234–v253 共 20 轮）。
    **为什么停在这里（实测的性价比）**：
    - 前 3 轮（sync-view / settings-view / watch-ui）每轮减 **6–12KB**，边界清晰、拆完立刻能测；
@@ -400,6 +410,7 @@ const steps = {
 | v251 | **侧栏行情行**：`updateSidebarPrices`（价格行 + 迷你走势 + 涨跌配色 + 更新时间文案）与它专用的 `formatChinaTime` 搬进观察/行情视图层；`ETF_SYMS` / `liveQuoteData` 用 host getter 注入，价格缓存键改用 `store.js` 的 `KEYS.prices` | 并入 `src/app/watch-ui.js` | 3 项单测（价格行/涨跌色/走势/等待态、ts→time 迁移、时间文案三态）＋ 47 项回归 ＋ 指纹零差异 |
 | v252 | **备份纯逻辑**：导出数据组装（`buildBackupPayload`）与导入计划（`planBackupImport`：坏文件/版本校验、四类列表归一、摘要文案、`has` 覆盖标记、OTM 裁剪、主题配色白名单、价格缓存清洗）抽成模块；confirm 与逐字段写回仍留 index.js | 新增 `src/app/backup.js` | 10 项单测（含"字符串数组观察列表会回落默认名单"这条既有行为）＋ 备份往返专项 5/5 ＋ 47 项回归 ＋ 指纹零差异 |
 | v253 | **待办提醒**：严重度表、`normalizeAlerts`（同 id 留最严重 + 排序）、已读签名、铃铛角标、期权"今天不再提醒"标记，以及 `updateAlerts` 拆成**纯函数 `buildAlerts`**（行权价逼近 / 期权临期 / 本月定投差额三类判定）+ `renderAlerts`；`qaToggle` 与页面级事件委托仍留 index.js | 新增 `src/app/alerts-view.js` | 11 项单测（三类判定的边界 + 标记读写）＋ 47 项回归 ＋ 指纹零差异；**单测当场抓到搬移时漏写的 `return alerts`** |
+| v254 | **C1 样式债第一批**：逐条判定 `!important` 是否冗余（四种组合 + 四种伪类状态），去掉 **86 个标记**（覆盖 368 个 longhand 属性），`!important` 1605 → **1519** | `public/assets/main.css` | 四种组合指纹零差异 ＋ 269 单测 ＋ 47 项回归 ＋ 期权/备份专项 ＋ 线上冒烟；方法见「已知未修问题」第 3 条 |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 

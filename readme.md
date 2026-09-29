@@ -133,7 +133,7 @@ npm run preview:lan  # 局域网静态预览，手机可访问（调移动端用
 ```bash
 npm run build        # 打包 src/app/* → public/assets/app.js（改完前端必跑）
 npm test             # 单元测试（269 项）
-npm run lint         # 语法检查 + !important 预算守卫（当前上限 1605，只减不增）
+npm run lint         # 语法检查 + !important 预算守卫（当前上限 1519，只减不增）
 npm run audit        # 静态审计：死 id / 死按钮 / 空 catch / 跨模块漏 import
 npm run e2e          # 无头端到端（自带假云端，不碰生产数据）
 npm run bump         # 版本号 +1（改 5 处）→ 重新打包 → 跑测试

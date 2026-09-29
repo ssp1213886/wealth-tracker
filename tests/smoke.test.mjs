@@ -169,13 +169,13 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=253');
+  assert.equal(manifest.start_url, '/?v=254');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v253/);
+  assert.match(serviceWorker, /wealth-v254/);
   assert.match(serviceWorker, /暂时无法连接/);
   assert.match(serviceWorker, /Navigation timeout/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=253',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=254',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -228,7 +228,8 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   // 快捷操作按钮占用底栏中间的独立槽位（左右各两个导航按钮），不再遮挡导航
   assert.match(appMarkup, /#qaFab\.qa-fab\{left:50%!important;right:auto!important;bottom:calc\(32px \+ env\(safe-area-inset-bottom,0px\)\)!important;transform:translateX\(-50%\)!important/);
   assert.match(appMarkup, /#bottomBar #bbOption\{grid-column:4\}/);
-  assert.match(appMarkup, /#tab-option \.option-type-segment\{height:42px!important/);
+  // v254：这条规则上的 !important 被 C1 证明冗余后去掉了（四种组合指纹零差异），断言改为只钉高度
+  assert.match(appMarkup, /#tab-option \.option-type-segment\{height:42px/);
   assert.match(appMarkup, /\.segmented-control\{height:42px;margin-bottom:10px;border-radius:14px\}/);
   // 旧版的 FAB 底部居中规则已被右上角实现完全覆盖，不再要求其文本存在
   assert.match(appMarkup, /\.main\{padding:0 16px calc\(120px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
@@ -444,7 +445,8 @@ test('desktop UI states stay data-consistent and scrollable', () => {
   // v245：12 个月纪律热力的月度数据已抽到 charts.js，这里钉"模块函数 + 调用点"
   assert.match(appMarkup, /function disciplineMonths\(input\)/);
   assert.match(appMarkup, /disciplineMonths\(\{trades:trades,dca:dca,symbols:ETF_SYMS\}\)/);
-  assert.match(appMarkup, /#logHeatmap\{display:grid!important/);
+  // v254：display:grid 的 !important 同上被去掉；base 规则（第 885 行）本来就是 display:grid
+  assert.match(appMarkup, /#logHeatmap\{display:grid/);
   assert.doesNotMatch(appMarkup, /\+' · BTC ETF'/);
   assert.match(appMarkup, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
   assert.match(appMarkup, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
