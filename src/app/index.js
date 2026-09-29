@@ -19,7 +19,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v241';var APP_DATA_VERSION=5;
+var APP_BUILD='v242';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -693,7 +693,7 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
   if(!shares||shares<=0)return formError('请输入有效的股数','tfShares');if(!price||price<=0)return formError('请输入有效的价格','tfPrice');
 
 
-  if(type==='buy'){var avail=getNetCash();var cost=shares*price;if(cost>avail){showToast('现金不足：需要 '+fmtFull(cost)+'，可用 '+fmtFull(avail),'err');return}}if(type==='sell'){var held=0;trades.forEach(function(t){if(t.symbol===sym)held+=t.shares});if(shares>held){showToast('持仓不足！\n持有：'+held.toFixed(2)+'股\n卖出：'+shares.toFixed(2)+'股','err');return}}
+  if(type==='buy'){var avail=getNetCash();var cost=shares*price;if(cost>avail){showToast('现金不足：需要 '+fmtFull(cost)+'，可用 '+fmtFull(avail)+' · 已跳到「现金管理」，入金后再录这笔','err');try{qaDeposit()}catch(e){logSwallowed("btnAddTrade",e)}return}}if(type==='sell'){var held=0;trades.forEach(function(t){if(t.symbol===sym)held+=t.shares});if(shares>held){showToast('持仓不足！\n持有：'+held.toFixed(2)+'股\n卖出：'+shares.toFixed(2)+'股','err');return}}
 
 
   var qty=type==='sell'?-shares:shares;
@@ -1025,7 +1025,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=241',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=242',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1220,6 +1220,35 @@ ss.dirty=plan.dirty;ss.cloudTs=plan.cloudTs;
 var syncFetchWithoutHealth=syncFetch;
 syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');var clearSpin=function(){if(host)host.classList.remove('is-syncing')};if(host)host.classList.add('is-syncing');setSyncBar('busy',method==='GET'?'正在下载…':'正在上传…');var spinTimer=setTimeout(clearSpin,12000);var done=function(){clearTimeout(spinTimer);clearSpin()};try{return syncFetchWithoutHealth(method,body).then(function(result){if(method!=='GET'&&result&&result.ts&&body){try{Object.keys(body).forEach(function(k){if(k!=='__expectedVersions')setCloudTs(k,result.ts)})}catch(e){logSwallowed("syncPull",e)}}recordSyncSuccess(method==='GET'?'pull':'push',Date.now());setSyncBar('ok','已同步 '+syncClockText());done();return result}).catch(function(error){recordSyncFailure(Date.now(),error&&error.message);if(error&&console&&console.warn)console.warn('[sync]',error.message);if(error&&error.status===409)setSyncBar('busy','正在核对…');else setSyncBar('err','同步失败');done();throw error})}catch(e){done();throw e}};
 document.getElementById('syncToken').addEventListener('change',renderSyncHealth);
+/* v242：数据健康整块可点 → 直达同步设置（原来要经过 设置 → 云端同步 → 连接配置 三层） */
+(function initHealthJump(){
+  /* v242：数据健康整块可点 → 直达同步设置。
+     移动端要注意：设置区在移动端会被搬到 body 上作为整屏面板（#settingsDrawerInner），
+     只开侧栏抽屉是看不到它的，所以要先点「设置」入口把它叫出来。 */
+  var open=function(ev){
+    if(ev&&ev.target&&ev.target.closest&&ev.target.closest('button'))return;
+    var settingsSection=document.querySelector('.sb-section.sb-settings');
+    if(window.innerWidth<=800){
+      /* 移动端：设置区是整屏面板，四个面板被 setupInlineQuickSettings 改成了"快捷菜单里的手风琴"
+         （<details class="advanced-settings"> 已被移除），所以要按原生路径走：
+         打开设置 → 点「云端同步」那一项把它展开。 */
+      if(!settingsSection||!settingsSection.classList.contains('open')){var entry=document.getElementById('sbSettingsEntry');if(entry)entry.click()}
+      var syncPanel=document.getElementById('settingsSync');
+      var wrap=syncPanel&&syncPanel.closest?syncPanel.closest('.quick-acc'):null;
+      var accBtn=wrap&&wrap.previousElementSibling;
+      if(accBtn&&wrap.hidden)accBtn.click();
+      if(wrap)wrap.hidden=false;
+    }else{
+      try{openMobileSettings()}catch(e){logSwallowed("initHealthJump",e)}
+      try{openAdvancedSettings('sync')}catch(e){logSwallowed("initHealthJump",e)}
+    }
+    var panel=document.getElementById('syncPanel');if(panel)panel.classList.add('open');
+  };
+  var list=document.querySelector('.sb-health-list');
+  if(list){list.style.cursor='pointer';list.addEventListener('click',open)}
+  var head=document.querySelector('.sb-section.sb-sync-summary h3');
+  if(head){head.style.cursor='pointer';head.title='点这里打开同步设置';head.addEventListener('click',open)}
+})();
 document.getElementById('syncPanelHeader').addEventListener('click',function(){document.getElementById('syncPanel').classList.toggle('open')});
 
 

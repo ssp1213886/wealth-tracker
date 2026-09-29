@@ -236,6 +236,47 @@ await p.waitForTimeout(2600);
 const pulledDca = await ev(() => JSON.parse(localStorage.getItem('wealth_dashboard_v2') || '{}').monthlyDCA);
 if (pulledDca !== 4321) failures.push('云端更新后没有自动拉取（monthlyDCA 应为 4321，实际 ' + pulledDca + '）');
 
+/* I) 两个入口体验（v242）：① 现金不足要引导去入金 ② 数据健康可点直达同步设置 */
+await ev(() => document.getElementById('bbConsole').click());
+await p.waitForTimeout(1400);
+await ev(() => {
+  const set = (id, v) => { const el = document.getElementById(id); el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  set('tfDate', '2026-09-28');
+  set('tfPrice', '500');
+  set('tfShares', '100');            // 50,000 > 可用现金 34,000
+  const buy = Array.from(document.querySelectorAll('.segment[data-trade-type]')).filter((b) => b.getAttribute('data-trade-type') === 'buy')[0];
+  if (buy && !buy.classList.contains('active')) buy.click();
+  const chip = Array.from(document.querySelectorAll('.asset-chip[data-asset]')).filter((b) => b.getAttribute('data-asset') === 'VGT')[0];
+  if (chip && !chip.classList.contains('active')) chip.click();
+});
+await p.waitForTimeout(400);
+await ev(() => document.getElementById('btnAddTrade').click());
+await p.waitForTimeout(1200);
+const cashGuard = await ev(() => ({
+  toast: (document.getElementById('syncToast') || {}).textContent || '',
+  focused: document.activeElement ? document.activeElement.id : '',
+  trades: JSON.parse(localStorage.getItem('wealth_trades_v2') || '[]').length,
+}));
+if (!/现金不足/.test(cashGuard.toast)) failures.push('现金不足时没有给出提示');
+if (!/入金/.test(cashGuard.toast)) failures.push('现金不足的提示没引导去入金：' + cashGuard.toast);
+if (cashGuard.focused !== 'hmCashAmt') failures.push('现金不足时没有把光标带到入金输入框（焦点在 ' + cashGuard.focused + '）');
+if (cashGuard.trades === 0) failures.push('现金不足竟然把交易录进去了');
+
+/* I2 数据健康可点 → 打开同步设置并展开连接配置 */
+await ev(() => {
+  const row = document.querySelector('.sb-health-list .sb-health-row');
+  if (row) row.click();
+});
+await p.waitForTimeout(900);
+const healthJump = await ev(() => ({
+  syncPanelOpen: !!(document.getElementById('syncPanel') || {}).classList && document.getElementById('syncPanel').classList.contains('open'),
+  panelVisible: (() => { const el = document.getElementById('settingsSync'); return !!el && el.getBoundingClientRect().height > 0; })(),
+  settingsOpen: (() => { const sec = document.querySelector('.sb-section.sb-settings'); return !!sec && (sec.classList.contains('open') || sec.getBoundingClientRect().height > 0); })(),
+}));
+if (!healthJump.settingsOpen) failures.push('点数据健康没有打开设置面板');
+if (!healthJump.panelVisible) failures.push('同步设置面板打开后仍不可见（移动端曾被整屏设置面板挡住）');
+if (!healthJump.syncPanelOpen) failures.push('点数据健康没有自动展开「连接配置」');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -244,6 +285,7 @@ await p.close();
 
 console.log('交互流：搜索 ' + search.total + ' 行→可见 ' + search.visible + '（隐藏 ' + search.hidden + '）· 清空 ' + tradesBefore + '→' + cleared + '→撤销 ' + undone + ' · 结算按钮 ' + settleBtns + ' 个 · 备份含观察列表 ' + backup.hasWatchlist);
 console.log('记录页汇总：累计入金 ' + totals.dep + ' · 累计买入 ' + totals.buy + ' · 累计卖出 ' + totals.sel);
+console.log('入口体验：现金不足提示="' + cashGuard.toast.slice(0, 40) + '" 焦点=' + cashGuard.focused + ' · 移动端同步面板可见=' + healthJump.panelVisible + ' · 连接配置展开=' + healthJump.syncPanelOpen);
 console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
 console.log('观察列表：' + watchBefore.length + ' → ' + watchAfter.list.length + ' 项（添加 SPY：按钮="' + addRow.btnText + '"，分组 ' + watchAfter.groups.map((g) => g.title + g.count).join('/') + '，云端 ' + (cloudWatch.store.watchlist || []).length + ' 项）');
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
@@ -252,3 +294,4 @@ if (failures.length) {
   throw new Error('flows-interactions failed');
 }
 console.log('✓ 搜索过滤 / 清空撤销 / 期权结算 / 备份结构 全部正常');
+
