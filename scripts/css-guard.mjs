@@ -3,7 +3,7 @@
 // 现在 lint 与 tests/css-guard.test.mjs 共用同一份实现。
 
 /** 当前样式债基线：只允许减少，不允许增加。每还一笔债就把它调小。 */
-export const IMPORTANT_BUDGET = 1608;
+export const IMPORTANT_BUDGET = 1605;
 
 /** 统计 !important 出现次数（注意：注释里的也算，避免用注释绕过预算）。 */
 export function countImportant(css) {
