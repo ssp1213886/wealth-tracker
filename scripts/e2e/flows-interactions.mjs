@@ -67,6 +67,15 @@ if (rebalBefore === rebalAfter) failures.push('再平衡切到「注资」后内
 /* B) 记录页搜索：必须真的隐藏不匹配的行（手机端曾经被 !important 盖掉） */
 await ev(() => document.getElementById('bbData').click());
 await p.waitForTimeout(1500);
+// 记录页顶部汇总（v236 改用 rows.js 的 dataPageTotals 计算）
+const totals = await ev(() => ({
+  dep: (document.getElementById('dataDep') || {}).textContent,
+  sel: (document.getElementById('dataSel') || {}).textContent,
+  buy: (document.getElementById('dataBuy') || {}).textContent,
+}));
+if (totals.dep !== '$5,000.00') failures.push('累计入金应为 $5,000.00，实际 ' + totals.dep);
+if (totals.sel !== '$0.00') failures.push('累计卖出应为 $0.00，实际 ' + totals.sel);
+if (!totals.buy || totals.buy === '$0.00') failures.push('累计买入应大于 0，实际 ' + totals.buy);
 await ev(() => {
   const card = document.getElementById('tradeBody').closest('.collapsible-card');
   if (card && card.classList.contains('collapsed')) card.querySelector('.collapsible-header').click();
@@ -181,6 +190,7 @@ await p.evaluate(() => {
 await p.close();
 
 console.log('交互流：搜索 ' + search.total + ' 行→可见 ' + search.visible + '（隐藏 ' + search.hidden + '）· 清空 ' + tradesBefore + '→' + cleared + '→撤销 ' + undone + ' · 结算按钮 ' + settleBtns + ' 个 · 备份含观察列表 ' + backup.hasWatchlist);
+console.log('记录页汇总：累计入金 ' + totals.dep + ' · 累计买入 ' + totals.buy + ' · 累计卖出 ' + totals.sel);
 console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {

@@ -65,6 +65,41 @@ export function cashTotals(cashLog) {
   return { totalIn, totalOut };
 }
 
+/**
+ * 记录页顶部汇总：累计入金 / 累计卖出 / 累计买入。
+ * 口径说明：入金判定与 cashTotals 统一用「类型里含"入金"」（历史实现里这里用的是严格相等，
+ * 两处口径不一致；实际类型都是 App 自己写死的字符串，行为相同，统一后更保险）。
+ */
+export function dataPageTotals(trades, cashLog) {
+  var deposit = 0;
+  var bought = 0;
+  var sold = 0;
+  (cashLog || []).forEach(function (l) {
+    if (l && String(l.type || '').indexOf('入金') >= 0) deposit += Number(l.amount) || 0;
+  });
+  (trades || []).forEach(function (t) {
+    if (!t) return;
+    var shares = Number(t.shares) || 0;
+    var price = Number(t.price) || 0;
+    if (shares > 0) bought += shares * price;
+    else if (shares < 0) sold += Math.abs(shares) * price;
+  });
+  return { deposit: deposit, bought: bought, sold: sold };
+}
+
+/** 记录页表格搜索：单行文本是否命中（空查询 = 全部命中；大小写/首尾空格不敏感）。 */
+export function matchRowText(text, query) {
+  var q = String(query == null ? '' : query).trim().toLowerCase();
+  if (!q) return true;
+  return String(text == null ? '' : text).toLowerCase().indexOf(q) >= 0;
+}
+
+/** 搜索计数文案：空查询不显示条数。 */
+export function searchCountText(matched, query) {
+  var q = String(query == null ? '' : query).trim();
+  return q ? matched + ' 条' : '';
+}
+
 function cashTypeStyle(type) {
   const bg = type.indexOf('入金') >= 0 ? 'var(--accent-l)'
     : type.indexOf('权利金') >= 0 ? 'rgba(74,143,212,.12)'

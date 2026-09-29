@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   selectTrades, buildTradeRow, buildTradeRows,
   selectCashLogs, cashTotals, buildCashLogRow, buildCashLogRows,
+  dataPageTotals, matchRowText, searchCountText,
 } from '../src/app/rows.js';
 
 const trade = (over) => Object.assign({ id: 1, symbol: 'VGT', date: '2026-01-02', time: '10:00', shares: 1, price: 100, tag: '' }, over);
@@ -109,4 +110,43 @@ test('buildCashLogRows：空列表渲染空态组件', () => {
   const html = buildCashLogRows([]);
   assert.ok(html.includes('ds-empty'));
   assert.ok(html.includes('暂无资金流水'));
+});
+
+test('dataPageTotals：累计入金 / 买入 / 卖出（卖出取绝对值，入金口径与 cashTotals 一致）', () => {
+  const trades = [
+    trade({ id: 1, shares: 2, price: 100 }),          // 买入 200
+    trade({ id: 2, shares: -1, price: 150 }),         // 卖出 150
+    trade({ id: 3, shares: 0.5, price: 200 }),        // 买入 100
+  ];
+  const logs = [
+    cash({ id: 1, type: '入金', amount: 1000 }),
+    cash({ id: 2, type: '出金', amount: 300 }),
+    cash({ id: 3, type: '入金（自动）', amount: 500 }),   // 含"入金"即计入（与 cashTotals 同口径）
+  ];
+  const t = dataPageTotals(trades, logs);
+  assert.equal(t.bought, 300);
+  assert.equal(t.sold, 150);
+  assert.equal(t.deposit, 1500);
+});
+
+test('dataPageTotals：空数据/脏数据不炸', () => {
+  assert.deepEqual(dataPageTotals([], []), { deposit: 0, bought: 0, sold: 0 });
+  assert.deepEqual(dataPageTotals(null, null), { deposit: 0, bought: 0, sold: 0 });
+  const t = dataPageTotals([trade({ shares: 'abc', price: null })], [cash({ type: null, amount: 'x' })]);
+  assert.deepEqual(t, { deposit: 0, bought: 0, sold: 0 });
+});
+
+test('matchRowText：大小写不敏感、忽略首尾空格、空查询命中全部', () => {
+  assert.equal(matchRowText('2026-09-05 SMH 买入 1.02 股', 'smh'), true);
+  assert.equal(matchRowText('2026-09-05 SMH 买入', '  SmH '), true);
+  assert.equal(matchRowText('2026-09-05 SMH', 'vgt'), false);
+  assert.equal(matchRowText('任意文本', ''), true, '空查询应当全部显示');
+  assert.equal(matchRowText(null, 'x'), false);
+});
+
+test('searchCountText：空查询不显示条数，有查询时显示「N 条」', () => {
+  assert.equal(searchCountText(3, 'smh'), '3 条');
+  assert.equal(searchCountText(0, 'smh'), '0 条');
+  assert.equal(searchCountText(3, ''), '');
+  assert.equal(searchCountText(3, '   '), '');
 });
