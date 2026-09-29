@@ -10,6 +10,7 @@ import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSumma
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
+import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, fmtSmallPrice, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
@@ -22,7 +23,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v244';var APP_DATA_VERSION=5;
+var APP_BUILD='v245';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -115,7 +116,7 @@ var cachePrice=function(symbol,data){var c=readPriceCache();c[symbol]=data;if(!w
 async function fetchPrice(symbol){var cached=readPriceCache(),quoteSymbol=PRICE_SYMBOLS[symbol]||symbol;try{var r=await fetch('/api/price?symbol='+encodeURIComponent(quoteSymbol)+'&range=1mo');if(r.ok){var j=await r.json(),result=j.ok&&j.data&&j.data.chart&&j.data.chart.result&&j.data.chart.result[0],m=result&&result.meta,quote=result&&result.indicators&&result.indicators.quote&&result.indicators.quote[0],history=quote&&Array.isArray(quote.close)?quote.close.map(Number).filter(function(v){return isFinite(v)&&v>0}).slice(-20):[];if(m&&m.regularMarketPrice>0){var prevClose=Number(m.previousClose);if(!(prevClose>0))prevClose=history.length>1?history[history.length-2]:m.regularMarketPrice;return{price:m.regularMarketPrice,prevClose:prevClose,change:m.regularMarketPrice-prevClose,hi52:m.fiftyTwoWeekHigh||0,history:history,historyRange:'1mo',source:'yahoo',time:Date.now()}}}}catch(e){console.log('Yahoo error',symbol,e)}try{var r2=await fetch('https://qt.gtimg.cn/q=us'+symbol.toUpperCase());if(r2.ok){var t=await r2.text();var m2=t.match(/"([^"]+)"/);if(m2){var p=m2[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0)return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,history:cached[symbol]&&cached[symbol].history||[],historyRange:cached[symbol]&&cached[symbol].historyRange||'',source:'tencent',time:Date.now()}}}}catch(e2){console.log('Tencent error',symbol,e2)}if(cached[symbol])return Object.assign({},cached[symbol],{source:'缓存',time:cached[symbol].time||cached[symbol].ts});return null}
 
 
-function pricePill(sym,price,change,source){var dot=source&&source!=='缓存'&&source!=='manual'?'<span class="live-dot"></span>':'';var ch='';if(change!=null){var s2=change>=0?'+':'';ch='<span class="pp-chg" style="color:'+(change>=0?'var(--accent)':'var(--red)')+';">'+s2+change.toFixed(2)+'</span>'}var sl=source?'<small style="color:var(--muted);font-size:.7rem;margin-left:3px;">'+source+'</small>':'';return'<span class="price-pill" data-sym="'+sym+'" data-price="'+price.toFixed(2)+'" style="cursor:pointer">'+dot+'<span class="pp-sym">'+sym+'</span><strong>$'+price.toFixed(2)+'</strong>'+ch+sl+'</span>'}
+function pricePill(sym,price,change,source){return pricePillHTML(sym,price,change,source)}
 
 
 async function refreshPrices(){
@@ -959,7 +960,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=244',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=245',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1796,33 +1797,21 @@ if(typeof window!=='undefined'){
   var host=document.getElementById('watchRows');
   if(!host)return;
   var KEY='wealth_watch_group_open';
-  var FALLBACK={BTC:'Bitcoin',GOLD:'Gold'};
+  var FALLBACK=FALLBACK_NAMES;
   var busy=false,mo=null;
   var heldShares=function(sym){var n=0;for(var i=0;i<trades.length;i+=1){if(trades[i]&&trades[i].symbol===sym)n+=Number(trades[i].shares)||0}return n};
   /* 持仓归属：观察列表里的 BTC 是加密现货（不属于你的持仓）；你的比特币持仓是 BTC ETF（交易代码 BTC） */
   var HELD_OF=WATCH_HELD_OF;
   var heldSharesFor=function(sym){var src=resolveHeldSymbol(sym);return src?heldShares(src):0};
-  var priceOf=function(sym){var q=watchQuotes[sym],c=readPriceCache()[sym];return Number((q&&q.price)||livePrices[sym]||(c&&c.price)||0)||0};
+  var priceOf=function(sym){return quotePrice(watchQuotes[sym],livePrices[sym],readPriceCache()[sym])};
   /* 本地行情缓存按"归属代码"取：BTCETF 的行情在缓存里记在 BTC 名下；现货 BTC 没有本地缓存 */
   var dataSym=function(sym){return resolveHeldSymbol(sym)};
-  var histOf=function(sym){var k=dataSym(sym);if(!k)return [];var c=readPriceCache()[k];return (c&&c.history)||[]};
-  var hiOf=function(sym){
-    var k=dataSym(sym);
-    var c=k?readPriceCache()[k]:null;
-    var q2=watchQuotes[sym];
-    return Number((c&&c.hi52)||(q2&&q2.hi52)||0)||0;
-  };
+  var histOf=function(sym){return historyOf(readPriceCache(),dataSym(sym))};
+  var hiOf=function(sym){return hi52Of(readPriceCache(),dataSym(sym),watchQuotes[sym])};
   /* 加密标的：接口只给"现货"这种中文标签，这里补英文全名并标注现货（与 BTC ETF 行区分） */
   /* 加密全名（后端给 crypto:true 的行情会自动补" · 现货"；这里只把品牌名写准） */
-  var CRYPTO_NAME={BTC:'Bitcoin',ETH:'Ethereum',BNB:'Binance Coin',HYPE:'Hyperliquid',SOL:'Solana',XRP:'Ripple',DOGE:'Dogecoin',ADA:'Cardano',AVAX:'Avalanche',LINK:'Chainlink',LTC:'Litecoin',DOT:'Polkadot',TRX:'TRON',XLM:'Stellar',TON:'Toncoin',BCH:'Bitcoin Cash',ETC:'Ethereum Classic',UNI:'Uniswap',ATOM:'Cosmos',NEAR:'NEAR Protocol',APT:'Aptos',ARB:'Arbitrum',OP:'Optimism',FIL:'Filecoin',HBAR:'Hedera',ICP:'Internet Computer',ALGO:'Algorand',VET:'VeChain',AAVE:'Aave',INJ:'Injective',SEI:'Sei',TIA:'Celestia',TAO:'Bittensor',KAS:'Kaspa',GRT:'The Graph',SAND:'The Sandbox',MANA:'Decentraland',CRV:'Curve',MKR:'Maker',LDO:'Lido',ENS:'Ethereum Name Service',WLD:'Worldcoin',ENA:'Ethena',ONDO:'Ondo',JUP:'Jupiter',BONK:'Bonk',WIF:'dogwifhat',PYTH:'Pyth Network',POL:'Polygon',RUNE:'THORChain',SHIB:'Shiba Inu',PEPE:'Pepe',CRO:'Cronos',ZEC:'Zcash',XMR:'Monero',EOS:'EOS',FLOW:'Flow',CHZ:'Chiliz',GALA:'Gala',IMX:'Immutable',AXS:'Axie Infinity',THETA:'Theta',RENDER:'Render'};
-  var cleanName=function(sym,q){
-    if(CRYPTO_NAME[sym])return CRYPTO_NAME[sym]+' · 现货';
-    if(q&&q.crypto)return (String(q.name||sym).replace(/\s*USD$/,'').trim()||sym)+' · 现货';
-    if(FALLBACK[sym])return FALLBACK[sym];
-    var n=String((q&&q.name)||'').replace(/\s*\([A-Za-z]{0,3}$/,'').trim();
-    if(n&&!/[\u4e00-\u9fa5]/.test(n))return n;
-    return FALLBACK[sym]||sym;
-  };
+  var CRYPTO_NAME=CRYPTO_NAMES;
+  var cleanName=function(sym,q){return cleanNameOf(sym,q)};
   var dotColor=function(sym){
     if(sym==='BTC')return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
     return getAssetColor(HELD_OF[sym]||sym);
@@ -1997,8 +1986,8 @@ if(typeof window!=='undefined'){
   /* 内置名单：S&P 100 ∪ 纳斯达克100 共 167 条（解析自维基百科成分表的「代码列 + 公司列」） */
   /* 名单内按代码/名称都能搜到；名单外用「按代码查询」兜底（加密纯代码即可，自动按 CODE-USD 解析） */
   function inList(sym){for(var i=0;i<watchList.length;i+=1){if(watchList[i]&&watchList[i].sym===sym)return true}return false}
-  function fmtSmall(n){if(!(n>0))return '$0.00';if(n<1){var d=n>=0.01?4:n>=0.0001?6:8;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:d})}return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
-  function priceOf2(sym){var q=watchQuotes[sym]||extra[sym];if(!q||q.price==null)return {p:'—',c:'',cls:'flat'};var n=Number(q.price);var c=Number(q.changePct);return {p:fmtSmall(n),c:isFinite(c)?((c>=0?'+':'')+c.toFixed(2)+'%'):'',cls:!isFinite(c)?'flat':(c>=0?'up':'down')}}
+  function fmtSmall(n){return fmtSmallPrice(n)}
+  function priceOf2(sym){return searchRowPrice(watchQuotes[sym]||extra[sym])}
   function mkRow(sym,name){
     var t=priceOf2(sym),has=inList(sym),row=document.createElement('div');
     row.className='watch-search-row';
