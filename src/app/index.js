@@ -8,6 +8,7 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
+import {buildBackupPayload, planBackupImport} from './backup.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices} from './watch-ui.js';
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills} from './portfolio-view.js';
@@ -27,7 +28,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v251';var APP_DATA_VERSION=5;
+var APP_BUILD='v252';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -35,7 +36,7 @@ function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
 function normalizeCashLogs(list){return normalizeCashLogsIn(list)}
 function normalizeActivities(list){return normalizeActivitiesIn(list)}
 
-function createBackupData(){return{version:APP_DATA_VERSION,date:new Date().toISOString(),state:normalizeState(state),trades:trades,cashBalance:safeNum(cashBalance),cashLog:cashLog,activities:normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]')),optionTrades:normalizeOptions(JSON.parse(readRaw('wealth_options_v2')||'[]')),otmSettings:JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":5}'),exitPortfolio:readRaw('exit_portfolio')||'',watchlist:normalizeWatchlist(watchList),prices:JSON.parse(readRaw(PRICE_KEY)||'{}'),theme:document.documentElement.dataset.theme||'light',accent:document.documentElement.dataset.accent||'forest'}}
+function createBackupData(){return buildBackupPayload({appDataVersion:APP_DATA_VERSION,date:new Date().toISOString(),state:normalizeState(state),trades:trades,cashBalance:safeNum(cashBalance),cashLog:cashLog,activities:normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]')),optionTrades:normalizeOptions(JSON.parse(readRaw('wealth_options_v2')||'[]')),otmSettings:JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":5}'),exitPortfolio:readRaw('exit_portfolio')||'',watchlist:normalizeWatchlist(watchList),prices:JSON.parse(readRaw(PRICE_KEY)||'{}'),theme:document.documentElement.dataset.theme||'light',accent:document.documentElement.dataset.accent||'forest'})}
 
 
 
@@ -653,7 +654,25 @@ function recordBackupTime(timestamp){var ts=Number(timestamp)||Date.now();localS
 document.getElementById('btnExportData').addEventListener('click',function(){showBusyToast('正在生成完整备份');setTimeout(function(){var data=createBackupData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wealth-complete-'+localDate()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},5000);recordBackupTime(Date.now());showToast('完整备份已导出 · '+data.trades.length+' 笔交易 · '+data.optionTrades.length+' 个期权','ok')},80)});
 
 
-function importBackupData(data){if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('不是有效的备份文件');if(Number(data.version)>APP_DATA_VERSION)throw new Error('备份版本高于当前应用，请先更新应用');var nextTrades='trades'in data?normalizeTrades(data.trades):trades,nextCashLogs='cashLog'in data?normalizeCashLogs(data.cashLog):cashLog,nextOptions='optionTrades'in data?normalizeOptions(data.optionTrades):normalizeOptions(JSON.parse(readRaw('wealth_options_v2')||'[]')),nextActivities=('activities'in data||'notes'in data)?normalizeActivities(data.activities||data.notes):normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]'));var nextWatch='watchlist'in data?normalizeWatchlist(data.watchlist):normalizeWatchlist(watchList);var summary='交易 '+nextTrades.length+' 笔\n资金流水 '+nextCashLogs.length+' 条\n期权 '+nextOptions.length+' 个\n操作日志 '+nextActivities.length+' 条\n观察列表 '+nextWatch.length+' 项';if(!confirm('准备恢复以下数据：\n\n'+summary+'\n\n现有对应数据将被覆盖，是否继续？'))return false;if('state'in data){state=normalizeState(data.state);localStorage.setItem(LSKEY,JSON.stringify(state));markDirty('state')}if('trades'in data){trades=nextTrades;localStorage.setItem(TRADE_KEY,JSON.stringify(trades));markDirty('trades')}if('cashBalance'in data){cashBalance=safeNum(Number(data.cashBalance));localStorage.setItem(CB_KEY,String(cashBalance));markDirty('cashBalance')}if('cashLog'in data){cashLog=nextCashLogs;localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));markDirty('cashLog')}if('activities'in data||'notes'in data){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(nextActivities));markDirty('activities')}if('optionTrades'in data){optionTrades=nextOptions;localStorage.setItem('wealth_options_v2',JSON.stringify(nextOptions));markDirty('optionTrades')}if(data.otmSettings&&typeof data.otmSettings==='object'){otmSettings={vgt:Math.max(1,Math.min(20,Number(data.otmSettings.vgt)||7)),smh:Math.max(1,Math.min(20,Number(data.otmSettings.smh)||5))};localStorage.setItem('otmSettings',JSON.stringify(otmSettings));markDirty('otmSettings')}var exitValue=data.exitPortfolio!==undefined?data.exitPortfolio:data.exit_portfolio;if(exitValue!==undefined){localStorage.setItem('exit_portfolio',cleanText(exitValue,120));markDirty('exit_portfolio')}if('watchlist'in data){watchList=nextWatch;localStorage.setItem(WATCH_KEY,JSON.stringify(watchList));markDirty('watchlist');try{renderWatch();renderWatchManage()}catch(e){logSwallowed("importBackupData",e)}}if(data.prices&&typeof data.prices==='object'){var cleanPrices={};ETF_SYMS.forEach(function(sym){var p=data.prices[sym],n=Number(p&&p.price!==undefined?p.price:p);if(isFinite(n)&&n>0)cleanPrices[sym]=typeof p==='object'?Object.assign({},p,{price:n}):{price:n,source:'import',time:Date.now()}});localStorage.setItem(PRICE_KEY,JSON.stringify(cleanPrices))}if(data.theme==='dark'||data.theme==='light')localStorage.setItem(LSKEY+'_theme',data.theme);if(['forest','ocean','warm','plum','mono'].includes(data.accent))localStorage.setItem(LSKEY+'_accent',data.accent);autoPushDebounce();return true}
+function importBackupData(data){
+  var plan=planBackupImport(data,{appDataVersion:APP_DATA_VERSION,etfSymbols:ETF_SYMS,current:{trades:trades,cashLog:cashLog,optionTradesRaw:JSON.parse(readRaw('wealth_options_v2')||'[]'),activitiesRaw:JSON.parse(readRaw(ACTIVITY_KEY)||'[]'),watchlist:watchList}});
+  if(!plan.ok)throw new Error(plan.error);
+  if(!confirm('准备恢复以下数据：\n\n'+plan.summary+'\n\n现有对应数据将被覆盖，是否继续？'))return false;
+  var next=plan.next,has=plan.has;
+  if(has.state){state=normalizeState(data.state);localStorage.setItem(LSKEY,JSON.stringify(state));markDirty('state')}
+  if(has.trades){trades=next.trades;localStorage.setItem(TRADE_KEY,JSON.stringify(trades));markDirty('trades')}
+  if(has.cashBalance){cashBalance=safeNum(Number(data.cashBalance));localStorage.setItem(CB_KEY,String(cashBalance));markDirty('cashBalance')}
+  if(has.cashLog){cashLog=next.cashLog;localStorage.setItem(CLOG_KEY,JSON.stringify(cashLog));markDirty('cashLog')}
+  if(has.activities){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(next.activities));markDirty('activities')}
+  if(has.optionTrades){optionTrades=next.optionTrades;localStorage.setItem('wealth_options_v2',JSON.stringify(optionTrades));markDirty('optionTrades')}
+  if(plan.otm){otmSettings=plan.otm;localStorage.setItem('otmSettings',JSON.stringify(otmSettings));markDirty('otmSettings')}
+  if(plan.exitValue!==undefined){localStorage.setItem('exit_portfolio',cleanText(plan.exitValue,120));markDirty('exit_portfolio')}
+  if(has.watchlist){watchList=next.watchlist;localStorage.setItem(WATCH_KEY,JSON.stringify(watchList));markDirty('watchlist');try{renderWatch();renderWatchManage()}catch(e){logSwallowed("importBackupData",e)}}
+  if(has.prices)localStorage.setItem(PRICE_KEY,JSON.stringify(plan.prices));
+  if(has.theme)localStorage.setItem(LSKEY+'_theme',data.theme);
+  if(has.accent)localStorage.setItem(LSKEY+'_accent',data.accent);
+  autoPushDebounce();return true
+}
 document.getElementById('fileImport').addEventListener('change',function(){var input=this,file=input.files[0];if(!file)return;if(file.size>5*1024*1024){showToast('备份文件过大，已取消导入','err');input.value='';return}var reader=new FileReader();reader.onload=function(){try{var data=JSON.parse(reader.result);if(importBackupData(data)){showToast('备份恢复成功，正在刷新','ok');setTimeout(function(){location.reload()},700)}}catch(e){showToast('导入失败：'+e.message,'err')}finally{input.value=''}};reader.readAsText(file)});
 
 
@@ -929,7 +948,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=251',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=252',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */

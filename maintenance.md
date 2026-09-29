@@ -340,8 +340,8 @@ const steps = {
    > 真正的还债方式是**重写层叠**（把 base 规则里靠 `!important` 压制的写法，换成明确的特异性/变量），属于独立工程；工具已就位：`scripts/e2e/style-fingerprint.mjs` 可在每次改动前后做四种组合的计算样式对比。
    > 已实测：**机械删除走不通**。用四种组合（手机/桌面 × 明/暗）的计算样式指纹逐批验证，1608 条里只有 25 条能在"零视觉差异"前提下直接删掉——其余都在支撑移动端覆盖层（删了桌面就崩）。真正还债要按"合并重复规则组 + 重组覆盖层"来做，属独立工程。
    > 指纹工具已入库：`scripts/e2e/style-fingerprint.mjs`（改 CSS 前后各跑一次，比对 1731 个元素的关键计算样式；`#roadBar` 随时间变化已排除）。
-4. `src/app/index.js` 已从 212.3KB 拆到 **158.7KB**（v234–v251 共 17 轮），剩下的主要是**重耦合的渲染型函数**；
-   按大小排的下一个候选：`initAll`(6.5K)、`updateRebalance`(4.5K)、`updateAlerts`(3.6K)、`importBackupData`＋`createBackupData`(3.6K，纯逻辑可测)、
+4. `src/app/index.js` 已从 212.3KB 拆到 **157.7KB**（v234–v252 共 18 轮），剩下的主要是**重耦合的渲染型函数**；
+   按大小排的下一个候选：`initAll`(6.5K)、`updateRebalance`(4.5K)、`updateAlerts`(3.6K)、
    `renderOpt`(2.4K)、`switchTab`(1.9K)、`updateMobStatusBar`(1.9K)、观察列表的搜索面板 UI(~2K)
 5. 源码里还有约 60 处 `catch(e){}` 空捕获，失败会被静默吞掉（排查时最容易踩）
 
@@ -374,6 +374,7 @@ const steps = {
 | v249 | **观察列表视图层**：行情行渲染（含排序与状态胶囊）、管理面板（勾选/上下移/移除）、排序按钮高亮、更多菜单、刷新触发、行内详情（穿透敞口）；状态与网络留在 index.js，用 `configureWatchUI` 注入（状态走 getter，保证读到最新值） | 新增 `src/app/watch-ui.js` | 10 项单测（假 DOM 钉 innerHTML/胶囊文案/排序）＋ 47 项回归 ＋ 指纹零差异；审计扫描清单补上 new DOM 模块 |
 | v250 | **持仓视图层**：把 `updatePortfolio` 里的 DOM 写入整段分出——顶部指标卡、今日涨跌/总盈亏/浮动·已实现·权利金徽章、持仓表、目标进度条、距高点回撤面板、行情胶囊；计算（computeHoldings/portfolioTotals/dailyChange/goalProgress/回撤循环）全部留在 index.js，三个宿主函数（资产色/行情胶囊/金额缩写）用 `configurePortfolioView` 注入 | 新增 `src/app/portfolio-view.js` | 11 项单测（钉数字→文案/类名/进度宽度/空态）＋ 47 项回归 ＋ 指纹零差异 |
 | v251 | **侧栏行情行**：`updateSidebarPrices`（价格行 + 迷你走势 + 涨跌配色 + 更新时间文案）与它专用的 `formatChinaTime` 搬进观察/行情视图层；`ETF_SYMS` / `liveQuoteData` 用 host getter 注入，价格缓存键改用 `store.js` 的 `KEYS.prices` | 并入 `src/app/watch-ui.js` | 3 项单测（价格行/涨跌色/走势/等待态、ts→time 迁移、时间文案三态）＋ 47 项回归 ＋ 指纹零差异 |
+| v252 | **备份纯逻辑**：导出数据组装（`buildBackupPayload`）与导入计划（`planBackupImport`：坏文件/版本校验、四类列表归一、摘要文案、`has` 覆盖标记、OTM 裁剪、主题配色白名单、价格缓存清洗）抽成模块；confirm 与逐字段写回仍留 index.js | 新增 `src/app/backup.js` | 10 项单测（含"字符串数组观察列表会回落默认名单"这条既有行为）＋ 备份往返专项 5/5 ＋ 47 项回归 ＋ 指纹零差异 |
 
 建议顺序（每步都要过 `npm test` / `npm run lint` / `npm run audit` / `npm run e2e`，动到样式再跑指纹）：
 
@@ -391,6 +392,7 @@ const steps = {
 9. ~~持仓视图层（指标卡/盈亏明细/持仓表/目标进度/回撤面板/行情胶囊）→ `src/app/portfolio-view.js`~~ ✅ v250
    （只搬 DOM 写入；计算仍全在 index.js，`configurePortfolioView()` 注入资产色/行情胶囊/金额缩写）
 10. ~~侧栏行情行（价格行/迷你走势/更新时间）→ 并入 `src/app/watch-ui.js`~~ ✅ v251
+11. ~~备份纯逻辑（导出组装 / 导入校验·归一·摘要·价格清洗）→ `src/app/backup.js`~~ ✅ v252
 
 > v247 的副作用之一：`scripts/audit/static.mjs` 的扫描清单要跟着 DOM 模块走。
 > 新模块里 `modal.id = 'conflictModal'`（带空格）没被"动态创建"的正则认出来，于是报成死 id。
