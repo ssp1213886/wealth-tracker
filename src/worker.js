@@ -90,9 +90,10 @@ export default {
         if (!verified && !account) {
           const total = await countAccounts(env);
           if (total === 0 && await passwordMatches(password, env)) {
-            const created = await createAccount(env, username, password, username);
+            // 主账号必须正好是 id=1 —— 老数据全挂在 user_id=1 名下
+            const created = await createAccount(env, username, password, username, 1);
             if (created.id) {
-              account = { id: 1, username, name: username };
+              account = { id: created.id, username, name: username };
               verified = true;
             }
           }

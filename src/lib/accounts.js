@@ -78,7 +78,11 @@ export async function listAccounts(env) {
   return results || [];
 }
 
-export async function createAccount(env, username, password, name) {
+/**
+ * 建账号。explicitId 只在"首次引导建主账号"时传 1 —— 老数据挂在 user_id=1 名下，
+ * 账号 id 必须和它对上，不能寄希望于自增序列刚好从 1 开始。
+ */
+export async function createAccount(env, username, password, name, explicitId) {
   const handle = normalizeUsername(username);
   if (!isValidUsername(handle)) return { error: 'invalid username' };
   if (String(password || '').length < 6) return { error: 'password too short' };
@@ -86,9 +90,13 @@ export async function createAccount(env, username, password, name) {
   const passHash = await hashPassword(env, password, salt);
   if (!passHash) return { error: 'not configured' };
   try {
-    const result = await env.DB.prepare(
-      'INSERT INTO accounts (username, name, pass_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)',
-    ).bind(handle, String(name || handle).slice(0, 40), passHash, salt, Date.now()).run();
+    const result = Number.isFinite(Number(explicitId))
+      ? await env.DB.prepare(
+        'INSERT INTO accounts (id, username, name, pass_hash, salt, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      ).bind(Number(explicitId), handle, String(name || handle).slice(0, 40), passHash, salt, Date.now()).run()
+      : await env.DB.prepare(
+        'INSERT INTO accounts (username, name, pass_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)',
+      ).bind(handle, String(name || handle).slice(0, 40), passHash, salt, Date.now()).run();
     return { id: Number(result.meta && result.meta.last_row_id) || null };
   } catch (error) {
     if (String(error && error.message).indexOf('UNIQUE') >= 0) return { error: 'username taken' };

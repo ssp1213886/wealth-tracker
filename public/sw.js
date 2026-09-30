@@ -1,5 +1,5 @@
-// Service Worker v287 - focus scroll and unified press feedback
-var CACHE = 'wealth-v287';
+// Service Worker v288 - focus scroll and unified press feedback
+var CACHE = 'wealth-v288';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
