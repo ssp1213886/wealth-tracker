@@ -35,7 +35,8 @@ await p.evaluate(async () => {
   ]));
 });
 await p.goto(BASE + '?mcap=' + Date.now(), { waitUntil: 'domcontentloaded' });
-await p.waitForTimeout(4000);
+// 市值是首屏渲染完 1.5 秒后才拉的（不再占首屏），这里等它落地
+await p.waitForTimeout(7000);
 async function ev(fn, arg) {
   let last = null;
   for (let i = 0; i < 6; i += 1) {
@@ -61,6 +62,14 @@ const watchDetail = await ev(() => {
 });
 if (!watchDetail.ok) failures.push('观察列表行详情：' + watchDetail.why);
 else if (!watchDetail.hasCap) failures.push('观察列表行详情里没有「总市值」：' + watchDetail.text.slice(0, 80));
+// 市值格子是异步补上的：点开后再等一下，必须变成真实数字（不是一直转「…」）
+await p.waitForTimeout(600);
+const capAfter = await ev(() => {
+  const row = document.querySelector('#watchRows .watch-row');
+  const detail = row && row.nextElementSibling;
+  return detail ? (detail.innerText || '').replace(/\s+/g, ' ') : '';
+});
+if (/\u603b\u5e02\u503c\s*\u2026/.test(capAfter)) failures.push('观察列表行详情的总市值一直停在「…」，没补上：' + capAfter.slice(0, 80));
 
 /* B) 排序切到「市值」：最高的排最前，缺市值的排最后 */
 const sortClicked = await ev(() => {

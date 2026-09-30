@@ -169,13 +169,20 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=272');
+  assert.equal(manifest.start_url, '/?v=273');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v272/);
+  assert.match(serviceWorker, /wealth-v273/);
   assert.match(serviceWorker, /暂时无法连接/);
-  assert.match(serviceWorker, /Navigation timeout/);
+  // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
+  // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
+  assert.doesNotMatch(serviceWorker, /Navigation timeout/);
+  assert.match(serviceWorker, /caches\.match\('\/'\)\.then\(function\(cached\)/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=272',\{updateViaCache:'none'\}\)/);
+  // 新版本接管时不再整页 reload（那会在启动瞬间再白一次）
+  assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
+  // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
+  assert.match(html, /rel="apple-touch-startup-image"/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=273',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

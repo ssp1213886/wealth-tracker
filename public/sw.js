@@ -1,5 +1,5 @@
-// Service Worker v272 - focus scroll and unified press feedback
-var CACHE = 'wealth-v272';
+// Service Worker v273 - focus scroll and unified press feedback
+var CACHE = 'wealth-v273';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
@@ -47,15 +47,16 @@ self.addEventListener('fetch', function(event) {
       if (!response || !response.ok || !(response.headers.get('content-type') || '').includes('text/html')) throw new Error('Invalid navigation response');
       return cacheResponse(request, response).then(function() { return response; });
     });
-    var timeout = new Promise(function(_, reject) {
-      setTimeout(function() { reject(new Error('Navigation timeout')); }, 3500);
-    });
-    event.respondWith(Promise.race([network, timeout]).catch(function() {
-      return caches.match(request).then(function(cached) {
-        return cached || caches.match('/');
-      }).then(function(cached) { return cached || offlineDocument(); });
-    }));
     event.waitUntil(network.catch(function() {}));
+    // 缓存优先 + 后台更新（v273 改）。
+    // 以前是「网络优先 + 3.5 秒竞速」：冷启动（尤其 iOS 重开 PWA）要等满超时才回落缓存，
+    // 用户看到的就是白屏。现在只要缓存里有壳子就立刻返回，网络在后台把新版本写进缓存。
+    event.respondWith(caches.match('/').then(function(cached) {
+      if (cached) return cached;
+      return caches.match(request).then(function(hit) {
+        return hit || network.catch(function() { return offlineDocument(); });
+      });
+    }));
     return;
   }
 

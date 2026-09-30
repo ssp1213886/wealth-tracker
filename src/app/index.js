@@ -19,7 +19,7 @@ function symColor(sym){
 }
 import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
-import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices, capText} from './watch-ui.js';
+import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices, capCellHTML, updateCapCells} from './watch-ui.js';
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
@@ -37,7 +37,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v272';var APP_DATA_VERSION=5;
+var APP_BUILD='v273';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -959,7 +959,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=272',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=273',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1446,8 +1446,21 @@ bindHaptics();
 var sbBuildEl=document.getElementById('sbBuild');if(sbBuildEl)sbBuildEl.textContent=APP_BUILD;
 /* ===== 观察列表 + ETF 前十大构成股（数据来自 Worker，只读，不进同步） ===== */var WATCH_KEY='wealth_watchlist_v1';var watchList=normalizeWatchlist((function(){try{return JSON.parse(readRaw(WATCH_KEY)||'[]')}catch(e){return[]}})());var watchQuotes={},holdingsData={},watchCaps={},watchFetchedAt=0,watchRefreshing=false,watchInvalid=[],watchMissing=[],watchSort='default';function saveWatch(next){watchList=normalizeWatchlist(next);try{localStorage.setItem(WATCH_KEY,JSON.stringify(watchList))}catch(e){logSwallowed("saveWatch",e)}renderWatch();renderWatchManage();try{markDirty('watchlist');autoPushDebounce()}catch(e){logSwallowed("saveWatch",e)}}
 /* v249：观察列表的状态与写操作注入给视图层（getter 保证读的是最新值） */
-configureWatchUI({get watchList(){return watchList},get watchQuotes(){return watchQuotes},get holdingsData(){return holdingsData},get watchCaps(){return watchCaps},get watchFetchedAt(){return watchFetchedAt},get watchInvalid(){return watchInvalid},get watchMissing(){return watchMissing},get trades(){return trades},get livePrices(){return livePrices},get liveQuoteData(){return liveQuoteData},get ETF_SYMS(){return ETF_SYMS},saveWatch:saveWatch,refreshMarket:refreshMarket,showToast:showToast});
-function fetchMarketData(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');var holdReqs=['VGT','SMH'].map(function(sym){return fetch(base+'/api/holdings?symbol='+sym).then(function(r){return r.ok?r.json():null}).catch(function(){return null})});return Promise.all(holdReqs).then(function(list){list.forEach(function(item){if(item&&item.ok&&item.list)holdingsData[item.symbol]=item});var symbols=collectQuoteSymbols(watchList,holdingsData);if(!symbols.length){watchFetchedAt=Date.now();renderWatch();renderHoldings();return}return fetch(base+'/api/quotes?symbols='+encodeURIComponent(symbols.join(','))).then(function(r){return r.ok?r.json():null}).then(function(data){if(data&&data.ok&&data.quotes){for(var k in data.quotes){watchQuotes[k]=data.quotes[k]}watchInvalid=data.invalid||[];watchMissing=data.missing||[];watchFetchedAt=Date.now()}var capSyms=(function(){var out=[],seen={};function add(s){s=String(s||'').toUpperCase();if(!s||seen[s])return;seen[s]=1;out.push(s)}normalizeWatchlist(watchList).forEach(function(i){if(i.enabled)add(i.sym)});['VGT','SMH'].forEach(function(k){var d=holdingsData[k];if(d&&d.list)d.list.forEach(function(it){add(it.sym)})});return out})();return fetch(base+'/api/marketcap?symbols='+encodeURIComponent(capSyms.join(','))).then(function(r){return r.ok?r.json():null}).then(function(mc){if(mc&&mc.ok&&mc.caps){for(var ck in mc.caps){watchCaps[ck]=mc.caps[ck]}}}).catch(function(){})}).catch(function(){})}).then(function(){renderWatch();renderHoldings()})}function refreshMarket(force){if(watchRefreshing)return;if(!force&&Date.now()-watchFetchedAt<60000)return;watchRefreshing=true;fetchMarketData().then(function(){watchRefreshing=false},function(){watchRefreshing=false})}initWatchUI();
+configureWatchUI({get watchList(){return watchList},get watchQuotes(){return watchQuotes},get holdingsData(){return holdingsData},get watchCaps(){return watchCaps},ensureCap:ensureCap,get watchFetchedAt(){return watchFetchedAt},get watchInvalid(){return watchInvalid},get watchMissing(){return watchMissing},get trades(){return trades},get livePrices(){return livePrices},get liveQuoteData(){return liveQuoteData},get ETF_SYMS(){return ETF_SYMS},saveWatch:saveWatch,refreshMarket:refreshMarket,showToast:showToast});
+function fetchMarketData(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');var holdReqs=['VGT','SMH'].map(function(sym){return fetch(base+'/api/holdings?symbol='+sym).then(function(r){return r.ok?r.json():null}).catch(function(){return null})});return Promise.all(holdReqs).then(function(list){list.forEach(function(item){if(item&&item.ok&&item.list)holdingsData[item.symbol]=item});var symbols=collectQuoteSymbols(watchList,holdingsData);if(!symbols.length){watchFetchedAt=Date.now();renderWatch();renderHoldings();return}return fetch(base+'/api/quotes?symbols='+encodeURIComponent(symbols.join(','))).then(function(r){return r.ok?r.json():null}).then(function(data){if(data&&data.ok&&data.quotes){for(var k in data.quotes){watchQuotes[k]=data.quotes[k]}watchInvalid=data.invalid||[];watchMissing=data.missing||[];watchFetchedAt=Date.now()}scheduleCaps()}).catch(function(){})}).then(function(){renderWatch();renderHoldings()})}function refreshMarket(force){if(watchRefreshing)return;if(!force&&Date.now()-watchFetchedAt<60000)return;watchRefreshing=true;fetchMarketData().then(function(){watchRefreshing=false},function(){watchRefreshing=false})}
+/* ===== 市值：不占首屏 =====
+   ① 首屏渲染完之后再拉（省得和价格/行情抢那 6 条并发连接）；
+   ② 一次最多 12 只（服务端上限），分块串行，服务端返回 deferred 就继续下一轮；
+   ③ 点开某一行时如果这只还没市值，ensureCap 会立刻单独拉这一只。 */
+var CAP_CHUNK=12,capPending={},capTimer=0;
+function capBase(){return (syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'')}
+function capSymsList(){var out=[],seen={};function add(s){s=String(s||'').toUpperCase();if(!s||seen[s])return;seen[s]=1;out.push(s)}normalizeWatchlist(watchList).forEach(function(i){if(i.enabled)add(i.sym)});['VGT','SMH'].forEach(function(k){var d=holdingsData[k];if(d&&d.list)d.list.forEach(function(it){add(it.sym)})});return out}
+function applyCapPayload(mc,requested){if(!mc||!mc.ok)return;var ck;for(ck in (mc.caps||{})){watchCaps[ck]=Number(mc.caps[ck])||0}(requested||[]).forEach(function(s){if(!Object.prototype.hasOwnProperty.call(watchCaps,s))watchCaps[s]=null});(mc.missing||[]).forEach(function(s){watchCaps[s]=null});(mc.deferred||[]).forEach(function(s){delete watchCaps[s]})}
+function resolveCapWaiters(sym){var list=capPending[sym];if(!list)return;delete capPending[sym];list.forEach(function(fn){try{fn(watchCaps[sym])}catch(e){logSwallowed("resolveCapWaiters",e)}})}
+function ensureCap(sym,cb){var s=String(sym||'').toUpperCase();if(!s)return;if(Object.prototype.hasOwnProperty.call(watchCaps,s)){if(cb)try{cb(watchCaps[s])}catch(e){logSwallowed("ensureCap",e)}return}var list=capPending[s];if(list){if(cb)list.push(cb);return}capPending[s]=cb?[cb]:[];fetch(capBase()+'/api/marketcap?symbols='+encodeURIComponent(s)).then(function(r){return r.ok?r.json():null}).then(function(mc){applyCapPayload(mc,[s]);resolveCapWaiters(s)}).catch(function(){resolveCapWaiters(s)})}
+function fetchMarketCaps(){var round=0;var pass=function(){if(round>=3)return Promise.resolve();round+=1;var unknown=capSymsList().filter(function(s){return !Object.prototype.hasOwnProperty.call(watchCaps,s)});if(!unknown.length)return Promise.resolve();var chunks=[],i;for(i=0;i<unknown.length;i+=CAP_CHUNK)chunks.push(unknown.slice(i,i+CAP_CHUNK));var run=function(k){if(k>=chunks.length)return Promise.resolve();var chunk=chunks[k];return fetch(capBase()+'/api/marketcap?symbols='+encodeURIComponent(chunk.join(','))).then(function(r){return r.ok?r.json():null}).then(function(mc){applyCapPayload(mc,chunk);chunk.forEach(resolveCapWaiters)}).catch(function(){}).then(function(){return run(k+1)})};return run(0).then(pass)};return pass()}
+function scheduleCaps(){try{clearTimeout(capTimer)}catch(e){logSwallowed("scheduleCaps",e)}capTimer=setTimeout(function(){fetchMarketCaps()},1500)}
+initWatchUI();
 (function initDateFillState(){var mark=function(el){if(el&&el.tagName==='INPUT'&&el.type==='date')el.classList.toggle('has-val',!!el.value)};var markAll=function(){document.querySelectorAll('input[type=date]').forEach(mark)};['input','change'].forEach(function(ev){document.addEventListener(ev,function(e){mark(e.target)},true)});markAll();setTimeout(markAll,900)})();
 
 function forceUploadLocal(){showApproval({title:'强制上传本地数据',message:'将用本机数据覆盖云端（包含你刚刚的删除操作）。如果其他设备有更新的改动，会被这次上传覆盖。',confirmText:'强制上传',onConfirm:function(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');if(!syncCfg||!syncCfg.token){showToast('未配置云同步','err');return}var payload={};try{SYNC_KEYS.forEach(function(k){payload[k]=localValOf(k)})}catch(e){showToast('读取本地数据失败','err');return}showBusyToast('正在上传本机数据');syncFetchWithoutHealth('POST',payload).then(function(){SYNC_KEYS.forEach(function(k){try{clearDirty(k)}catch(e){logSwallowed("forceUploadLocal",e)}});try{var s=loadSyncState();s.pendingConflicts=[];s.lastSyncErrorAt=0;s.lastSyncError='';s.failStreak=0;saveSyncState(s)}catch(e){logSwallowed("forceUploadLocal",e)}showToast('已用本机数据覆盖云端','ok');renderSyncHealth()}).catch(function(e){showToast('上传失败：'+(e&&e.message?e.message:'未知错误'),'err')})}})}function initForceUpload(){var b=document.getElementById('syncForceUpload');if(b)b.addEventListener('click',forceUploadLocal)}
@@ -1865,7 +1878,7 @@ if(typeof window!=='undefined'){
     }
     var gap=(hi>0&&p>0)?((p-hi)/hi*100):null;
     if(grid)grid='<div class="rd-sec">与我有关</div><div class="row-detail-grid watch-detail-grid">'+grid+'</div>';
-    grid+='<div class="rd-sec">市场位置</div><div class="row-detail-grid watch-detail-grid">';grid+='<span>总市值</span><strong>'+capText(watchCaps[sym])+'</strong>';
+    grid+='<div class="rd-sec">市场位置</div><div class="row-detail-grid watch-detail-grid">';grid+='<span>总市值</span>'+capCellHTML(sym);
     if(prev>0&&p>0)grid+='<span>昨日收盘</span><strong>'+fmtFull(prev)+'</strong>';
     if(prev>0&&p>0)grid+='<span>今日涨跌</span><strong class="'+(p>=prev?'positive':'negative')+'">'+(p>=prev?'+':'-')+fmtFull(Math.abs(p-prev)).replace('$','$')+'（'+((p-prev)/prev*100>=0?'+':'')+((p-prev)/prev*100).toFixed(2)+'%）</strong>';
     if(gap!==null)grid+='<span>距 52 周高点</span><strong>'+(gap>=0?'+':'')+gap.toFixed(1)+'%（高点 '+fmtFull(hi)+'）</strong>';
@@ -1882,7 +1895,7 @@ if(typeof window!=='undefined'){
     var chgHTML=chgEl?chgEl.outerHTML:'';
     d.innerHTML='<div class="rd-top"><span class="rd-sym">'+escapeHtml(sym)+'</span><span class="rd-price">'+escapeHtml(priceTxt)+(chgHTML?' '+chgHTML:'')+'</span></div>'
       +'<div class="rd-sub">'+escapeHtml(cleanName(sym,q))+'</div>'+grid+bar;
-    row.after(d);
+    row.after(d);ensureCap(sym,function(){updateCapCells(sym)});
   },true);
 })();
 

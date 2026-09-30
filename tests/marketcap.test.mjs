@@ -44,8 +44,9 @@ test('handleMarketCap：stocks 查不到时按 etf 再查一次（SMH 这类 ETF
   await withFetch(fake, async () => {
     const result = await call('TESTB');
     assert.equal(result.body.caps.TESTB, 78467697147);
-    assert.equal(seen.length, 2, '应该先 stocks 再 etf');
-    assert.match(seen[1], /assetclass=etf/);
+    const nasdaqCalls = seen.filter((u) => u.includes('api.nasdaq.com'));
+    assert.equal(nasdaqCalls.length, 2, '应该先 stocks 再 etf');
+    assert.match(nasdaqCalls[1], /assetclass=etf/);
   });
 });
 
@@ -63,7 +64,10 @@ test('handleMarketCap：N/A / 空 / 上游报错都进 missing，不编数字', 
 
 test('handleMarketCap：命中缓存后不再出网', async () => {
   let hits = 0;
-  await withFetch(() => { hits += 1; return nasdaq({ MarketCap: { value: '1,000,000,000' } }); }, async () => {
+  await withFetch((url) => {
+    if (String(url).includes('api.nasdaq.com')) hits += 1;
+    return nasdaq({ MarketCap: { value: '1,000,000,000' } });
+  }, async () => {
     await call('TESTE');
     await call('TESTE');
     assert.equal(hits, 1);
@@ -153,4 +157,76 @@ test('handleMarketCap：代码白名单过滤注入与非法字符，全非法�
 test('handleMarketCap：非 GET 返回 405', async () => {
   const url = new URL('https://example.com/api/marketcap?symbols=TESTH');
   assert.equal((await handleMarketCap(new Request(url, { method: 'POST' }), url)).status, 405);
+});
+
+test('handleMarketCap：单次最多真查 12 只，多出来的进 deferred（首屏卡 20 秒的根因就在这）', async () => {
+  const asked = [];
+  const fake = (url) => {
+    asked.push(String(url));
+    return nasdaq({ MarketCap: { value: '1,000,000,000' } });
+  };
+  // 20 个全新代码（避开模块内缓存），4 个字母都在白名单内
+  const fresh = Array.from({ length: 20 }, (_, i) => 'LK' + String.fromCharCode(65 + i) + 'X');
+  await withFetch(fake, async () => {
+    const result = await call(fresh.join(','));
+    assert.equal(Object.keys(result.body.caps).length, 12, '只该真查 12 只');
+    assert.equal(result.body.deferred.length, 8, '剩下 8 只留给下一轮');
+    // 子请求上限：1 张市值大表 + 每只最多 2 个（先 ETF 页、再 Nasdaq）= 25
+    assert.ok(asked.length <= 30, '子请求数要压在 Cloudflare 上限内，实际 ' + asked.length);
+    assert.deepEqual(result.body.deferred, fresh.slice(12));
+  });
+});
+
+test('handleMarketCap：上游卡住时按 5 秒硬超时返回已有部分（绝不挂 20 秒）', { timeout: 20000 }, async () => {
+  const started = Date.now();
+  await withFetch(() => new Promise(() => {}), async () => {
+    const result = await call('TMTAX,TMTBX');
+    const elapsed = Date.now() - started;
+    assert.ok(elapsed >= 4500 && elapsed < 8000, '应该在 5 秒左右返回，实际 ' + elapsed + 'ms');
+    assert.deepEqual(result.body.caps, {});
+    assert.deepEqual(result.body.deferred.slice().sort(), ['TMTAX', 'TMTBX']);
+  });
+});
+
+test('handleMarketCap：先用一个请求的「市值最大 500 家」大表覆盖美股，Nasdaq 只兜底', async () => {
+  // 造 120 行（解析函数要求至少 100 行才认）；代码只用字母，白名单不接受数字
+  const symOf = (i) => 'L' + String.fromCharCode(65 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26));
+  const listHtml = Array.from({ length: 120 }, (_, i) => {
+    const sym = symOf(i);
+    return '<td class="sym svelte-1"><a href="/stocks/' + sym.toLowerCase() + '/">' + sym + '</a><!--]--></td><!--]-->'
+      + '<td class="slw svelte-1">Name ' + i + '</td><td class="svelte-1">' + (i + 1) + '.5B</td>';
+  }).join('');
+  const asked = [];
+  const fake = (url) => {
+    const target = String(url);
+    asked.push(target);
+    if (target.includes('biggest-companies')) return Promise.resolve(new Response(listHtml, { status: 200 }));
+    return nasdaq({ MarketCap: { value: '9,999,000,000' } });
+  };
+  await withFetch(fake, async () => {
+    const target = symOf(7);
+    const result = await call(target);
+    assert.equal(result.body.caps[target], 8500000000, '应该来自大表（8.5B）');
+    assert.ok(!asked.some((u) => u.includes('/' + target + '/')), '大表里有就不该再问 Nasdaq');
+  });
+});
+
+test('handleMarketCap：ETF 取 ETF 页的规模（Assets），不用 Nasdaq 那个不准的值', async () => {
+  const asked = [];
+  const fake = (url) => {
+    const target = String(url);
+    asked.push(target);
+    // 大表故意返回空，逼它走 ETF 页
+    if (target.includes('biggest-companies')) return Promise.resolve(new Response('', { status: 200 }));
+    if (target.includes('/etf/etfa/')) {
+      // 实测 "Assets" 到金额之间隔着 130 多个字符的属性文本
+      return Promise.resolve(new Response('<td class="x">Assets</td><td class="' + 'y'.repeat(150) + '">$155.48B</td>', { status: 200 }));
+    }
+    return nasdaq({ MarketCap: { value: '6,970,000,000' } });
+  };
+  await withFetch(fake, async () => {
+    const result = await call('ETFA');
+    assert.equal(result.body.caps.ETFA, 155480000000, 'ETF 规模要取 ETF 页的 Assets（155.48B）');
+    assert.ok(!asked.some((u) => u.includes('/ETFA/')), 'ETF 页拿到了就不该再问 Nasdaq');
+  });
 });
