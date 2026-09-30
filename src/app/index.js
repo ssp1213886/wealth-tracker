@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v302';var APP_DATA_VERSION=5;
+var APP_BUILD='v303';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -575,7 +575,7 @@ function updateRebalanceLock(){
   if(isDec31){badge.textContent='今日解锁';badge.style.background='var(--accent-l)';badge.style.color='var(--accent)';msg.style.display='none';content.style.opacity='1';content.style.pointerEvents='auto'}
 
 
-  else{var next=new Date(now.getFullYear()+((m===12&&d>31)?1:0),11,31,23,59,59);if(next<=now){next=new Date(now.getFullYear()+1,11,31,23,59,59)}var days=Math.ceil((next-now)/86400000);badge.textContent='锁定中';badge.style.background='var(--surface)';badge.style.color='var(--muted)';msg.style.display='block';msg.innerHTML='年度再平衡仅在 <strong>12月31日</strong> 开放使用<br><span style="font-size:11.5px;">距离解锁还有 <strong>'+days+'</strong> 天</span>';msg.style.background='var(--surface)';content.style.opacity='.85';content.style.pointerEvents='auto'}
+  else{var next=new Date(now.getFullYear()+((m===12&&d>31)?1:0),11,31,23,59,59);if(next<=now){next=new Date(now.getFullYear()+1,11,31,23,59,59)}var days=Math.ceil((next-now)/86400000);/* v303：原来徽标写"锁定中"却仍可点，读起来自相矛盾；改成"计划中"，并说明下面的建议随时可看 */badge.textContent='计划中';badge.style.background='var(--surface)';badge.style.color='var(--muted)';msg.style.display='block';msg.innerHTML='年度再平衡计划在 <strong>12月31日</strong> 执行<br><span style="font-size:11.5px;">距执行还有 <strong>'+days+'</strong> 天 · 下面的建议现在就能预览</span>';msg.style.background='var(--surface)';content.style.opacity='1';content.style.pointerEvents='auto'}
 
 
 }
@@ -678,7 +678,7 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
   addActivity((type==='sell'?'卖出 ':'买入 ')+sym+' '+shares.toFixed(2)+'股 @ $'+price.toFixed(2));
 
 
-  haptic('success');showToast('✅ 录入成功','ok')
+  haptic('success');showToast('✅ 录入成功','ok');renderRecentTrades()
 
 
 });
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=302',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=303',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1500,6 +1500,55 @@ try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adj
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
 (function(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(sh)sh.addEventListener('input',refreshTradeAffordability);if(pr)pr.addEventListener('input',refreshTradeAffordability)})();
+/* ===== v303 操作台：现金管理分段按钮 + 最近录入（纯渲染层，不碰任何现金/交易计算） ===== */
+(function(){
+  var seg=document.querySelector('.cash-type-segment');
+  var submit=document.getElementById('cashSubmit');
+  if(!seg||!submit)return;
+  var cur='in';
+  function paint(){
+    var segs=seg.querySelectorAll('.segment');
+    for(var i=0;i<segs.length;i+=1){
+      var on=segs[i].getAttribute('data-cash-type')===cur;
+      segs[i].classList.toggle('active',on);
+      segs[i].setAttribute('aria-selected',on?'true':'false');
+    }
+    submit.textContent=cur==='in'?'入金':'出金';
+    var amt=document.getElementById('hmCashAmt');
+    if(amt)amt.placeholder=cur==='in'?'入金金额':'出金金额';
+  }
+  seg.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('.segment[data-cash-type]'):null;
+    if(!b)return;
+    cur=b.getAttribute('data-cash-type')||'in';
+    paint();
+  });
+  submit.addEventListener('click',function(){
+    // 主按钮只是去点原来那个（现在藏起来的）按钮，现金流水逻辑完全复用
+    var target=document.getElementById(cur==='in'?'hmDeposit':'hmWithdraw');
+    if(target)target.click();
+  });
+  paint();
+})();
+try{new MutationObserver(function(){if(document.body.dataset.activeTab==='console')renderRecentTrades()}).observe(document.body,{attributes:true,attributeFilter:['data-active-tab']})}catch(e){logSwallowed("renderRecentTrades",e)}
+setTimeout(renderRecentTrades,400);
+function renderRecentTrades(){
+  try{
+    var box=document.getElementById('recentTrades');
+    if(!box)return;
+    var list=(trades||[]).slice().sort(function(a,b){
+      var d=String(b.date||'').localeCompare(String(a.date||''));
+      return d!==0?d:(Number(b.id)||0)-(Number(a.id)||0);
+    }).slice(0,2);
+    if(!list.length){box.hidden=true;box.innerHTML='';return}
+    box.hidden=false;
+    box.innerHTML='<div class="rt-head">最近录入</div>'+list.map(function(t){
+      var q=Number(t.shares)||0;
+      var val='@ '+(Number(t.price)||0).toFixed(2);
+      return '<div class="rt-row"><span class="rt-sym">'+escapeHtml(t.symbol)+'</span><span class="rt-meta">'+escapeHtml(String(t.date||''))+'</span><span class="rt-val '+(q<0?'is-sell':'is-buy')+'">'+(q<0?'卖出 ':'买入 ')+Math.abs(q).toFixed(2)+' 股 '+val+'</span></div>';
+    }).join('');
+  }catch(e){logSwallowed("renderRecentTrades",e)}
+}
 function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else{s.classList.add('open');markAlertsSeen(alertSignature(getCurrentAlerts()||[]));updateBellBadge(getCurrentAlerts()||[]);}}
 function qaClose(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
 /* 记录期权：从底部弹层录入（原来是一张常显的大表单，占掉期权页三分之一） */

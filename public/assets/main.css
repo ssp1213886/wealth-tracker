@@ -2770,3 +2770,38 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 #optSheet .qa-title{margin-bottom:12px}
 /* ===== v301：可点行（div[role=button]）的键盘焦点环 ===== */
 .watch-row[role="button"]:focus-visible,.hold-row[role="button"]:focus-visible,.asset-row[role="button"]:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 72%,#fff);outline-offset:-2px;border-radius:12px}
+/* ===== v303 操作台：行情三连紧凑化 =====
+   原来 3 个价格胶囊纵向排 3 行（3×54px + 2×7px 间距 ≈ 176px），
+   压成一行三列后每格内部三行小字，高度降到约 52px。 */
+#hmPricesCompact{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#hmPricesCompact>*{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto auto;row-gap:2px;column-gap:5px;min-height:0;padding:8px 9px;border-radius:13px}
+#hmPricesCompact .live-dot{grid-column:1;grid-row:1}
+#hmPricesCompact .pp-sym{grid-column:2;grid-row:1}
+#hmPricesCompact strong{grid-column:1/-1;grid-row:2;justify-self:start;font-size:13.5px}
+#hmPricesCompact .pp-chg{grid-column:1;grid-row:3;justify-self:start;min-width:0}
+#hmPricesCompact small{grid-column:2;grid-row:3;justify-self:end;max-width:100%}
+#hmPriceTime{flex:1;min-width:0}
+.price-hint{flex:0 0 auto;color:var(--muted);font-size:11.5px;opacity:.85}
+@media(max-width:340px){#hmPricesCompact small{display:none}}
+/* ===== v303 操作台：现金管理分段 + 低频动作折叠 + 最近录入 ===== */
+/* 覆盖 .cash-form{display:grid;gap:10px}：靠选择器权重（0,2,0 高过 0,1,0），无需强制声明 */
+.cash-card .cash-form{display:grid;gap:var(--ds-gap)}
+.cash-more{margin-top:2px;border-top:1px solid var(--rule);padding-top:2px}
+.cash-more>summary{min-height:44px;display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;list-style:none}
+.cash-more>summary::-webkit-details-marker{display:none}
+.cash-more>summary::before{content:"▸";font-size:11.5px;transition:transform .2s var(--ease-out)}
+.cash-more[open]>summary::before{transform:rotate(90deg)}
+.cash-more[open]{padding-bottom:2px}
+.cash-more .cash-row{margin-top:8px}
+.recent-trades{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);display:grid;gap:6px}
+/* 有 display 的元素会盖掉 UA 的 [hidden]{display:none}，必须显式补一条（现金管理那排旧按钮就是这么露出来的） */
+.cash-actions[hidden]{display:none}
+.recent-trades{gap:4px}
+.recent-trades[hidden]{display:none}
+.rt-head{color:var(--muted);font-size:11.5px;font-weight:600}
+.rt-row{display:flex;align-items:baseline;gap:8px;font-size:12.5px;min-height:20px}
+.rt-sym{font-weight:680;color:var(--fg);flex:0 0 auto}
+.rt-meta{color:var(--muted);font-size:11.5px;flex:0 0 auto}
+.rt-val{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted)}
+.rt-val.is-buy{color:var(--accent)}
+.rt-val.is-sell{color:var(--orange)}
