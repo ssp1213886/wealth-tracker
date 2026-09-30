@@ -77,7 +77,7 @@ VGT + SMH + BTC ETF（美股代码 `BTC`，非现货 BTC）永久核心仓 + Cov
 - 持仓明细：标的 / 持仓 / 均价 / 市值 / 盈亏 / 收益率，支持列排序
 - 交易历史：方向标签（买入/卖出多少股）+ 标的筛选 + 列排序
 - 资金流水：入金 / 出金 / 股息 / 权利金 / 修正分色标注，权利金不计入入金
-- 现金管理：入金 / 出金 / 现金修正 / 股息记录（股息只记流水，不混入定投指标）
+- 现金管理：入金 / 出金 / 现金修正 / 股息记录（股息只记流水，不混入定投指标）；与买卖录入**各自收进底部弹层**，卡头只留「＋ 记一笔」，操作台整页约一屏
 - 纪律打卡：连续定投月份计数 + 操作日志热力图
 - 投资规划：收入渐进加码（4 阶段）、47 岁退出策略、提款模拟器
 - 年度再平衡：换仓 / 注资模式，仅 12 月 31 日解锁执行
@@ -94,6 +94,9 @@ VGT + SMH + BTC ETF（美股代码 `BTC`，非现货 BTC）永久核心仓 + Cov
 **数据与安全**
 
 - Cloudflare D1 云端同步：改动后约 0.7 秒自动推送、页面打开自动拉取、支持手动上传 / 下载
+- **行情总线**：同一标的的现价 / 昨收 / 今日涨跌只有**一份来源**，买卖录入胶囊、侧边栏、持仓市值、底层资产敞口、观察列表读到的永远是同一个数字（早期是两条互不相通的行情线，同一秒能差 1 块钱）
+- **底层资产敞口**：同一标的跨 VGT/SMH 合并、BTC 作为"单一底层资产"计入、每支 ETF 补"其余成分股"保证合计=分母；点行看成分股来源与穿透敞口
+- **云端快照（可回退）**：点「清除所有数据」前，服务端先把数据整份存一份（D1 `snapshots`，每账号留 5 份）；本地另有 24 小时可撤销横条 + 长按 3 秒确认，换设备也能恢复
 - 顶部同步提示胶囊：三态尺寸统一（132×30），靠颜色 + 图标 + 视觉重量区分 —— 同步中「⟳ 正在上传…」、已同步「✓ 已同步 03:30」2.2 秒收起、失败「! 同步失败」（红色光晕 + 中心放大，8 秒收起；重试在顶部横幅里）
 - 删除、撤销类操作立即推送；退出页面时对未同步的改动补发一次，下次打开自动续传
 - 冲突处理：收到 409 先自动核对云端内容，确实不一致才弹窗，可逐键选择「保留本地 / 使用云端」，或一键「全部保留本地」覆盖云端
@@ -157,14 +160,14 @@ npm run deploy
 | `public/guide.html` | 使用文档（网页版，`/guide`） |
 | `public/assets/app.js` | **构建产物**，由 `src/app/*` 打包而来，勿直接编辑 |
 | `public/assets/main.css` | 样式（手写） |
-| `public/sw.js` | Service Worker（network-first，版本号与页面一致） |
+| `public/sw.js` | Service Worker（**壳子与 `/assets/*` 都缓存优先**，版本号与页面一致；v315 起新版接管会自动刷新一次，详见 `maintenance.md` 的「PWA 更新机制」） |
 | `public/manifest.json` | PWA 配置 |
 | `public/icon.png` | 应用图标 |
 | `src/worker.js` | Worker 入口（路由 + 鉴权 + 限流） |
-| `src/lib/` | 后端模块：auth / assets / http / price / sync / logs / rate-limit |
+| `src/lib/` | 后端模块：auth / assets / http / price / quotes / holdings / marketcap / sync / **snapshots** / logs / events / rate-limit |
 | `src/app/` | **前端源码**：`index.js`（页面逻辑与装配）+ 纯逻辑（calc / portfolio / options / plan / rows / records-import / symbols / charts / time / util）+ 视图层（sync-view / settings-view / watch-ui / portfolio-view / alerts-view）+ 数据（store / sync / sync-engine / backup / watch / watch-view / settings） |
 | `scripts/` | bundle / bump / lint / build / lan-preview + e2e 与专项测试脚本 |
-| `tests/` | 单元测试（`node --test`，269 项） |
+| `tests/` | 单元测试（`node --test`，**338 项**） |
 | `schema.sql` | D1 建表语句 |
 | `wrangler.toml` | Cloudflare Workers 配置 |
 | `INVESTMENT_STRATEGY.md` | 投资策略定义（AI 助手读取） |
@@ -176,13 +179,16 @@ npm run deploy
 
 | 层级 | 命令 | 覆盖 |
 | --- | --- | --- |
-| 单元测试 | `npm test` | 269 项：工具函数、持仓计算与成本结转、组合/期权/计划纯计算、存储容错、迁移链、同步 payload 与 409 分类、备份导入计划、待办判定、转义安全、时区与交易日 |
+| 单元测试 | `npm test` | **338 项**：工具函数、持仓计算与成本结转、组合/期权/计划纯计算、存储容错、迁移链、同步 payload 与 409 分类、备份导入计划、待办判定、转义安全、时区与交易日、**今日收益口径**、**并发取价去重**、**云端快照读写与账号隔离** |
 | 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出的 inline onclick / 空 catch / 跨模块漏 import，纯 Node，CI 会跑 |
-| 端到端（无头） | `npm run e2e` | 全页爬查零报错 + 数据流（买入/入金/卖 CALL 落库并同步）+ 交互流（搜索/撤销/结算/备份） |
+| 端到端（无头） | `npm run e2e` | **5 个场景**：全页爬查零报错 / 数据流（买入·入金·卖 CALL 落库并同步）/ 交互流（搜索·撤销·结算·备份·操作台弹层·刷新反馈）/ 市值与敞口（含**行情一致性护栏**）/ 清除数据（非主账号也真清到云端） |
 | 端到端回归 | `node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | 47 项：仪表盘 / 操作台 / 期权 / 记录页 / 侧边栏 / 主题 / 响应式 |
 | 专项验证 | `scripts/test-options.mjs` 等 | 期权行权与结算、备份往返、分析卡片数值与手算比对 |
 
-> e2e 脚本依赖调试专用 Chrome（端口 9222）与 `npm run preview:lan` 起的本地服务，用法见 `.codex/skills/chrome-debug`。
+> `npm run e2e` 默认用**无头 Chrome**（`scripts/e2e/driver.mjs`：不弹窗、不占用你的调试窗口），自带假云端 `scripts/e2e/mock-cloud.mjs`。
+> 需要亲眼看画面时才用 `E2E_USE_DEBUG_CHROME=1`（那时才依赖调试专用 Chrome，端口 9222）。
+> **⚠️ 所有测试都跑在 ~0ms 的本地假云端上，测不出"延迟类"回归**（多一轮往返、慢链路超时、SW 更新延迟都漏过）——
+> 动同步 / 启动链路 / Service Worker 时，必须再用人为延迟的测量脚本量一遍，见 `maintenance.md`「测试体系最大的盲区」。
 
 ---
 
