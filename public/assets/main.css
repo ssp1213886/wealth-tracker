@@ -2809,5 +2809,5 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 #tradeSheet .qa-panel .console-form{margin-top:2px}
 #cashSheet .qa-panel .cash-form{margin-top:2px}
 /* ===== v312 观察列表的刷新图标按钮 ===== */
-#tab-console .watch-card .watch-head .watch-icon{width:44px;min-width:44px;padding:0;display:grid;place-items:center}
-#tab-console .watch-card .watch-head .watch-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+/* v313：刷新按钮统一 —— 两个卡头用同一个纯图标按钮（44×44、同图标、同粗细）。不用强制声明：规则写在后面，同权重即可覆盖 .btn 的 padding/display */
+.icon-refresh{width:44px;min-width:44px;padding:0;display:grid;place-items:center}.icon-refresh svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}

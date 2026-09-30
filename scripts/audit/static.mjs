@@ -65,6 +65,15 @@ const builtins = new Set(['location', 'window', 'document', 'alert', 'confirm', 
 const missingGlobals = [...called].filter((n) => !exported.has(n) && !builtins.has(n));
 if (missingGlobals.length) problems.push('inline onclick 调用了没导出到 window 的函数（点了会 ReferenceError）：' + missingGlobals.join(', '));
 
+/* ③.5 内联图标的视图框要统一。
+   图标粗细是「stroke-width × 实际尺寸 / 24」算出来的，视图框不是 24 的话，
+   同样 16px 渲染出来粗细和留白都会跟别人不一样（v313 刷新图标就是这么变丑的）。 */
+const htmlSvgs = [...html.matchAll(/<svg[^>]*>/g)].map((m) => m[0]);
+const oddViewBox = htmlSvgs.filter((t) => t.indexOf('viewBox="0 0 24 24"') < 0);
+if (oddViewBox.length) {
+  problems.push('内联图标里有非 24 视图框的（同尺寸下笔画会不一致）：' + oddViewBox.slice(0, 3).join(' | '));
+}
+
 /* ④ 空 catch：静默吞异常，历史上藏过"同步失败没提示"这类问题，禁止新增 */
 const emptyCatches = app.match(/catch\s*\(\s*\w+\s*\)\s*\{\s*\}|catch\s*\{\s*\}/g) || [];
 if (emptyCatches.length) {
