@@ -395,7 +395,8 @@ input,select,textarea{font-size:16px}
 
 
 
-.collapsible-header{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;padding:4px 0}.collapsible-header:active{opacity:.6}.collapse-arrow{font-size:.7rem;transition:transform .25s ease;color:var(--muted);display:inline-block}.collapsible-card.collapsed .collapse-arrow{transform:rotate(-90deg)}.collapsible-card.collapsed .collapsible-body{display:none}.collapsible-card:not(.collapsed)>.collapsible-header{background:var(--accent-l);margin:-16px -16px 8px;padding:10px 16px;border-radius:var(--radius) var(--radius) 0 0}
+.collapsible-header{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;padding:4px 0}.collapsible-header:active{opacity:.6}.collapse-arrow{font-size:.7rem;transition:transform .25s ease;color:var(--muted);display:inline-block}.collapsible-card.collapsed .collapse-arrow{transform:rotate(-90deg)}.collapsible-card .collapsible-body{overflow:hidden;max-height:6000px;opacity:1;transition:max-height .34s var(--ease-drawer),opacity .24s ease,visibility 0s}
+.collapsible-card.collapsed .collapsible-body{max-height:0;opacity:0;visibility:hidden;transition:max-height .34s var(--ease-drawer),opacity .18s ease,visibility 0s .34s}.collapsible-card:not(.collapsed)>.collapsible-header{background:var(--accent-l);margin:-16px -16px 8px;padding:10px 16px;border-radius:var(--radius) var(--radius) 0 0}
 
 
 
@@ -434,7 +435,7 @@ input,select,textarea{font-size:16px}
 
 
 
-.btn:active{transform:scale(.96)!important;transition:transform .08s}.accent-dot:active{transition:transform .08s}.toggle-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.7rem;color:var(--muted)}.toggle-wrap input{display:none}.toggle-sw{width:36px;height:20px;background:var(--rule);border-radius:10px;position:relative;transition:background .25s;flex-shrink:0}.toggle-sw::after{content:'';width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.toggle-wrap input:checked+.toggle-sw{background-color:var(--accent)}.toggle-wrap input:checked+.toggle-sw::after{left:18px}.card:active,.metric:active,.chart-card:active{transform:scale(.98);transition:transform .12s}input,select{transition:border-color .2s,box-shadow .2s}input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,153,74,.15)}.trade-table tbody tr:active{background:var(--accent-l)!important}input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background-color:var(--rule);border-radius:3px;outline:none}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background-color:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.btn:active{transform:scale(.96)!important;transition:transform .08s}.accent-dot:active{transition:transform .08s}.toggle-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.7rem;color:var(--muted)}.toggle-wrap input{display:none}.toggle-sw{width:51px;height:31px;background:var(--rule);border-radius:16px;position:relative;transition:background .22s var(--ease-out);flex-shrink:0}.toggle-sw::after{content:'';width:27px;height:27px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .22s var(--ease-drawer);box-shadow:0 1px 3px rgba(0,0,0,.25),0 2px 6px rgba(0,0,0,.12)}.toggle-wrap input:checked+.toggle-sw{background-color:var(--accent)}.toggle-wrap input:checked+.toggle-sw::after{left:22px}.card:active,.metric:active,.chart-card:active{transform:scale(.98);transition:transform .12s}input,select{transition:border-color .2s,box-shadow .2s}input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(22,153,74,.15)}.trade-table tbody tr:active{background:var(--accent-l)!important}input[type=range]{-webkit-appearance:none;appearance:none;height:6px;background-color:var(--rule);border-radius:3px;outline:none}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background-color:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 
 
 
@@ -1453,8 +1454,8 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 /* ===== Design System v2 · Mobile PWA ===== */
 /* Base components */
 .segmented-control{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;height:40px;padding:2px;margin:0 0 8px;border-radius:13px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
-.segment{min-height:36px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:.76rem;font-weight:620;transition:background .16s ease,color .16s ease,box-shadow .16s ease}
-.segment.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 4px var(--shadow-color,rgba(0,0,0,.10))}
+.segment{min-height:36px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:.76rem;font-weight:620;transition:background .2s var(--ease-out),color .2s var(--ease-out),box-shadow .2s var(--ease-out),transform .12s var(--ease-out)}
+.segment.active{background:var(--card-bg);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.06),0 3px 8px rgba(0,0,0,.08)}
 .asset-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 10px}
 .asset-chip{min-height:38px;padding:0 6px;border:1px solid var(--rule);background:var(--surface);color:var(--muted);transition:border-color .16s ease,color .16s ease,background .16s ease}
 .asset-chip.active{border-color:color-mix(in srgb,var(--accent) 48%,transparent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent)}
@@ -2745,4 +2746,18 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 @keyframes tabIconPop{0%{transform:scale(.86)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){
   .qa-sheet.open .qa-panel,.tab-panel.active,.nav-item.is-on .nav-icon,.bb-item.is-on .nav-icon{animation:none}
+}
+
+/* ===== v294 原生手感：控件与展开动画 ===== */
+/* 分段控件里的滑块有"按下去"的反馈 */
+.segment:active{transform:scale(.97)}
+/* 列表行的分隔线左内缩（iOS 列表的细节，通栏线看起来像表格而不像列表） */
+.hold-row,.watch-row{position:relative}
+.hold-row+.hold-row::before,.watch-row+.watch-row::before{content:"";position:absolute;top:0;left:12px;right:0;height:1px;background:var(--rule)}
+/* 数据未到位时的骨架微光（配合 JS 加的 .is-skeleton） */
+.is-skeleton{display:inline-block;min-width:72px;min-height:1em;color:transparent!important;border-radius:6px;background:linear-gradient(100deg,var(--surface) 30%,color-mix(in srgb,var(--fg) 6%,var(--surface)) 50%,var(--surface) 70%);background-size:220% 100%;animation:skeletonShimmer 1.2s linear infinite}
+@keyframes skeletonShimmer{from{background-position:180% 0}to{background-position:-20% 0}}
+@media(prefers-reduced-motion:reduce){
+  .is-skeleton{animation:none}
+  .collapsible-card .collapsible-body{transition:none}
 }

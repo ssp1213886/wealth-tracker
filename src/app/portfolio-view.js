@@ -24,6 +24,11 @@ export function fmtPnLPctParen(n){if(!isFinite(n)||isNaN(n))return'';return'('+(
 
 /** 顶部三张指标卡：总市值 / 总资产 / 现金占比。 */
 export function renderMetricsTop(doc, m) {
+  // 行情还没到：给依赖现价的数字加骨架微光（CSS 里的 .is-skeleton），避免满屏 "-"
+  ['hmValue', 'hmUnreal', 'hmPnL'].forEach(function (id) {
+    const el = doc.getElementById(id);
+    if (el && el.classList && el.classList.toggle) el.classList.toggle('is-skeleton', !m.hasPriced);
+  });
   doc.getElementById('hmValue').textContent=m.hasPriced?fmtFull(m.totalValue):'-';var totalAssetValue=m.totals.totalAssets,ht=doc.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalAssetValue);var hcp=doc.getElementById('hmCashPct');if(hcp)hcp.textContent=m.totals.cashPct.toFixed(2)+'%';
 }
 
