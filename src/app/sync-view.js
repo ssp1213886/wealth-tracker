@@ -109,7 +109,7 @@ export function renderSyncHealthView(doc, summary, opts) {
 /**
  * 状态条胶囊的三态属性：
  *   ''     只回到初始类名（文字/图标不动）
- *   busy   不收（等调用方给结果）
+ *   busy   30 秒兜底自动收（正常由调用方给结果，这里只做最后一道保险）
  *   ok     2.2 秒后自动收
  *   err    8 秒后自动收
  */
@@ -119,7 +119,7 @@ export function syncBarAttrs(state, text) {
     className: 'sync-bar show is-' + state,
     icon: state === 'ok' ? '✓' : state === 'err' ? '!' : '',
     text: text || '',
-    holdMs: state === 'ok' ? 2200 : state === 'err' ? 8000 : 0,
+    holdMs: state === 'ok' ? 2200 : state === 'err' ? 8000 : state === 'busy' ? 30000 : 0,
   };
 }
 

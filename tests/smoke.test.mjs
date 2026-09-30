@@ -169,9 +169,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=315');
+  assert.equal(manifest.start_url, '/?v=316');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v315/);
+  assert.match(serviceWorker, /wealth-v316/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -182,7 +182,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=315',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=316',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -355,9 +355,9 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.match(appMarkup, /\.sync-bar\.is-ok\{/);
   assert.match(appMarkup, /\.sync-bar\.is-err\{/);
   assert.match(appSource, /function setSyncBar\(state,text\)/);
-  // v247：三态的类名/图标/自动收起时长搬到 sync-view.js 的 syncBarAttrs（另有单测钉住 2.2s / 8s）
+  // v247：三态的类名/图标/自动收起时长搬到 sync-view.js 的 syncBarAttrs（另有单测钉住 2.2s / 8s / 30s）
   assert.match(appSource, /icon: state === 'ok' \? '✓' : state === 'err' \? '!' : ''/);
-  assert.match(appSource, /holdMs: state === 'ok' \? 2200 : state === 'err' \? 8000 : 0/);
+  assert.match(appSource, /holdMs: state === 'ok' \? 2200 : state === 'err' \? 8000 : state === 'busy' \? 30000 : 0/);
   assert.match(appSource, /function applySyncBar\(doc, state, text\)/);
   assert.match(appSource, /function healPushConflict\(/);
   assert.match(appSource, /function flushDirtyOnHide\(/);
@@ -373,7 +373,7 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.doesNotMatch(appMarkup, /\.sync-bar\{margin-left:50px\}/, '旧的避让式左缩进应已删除');
   // 三态图标
   assert.match(html, /class="sb-ic"/);
-  // v247：图标与停留时长都搬到 sync-view.js 的 syncBarAttrs（上面已断言 2200/8000 映射）
+  // v247：图标与停留时长都搬到 sync-view.js 的 syncBarAttrs（上面已断言 2200/8000/30000 映射）
   assert.match(appSource, /icon: state === 'ok' \? '✓' : state === 'err' \? '!' : ''/);
   assert.match(appSource, /setTimeout\(function\(\)\{setSyncBar\(''\)\},r\.holdMs\)/, '成功态停留 2.2 秒（时长由 syncBarAttrs 给）');
 
@@ -391,8 +391,62 @@ test('sync status bar covers uploading, done, and failure states', () => {
   assert.doesNotMatch(appSource, /同步失败 · 数据仅存本机/);
   // 失败态 8 秒后自动收起（横幅继续常驻）
   // v247：时长改由 sync-view.js 的 syncBarAttrs 给出（8000），index.js 只负责起计时器
-  assert.match(appSource, /holdMs: state === 'ok' \? 2200 : state === 'err' \? 8000 : 0/);
+  assert.match(appSource, /holdMs: state === 'ok' \? 2200 : state === 'err' \? 8000 : state === 'busy' \? 30000 : 0/);
   assert.match(appSource, /if\(r\.holdMs\)syncBarTimer=setTimeout\(function\(\)\{setSyncBar\(''\)\},r\.holdMs\)/);
+});
+
+// v316：同步请求必须"有始有终"。网络黑洞时（VPN 掉线 / SNI 被拦）fetch 可以永远不返回，
+// 没有硬超时的话状态条就永远停在 busy —— 用户看到的就是一条永不消失的"正在下载"。
+test('syncFetch：请求永不返回时按硬超时收尾，正常返回时不被超时打断', { timeout: 5000 }, async () => {
+  function syncCtx(fetchImpl) {
+    const ctx = vm.createContext({
+      console, Date, Error, DOMException, AbortController, setTimeout, clearTimeout,
+      SYNC_TIMEOUT_MS: 40,
+      syncCfg: { url: 'https://example.test', token: '' },
+      location: { origin: 'https://example.test' },
+      logSwallowed: () => {},
+      fetch: fetchImpl,
+    });
+    vm.runInContext(extractFunction('syncFetch'), ctx);
+    return ctx;
+  }
+
+  // ① 永不返回 → 必须靠超时收尾，并且真的把请求中断掉
+  let aborted = false;
+  const hung = syncCtx((url, opts) => new Promise((resolve, reject) => {
+    const sig = opts && opts.signal;
+    assert.ok(sig, '同步请求必须带 AbortSignal，否则中断不了');
+    sig.addEventListener('abort', () => { aborted = true; reject(new DOMException('aborted', 'AbortError')); });
+  }));
+  await assert.rejects(async () => { await hung.syncFetch('GET'); }, (e) => e && e.name === 'AbortError');
+  assert.equal(aborted, true, '超时后必须真的把请求中断');
+
+  // ② 正常返回 → 拿到结果，且事后再也不会因为超时被中断
+  let abortedOnSuccess = false;
+  const ok = syncCtx((url, opts) => {
+    opts.signal.addEventListener('abort', () => { abortedOnSuccess = true; });
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, ts: 1234 }) });
+  });
+  assert.equal((await ok.syncFetch('GET')).ts, 1234);
+  await new Promise((r) => setTimeout(r, 80));
+  assert.equal(abortedOnSuccess, false, '成功返回后不该再触发超时中断');
+});
+
+test('同步失败不再挂死在 busy：没有 stall 兜底，失败原因说人话', () => {
+  // v314 的 20 秒 stall 兜底只改文案、不结束状态，是"永久正在下载"的直接来源
+  assert.doesNotMatch(appSource, /stallTimer/);
+  assert.doesNotMatch(appSource, /仍在同步…（网络较慢）/);
+  // 硬超时 + 可行动的失败文案
+  assert.match(appSource, /var SYNC_TIMEOUT_MS=15000;/);
+  assert.match(appSource, /opts\.signal=ctrl\.signal/);
+  assert.match(appSource, /连不上云端 · 稍后自动重试/);
+  assert.match(appSource, /当前离线 · 数据已存本机/);
+  // 网络恢复（VPN 重连 / 切回 WiFi）后自动补一次同步
+  assert.match(appSource, /addEventListener\('online',function\(\)\{try\{autoPull\(\)/);
+  // 包装层依赖的局部变量必须还在：done() 里若引用未声明的名字会抛 ReferenceError，
+  // 整条成功收尾（写状态 / 标脏 / 推送）会被 autoPull 的空 catch 吞掉 —— 修 v316 时真踩过
+  assert.match(appSource, /var spinTimer=setTimeout\(clearSpin,12000\);/);
+  assert.match(appSource, /var done=function\(\)\{clearTimeout\(spinTimer\);clearSpin\(\)\}/);
 });
 
 test('sync feedback has a single channel per event', () => {

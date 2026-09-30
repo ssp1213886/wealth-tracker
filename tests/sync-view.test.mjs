@@ -104,7 +104,9 @@ test('syncBarAttrs：三态的类名/图标/自动收起时长', () => {
   assert.deepEqual(syncBarAttrs('ok', '已同步 16:07'), { className: 'sync-bar show is-ok', icon: '✓', text: '已同步 16:07', holdMs: 2200 });
   assert.equal(syncBarAttrs('err', '同步失败').holdMs, 8000);
   assert.equal(syncBarAttrs('err', '同步失败').icon, '!');
-  assert.equal(syncBarAttrs('busy', '正在上传…').holdMs, 0, 'busy 不收，等结果');
+  // v316：busy 必须也有兜底收起 —— v314 把它设成 0（永不收），
+  // 结果"连不上云端"被翻译成一条永久挂在屏幕上的提示。
+  assert.equal(syncBarAttrs('busy', '正在上传…').holdMs, 30000, 'busy 也有 30 秒兜底，绝不永久悬挂');
   assert.equal(syncBarAttrs('busy', '正在上传…').icon, '');
 });
 
