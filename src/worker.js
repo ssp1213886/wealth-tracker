@@ -97,6 +97,8 @@ export default {
         },
       });
     }
+    // 登录页自己的路由。少了这一条，/login 会掉到静态资源查找 → 404（真事故）
+    if (url.pathname === '/login') return loginPageResponse('');
 
     // ---- 门禁：没登录就只给登录页 ----
     if (needsAuth(request, url.pathname)) {

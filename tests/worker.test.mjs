@@ -105,6 +105,25 @@ test('登录门禁：未登录的导航只给登录页，绝不吐 App 壳子', 
   assert.equal(res.headers.get('Cache-Control'), 'no-store, max-age=0');
 });
 
+test('登录门禁：/login 自己有路由（少了它会掉到资源查找变成 404）', async () => {
+  const res = await worker.fetch(request('/login'), env(createDb()));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('Content-Type') || '', /text\/html/);
+  assert.match(await res.text(), /请输入访问令牌/);
+});
+
+test('登录门禁：找不到的页面给人看 HTML，不要吐裸 JSON', async () => {
+  const res = await worker.fetch(request('/definitely-not-here'), env(createDb()));
+  assert.equal(res.status, 404);
+  assert.match(res.headers.get('Content-Type') || '', /text\/html/);
+  assert.doesNotMatch(await res.text(), /^\{"error"/);
+  // /api/* 仍然回 JSON（注意：未登录时会被门禁挡成 401，所以要带上凭证才测得到 404）
+  const api = await worker.fetch(request('/api/definitely-not-here', { headers: { 'X-Auth-Token': 'secret' } }), env(createDb()));
+  assert.equal(api.status, 404);
+  assert.match(api.headers.get('Content-Type') || '', /application\/json/);
+  assert.match(api.headers.get('Cache-Control') || '', /no-store/);
+});
+
 test('登录门禁：/api/* 未登录返回 401 JSON（不是登录页）', async () => {
   const res = await worker.fetch(request('/api/quotes?symbols=VGT'), env(createDb()));
   assert.equal(res.status, 401);
