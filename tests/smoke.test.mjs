@@ -169,9 +169,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=310');
+  assert.equal(manifest.start_url, '/?v=311');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v310/);
+  assert.match(serviceWorker, /wealth-v311/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -182,7 +182,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=310',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=311',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -466,13 +466,32 @@ test('price refresh requests one-month history and retains valid closes', async 
       };
     },
   });
-  vm.runInContext('async ' + extractFunction('fetchPrice'), priceContext);
+  // v311：取价的实现改名成 fetchPriceImpl（外面套了一层"并发去重"的 fetchPrice），
+  // 这里只测实现体，所以就地改名回 fetchPrice 再注入。
+  vm.runInContext('async ' + extractFunction('fetchPriceImpl').replace('function fetchPriceImpl(', 'function fetchPrice('), priceContext);
   const quote = await priceContext.fetchPrice('BTC');
   assert.match(requestedUrl, /symbol=BTC&range=1mo$/);
   assert.deepEqual(Array.from(quote.history), [27.9, 28.1, 28.38]);
   assert.equal(quote.prevClose, 28.1);
   assert.ok(Math.abs(quote.change - 0.28) < 1e-9);
   assert.equal(quote.historyRange, '1mo');
+  // v311 去重护栏：并发调用同一标的只发一次请求
+  let hits = 0;
+  const dedupeContext = vm.createContext({
+    console, Date, Number, Array, Object, isFinite, encodeURIComponent,
+    PRICE_SYMBOLS: { BTC: 'BTC' },
+    readPriceCache: () => ({}),
+    fetch: async () => {
+      hits += 1;
+      return { ok: true, json: async () => ({ ok: true, data: { chart: { result: [{ meta: { regularMarketPrice: 30, previousClose: 29 }, indicators: { quote: [{ close: [29, 30] }] } }] } } }) };
+    },
+  });
+  vm.runInContext('var priceReq={};', dedupeContext);   // 包装层依赖的并发表
+  vm.runInContext(extractFunction('fetchPrice'), dedupeContext);
+  vm.runInContext('async ' + extractFunction('fetchPriceImpl'), dedupeContext);
+  const [a, b] = await Promise.all([dedupeContext.fetchPrice('BTC'), dedupeContext.fetchPrice('BTC')]);
+  assert.equal(hits, 1, '并发取同一个标的应该只发一次请求，实际 ' + hits + ' 次');
+  assert.equal(a, b, '两次调用应共享同一个结果对象');
 });
 
 test('desktop UI states stay data-consistent and scrollable', () => {

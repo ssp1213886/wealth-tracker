@@ -2,6 +2,7 @@ import { serveAsset } from './lib/assets.js';
 import { corsHeaders, json } from './lib/http.js';
 import { handlePrice } from './lib/price.js';
 import { handleSyncGet, handleSyncPost } from './lib/sync.js';
+import { handleSyncMeta } from './lib/sync-meta.js';
 import { listSnapshots, restoreSnapshot } from './lib/snapshots.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { handleLog } from './lib/logs.js';
@@ -348,6 +349,11 @@ export default {
       // 走 activeAccount：被禁用 / 会话版本过期（管理员重置过密码）都会立刻拒绝
       const account = await activeAccount(request, env);
       if (!account) return json({ error: 'Unauthorized' }, 401);
+      // ?meta=1：只回各键的版本号，"打开时先问一句有没有变"用；没变客户端就不下载正文
+      if (url.searchParams.get('meta') === '1') {
+        const metaOnly = await handleSyncMeta(env, account.id);
+        return json(metaOnly.body, metaOnly.status);
+      }
       const result = await handleSyncGet(env, account.id);
       // 同步很频繁，30 分钟内只记一条，免得把记录表刷满
       bg(logEventThrottled(env, account.id, 'sync', '拉取云端数据'));
