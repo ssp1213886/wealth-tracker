@@ -10,7 +10,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SCENARIOS = ['crawl.mjs', 'flows-data.mjs', 'flows-interactions.mjs', 'flows-marketcap.mjs'];
+// flows-clear-data 会清掉假云端的数据，放最后跑，免得影响前面的场景。
+const SCENARIOS = ['crawl.mjs', 'flows-data.mjs', 'flows-interactions.mjs', 'flows-marketcap.mjs', 'flows-clear-data.mjs'];
 const PORT = process.env.E2E_PORT || '8790';
 const BASE = 'http://127.0.0.1:' + PORT + '/';
 const DEFAULT_CDP = 'C:/Users/topeasejs/.codex/skills/chrome-debug/scripts/cdp.mjs';

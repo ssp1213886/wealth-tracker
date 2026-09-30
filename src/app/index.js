@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v301';var APP_DATA_VERSION=5;
+var APP_BUILD='v302';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=301',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=302',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1135,17 +1135,27 @@ function buildPushData(dirtyOnly){
 function logoutNow(){var go=function(){location.replace('/login')};try{fetch('/api/logout',{method:'POST'}).then(go,go)}catch(e){go()}}
 function clearAllData(){
   var cfg=syncCfg||{}; var base=(cfg.url||location.origin).replace(/\/$/,'');
-  var hasCloud=!!cfg.token;
-  var promptText=hasCloud?'确定清除本地与云端的全部投资数据？\n\n请先确认已导出完整备份。云端清除成功后才会清理本机。':'确定清除本机全部投资数据？\n\n当前未配置云同步，只会清理本机。请先确认已导出完整备份。';
-  showApproval({title:'清除全部数据',message:promptText,confirmText:'清除全部',onConfirm:function(){
+  /* v302：不再用 cfg.token 判断"有没有云端"——token 已退役，登录后走的是会话 cookie。
+     旧写法让非主账号（localStorage 里没有历史 token）走进"只清本机"分支，
+     云端数据原样保留，重载后又被拉回来，表现就是"点了没反应"。 */
+  showApproval({title:'清除全部数据',message:'确定清除本地与云端的全部投资数据？\n\n请先确认已导出完整备份。云端清除成功后才会清理本机。',confirmText:'清除全部',onConfirm:function(){
   var empty={trades:[],cashBalance:0,cashLog:[],state:{},activities:[],optionTrades:[],otmSettings:{},exit_portfolio:'',prices:{}};
   var clearLocal=function(){
     ['wealth_trades_v2','wealth_cash_v2','wealth_cashlog_v2','wealth_dashboard_v2','wealth_activity_v1','wealth_options_v2','otmSettings','exit_portfolio','wealth_prices_v2','wealth_sync_state','lastBackupTime','wealth_alert_snooze_v1'].forEach(function(k){try{removeKey(k)}catch(e){logSwallowed("clearAllData",e)}});
     location.reload();
   };
-  if(!hasCloud){clearLocal();return}
   showToast('正在清除云端数据');
-  fetch(base+'/api/sync',{method:'POST',headers:(cfg.token?{'Content-Type':'application/json','X-Auth-Token':cfg.token}:{'Content-Type':'application/json'}),body:JSON.stringify(empty)}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(r){if(!r.ok)throw new Error(r.error||'云端拒绝清除');clearLocal()}).catch(function(e){showToast('云端清除失败，本地数据已保留：'+e.message,'err')});
+  var clrHeaders={'Content-Type':'application/json'};if(cfg.token)clrHeaders['X-Auth-Token']=cfg.token;
+  fetch(base+'/api/sync',{method:'POST',headers:clrHeaders,body:JSON.stringify(empty)}).then(function(r){
+    // 没有云端后端（静态部署）→ 只清本机；401 说明登录失效，此时绝不能清本机，
+    // 否则云端数据会在下次进入时被拉回来，用户会以为"清了个寂寞"。
+    if(r.status===404)return{ok:true,noCloud:true};
+    return r.json().catch(function(){return{}}).then(function(body){
+      if(r.ok&&(!body||body.ok!==false))return body||{ok:true};
+      var err=new Error(r.status===401?'登录状态已失效，请重新登录后再清除（数据未改动）':((body&&body.error)||('HTTP '+r.status)));
+      err.status=r.status;throw err;
+    });
+  }).then(function(){clearLocal()}).catch(function(e){showToast('云端清除失败，本地数据已保留：'+e.message,'err')});
   }});
 }
 
