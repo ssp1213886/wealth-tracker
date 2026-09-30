@@ -4,8 +4,8 @@
 import { brandIconFor, BRAND_COLORS } from './brand-icons.js';
 import { brandLogoFor, WHITE_LOGO_SYMS } from './brand-logos.js';
 
-/** 远程按需取图的服务端点（按股票代码直出 PNG）。 */
-const REMOTE_LOGO = 'https://financialmodelingprep.com/image-stock/';
+/** 远程按需取图：走自己的 Worker 代理（它再去上游取并缓存到边缘），前端不直接跟第三方说话。 */
+const REMOTE_LOGO = '/api/logo?symbol=';
 /** 代码是否像"能在 FMP 查到的美股/ETF"：1–5 个字母，可带 . 或 -（如 BRK-B）。 */
 const REMOTE_SAFE = /^[A-Z]{1,5}([.\-][A-Z]{1,2})?$/;
 /** 远程取图开关：想完全离线时把它关掉，就只剩内置图标 + 字母兜底。 */
@@ -60,7 +60,7 @@ export function brandBadgeHTML(sym, opts) {
   if (allowRemote && !(opts && opts.local) && REMOTE_SAFE.test(s)) {
     installRemoteGuard();
     return '<span class="sym-badge is-img is-remote" data-sym="' + s + '" aria-hidden="true">' +
-      '<img src="' + REMOTE_LOGO + encodeURIComponent(s) + '.png" alt="" loading="lazy" decoding="async"></span>';
+      '<img src="' + REMOTE_LOGO + encodeURIComponent(s) + '" alt="" loading="lazy" decoding="async"></span>';
   }
   return '<span class="sym-badge is-letter"' + styleAttr + ' aria-hidden="true">' + s.charAt(0) + '</span>';
 }

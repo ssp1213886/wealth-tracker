@@ -112,6 +112,17 @@ const server = http.createServer((req, res) => {
       return;
     }
   }
+  // 图标代理（对应线上 src/lib/logos.js）：本地测试返回一张 1×1 PNG，也走一遍代码校验
+  if (url.pathname === '/api/logo') {
+    const symbol = String(url.searchParams.get('symbol') || '').trim().toUpperCase();
+    if (!/^[A-Z]{1,5}([.\-][A-Z]{1,2})?$/.test(symbol)) {
+      res.writeHead(400, cors);
+      return res.end(JSON.stringify({ ok: false, error: 'invalid symbol' }));
+    }
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800' });
+    return res.end(png);
+  }
   // 其它 /api/*：返回空但结构正确，避免前端等待或报错
   if (url.pathname.startsWith('/api/')) {
     res.writeHead(200, cors);

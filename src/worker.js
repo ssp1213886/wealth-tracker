@@ -6,6 +6,7 @@ import { handleSyncGet, handleSyncPost } from './lib/sync.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { handleLog } from './lib/logs.js';
 import { handleQuotes, handleHoldings } from './lib/quotes.js';
+import { handleLogo } from './lib/logos.js';
 
 const rateLimiter = createRateLimiter();
 
@@ -51,6 +52,10 @@ export default {
     if (url.pathname === '/api/holdings') {
       const result = await handleHoldings(request, url);
       return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/logo') {
+      // 注意：返回的是图片，不走 json()
+      return await handleLogo(request, url);
     }
     if (url.pathname === '/api/sync' && request.method === 'GET') {
       const result = await handleSyncGet(env);
