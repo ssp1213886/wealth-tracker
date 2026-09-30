@@ -48,6 +48,15 @@ const DOMAIN_SYMBOLS = {
   'hyperliquid.xyz': ['HYPE'],
 };
 
+/**
+ * 实测发现 FMP 对这几家返回的是"白底白字"图（canvas 扫出来有效像素 0%、最低亮度 255），
+ * 直接放在浅色徽标底上就是一片空白 —— 渲染层会给它们换深色底（见 brand-mark.js / main.css）。
+ */
+const WHITE_LOGOS = ['IBM', 'MRVL', 'ON', 'QQQ', 'SMH', 'UNH'];
+
+/** 这几家的 FMP 图太淡/太细（扫出来墨迹 <1%），18px 下看不清，改走品牌色字母徽标 */
+const FMP_EXCLUDE = ['CDNS'];
+
 const files = fs.readdirSync(SRC);
 const byDomain = {};
 const data = {};
@@ -60,6 +69,7 @@ const minIndex = fs.existsSync(path.join(SRC, 'min-index.json'))
   : {};
 let fmpCount = 0;
 for (const [sym, file] of Object.entries(minIndex)) {
+  if (FMP_EXCLUDE.indexOf(sym) >= 0) continue;
   const p = path.join(SRC, file);
   if (!fs.existsSync(p)) continue;
   const url = fs.readFileSync(p, 'utf8').trim();
@@ -86,6 +96,9 @@ const out = `// 品牌位图标（favicon，内联 base64）——由 \`node scr
 // 运行时零网络请求；商标权属各公司，这里仅用于"指代该标的"的展示。
 
 export const BRAND_LOGOS = ${JSON.stringify(data, null, 2)};
+
+/** 这些代码的图标是"白色 logo"，要配深色底才看得见。 */
+export const WHITE_LOGO_SYMS = ${JSON.stringify(WHITE_LOGOS)};
 
 /** 代码 → data URL；没有的返回 null（调用方继续回落字母徽标）。 */
 export function brandLogoFor(sym) {

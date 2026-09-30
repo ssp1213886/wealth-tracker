@@ -2,7 +2,7 @@
 // 都没有就回落"品牌色底 + 首字母"的字母徽标 —— 保证任何标的都有标可显示，列表不会出现空洞。
 
 import { brandIconFor, BRAND_COLORS } from './brand-icons.js';
-import { brandLogoFor } from './brand-logos.js';
+import { brandLogoFor, WHITE_LOGO_SYMS } from './brand-logos.js';
 
 /** 代码 → 徽标描述；查不到品牌返回 null（由调用方决定是否用字母兜底）。 */
 export function brandMarkFor(sym) {
@@ -30,7 +30,9 @@ export function brandBadgeHTML(sym, opts) {
       '<path d="' + mark.path + '"/></svg></span>';
   }
   if (mark && mark.kind === 'img') {
-    return '<span class="sym-badge is-img"' + styleAttr + ' aria-hidden="true">' +
+    // 白 logo（FMP 给 IBM/SMH/QQQ 这类的是白底白字）要配深色底，否则在浅色卡片上是一片空白
+    var isWhite = WHITE_LOGO_SYMS.indexOf(s) >= 0;
+    return '<span class="sym-badge is-img' + (isWhite ? ' is-white' : '') + '"' + styleAttr + ' aria-hidden="true">' +
       '<img src="' + mark.src + '" alt="" decoding="async"></span>';
   }
   return '<span class="sym-badge is-letter"' + styleAttr + ' aria-hidden="true">' + s.charAt(0) + '</span>';
