@@ -45,10 +45,13 @@ if (orphanAttrs.length) notes.push('渲染了但 JS 不读的 data-*（确认是
 
 /* ③ inline onclick 的函数是否导出到 window */
 const called = new Set();
+const JS_KEYWORDS = new Set(['if', 'for', 'while', 'return', 'typeof', 'new', 'delete', 'void', 'in', 'of', 'else', 'do', 'switch', 'case', 'catch', 'try', 'finally', 'throw', 'function', 'class', 'super', 'yield', 'await', 'async', 'this', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'instanceof']);
 const collect = (text, re) => {
   for (const m of text.matchAll(re)) {
-    const fn = m[1].match(/^\s*([A-Za-z_$][\w$]*)\s*\(/);
-    if (fn) called.add(fn[1]);
+    // 取所有“裸调用”（前面不是 . 或标识符字符），否则 if(...)foo() 只会被当成 if 而漏掉 foo
+    for (const call of m[1].matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(/g)) {
+      if (!JS_KEYWORDS.has(call[1])) called.add(call[1]);
+    }
   }
 };
 collect(html, /onclick="([^"]*)"/g);

@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v299';var APP_DATA_VERSION=5;
+var APP_BUILD='v300';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=299',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=300',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1559,7 +1559,7 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 
 /* 打包成 IIFE 后，把内联事件用到的入口显式暴露到 window */
 if(typeof window!=='undefined'){
-  var __globals={clearAllData:clearAllData,logoutNow:logoutNow,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
+  var __globals={clearAllData:clearAllData,logoutNow:logoutNow,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,openOptSheet:openOptSheet,closeOptSheet:closeOptSheet,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
   for(var __k in __globals){try{if(typeof __globals[__k]==='function')window[__k]=__globals[__k]}catch(e){logSwallowed("initForceUpload",e)}}
 }
 
