@@ -1,5 +1,12 @@
+import { edgeGetJson, edgePutJson } from './edge-cache.js';
+
 const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'BTC', 'SGOV']);
 const ALLOWED_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']);
+
+/** 实时价 60 秒；历史区间（1y/max 这类）一天都不会变，给长缓存。 */
+const LIVE_TTL_SECONDS = 60;
+const HISTORY_TTL_SECONDS = 24 * 60 * 60;
+const HISTORY_RANGES = new Set(['1y', '2y', '5y', '10y', 'ytd', 'max']);
 
 // 东方财富市场号：107 = NYSE Arca（VGT/SMH 等 ETF），105 = 纳斯达克
 const EASTMONEY_SECID = { VGT: '107.VGT', SMH: '105.SMH', BTC: '107.BTC', SGOV: '107.SGOV' };
@@ -60,6 +67,13 @@ export async function handlePrice(request, url) {
     ? url.searchParams.get('range')
     : '1d';
 
+  // 这一版以前完全没缓存：实测同一个 URL 连打两次是 1127ms / 1974ms，
+  // 而 App 每次打开要打 10~14 次 → 首屏价格全靠现场回源。现在压一层边缘缓存。
+  const ttl = HISTORY_RANGES.has(range) ? HISTORY_TTL_SECONDS : LIVE_TTL_SECONDS;
+  const edgeKey = 'price:' + quoteSymbol + '|' + range;
+  const cached = await edgeGetJson(url.origin, edgeKey);
+  if (cached) return { status: 200, body: cached };
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
@@ -69,7 +83,9 @@ export async function handlePrice(request, url) {
     );
     const data = await response.json();
     await ensureHistory(data, quoteSymbol);
-    return { status: 200, body: { ok: true, data } };
+    const body = { ok: true, data };
+    edgePutJson(url.origin, edgeKey, body, ttl);
+    return { status: 200, body };
   } catch (error) {
     return {
       status: 502,

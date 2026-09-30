@@ -131,6 +131,31 @@ const sourceText = await ev(() => {
 });
 if (!sourceText.includes('榜单')) failures.push('敞口卡脚注没有标出榜单来源：' + sourceText.slice(0, 80));
 
+/* E) 市值一天一更新：第二次打开不该再打市值接口（本地缓存 24h） */
+await p.addInitScript(() => {
+  window.__api = [];
+  const orig = window.fetch;
+  window.fetch = function (input) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    window.__api.push(String(url));
+    return orig.apply(this, arguments);
+  };
+});
+await p.goto(BASE + '?again=' + Date.now(), { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(6000);
+const secondOpen = await ev(() => ({
+  marketcap: window.__api.filter((u) => u.indexOf('marketcap') >= 0).length,
+  capShown: (() => {
+    const row = document.querySelector('#watchRows .watch-row');
+    if (!row) return false;
+    row.click();
+    const detail = row.nextElementSibling;
+    return !!detail && !/\u603b\u5e02\u503c\s*\u2026/.test(detail.innerText || '') && /\$/.test(detail.innerText || '');
+  })(),
+}));
+if (secondOpen.marketcap !== 0) failures.push('市值本地缓存没生效：第二次打开又打了 ' + secondOpen.marketcap + ' 次市值接口');
+if (!secondOpen.capShown) failures.push('第二次打开时市值没有从本地缓存直接显示出来');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -139,6 +164,7 @@ await p.close();
 
 console.log('市值：观察行详情 ' + (watchDetail.hasCap ? '有' : '无') + '「总市值」 · 排序 ' + (sorted.rows || []).join(' > '));
 console.log('敞口：SKHYV ' + (exposure.syms && exposure.syms.includes('SKHYV') ? '在列' : '缺失') + ' · 共 ' + ((exposure.syms && exposure.syms.length) || 0) + ' 行 · 脚注「' + sourceText.slice(0, 60) + '」');
+console.log('二次打开：市值接口调用 ' + secondOpen.marketcap + ' 次（应为 0）· 缓存直接显示 ' + secondOpen.capShown);
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('市值流测试失败：\n  - ' + failures.join('\n  - '));

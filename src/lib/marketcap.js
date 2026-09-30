@@ -25,8 +25,8 @@ const MAX_LOOKUPS = 12;
  * 表里没有的（ETF、小盘、币）再走 Nasdaq / CoinLore 兜底。
  */
 const LIST_URL = 'https://stockanalysis.com/list/biggest-companies/';
-const LIST_TTL = 12 * 60 * 60 * 1000;
-const LIST_TTL_SECONDS = 12 * 60 * 60;
+const LIST_TTL = 24 * 60 * 60 * 1000;
+const LIST_TTL_SECONDS = 24 * 60 * 60;
 const LIST_RE = /<td class="sym [^"]*">[\s\S]*?<a href="[/]stocks[/][^"]*">([A-Z0-9.\-]+)<\/a>[\s\S]{0,20}?<\/td>[\s\S]*?<td class="slw [^"]*">([^<]*)<\/td>[\s\S]*?<td class="[^"]*">([\d.]+)([TBMK])<\/td>/g;
 const LIST_UNITS = { T: 1e12, B: 1e9, M: 1e6, K: 1e3 };
 /**
@@ -36,13 +36,13 @@ const LIST_UNITS = { T: 1e12, B: 1e9, M: 1e6, K: 1e3 };
 const ETF_PAGE_URL = (symbol) => `https://stockanalysis.com/etf/${symbol.toLowerCase()}/`;
 // 实测 "Assets" 到金额之间隔着 132 个字符的属性文本，窗口给足
 const ETF_ASSETS_RE = /Assets[\s\S]{0,400}?\$([\d.]+)([TBMK])/;
-const CAP_TTL = 12 * 60 * 60 * 1000;
+const CAP_TTL = 24 * 60 * 60 * 1000;
 /** 拿不到市值的代码缩短缓存（1 小时），免得一次上游抖动被钉死一整天。 */
 const MISS_TTL = 60 * 60 * 1000;
 /** 整批的硬超时：到点先返回已有的部分，剩下的进 deferred。 */
 const DEADLINE_MS = 5000;
 /** 边缘缓存时长（秒）；拿不到市值的条目短一些。 */
-const EDGE_TTL_SECONDS = 12 * 60 * 60;
+const EDGE_TTL_SECONDS = 24 * 60 * 60;
 const EDGE_MISS_TTL_SECONDS = 60 * 60;
 /** 代码白名单：1–5 个字母，可带 . 或 -（BRK-B / BRK.B），拒绝一切其它字符（防注入）。 */
 const SYMBOL_RE = /^[A-Z]{1,5}([.\-][A-Z]{1,2})?$/;

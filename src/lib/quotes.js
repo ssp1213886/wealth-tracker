@@ -2,6 +2,7 @@
 // 股票/ETF：Yahoo chart（server 端拉，绕开浏览器 CORS）；加密：CoinGecko 现货；金价：COMEX 黄金期货（GC=F）。
 // 只读公开接口：结果只在 isolate 内存里缓存（行情 60 秒、持仓 6 小时），不落库、不影响同步数据。
 import { STATIC_HOLDINGS, HOLDINGS_SYMBOLS } from './holdings-static.js';
+import { edgeGetJson, edgePutJson } from './edge-cache.js';
 
 // 观察列表(15) + 两张榜单去重后约 28-30 个：上限给到 40，别再把尾部代码丢掉
 const MAX_SYMBOLS = 40;
@@ -264,6 +265,11 @@ export async function handleQuotes(request, url) {
   if (!raw.length) return { status: 400, body: { error: 'Missing symbols' } };
   const wanted = Array.from(new Set(raw)).slice(0, MAX_SYMBOLS);
 
+  // 边缘缓存：同一批代码 60 秒内直接复用（isolate 内存一回收就全丢，靠它兜住冷启动）
+  const quoteKey = 'quotes:' + wanted.slice().sort().join(',');
+  const cachedQuotes = await edgeGetJson(url.origin, quoteKey);
+  if (cachedQuotes) return { status: 200, body: cachedQuotes };
+
   // 关键：**按请求的代码回键**。以前 GOLD 会以 GC=F 为键返回，前端按 GOLD 取不到 → 永久显示"—"。
   const stocks = []; // [请求代码, 行情源代码]
   const cryptos = [];
@@ -327,10 +333,9 @@ export async function handleQuotes(request, url) {
     }
   });
 
-  return {
-    status: 200,
-    body: { ok: true, quotes, missing, invalid, ts: Date.now() },
-  };
+  const body = { ok: true, quotes, missing, invalid, ts: Date.now() };
+  edgePutJson(url.origin, quoteKey, body, QUOTE_TTL / 1000);
+  return { status: 200, body };
 }
 
 function parseYahooHoldings(html) {
@@ -434,6 +439,14 @@ export async function handleHoldings(request, url) {
   const cached = holdingsCache.get(symbol);
   if (cached && Date.now() - cached.at < HOLDINGS_TTL) return { status: 200, body: cached.body };
 
+  // 边缘缓存：榜单一天最多变一次，冷启动不该再去抓一遍上游
+  const holdingsKey = 'holdings:' + symbol;
+  const cachedEdge = await edgeGetJson(url.origin, holdingsKey);
+  if (cachedEdge) {
+    holdingsCache.set(symbol, { at: Date.now(), body: cachedEdge });
+    return { status: 200, body: cachedEdge };
+  }
+
   const fallback = STATIC_HOLDINGS[symbol];
   let list = null;
   let asOf = null;
@@ -478,6 +491,9 @@ export async function handleHoldings(request, url) {
     ts: Date.now(),
   };
   // 只有拿到外部实时数据才缓存；静态兜底每次都重试外部源
-  if (source !== 'static') holdingsCache.set(symbol, { at: Date.now(), body });
+  if (source !== 'static') {
+    holdingsCache.set(symbol, { at: Date.now(), body });
+    edgePutJson(url.origin, holdingsKey, body, HOLDINGS_TTL / 1000);
+  }
   return { status: 200, body };
 }
