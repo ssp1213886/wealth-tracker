@@ -107,6 +107,23 @@ export function renderSyncHealthView(doc, summary, opts) {
 }
 
 /**
+ * 同步失败的文案：把错误翻译成用户能行动的一句话。
+ *
+ * 离线 / 超时都指向网络（用户自己能处理）；带状态码的是云端真的出错；其余才是未知失败。
+ * 状态条与 toast 共用这一份措辞 —— 以前 POST 失败会用自己的说法覆盖掉拉取那句，
+ * 同一件事在屏幕上先后出现两种说法。详细原因不放这里：recordSyncFailure 仍存原始 message，
+ * 失败横幅与数据健康照旧能看到。401 不在此列：guardUnauthorized 会直接把页面送去 /login。
+ */
+export function syncFailureText(error, offline) {
+  const e = error || {};
+  const name = String(e.name || '');
+  if (offline) return '当前离线 · 数据已存本机';
+  if (name === 'AbortError' || name === 'TimeoutError') return '连不上云端 · 稍后自动重试';
+  if (Number(e.status)) return '云端出错（HTTP ' + e.status + '）· 稍后自动重试';
+  return '同步失败 · ' + String(e.message || '未知原因').slice(0, 40);
+}
+
+/**
  * 状态条胶囊的三态属性：
  *   ''     只回到初始类名（文字/图标不动）
  *   busy   30 秒兜底自动收（正常由调用方给结果，这里只做最后一道保险）

@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SYNC_KEY_LABELS, formatHealthTime, healthTimeTitle, healthRowStatuses, applyHealthRows,
-  syncBarAttrs, applySyncBar, syncClockText, conflictRowsHtml, conflictModalHtml, readConflictPicks,
+  syncBarAttrs, applySyncBar, syncClockText, syncFailureText, conflictRowsHtml, conflictModalHtml, readConflictPicks,
   syncBannerView, applySyncBanner, bindSyncBanner,
 } from '../src/app/sync-view.js';
 
@@ -124,6 +124,23 @@ test('applySyncBar：写类名/文字/图标，空 state 只复位类名不动�
   assert.equal(bar.className, 'sync-bar');
   assert.equal(msg.textContent, '旧文字', '复位时不该动文字');
   assert.deepEqual(applySyncBar(fakeDoc({}), 'ok', 'x'), { applied: false, holdMs: 0 }, '没有状态条时安全返回');
+});
+
+// v317：失败文案只有一处来源 —— 状态条与 toast 共用它，同一件事不会先后出现两种说法。
+test('syncFailureText：离线 / 超时 / HTTP / 其它 四类各说各话', () => {
+  assert.equal(syncFailureText(new Error('x'), true), '当前离线 · 数据已存本机', '离线优先，且不提 HTTP');
+  const abort = new Error('aborted');
+  abort.name = 'AbortError';
+  assert.equal(syncFailureText(abort, false), '连不上云端 · 稍后自动重试');
+  const timeout = new Error('t');
+  timeout.name = 'TimeoutError';
+  assert.equal(syncFailureText(timeout, false), '连不上云端 · 稍后自动重试');
+  const http = new Error('HTTP 500');
+  http.status = 500;
+  assert.equal(syncFailureText(http, false), '云端出错（HTTP 500）· 稍后自动重试');
+  assert.equal(syncFailureText(new Error('boom'), false), '同步失败 · boom');
+  assert.equal(syncFailureText(null, false), '同步失败 · 未知原因', '空错误也不能抛');
+  assert.equal(syncFailureText({ message: 'x'.repeat(80) }, false).length, '同步失败 · '.length + 40, '超长原因截断到 40');
 });
 
 test('syncClockText：输出 时:分', () => {

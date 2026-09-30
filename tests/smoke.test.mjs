@@ -169,9 +169,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=316');
+  assert.equal(manifest.start_url, '/?v=317');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v316/);
+  assert.match(serviceWorker, /wealth-v317/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -182,7 +182,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=316',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=317',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -447,6 +447,12 @@ test('同步失败不再挂死在 busy：没有 stall 兜底，失败原因说�
   // 整条成功收尾（写状态 / 标脏 / 推送）会被 autoPull 的空 catch 吞掉 —— 修 v316 时真踩过
   assert.match(appSource, /var spinTimer=setTimeout\(clearSpin,12000\);/);
   assert.match(appSource, /var done=function\(\)\{clearTimeout\(spinTimer\);clearSpin\(\)\}/);
+  // v317：失败文案只留一处来源（sync-view.js 的 syncFailureText），状态条与 toast 共用它 ——
+  // 以前 POST 失败会用自己的说法覆盖掉拉取那句，同一件事在屏幕上先后出现两种说法
+  assert.equal(appSource.split('连不上云端 · 稍后自动重试').length - 1, 1, '只有 syncFailureText 定义一次文案');
+  assert.doesNotMatch(appSource, /网络异常，同步失败/);
+  assert.match(appSource, /var st=syncFailureText\(error,/);
+  assert.match(appSource, /var failText=syncFailureText\(error,offline\)/);
 });
 
 test('sync feedback has a single channel per event', () => {
