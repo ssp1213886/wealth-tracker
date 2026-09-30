@@ -2789,9 +2789,12 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* ===== v306 操作台第二版：只减负 —— 把三块行情合成一块、输入框轻量化、去掉多余的底色块 =====
    结构、字段、交互全部保持不变。 */
 #tab-console .console-entry-card .collapsible-body{display:grid;gap:12px}
-#tab-console .console-entry-card #hmPricesCompact{grid-template-columns:1fr;gap:0;margin:0;padding:0;border:1px solid var(--rule);border-radius:14px;background:var(--surface);overflow:hidden}
-#tab-console .console-entry-card #hmPricesCompact>*{min-height:44px;border:0;border-radius:0;background:transparent}
-#tab-console .console-entry-card #hmPricesCompact>*+*{box-shadow:inset 0 1px 0 var(--rule)}
+/* v309：行高 44→56px、行间留出 5px 空隙、每行自己一个浅底圆角 —— 三行一眼分得清，不会再点串 */
+#tab-console .console-entry-card #hmPricesCompact{grid-template-columns:1fr;gap:5px;margin:0;padding:5px;border:1px solid var(--rule);border-radius:16px;background:color-mix(in srgb,var(--fg) 4%,var(--surface))}
+#tab-console .console-entry-card #hmPricesCompact>*{min-height:56px;border:0;border-radius:12px;background:var(--card-bg);box-shadow:0 1px 2px rgba(17,32,23,.04)}
+#tab-console .console-entry-card #hmPricesCompact>*:active{background:color-mix(in srgb,var(--accent) 12%,var(--card-bg))}
+#tab-console .console-entry-card #hmPricesCompact>.is-picked{background:color-mix(in srgb,var(--accent) 16%,var(--card-bg));box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+#tab-console .console-entry-card #hmPricesCompact .pp-chg{min-width:52px;font-size:12.5px}
 #tab-console .console-entry-card .price-meta-row{min-height:20px;margin:0}
 #tab-console .console-entry-card .console-form{gap:10px}
 #tab-console .console-entry-card .console-form input,#tab-console .console-entry-card .console-form select{height:40px;min-height:40px;border-radius:10px;border-color:color-mix(in srgb,var(--fg) 11%,transparent)}
