@@ -9,6 +9,7 @@ import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, op
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
+import {brandBadgeHTML} from './brand-mark.js';
 import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices} from './watch-ui.js';
@@ -29,7 +30,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v255';var APP_DATA_VERSION=5;
+var APP_BUILD='v256';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -904,6 +905,8 @@ function initAll(){
   autoBackup=readRaw('autoBackup')==='1';var cb=document.getElementById('cbAutoBackup');if(cb){cb.checked=autoBackup;cb.addEventListener('change',function(){autoBackup=this.checked;localStorage.setItem('autoBackup',autoBackup?'1':'0')})}var lbt=readRaw('lastBackupTime');if(lbt){var d2=new Date(parseInt(lbt));document.getElementById('lastBackupTime').textContent='上次备份 '+d2.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
 
 
+  /* v256：【品牌徽标两版对比】?brand=mono 用单色剪影，默认用品牌原色（见 main.css 的 .sym-badge 一段） */
+  try{document.documentElement.dataset.brand=/[?&]brand=mono/.test(location.search)?'mono':'color'}catch(e){logSwallowed("initBrandStyle",e)}
   try{loadAccent();loadTheme();
 
 
@@ -949,7 +952,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=255',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=256',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1789,7 +1792,7 @@ if(typeof window!=='undefined'){
         r.className='watch-row'+(sh>0?' is-held':'');
         r.setAttribute('data-hold-value',String(Math.round(sh*p)));
         r.setAttribute('data-share',total>0?(sh*p/total*100).toFixed(1):'0.0');
-        r.innerHTML='<span class="watch-sym"><i class="watch-dot" style="background:'+dotColor(sym)+'"></i>'
+        r.innerHTML='<span class="watch-sym">'+brandBadgeHTML(sym)
           +'<span class="watch-name">'+escapeHtml(sym)+'</span>'
           +(sub?'<small>'+escapeHtml(sub)+'</small>':'')+'</span>'
           +'<span class="watch-spark">'+(spark?'<svg viewBox="0 0 58 20" preserveAspectRatio="none" aria-hidden="true"><path d="'+spark+'"/></svg>':'<i class="watch-spark-none"></i>')+'</span>'

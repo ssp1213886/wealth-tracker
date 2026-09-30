@@ -2602,3 +2602,31 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .wsr-chg{font-variant-numeric:tabular-nums;font-size:.72rem;font-weight:600;min-width:52px;text-align:right}
 .wsr-chg.is-up{color:var(--accent)}.wsr-chg.is-down{color:var(--red)}.wsr-chg.is-flat{color:var(--muted)}
 .watch-search-row .btn{min-height:32px;padding:0 10px;font-size:.68rem}
+
+/* ===== 标的品牌徽标（v256）=====
+   位置：观察列表行 / 搜索结果行 / 行情胶囊。品牌图标是 simple-icons（CC0）的内联路径，
+   没登记品牌的代码回落"字母徽标"（品牌色底 + 首字母），保证任何标的都有标可显示。
+   两种口味的开关（见 index.js 的 applyBrandStyle）：html[data-brand=color] 用官方品牌色（默认）、
+   html[data-brand=mono] 统一用文字色剪影，和卡片里的线性图标语言一致。 */
+.sym-badge{
+  width:18px;height:18px;border-radius:5px;flex:0 0 auto;
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-right:6px;vertical-align:-4px;
+  background:color-mix(in srgb,var(--brand,var(--muted)) 12%,transparent);
+  color:var(--brand,var(--muted));
+  font-size:.58rem;font-weight:650;letter-spacing:.02em;line-height:1;
+}
+.sym-badge svg{width:11px;height:11px;display:block;fill:currentColor}
+/* 位图（favicon）：自带图形与底色，铺满圆角块即可，不加自己的底色 */
+.sym-badge.is-img{background:transparent;padding:0}
+.sym-badge.is-img img{width:100%;height:100%;display:block;object-fit:contain;border-radius:inherit}
+/* 字母徽标：底色更实一点，字才压得住 */
+.sym-badge.is-letter{background:var(--brand,var(--muted));color:#fff;font-size:.56rem}
+/* mono：统一成前景色剪影，弱化"花花绿绿" */
+html[data-brand="mono"] .sym-badge{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted)}
+html[data-brand="mono"] .sym-badge.is-letter{background:var(--muted);color:var(--card-bg)}
+/* mono 下的位图徽标：位图没法改颜色，去色 + 压一点透明度，视觉重量接近剪影 */
+html[data-brand="mono"] .sym-badge.is-img img{filter:grayscale(1);opacity:.72}
+/* 深色模式下官方品牌色偏暗的（Apple 纯黑、Ethereum 深灰）在黑底上会糊，提亮一档 */
+html[data-theme="dark"] .sym-badge{background:color-mix(in srgb,var(--brand,var(--muted)) 18%,transparent)}
+html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--brand,var(--muted)) 78%,#fff 22%)}
