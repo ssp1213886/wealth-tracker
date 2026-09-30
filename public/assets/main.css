@@ -2637,3 +2637,12 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .rd-mkt .rd-chg{font-variant-numeric:tabular-nums;font-weight:600}
 .rd-mkt .rd-chg.is-up{color:var(--accent)}
 .rd-mkt .rd-chg.is-down{color:var(--red)}
+
+/* v262：徽标是"整行的第一个子元素"，而这些行是固定列数的 grid —— 不补一列的话，
+   徽标会把后面几列整体挤到第二行、还被 justify-items:end 推到右边（看起来像"居中了"）。
+   只给**确实带徽标**的行多开一列，没徽标的行（比如"其余 N 只"）保持原样不错位。 */
+.hold-row:has(> .sym-badge),
+.watch-search-row:has(> .sym-badge){grid-template-columns:auto minmax(0,1fr) 84px 72px}
+.watch-search-row:has(> .sym-badge){grid-template-columns:auto auto minmax(0,1fr) auto auto}
+.hold-row > .sym-badge,
+.watch-search-row > .sym-badge{justify-self:start;align-self:center}
