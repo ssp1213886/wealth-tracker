@@ -19,14 +19,14 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;back
 .box{width:100%;max-width:340px;padding:26px 22px 22px;border:1px solid #dfe4df;border-radius:22px;background:#fff;box-shadow:0 1px 2px rgba(17,32,23,.03),0 10px 28px rgba(17,32,23,.06);text-align:center}
 .logo{width:74px;height:74px;border-radius:20px;display:block;margin:0 auto 14px}
 h1{margin:0 0 4px;font-size:1.05rem;font-weight:650;letter-spacing:-.01em}
-p{margin:0 0 18px;font-size:.78rem;line-height:1.6;color:#6e7771}
-label{display:block;text-align:left;font-size:.72rem;font-weight:600;color:#6e7771;margin-bottom:6px}
+p{margin:0 0 18px;font-size:12.5px;line-height:1.6;color:#6e7771}
+label{display:block;text-align:left;font-size:12.5px;font-weight:600;color:#6e7771;margin-bottom:6px}
 input{width:100%;min-height:46px;padding:0 12px;border:1px solid #dfe4df;border-radius:12px;background:#f7f8f6;color:inherit;font:inherit;font-size:.86rem}
 input:focus{outline:2px solid #147a4b33;outline-offset:1px;border-color:#147a4b}
 button{width:100%;min-height:46px;margin-top:14px;border:0;border-radius:12px;background:#147a4b;color:#fff;font:inherit;font-weight:650;cursor:pointer}
 button:disabled{opacity:.6;cursor:default}
-.err{margin-top:12px;font-size:.74rem;color:#c94d45;min-height:16px}
-.hint{margin-top:14px;font-size:.68rem;color:#9aa39d;line-height:1.5}
+.err{margin-top:12px;font-size:12.5px;color:#c94d45;min-height:16px}
+.hint{margin-top:14px;font-size:11.5px;color:#9aa39d;line-height:1.5}
 </style>
 </head>
 <body>
@@ -93,7 +93,7 @@ export function notFoundPage() {
 body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f3f5f2;color:#17211b;font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;text-align:center}
 main{max-width:300px}
 strong{font-size:1rem;font-weight:650}
-p{margin:10px 0 0;color:#6e7771;font-size:.8rem;line-height:1.6}
+p{margin:10px 0 0;color:#6e7771;font-size:13.5px;line-height:1.6}
 a{display:inline-block;margin-top:18px;min-height:44px;line-height:44px;padding:0 20px;border-radius:12px;background:#147a4b;color:#fff;text-decoration:none;font-weight:600;font-size:.85rem}
 </style>
 </head>

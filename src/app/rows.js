@@ -108,7 +108,7 @@ function cashTypeStyle(type) {
     : type.indexOf('权利金') >= 0 ? 'var(--blue)'
       : type.indexOf('股息') >= 0 ? 'var(--orange)' : 'var(--red)';
   return 'background:' + bg + ';color:' + color +
-    ';padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:500;';
+    ';padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:500;';
 }
 
 export function buildCashLogRow(l) {

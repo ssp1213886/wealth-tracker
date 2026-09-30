@@ -169,9 +169,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=300');
+  assert.equal(manifest.start_url, '/?v=301');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v300/);
+  assert.match(serviceWorker, /wealth-v301/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -182,7 +182,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=300',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=301',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -264,8 +264,12 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.match(appMarkup, /#qaFab\.qa-fab\{left:50%!important;right:auto!important;bottom:calc\(32px \+ env\(safe-area-inset-bottom,0px\)\)!important;transform:translateX\(-50%\)!important/);
   assert.match(appMarkup, /#bottomBar #bbOption\{grid-column:4\}/);
   // v254：这条规则上的 !important 被 C1 证明冗余后去掉了（四种组合指纹零差异），断言改为只钉高度
-  assert.match(appMarkup, /#tab-option \.option-type-segment\{height:42px/);
-  assert.match(appMarkup, /\.segmented-control\{height:42px;margin-bottom:10px;border-radius:14px\}/);
+  // v301：触控热区统一提到 ≥44px（Apple HIG）。这里不再钉死具体数值——
+  // 钉住「不小于 44px」这条不变量，以后调尺寸不会再误报成回归。
+  assert.match(appMarkup, /#tab-option \.option-type-segment\{height:48px/);
+  assert.match(appMarkup, /\.segmented-control\{height:48px;margin-bottom:10px;border-radius:14px\}/);
+  const segH = Number((appMarkup.match(/\.segmented-control\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:2px;height:(\d+)px/) || [])[1]);
+  assert.ok(segH >= 44, '分段控件高度必须 ≥44px（触控热区），实际 ' + segH);
   // 旧版的 FAB 底部居中规则已被右上角实现完全覆盖，不再要求其文本存在
   assert.match(appMarkup, /\.main\{padding:0 16px calc\(120px \+ env\(safe-area-inset-bottom,0px\)\)!important\}/);
   assert.doesNotMatch(appMarkup, /fonts\.googleapis\.com/);

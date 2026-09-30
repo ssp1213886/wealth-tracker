@@ -144,7 +144,7 @@
 
 
   <div class="sb-section sb-allocation"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></i>目标配比</h3><div class="sb-allocation-body"><div class="sb-mini-donut"><span>目标</span></div><div class="sb-mini-legend"><span><i class="vgt"></i>VGT <b id="sbVgtPct">50%</b></span><span><i class="smh"></i>SMH <b id="sbSmhPct">30%</b></span><span><i class="btc"></i>BTC ETF <b id="sbBtcPct">20%</b></span></div></div></div>
-  <div class="sb-section sb-market" style="padding:10px 14px;"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg></i>市场行情 <span id="sbMarketTime">实时</span></h3><div id="sbLivePrices" style="font-size:.7rem;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:.7rem;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div>
+  <div class="sb-section sb-market" style="padding:10px 14px;"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg></i>市场行情 <span id="sbMarketTime">实时</span></h3><div id="sbLivePrices" style="font-size:11.5px;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:11.5px;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div>
   <div class="sb-section sb-sync-summary">
     <div class="sb-sync-head"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4-3 7.6-7 9.5-4-1.9-7-5.5-7-9.5V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg></i>数据健康</h3><span class="sb-sync-actions"><button type="button" id="syncRetryBtn" class="sync-retry">重试</button><button type="button" id="syncForceUpload" class="sync-retry">强制上传</button><strong id="sbSyncState">本地保存</strong></span></div>
     <div class="sb-health-list">
@@ -197,7 +197,7 @@
 </section>
 <section class="settings-panel" id="settingsData"><div class="settings-panel-head"><strong>数据与备份</strong><small>本机数据</small></div><div class="settings-action-grid"><button class="settings-action" id="btnImportData" onclick="document.getElementById('fileImport').click()"><svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>导入备份</button><button class="settings-action" id="btnExportData"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>导出备份</button><button class="settings-action settings-action-wide" id="btnImportCSV" onclick="document.getElementById('csvImport').click()"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>导入券商 CSV</button></div><input type="file" id="fileImport" accept=".json" hidden><input type="file" id="csvImport" accept=".csv" hidden><label class="toggle-wrap" style="margin-top:9px;"><input type="checkbox" id="cbAutoBackup"><span class="toggle-sw"></span>自动备份</label><div class="settings-meta" id="lastBackupTime"></div></section>
       <section class="settings-panel" id="settingsPreferences"><div class="settings-panel-head"><strong>投资参数</strong><small>长期计划基准</small></div><label class="settings-field"><span>每月基准 $</span><input class="settings-input" type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100"></label><div class="settings-parameter-note">本月临时调整请在仪表盘操作</div><label class="settings-field"><span>定投起点</span><span class="settings-split"><select class="settings-input" id="roadmapStartYear" aria-label="定投起点年份"></select><select class="settings-input" id="roadmapStartMonth" aria-label="定投起点月份"></select></span></label><label class="settings-field"><span>起点年龄</span><input class="settings-input" type="number" id="roadmapAgeInput" value="27" min="18" max="70"></label><label class="settings-field"><span>目标 $</span><input class="settings-input" type="number" id="targetGoalInput" value="2500000" min="100000" max="10000000" step="100000"></label></section>
-</div></div></div><div class="sb-footer-links"><a href="/guide">使用文档</a><span class="sb-build" id="sbBuild"></span><br><a href="javascript:void(0)" onclick="logoutNow()" style="margin-top:6px;display:inline-block;font-size:.68rem;margin-right:14px;">退出登录</a><a href="javascript:void(0)" onclick="clearAllData()" style="color:#ff4d4f;margin-top:6px;display:inline-block;font-size:.68rem;">清除所有数据</a></div>
+</div></div></div><div class="sb-footer-links"><a href="/guide">使用文档</a><span class="sb-build" id="sbBuild"></span><br><a href="javascript:void(0)" onclick="logoutNow()" style="margin-top:6px;display:inline-block;font-size:11.5px;margin-right:14px;">退出登录</a><a href="javascript:void(0)" onclick="clearAllData()" style="color:#ff4d4f;margin-top:6px;display:inline-block;font-size:11.5px;">清除所有数据</a></div>
 
 
 
@@ -213,7 +213,7 @@
 
 
 
-<div id="pullHint" style="display:none;text-align:center;padding:6px;font-size:.7rem;color:var(--accent);background:rgba(22,153,74,.08);border-radius:6px;margin-bottom:8px;">⟳ 刷新中...</div>
+<div id="pullHint" style="display:none;text-align:center;padding:6px;font-size:11.5px;color:var(--accent);background:rgba(22,153,74,.08);border-radius:6px;margin-bottom:8px;">⟳ 刷新中...</div>
 <div class="sync-bar" id="syncBar" role="status" aria-live="polite"><i class="sb-ic" aria-hidden="true"></i><span class="sync-bar-text"></span></div>
 
 
@@ -246,7 +246,7 @@
 
 
 
-  <button class="tab-btn" data-tab="option">期权<span id="optBadge" style="background:var(--red);color:#fff;font-size:.7rem;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
+  <button class="tab-btn" data-tab="option">期权<span id="optBadge" style="background:var(--red);color:#fff;font-size:11.5px;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
 
 
 
@@ -450,15 +450,15 @@
 
 
 
-  <div class="card" id="yearRebalanceCard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 class="section-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM7 21h10"/></svg>年度再平衡</h3><span id="rebalLockBadge" style="font-size:.7rem;padding:3px 10px;border-radius:var(--radius-pill);"></span></div>
+  <div class="card" id="yearRebalanceCard"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 class="section-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM7 21h10"/></svg>年度再平衡</h3><span id="rebalLockBadge" style="font-size:11.5px;padding:3px 10px;border-radius:var(--radius-pill);"></span></div>
 
 
 
-    <div id="rebalLockMsg" style="font-size:.7rem;padding:12px;border-radius:var(--radius-sm);margin-bottom:12px;text-align:center;"></div>
+    <div id="rebalLockMsg" style="font-size:11.5px;padding:12px;border-radius:var(--radius-sm);margin-bottom:12px;text-align:center;"></div>
 
 
 
-    <div id="rebalContent" style="opacity:1;transition:opacity .3s;"><div style="display:flex;align-items:center;gap:4px;margin-bottom:10px;"><div style="display:flex;gap:0;border:1px solid var(--rule);border-radius:var(--radius-sm);overflow:hidden;"><button class="rb-mode-btn active" data-mode="swap" style="border:none;border-radius:0;padding:5px 12px;font-size:.7rem;">换仓</button><button class="rb-mode-btn" data-mode="inject" style="border:none;border-radius:0;padding:5px 12px;font-size:.7rem;">注资</button></div><a class="btn btn-out btn-sm" id="btnRebalanceRecalc" style="font-size:.7rem;padding:4px 8px;">↻ 重算</a></div><div id="rebalanceBody" style="font-size:.7rem;">添加持仓后计算</div></div>
+    <div id="rebalContent" style="opacity:1;transition:opacity .3s;"><div style="display:flex;align-items:center;gap:4px;margin-bottom:10px;"><div style="display:flex;gap:0;border:1px solid var(--rule);border-radius:var(--radius-sm);overflow:hidden;"><button class="rb-mode-btn active" data-mode="swap" style="border:none;border-radius:0;padding:5px 12px;font-size:11.5px;">换仓</button><button class="rb-mode-btn" data-mode="inject" style="border:none;border-radius:0;padding:5px 12px;font-size:11.5px;">注资</button></div><a class="btn btn-out btn-sm" id="btnRebalanceRecalc" style="font-size:11.5px;padding:4px 8px;">↻ 重算</a></div><div id="rebalanceBody" style="font-size:11.5px;">添加持仓后计算</div></div>
 
 
 
@@ -644,7 +644,7 @@
 <div class="bottom-bar" id="bottomBar">
   <button onclick="switchTab('holding')" class="bb-btn active" id="bbHoldings" aria-current="page"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5"/><path d="M5.5 9.2V21h5v-6.5h3V21h5V9.2"/></svg></span>仪表盘</button>
   <button onclick="switchTab('console')" class="bb-btn" id="bbConsole"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15"/><path d="m16 4 3 3-3 3"/><path d="M20 17H5"/><path d="m8 14-3 3 3 3"/></svg></span>操作</button>
-  <button onclick="switchTab('option')" class="bb-btn" id="bbOption"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.5 12h3l1.7-4.2 3.2 8.4 1.8-4.2h3.3"/></svg></span>期权<span id="optBadgeMob" style="background:var(--red);color:#fff;font-size:.7rem;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
+  <button onclick="switchTab('option')" class="bb-btn" id="bbOption"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.5 12h3l1.7-4.2 3.2 8.4 1.8-4.2h3.3"/></svg></span>期权<span id="optBadgeMob" style="background:var(--red);color:#fff;font-size:11.5px;border-radius:10px;padding:0 5px;margin-left:3px;display:none;line-height:1.4;vertical-align:top">0</span></button>
   <button onclick="switchTab('data')" class="bb-btn" id="bbData"><span class="bb-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v5h4"/><path d="M9 12h7M9 16h7"/></svg></span>记录</button>
 
 </div>

@@ -154,13 +154,13 @@ export function conflictRowsHtml(conflicts, labels) {
   const map = labels || {};
   return (conflicts || []).map(function (key) {
     const label = map[key] || key;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);"><span style="font-size:.7rem;font-weight:540;">' + label + '</span><span style="display:flex;gap:10px;font-size:.7rem;"><label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" name="cf_' + key + '" value="local" checked><span>保留本地</span></label><label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" name="cf_' + key + '" value="cloud"><span>使用云端</span></label></span></div>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);"><span style="font-size:11.5px;font-weight:540;">' + label + '</span><span style="display:flex;gap:10px;font-size:11.5px;"><label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" name="cf_' + key + '" value="local" checked><span>保留本地</span></label><label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" name="cf_' + key + '" value="cloud"><span>使用云端</span></label></span></div>';
   }).join('');
 }
 
 /** 冲突弹窗外壳（把上面那几行插到中部）。 */
 export function conflictModalHtml(rowsHtml) {
-  return '<div style="background:var(--card-bg);border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.3);"><h3 style="font-size:.78rem;font-weight:600;margin-bottom:6px;color:var(--orange);">数据冲突</h3><p style="font-size:.7rem;color:var(--muted);margin-bottom:10px;line-height:1.5;">云端和本地都有更新,请选择保留哪一边。默认保留本地(当前设备的改动)。</p>' + rowsHtml + '<div style="display:flex;gap:8px;margin-top:14px;"><button id="cfCancel" class="btn btn-out" style="flex:1;font-size:.7rem;">全部保留本地</button><button id="cfOk" class="btn btn-pri" style="flex:1;font-size:.7rem;">确定</button></div></div>';
+  return '<div style="background:var(--card-bg);border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.3);"><h3 style="font-size:12.5px;font-weight:600;margin-bottom:6px;color:var(--orange);">数据冲突</h3><p style="font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.5;">云端和本地都有更新,请选择保留哪一边。默认保留本地(当前设备的改动)。</p>' + rowsHtml + '<div style="display:flex;gap:8px;margin-top:14px;"><button id="cfCancel" class="btn btn-out" style="flex:1;font-size:11.5px;">全部保留本地</button><button id="cfOk" class="btn btn-pri" style="flex:1;font-size:11.5px;">确定</button></div></div>';
 }
 
 const CONFLICT_MODAL_CSS = 'position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);padding:20px;';
