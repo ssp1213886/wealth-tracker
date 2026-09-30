@@ -74,6 +74,18 @@ const SYMBOLS = {
 const BRAND_COLORS = {
   SMH: '17468F',     // VanEck 蓝（官网 logo-blue.svg 的填充色）。它的方形图标不存在：官网只有
                      // 321×76 的横长条文字标 + 一张 545 字节的低清 favicon，缩到 18px 必糊。
+  TSM: 'D6001C',     // TSMC 红。官网 403、子域 favicon 263 字节、DuckDuckGo 只给 16×16 —— 同样没有方形高清源。
+  // 下面这些的品牌图标源图只有 16×16 / 32×32（实测），缩到 18px 在 3x 屏上会糊；
+  // 颜色是从它们自己的图标里用 canvas 取样得到的出现最多的不透明色。
+  ORCL: 'E06040',
+  CRM: '00A0E0',
+  SGOV: '1A1A1A',
+  IWM: '1A1A1A',
+  TLT: '1A1A1A',
+  ON: '203040',
+  XOM: 'F02030',
+  UNH: '005080',
+  CDNS: 'E00030',
 };
 
 /** 手写的补充图标（simple-icons 里没有、但我们需要）：金条 = 三块梯形叠放 */

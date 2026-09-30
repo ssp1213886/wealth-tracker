@@ -144,7 +144,17 @@ export const SYM_TO_BRAND = {
 
 /** 没有图形标、但知道官方品牌色的代码 → 十六进制色（字母徽标用它做底色）。 */
 export const BRAND_COLORS = {
-  "SMH": "17468F"
+  "SMH": "17468F",
+  "TSM": "D6001C",
+  "ORCL": "E06040",
+  "CRM": "00A0E0",
+  "SGOV": "1A1A1A",
+  "IWM": "1A1A1A",
+  "TLT": "1A1A1A",
+  "ON": "203040",
+  "XOM": "F02030",
+  "UNH": "005080",
+  "CDNS": "E00030"
 };
 
 /** 代码 → { hex, path }；没有登记品牌的返回 null（调用方走字母徽标）。 */
