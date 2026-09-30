@@ -43,6 +43,31 @@ async function ev(fn, arg) {
 const failures = [];
 const notes = [];
 
+/* ---- ⓪ 登录门禁：线上未登录时拿到的是登录页 ---- */
+// 门禁上线后，App 断言需要登录态。没给 WT_TOKEN 就只验"门禁确实在 + 静态资源可达 + API 要鉴权"，
+// 不去猜别人的会话 —— 这也是线上未登录的真实状态（以前 App 是公开的，所以这段以前不需要）。
+const gateProbe = await ev(async (base) => {
+  const out = { loginForm: !!document.getElementById('loginForm') };
+  const sync = await fetch(base + 'api/sync');
+  out.syncStatus = sync.status;
+  const sw = await fetch(base + 'sw.js');
+  out.swStatus = sw.status;
+  return out;
+}, BASE);
+if (gateProbe.loginForm && !process.env.WT_TOKEN) {
+  if (gateProbe.syncStatus !== 401 && gateProbe.syncStatus !== 403) failures.push('未登录访问 /api/sync 应回 401/403，实际 ' + gateProbe.syncStatus);
+  if (gateProbe.swStatus !== 200) failures.push('未登录也应能拿到 /sw.js，实际 ' + gateProbe.swStatus);
+  notes.push('未登录（未提供 WT_TOKEN）：只验门禁与静态资源 —— /api/sync → ' + gateProbe.syncStatus + ' · /sw.js → ' + gateProbe.swStatus);
+  console.log('线上完整验证（只读）· 未登录模式：');
+  notes.forEach((n) => console.log('  · ' + n));
+  if (failures.length) {
+    console.error('发现问题：\n  - ' + failures.join('\n  - '));
+    throw new Error('prod-full failed');
+  }
+  console.log('✓ 门禁生效：未登录只能看到登录页、/api 要鉴权（未提供 WT_TOKEN，跳过 App 断言）');
+  return;
+}
+
 /* ---- ① 静态资源与 PWA ---- */
 // 注意：用页面里的 fetch（走浏览器网络栈/代理），不要用 p.request（它直连，本机会超时）
 const manifestProbe = await ev(async (base) => {

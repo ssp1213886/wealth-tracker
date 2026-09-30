@@ -169,20 +169,24 @@ const C = await boot(await browser.newContext(), 'wrong-token', [{ id: 1, date: 
 const beforeBad = await cloudLog();
 await ev(C.page, () => {
   const el = document.getElementById('hmCashAmt');
-  el.value = '99';
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-  el.dispatchEvent(new Event('change', { bubbles: true }));
-  document.getElementById('hmDeposit').click();
+  if (el) {
+    el.value = '99';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('hmDeposit').click();
+  }
 });
 await C.page.waitForTimeout(3000);
-const badBar = await ev(C.page, () => {
-  const st = document.getElementById('sbSyncState');
-  const bar = document.getElementById('syncBar');
-  return { state: st ? st.textContent : null, bar: bar ? bar.className + '|' + bar.textContent.trim().slice(0, 30) : null };
-});
+/* v321 起：坏令牌 → /api/* 回 401 → guardUnauthorized 直接把页面送去 /login（设计行为）。
+   这里以前断言的是"留在 App 里、状态条写同步失败"——那是登录门禁之前的老行为，早已不成立。 */
+const badState = await ev(C.page, () => ({
+  path: location.pathname,
+  isLogin: /请登录|登录/.test(document.body.innerText || ''),
+}));
+expect(badState.path === '/login', '⑤ 坏令牌时没有自愈回登录页，实际停在 ' + badState.path);
 const afterBad = await cloudLog();
 expect(JSON.stringify(beforeBad.store.cashBalance) === JSON.stringify(afterBad.store.cashBalance), '⑤ 坏令牌竟然改动了云端数据');
-notes.push('⑤ 坏令牌：侧栏状态「' + badBar.state + '」·提示条「' + badBar.bar + '」·云端未被改动');
+notes.push('⑤ 坏令牌：自愈跳 ' + badState.path + '（登录页=' + badState.isLogin + '）· 云端未被改动');
 
 /* ---------- ⑥ 云端没有该行 + 本地有 → 标脏并补推 ---------- */
 await fetch(CLOUD + '/_reset').catch(() => {});
