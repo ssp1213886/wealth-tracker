@@ -1671,18 +1671,18 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .sidebar .sb-header h1{font-size:1.16rem;font-weight:700!important;letter-spacing:-.035em!important}
   .sidebar>.sb-section{margin:0 0 10px!important;padding:15px!important;border:1px solid var(--rule)!important;border-radius:18px!important;background:var(--card-bg)!important;box-shadow:none!important}
   .sidebar h3{margin:0 0 11px!important;font-size:.68rem!important;font-weight:620!important;color:var(--muted)!important;letter-spacing:.006em!important}
-  .sb-quick-menu{display:flex!important;flex-direction:column!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+  .sb-quick-menu{display:flex!important;flex-direction:column!important;padding:6px 14px!important;border:1px solid var(--rule)!important;border-radius:16px!important;background:var(--card-bg)!important}
   .sb-quick-menu button{min-height:48px!important;padding:0 2px!important;border-bottom:1px solid var(--rule)!important;background:transparent!important}
   .sb-quick-menu button:last-child{border-bottom:0!important}
   .sb-quick-menu button:active{background:color-mix(in srgb,var(--accent) 7%,transparent)!important}
   .sb-quick-menu svg{color:var(--accent)!important}
   .sb-quick-menu span{font-size:.75rem;color:var(--fg)!important}
   .sb-quick-menu b{font-size:.79rem;color:var(--accent)!important;font-weight:620!important}
-  .settings-panel{padding:13px!important;border-radius:15px!important;background-color:var(--surface)!important}
+  .settings-panel{padding:14px!important;border-radius:16px!important;background-color:var(--card-bg)!important}
   .settings-panel-head strong{font-size:.75rem}
   .settings-panel-head small{font-size:.62rem}
   .settings-field>span{font-size:.65rem}
-  .settings-input{height:42px!important;min-height:42px!important;padding:0 10px!important;border-radius:11px!important;background-color:var(--card-bg)!important;font-size:16px}
+  .settings-input{height:42px!important;min-height:42px!important;padding:0 10px!important;border-radius:12px!important;background-color:var(--surface)!important;font-size:16px}
   .settings-action{min-height:44px!important;border-radius:12px!important;font-size:.67rem;background:var(--card-bg)!important}
   .advanced-settings summary{min-height:44px!important;font-size:.68rem}
   .sb-price-row{min-height:52px!important}
@@ -2680,3 +2680,31 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .acc-actions button[disabled]{opacity:.5;cursor:default}
 .acc-inline{flex:1 1 120px;min-width:0;min-height:32px;padding:0 9px;border:1px solid var(--rule);border-radius:9px;background:var(--surface);color:var(--fg);font:inherit;font-size:.72rem}
 .acc-row.is-off .acc-name{color:var(--muted)}
+
+/* ===== v291 设置面板：对齐卡片语言（这块被搬到 body 下，侧栏那套样式管不到它） ===== */
+.sb-settings .sb-h3-icon{width:22px;height:22px;border-radius:8px;background:var(--accent-l);color:var(--accent)}
+.sb-settings .sb-h3-icon svg{width:13px;height:13px}
+.sb-settings .settings-heading h3{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:650}
+.sb-settings .settings-heading p{margin:2px 0 10px;font-size:.68rem}
+.sb-settings .settings-panel{box-shadow:var(--shadow)}
+.sb-settings .settings-panel-head{margin-bottom:10px}
+.sb-settings .settings-panel-head strong{font-size:.8rem;font-weight:650}
+.sb-settings .settings-panel-head small{font-size:.66rem}
+.sb-settings .sb-quick-menu button{grid-template-columns:34px 1fr auto;gap:10px;padding:0 2px!important}
+.sb-settings .sb-quick-menu svg{box-sizing:border-box;width:26px;height:26px;padding:5px;border-radius:9px;background:var(--accent-l);stroke:var(--accent);stroke-width:1.9}
+.sb-settings .sb-quick-menu span{font-size:.82rem;font-weight:550}
+.sb-settings .sb-quick-menu b{font-size:.95rem}
+.sb-settings .advanced-settings{margin-top:12px}
+.sb-settings .advanced-settings summary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;margin:0;border:1px solid var(--rule);border-radius:14px;background:var(--card-bg);box-shadow:var(--shadow);color:var(--fg);font-size:.78rem;font-weight:600;text-align:center}
+.sb-settings .advanced-settings summary:after{content:"展开";color:var(--muted);font-weight:500;font-size:.72rem}
+.sb-settings .advanced-settings[open] summary:after{content:"收起"}
+
+/* ===== v291 活动记录列表 ===== */
+.acc-activity{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.acc-ev{display:flex;align-items:baseline;gap:8px;padding:7px 0;border-top:1px solid var(--rule);font-size:.7rem;color:var(--fg)}
+.acc-ev:first-child{border-top:0}
+.acc-ev-who{font-weight:640;color:var(--accent);flex:0 0 auto}
+.acc-ev-time{color:var(--muted);font-size:.66rem;flex:0 0 auto;font-variant-numeric:tabular-nums}
+.acc-ev-kind{flex:0 0 auto;padding:1px 7px;border-radius:999px;background:var(--accent-l);color:var(--accent);font-size:.62rem;font-weight:600}
+.acc-ev-text{min-width:0;flex:1;color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-ev-note{margin-top:6px;font-size:.64rem;color:var(--muted)}

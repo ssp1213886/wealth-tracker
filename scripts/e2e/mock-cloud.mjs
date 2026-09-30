@@ -199,6 +199,20 @@ const server = http.createServer((req, res) => {
     const other = { id: 2, username: 'lily', role: 'member', disabled: 0, createdAt: 1759100000000, lastSeenAt: Date.now() - 3600000, keys: 3 };
     return res.end(JSON.stringify({ ok: true, userId: 1, me, accounts: [me, other] }));
   }
+  // 活动记录（对应线上 /api/activity）
+  if (url.pathname === '/api/activity') {
+    const now = Date.now();
+    res.writeHead(200, cors);
+    return res.end(JSON.stringify({
+      ok: true, scope: 'all',
+      events: [
+        { ts: now - 60000, kind: 'login', detail: 'iPhone · Safari', username: 'admin', userId: 1 },
+        { ts: now - 3600000, kind: 'sync', detail: '上传 3 项到云端', username: 'admin', userId: 1 },
+        { ts: now - 7200000, kind: 'admin', detail: '新建账号 lily', username: 'admin', userId: 1 },
+        { ts: now - 10800000, kind: 'login', detail: 'Mac · Chrome', username: 'lily', userId: 2 },
+      ],
+    }));
+  }
   // 其它 /api/*：返回空但结构正确，避免前端等待或报错
   if (url.pathname.startsWith('/api/')) {
     res.writeHead(200, cors);

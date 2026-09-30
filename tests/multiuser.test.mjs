@@ -224,3 +224,37 @@ test('管理：改自己的密码要验旧密码，改完当前设备不掉线�
   assert.equal((await login(env, 'lily', 'brand-new-1')).status, 200);
   assert.equal((await login(env, 'lily', 'lily-pass-1')).status, 401);
 });
+
+/* ===== 活动记录 ===== */
+
+test('活动记录：登录会留痕；主账号看全部，成员只看自己', async () => {
+  const { env, owner, member } = await ownerAndMember();
+  const all = await (await worker.fetch(req('/api/activity', { headers: { Cookie: owner.cookie } }), env)).json();
+  assert.equal(all.ok, true);
+  assert.equal(all.scope, 'all');
+  assert.ok(all.events.some((e) => e.kind === 'login' && e.username === 'ssp'), '主账号的登录要记下来');
+  assert.ok(all.events.some((e) => e.kind === 'login' && e.username === 'lily'), '成员的登录也要记下来');
+
+  const self = await (await worker.fetch(req('/api/activity', { headers: { Cookie: member.cookie } }), env)).json();
+  assert.equal(self.scope, 'self');
+  assert.ok(self.events.length > 0);
+  assert.ok(self.events.every((e) => e.username === 'lily'), '成员不该看到别人的记录');
+  assert.equal((await worker.fetch(req('/api/activity'), env)).status, 401, '未登录不能看');
+});
+
+test('活动记录：同步 30 分钟内只记一条，管理动作一定留痕', async () => {
+  const { env, owner, member } = await ownerAndMember();
+  await postSync(env, member.cookie, { trades: [] });
+  await postSync(env, member.cookie, { trades: [] });
+  const list = await (await worker.fetch(req('/api/activity', { headers: { Cookie: owner.cookie } }), env)).json();
+  const syncs = list.events.filter((e) => e.kind === 'sync' && e.username === 'lily');
+  assert.equal(syncs.length, 1, '同步太频繁，30 分钟内只该记一条');
+
+  await patch(env, owner.cookie, 2, { disabled: true });
+  await patch(env, owner.cookie, 2, { password: 'another-1' });
+  const after = await (await worker.fetch(req('/api/activity', { headers: { Cookie: owner.cookie } }), env)).json();
+  const admins = after.events.filter((e) => e.kind === 'admin');
+  assert.ok(admins.some((e) => /禁用/.test(e.detail)), '禁用要留痕');
+  assert.ok(admins.some((e) => /重置/.test(e.detail)), '重置密码要留痕');
+  assert.ok(admins.every((e) => e.username === 'ssp'), '管理动作记在操作者头上');
+});

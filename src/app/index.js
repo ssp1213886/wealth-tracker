@@ -1,6 +1,6 @@
 import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed} from './util.js';
 import {computeHoldings, buildPositionRows} from './calc.js';
-import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations, LS, setStorageNamespace} from './store.js';
+import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations, LS, setStorageNamespace, storageNamespace} from './store.js';
 import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, SYNC_FIELDS} from './sync.js';
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
 import {searchSymbols} from './symbols.js';
@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v290';var APP_DATA_VERSION=5;
+var APP_BUILD='v291';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=290',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=291',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -2098,6 +2098,76 @@ function setAccStatus(text, id) {
   var el = document.getElementById(id || 'accountStatus');
   if (el) el.textContent = text || '';
 }
+/* 活动记录：主账号看到所有人的，成员只看到自己的（服务端已经按权限过滤） */
+function activityText(ev) {
+  var kind = ev.kind === 'login' ? '登录' : (ev.kind === 'sync' ? '同步' : '管理');
+  var detail = ev.detail || '';
+  return '<div class="acc-ev"><span class="acc-ev-time">' + fmtAccTime(ev.ts) + '</span>'
+    + '<span class="acc-ev-kind">' + kind + '</span>'
+    + '<span class="acc-ev-text">' + accEsc(detail) + '</span></div>';
+}
+function loadActivity() {
+  var box = document.getElementById('accountActivity');
+  if (!box) return;
+  fetch('/api/activity?limit=30').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (!j || !j.ok) { box.textContent = '暂时读不到活动记录'; return; }
+    if (!j.events.length) { box.textContent = '还没有记录'; return; }
+    var scope = j.scope === 'all' ? '（全部账号）' : '（仅自己）';
+    box.innerHTML = j.events.map(function (ev) {
+      var who = j.scope === 'all' ? '<span class="acc-ev-who">' + accEsc(ev.username) + '</span>' : '';
+      return activityText(ev).replace('<span class="acc-ev-time">', who + '<span class="acc-ev-time">');
+    }).join('') + '<div class="acc-ev-note">显示最近 30 条' + scope + '</div>';
+  }).catch(function () { box.textContent = '暂时读不到活动记录'; });
+}
+/* 本机残留：同一台设备登过别的账号时会留下 u<id>: 前缀的数据 */
+function otherLocalNamespaces() {
+  var mine = storageNamespace();
+  var found = {};
+  try {
+    for (var i = 0; i < localStorage.length; i += 1) {
+      var key = localStorage.key(i);
+      var m = key && key.match(/^(u\d+):/);
+      if (!m || m[1] + ':' === mine) continue;
+      var ns = m[1];
+      found[ns] = (found[ns] || 0) + 1;
+    }
+  } catch (e) { logSwallowed('otherLocalNamespaces', e); }
+  return found;
+}
+function scanLocalLeftovers() {
+  var info = document.getElementById('localInfo');
+  var btn = document.getElementById('accountCleanLocal');
+  var found = otherLocalNamespaces();
+  var names = Object.keys(found);
+  var total = 0;
+  names.forEach(function (ns) { total += found[ns]; });
+  if (info) info.textContent = names.length ? ('本机还留着 ' + names.length + ' 个其它账号的数据（共 ' + total + ' 项）') : '本机没有其它账号的残留';
+  if (btn) btn.disabled = !names.length;
+}
+function cleanOtherLocalData() {
+  var found = otherLocalNamespaces();
+  var names = Object.keys(found);
+  if (!names.length) { setAccStatus('没有需要清理的数据', 'localStatus'); return; }
+  var total = 0;
+  names.forEach(function (ns) { total += found[ns]; });
+  showApproval({
+    title: '清理本机其它账号的数据',
+    message: '会删掉本机上 ' + names.length + ' 个其它账号的本地缓存（共 ' + total + ' 项）。云端数据不受影响，那些账号下次在自己设备上登录会自动重新拉取。',
+    confirmText: '清理',
+    onConfirm: function () {
+      var removed = 0;
+      try {
+        for (var i = localStorage.length - 1; i >= 0; i -= 1) {
+          var key = localStorage.key(i);
+          var m = key && key.match(/^(u\d+):/);
+          if (m && m[1] + ':' !== storageNamespace()) { localStorage.removeItem(key); removed += 1; }
+        }
+      } catch (e) { logSwallowed('cleanOtherLocalData', e); }
+      setAccStatus('已清理 ' + removed + ' 项', 'localStatus');
+      scanLocalLeftovers();
+    },
+  });
+}
 function initAccountPanel() {
   var createBtn = document.getElementById('accountCreateBtn');
   if (createBtn) createBtn.addEventListener('click', function () {
@@ -2192,9 +2262,13 @@ function initAccountPanel() {
   });
   var out = document.getElementById('accountLogoutBtn');
   if (out) out.addEventListener('click', logoutNow);
+  var cleanBtn = document.getElementById('accountCleanLocal');
+  if (cleanBtn) cleanBtn.addEventListener('click', cleanOtherLocalData);
   var entry = document.getElementById('sbSettingsEntry');
-  if (entry) entry.addEventListener('click', function () { setTimeout(loadAccounts, 80); });
+  if (entry) entry.addEventListener('click', function () { setTimeout(function () { loadAccounts(); loadActivity(); scanLocalLeftovers(); }, 80); });
   loadAccounts();
+  loadActivity();
+  scanLocalLeftovers();
 }
 initAccountPanel();
 

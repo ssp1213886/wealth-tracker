@@ -182,6 +182,12 @@
 <button class="btn btn-pri btn-sm" id="accountCreateBtn" style="width:100%;margin-top:6px;">新增账号</button>
 <div class="settings-meta" id="accountStatus"></div>
 </div>
+<div class="settings-sub">活动记录</div>
+<div class="acc-activity" id="accountActivity">正在读取…</div>
+<div class="settings-sub">本机数据</div>
+<div class="settings-meta" id="localInfo">正在统计…</div>
+<button class="btn btn-out btn-sm" id="accountCleanLocal" style="width:100%;margin-top:6px;">清理本机其它账号的数据</button>
+<div class="settings-meta" id="localStatus"></div>
 <button class="btn btn-out btn-sm" id="accountLogoutBtn" style="width:100%;margin-top:10px;">退出登录</button>
 </section>
 <section class="settings-panel" id="settingsData"><div class="settings-panel-head"><strong>数据与备份</strong><small>本机数据</small></div><div class="settings-action-grid"><button class="settings-action" id="btnImportData" onclick="document.getElementById('fileImport').click()"><svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>导入备份</button><button class="settings-action" id="btnExportData"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>导出备份</button><button class="settings-action settings-action-wide" id="btnImportCSV" onclick="document.getElementById('csvImport').click()"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>导入券商 CSV</button></div><input type="file" id="fileImport" accept=".json" hidden><input type="file" id="csvImport" accept=".csv" hidden><label class="toggle-wrap" style="margin-top:9px;"><input type="checkbox" id="cbAutoBackup"><span class="toggle-sw"></span>自动备份</label><div class="settings-meta" id="lastBackupTime"></div></section>

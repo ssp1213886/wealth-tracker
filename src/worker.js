@@ -10,6 +10,7 @@ import { handleMarketCap } from './lib/marketcap.js';
 import { readSession, issueSession, sessionCookie, clearSessionCookie, uidCookie, clearUidCookie, passwordMatches, sessionSecret } from './lib/session.js';
 import { ensureAccountsTable, countAccounts, findAccountByUsername, findAccountById, listAccounts, dataRowCounts, touchLastSeen, setAccountPassword, setAccountDisabled, deleteAccount, createAccount, verifyAccountPassword, normalizeUsername } from './lib/accounts.js';
 import { loginPageResponse, notFoundPage } from './lib/login-page.js';
+import { logEvent, logEventThrottled, recentEvents, pruneEvents } from './lib/events.js';
 
 const rateLimiter = createRateLimiter();
 /** 登录接口单独限流：10 分钟内最多 12 次尝试（比全站的 240/分钟严得多）。 */
@@ -31,6 +32,16 @@ async function activeAccount(request, env) {
   } catch (error) {
     return null;
   }
+}
+
+/** 把 UA 归成一句人话，写进活动记录（"iPhone · Safari" 这种）。 */
+function uaHint(request) {
+  const ua = request.headers.get('User-Agent') || '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return /CriOS/i.test(ua) ? 'iPhone · Chrome' : 'iPhone · Safari';
+  if (/Android/i.test(ua)) return 'Android';
+  if (/Macintosh/i.test(ua)) return /Edg\//.test(ua) ? 'Mac · Edge' : (/Chrome\//.test(ua) ? 'Mac · Chrome' : 'Mac · Safari');
+  if (/Windows/i.test(ua)) return /Edg\//.test(ua) ? 'Windows · Edge' : (/Chrome\//.test(ua) ? 'Windows · Chrome' : 'Windows');
+  return ua ? ua.slice(0, 24) : '未知设备';
 }
 
 /** 不需要登录就能碰的路径：登录页本体、登录/登出接口、SW、清单、图标与启动图。 */
@@ -129,6 +140,8 @@ export default {
       const session = await issueSession(env, userId, Number(account.token_version || 0));
       if (!session) return json({ ok: false, error: 'not configured' }, 503);
       touchLastSeen(env, userId);
+      logEvent(env, userId, 'login', uaHint(request));
+      pruneEvents(env);
       const headers = new Headers(corsHeaders());
       headers.append('Set-Cookie', sessionCookie(session.value, session.maxAge));
       // 可读的账号 id：前端要在同步读 localStorage 之前知道该用哪个空间
@@ -174,6 +187,7 @@ export default {
           try { body = await request.json(); } catch (error) { body = null; }
           const created = await createAccount(env, body && body.username, body && body.password);
           if (created.error) return json({ ok: false, error: created.error }, 400);
+          logEvent(env, me.id, 'admin', '新建账号 ' + normalizeUsername(body && body.username));
           return json({ ok: true, id: created.id });
         }
 
@@ -193,6 +207,7 @@ export default {
               if (body.password.length < 6) return json({ ok: false, error: 'password too short' }, 400);
               const done = await setAccountPassword(env, target.id, body.password);
               if (done.error) return json({ ok: false, error: done.error }, 400);
+              logEvent(env, me.id, 'admin', '重置了 ' + target.username + ' 的密码' + (isSelf ? '（自己）' : ''));
               // 改了自己的密码：会话版本也变了，顺手给自己换一张新会话，别把自己踢下线
               if (isSelf) {
                 // 重新读一次：token_version 是数据库 +1 出来的，别拿内存里的旧行去猜
@@ -211,6 +226,7 @@ export default {
               // 不能把自己禁用，否则没人能管理了
               if (isSelf && body.disabled) return json({ ok: false, error: 'cannot disable self' }, 400);
               await setAccountDisabled(env, target.id, !!body.disabled);
+              logEvent(env, me.id, 'admin', (body.disabled ? '禁用' : '启用') + '了 ' + target.username);
             }
             return json({ ok: true });
           }
@@ -224,6 +240,7 @@ export default {
               try { data[row.key] = JSON.parse(row.value); } catch (error) { data[row.key] = row.value; }
             });
             await deleteAccount(env, target.id);
+            logEvent(env, me.id, 'admin', '删除了账号 ' + target.username);
             return json({ ok: true, exported: { userId: Number(target.id), username: target.username, exportedAt: Date.now(), data } });
           }
           return json({ error: 'Method not allowed' }, 405);
@@ -247,6 +264,7 @@ export default {
       const done = await setAccountPassword(env, me.id, next);
       if (done.error) return json({ ok: false, error: done.error }, 400);
       touchLastSeen(env, me.id);
+      logEvent(env, me.id, 'admin', '修改了自己的密码');
       // 改密码会让 token_version +1：重新读一次，再给自己换一张带新版本号的会话，避免当场掉线
       const fresh = await findAccountById(env, me.id);
       const refreshed = await issueSession(env, me.id, Number((fresh && fresh.token_version) || 0));
@@ -257,6 +275,26 @@ export default {
       }
       headers.set('Cache-Control', 'no-store, max-age=0');
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+    }
+
+    // 活动记录：主账号看全部，成员只看自己
+    if (url.pathname === '/api/activity' && request.method === 'GET') {
+      const me = await activeAccount(request, env);
+      if (!me) return json({ error: 'Unauthorized' }, 401);
+      const limit = Number(url.searchParams.get('limit')) || 40;
+      const isOwner = me.role === 'owner';
+      const rows = await recentEvents(env, isOwner ? { limit: limit } : { limit: limit, userId: me.id });
+      return json({
+        ok: true,
+        scope: isOwner ? 'all' : 'self',
+        events: rows.map((row) => ({
+          ts: Number(row.ts) || 0,
+          kind: row.kind,
+          detail: row.detail || '',
+          username: row.username || ('#' + row.user_id),
+          userId: Number(row.user_id),
+        })),
+      });
     }
     // 登录页自己的路由。少了这一条，/login 会掉到静态资源查找 → 404（真事故）
     if (url.pathname === '/login') return loginPageResponse('');
@@ -301,12 +339,16 @@ export default {
       const account = await activeAccount(request, env);
       if (!account) return json({ error: 'Unauthorized' }, 401);
       const result = await handleSyncGet(env, account.id);
+      // 同步很频繁，30 分钟内只记一条，免得把记录表刷满
+      logEventThrottled(env, account.id, 'sync', '拉取云端数据');
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/sync' && request.method === 'POST') {
       const account = await activeAccount(request, env);
       if (!account) return json({ error: 'Unauthorized' }, 401);
       const result = await handleSyncPost(request, env, account.id);
+      const saved = result.body && result.body.saved;
+      logEventThrottled(env, account.id, 'sync', saved ? ('上传 ' + saved + ' 项到云端') : '推送云端数据');
       return json(result.body, result.status);
     }
 

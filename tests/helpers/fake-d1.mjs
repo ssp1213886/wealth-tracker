@@ -9,11 +9,45 @@ export function createFakeDb(initial = {}) {
     updated_at: 1000,
   }]));
   const accounts = [];
+  const events = [];
 
   const route = (sql, args) => {
     const q = sql.replace(/\s+/g, ' ').trim();
 
     if (q.startsWith('CREATE TABLE IF NOT EXISTS accounts')) return { results: [], success: true };
+    if (q.startsWith('CREATE TABLE IF NOT EXISTS events')) return { results: [], success: true };
+    if (q.startsWith('CREATE INDEX')) return { results: [], success: true };
+    if (q.startsWith('INSERT INTO events')) {
+      const [user_id, ts, kind, detail] = args;
+      events.push({ id: events.length + 1, user_id: Number(user_id), ts: Number(ts), kind: String(kind), detail: String(detail || '') });
+      return { results: [], success: true, meta: { last_row_id: events.length } };
+    }
+    if (q.startsWith('SELECT ts FROM events WHERE user_id = ? AND kind = ?')) {
+      const list = events
+        .filter((e) => e.user_id === Number(args[0]) && e.kind === args[1])
+        .sort((a, b) => b.ts - a.ts);
+      return { results: list.slice(0, 1) };
+    }
+    if (q.startsWith('SELECT e.id, e.user_id, e.ts, e.kind, e.detail, a.username FROM events e')) {
+      const forUser = q.indexOf('WHERE e.user_id = ?') >= 0;
+      const list = (forUser ? events.filter((e) => e.user_id === Number(args[0])) : events.slice())
+        .sort((a, b) => b.ts - a.ts);
+      const limit = Number(args[forUser ? 1 : 0]) || 40;
+      return {
+        results: list.slice(0, limit).map((e) => Object.assign({}, e, {
+          username: (accounts.filter((a) => a.id === e.user_id)[0] || {}).username || ('#' + e.user_id),
+        })),
+      };
+    }
+    if (q.startsWith('DELETE FROM events WHERE ts < ?')) {
+      const cutoff = Number(args[0]);
+      for (let i = events.length - 1; i >= 0; i -= 1) if (events[i].ts < cutoff) events.splice(i, 1);
+      return { results: [], success: true };
+    }
+    if (q.startsWith('DELETE FROM events WHERE id NOT IN')) {
+      // 测试里不真的裁剪（只验证 SQL 能被识别）
+      return { results: [], success: true };
+    }
     if (q.startsWith('SELECT COUNT(*) AS n FROM accounts')) return { results: [{ n: accounts.length }] };
     if (q.startsWith('SELECT * FROM accounts WHERE username = ?')) {
       return { results: accounts.filter((a) => a.username === args[0]) };
