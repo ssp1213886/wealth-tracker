@@ -2808,3 +2808,6 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .collapsible-header .card-head-actions .btn{margin:0}
 #tradeSheet .qa-panel .console-form{margin-top:2px}
 #cashSheet .qa-panel .cash-form{margin-top:2px}
+/* ===== v312 观察列表的刷新图标按钮 ===== */
+#tab-console .watch-card .watch-head .watch-icon{width:44px;min-width:44px;padding:0;display:grid;place-items:center}
+#tab-console .watch-card .watch-head .watch-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}

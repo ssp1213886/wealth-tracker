@@ -298,6 +298,26 @@ if (!consoleSheets.tradeHasForm) failures.push('买卖弹层里没有找到录�
 if (!consoleSheets.cashOpen) failures.push('点「＋ 记一笔」没有打开现金弹层');
 if (!consoleSheets.cashHasForm) failures.push('现金弹层里没有找到现金表单');
 
+/* 刷新按钮必须给出"进行中"的可见反馈（v307 曾把这层反馈静默改没）。
+   同一次点击内同步就能看到骨架，所以这里不等网络、直接读 DOM。 */
+const refreshFeedback = await ev(() => {
+  const box = document.getElementById('hmPricesCompact');
+  const before = box.querySelectorAll('.price-pill').length;
+  document.getElementById('hmRefresh').click();
+  return {
+    skeleton: !!box.querySelector('.ds-skeleton'),
+    busy: box.getAttribute('aria-busy') === 'true',
+    btnDimmed: document.getElementById('hmRefresh').style.opacity === '0.4',
+    before,
+  };
+});
+if (!refreshFeedback.skeleton) failures.push('点买卖录入的「刷新」没有出现骨架微光（反馈又丢了）');
+if (!refreshFeedback.busy) failures.push('刷新时行情区没有标 aria-busy');
+if (!refreshFeedback.btnDimmed) failures.push('刷新时按钮没有变灰');
+await p.waitForTimeout(1500);
+const afterRefresh = await ev(() => document.getElementById('hmPricesCompact').querySelectorAll('.price-pill').length);
+if (afterRefresh < 1) failures.push('刷新结束后行情胶囊没回填（剩 ' + afterRefresh + ' 个）');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -310,6 +330,7 @@ console.log('入口体验：现金不足提示="' + cashGuard.toast.slice(0, 40)
 console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
 console.log('观察列表：' + watchBefore.length + ' → ' + watchAfter.list.length + ' 项（添加 SPY：按钮="' + addRow.btnText + '"，分组 ' + watchAfter.groups.map((g) => g.title + g.count).join('/') + '，云端 ' + (cloudWatch.store.watchlist || []).length + ' 项）');
 console.log('操作台弹层：买卖 ' + (consoleSheets.tradeOpen ? '可开' : '打不开') + '（表单 ' + (consoleSheets.tradeHasForm ? '在' : '缺失') + '）· 现金 ' + (consoleSheets.cashOpen ? '可开' : '打不开') + '（表单 ' + (consoleSheets.cashHasForm ? '在' : '缺失') + '）');
+console.log('刷新反馈：骨架=' + refreshFeedback.skeleton + ' · aria-busy=' + refreshFeedback.busy + ' · 按钮变灰=' + refreshFeedback.btnDimmed + ' · 刷新后胶囊 ' + afterRefresh + ' 个');
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('交互流测试失败：\n  - ' + failures.join('\n  - '));
