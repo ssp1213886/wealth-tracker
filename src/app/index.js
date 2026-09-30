@@ -10,6 +10,13 @@ import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSumma
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
 import {brandBadgeHTML} from './brand-mark.js';
+
+/** 标的的"代表色"：持仓标的用资产色，其它（比如加密现货）用中性色。
+    原先只写在观察列表那个 IIFE 里，搜索结果行够不着 —— 提到顶层共用。 */
+function symColor(sym){
+  if(String(sym)==='BTC')return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+  return getAssetColor(WATCH_HELD_OF[sym]||sym);
+}
 import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices} from './watch-ui.js';
@@ -30,7 +37,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v256';var APP_DATA_VERSION=5;
+var APP_BUILD='v259';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -952,7 +959,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=256',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){var swRefreshing=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(swRefreshing)return;swRefreshing=true;location.reload()});navigator.serviceWorker.register('/sw.js?v=259',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1729,10 +1736,7 @@ if(typeof window!=='undefined'){
   /* 加密全名（后端给 crypto:true 的行情会自动补" · 现货"；这里只把品牌名写准） */
   var CRYPTO_NAME=CRYPTO_NAMES;
   var cleanName=function(sym,q){return cleanNameOf(sym,q)};
-  var dotColor=function(sym){
-    if(sym==='BTC')return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
-    return getAssetColor(HELD_OF[sym]||sym);
-  };
+
   var weightIn=function(sym){
     var out=[];
     Object.keys(holdingsData||{}).forEach(function(etf){
@@ -1792,11 +1796,12 @@ if(typeof window!=='undefined'){
         r.className='watch-row'+(sh>0?' is-held':'');
         r.setAttribute('data-hold-value',String(Math.round(sh*p)));
         r.setAttribute('data-share',total>0?(sh*p/total*100).toFixed(1):'0.0');
-        r.innerHTML='<span class="watch-sym">'+brandBadgeHTML(sym)
+        r.innerHTML='<span class="watch-sym">'
           +'<span class="watch-name">'+escapeHtml(sym)+'</span>'
           +(sub?'<small>'+escapeHtml(sub)+'</small>':'')+'</span>'
           +'<span class="watch-spark">'+(spark?'<svg viewBox="0 0 58 20" preserveAspectRatio="none" aria-hidden="true"><path d="'+spark+'"/></svg>':'<i class="watch-spark-none"></i>')+'</span>'
           +priceHTML+chgHTML;
+        r.insertAdjacentHTML('afterbegin',brandBadgeHTML(sym,{accent:symColor(sym)}));
       });
       var frag=document.createDocumentFragment();
       if(held.length)frag.appendChild(buildGroup('持仓',held,false));
@@ -1906,7 +1911,7 @@ if(typeof window!=='undefined'){
   function priceOf2(sym){return searchRowPrice(watchQuotes[sym]||extra[sym])}
   function mkRow(sym,name){
     var t=priceOf2(sym),has=inList(sym),row=document.createElement('div');
-    row.className='watch-search-row';
+    row.className='watch-search-row';row.insertAdjacentHTML('afterbegin',brandBadgeHTML(sym,{accent:symColor(sym)}));
     var a=document.createElement('span');a.className='wsr-sym';a.textContent=sym;
     var b=document.createElement('span');b.className='wsr-name';b.textContent=name||'';
     var c=document.createElement('span');c.className='wsr-price';c.textContent=t.p;
@@ -1943,7 +1948,7 @@ if(typeof window!=='undefined'){
     if(hits.length){hits.forEach(function(it){list.appendChild(mkRow(it[0],it[1]))});hydrate();return}
     var code=q.toUpperCase();
     if(inList(code)){list.appendChild(mkRow(code,'已在观察列表'));hydrate();return}
-    var qr=document.createElement('div');qr.className='watch-search-row';
+    var qr=document.createElement('div');qr.className='watch-search-row';qr.insertAdjacentHTML('afterbegin',brandBadgeHTML(code,{accent:symColor(code)}));
     var s1=document.createElement('span');s1.className='wsr-sym';s1.textContent=code;
     var s2=document.createElement('span');s2.className='wsr-name';s2.textContent='未收录，点右侧按代码查询行情';
     var qb=document.createElement('button');qb.type='button';qb.className='btn btn-out btn-sm';qb.textContent='查询';
