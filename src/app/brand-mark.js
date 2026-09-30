@@ -27,10 +27,13 @@ function installRemoteGuard() {
 
 /** 代码 → 徽标描述；查不到品牌返回 null（由调用方决定是否用字母兜底）。 */
 export function brandMarkFor(sym) {
-  const icon = brandIconFor(sym);
-  if (icon) return { kind: 'svg', hex: icon.hex, path: icon.path };
+  // 顺序很重要：**内置位图优先**。
+  // 矢量（simple-icons）是单色的，Google 的标本来就是个 "G"、Apple 是个单色苹果，
+  // 单色版和"字母兜底"长得几乎一样，用户根本分不清 —— 彩色公司图标才好认。
   const logo = brandLogoFor(sym);
   if (logo) return { kind: 'img', src: logo };
+  const icon = brandIconFor(sym);
+  if (icon) return { kind: 'svg', hex: icon.hex, path: icon.path };
   return null;
 }
 
