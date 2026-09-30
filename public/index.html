@@ -488,17 +488,19 @@
 
 
 <!-- force reupload 3 --><section class="tab-panel" id="tab-option">
-<div class="card option-discipline-card"><div class="option-discipline"><strong>执行纪律</strong>：切勿主动平仓,被行权不必慌,T+1 市价买回，踏空代价远高于追高成本</div></div><div class="card option-status-card"><h3>期权状态</h3><div id="optStatus">无活跃持仓</div>
-
+<div class="card option-status-card">
+  <h3>期权状态</h3>
+  <div id="optStatus">无活跃持仓</div>
+  <div class="option-metrics">
+    <div class="option-metric"><span>VGT 持仓</span><strong id="ov">--</strong><small id="ocv">--</small></div>
+    <div class="option-metric"><span>SMH 持仓</span><strong id="vd">--</strong><small id="ocs">--</small></div>
+    <div class="option-metric"><span>可复投</span><strong class="pnl-pos" id="ore">$0</strong><small>本月权利金</small></div>
+  </div>
+  <div class="option-discipline"><strong>执行纪律</strong>：切勿主动平仓，被行权不必慌，T+1 市价买回，踏空代价远高于追高成本</div>
 </div>
-<div class="card option-metrics-card">
-<div class="option-metrics">
-<div class="option-metric"><span>VGT 持仓</span><strong id="ov">--</strong><small id="ocv">--</small></div>
-<div class="option-metric"><span>SMH 持仓</span><strong id="vd">--</strong><small id="ocs">--</small></div>
-<div class="option-metric"><span>可复投</span><strong class="pnl-pos" id="ore">$0</strong><small>本月权利金</small></div>
-</div></div>
+
 <div class="card option-card otm-card">
-  <h3>OTM 行权价参考</h3>
+  <h3>行权价参考</h3>
   <div class="otm-list">
     <div class="otm-row">
       <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small></div>
@@ -510,6 +512,7 @@
     </div>
   </div>
 </div>
+
 <div class="card collapsible-card checklist-card collapsed">
   <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>卖 Call 核对（嘉信看）</h3></div>
   <div class="collapsible-body">
@@ -522,54 +525,19 @@
   </div>
 </div>
 
-
-<div class="card option-card option-entry-card">
-  <h3>记录期权</h3>
-  <form class="option-form" onsubmit="return false">
-    <div class="trade-native-controls option-native-controls">
-      <select id="otype" class="native-control" aria-label="期权类型"><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select>
-      <select id="osym" class="native-control" aria-label="期权标的"><option value="VGT">VGT</option><option value="SMH">SMH</option></select>
-    </div>
-    <div class="segmented-control option-type-segment" role="tablist" aria-label="期权类型">
-      <button type="button" class="segment active" data-option-type="CALL" role="tab" aria-selected="true">CALL</button>
-      <button type="button" class="segment" data-option-type="PUT" role="tab" aria-selected="false">PUT</button>
-    </div>
-    <div class="asset-chips option-asset-chips" role="group" aria-label="期权标的">
-      <button type="button" class="asset-chip active" data-option-asset="VGT">VGT</button>
-      <button type="button" class="asset-chip" data-option-asset="SMH">SMH</button>
-    </div>
-    <div class="field-grid option-field-grid">
-      <div class="tf-group"><label for="ostrike">行权价 $</label><input id="ostrike" type="number" inputmode="decimal" step="0.5" min="0" placeholder="600"></div>
-      <div class="tf-group"><label for="opremium">每张权利金 $</label><input id="opremium" type="number" inputmode="decimal" step="0.01" min="0" placeholder="150"></div>
-      <div class="tf-group"><label for="oexpiry">到期日</label><input id="oexpiry" type="date"></div>
-      <div class="tf-group"><label for="ocontracts">张数</label><input id="ocontracts" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
-    </div>
-    <button class="btn btn-pri" id="btnAddOption" type="button">记录</button>
-  </form>
+<div class="card option-card">
+  <div class="opt-card-head"><h3>收入与持仓</h3><button type="button" class="btn btn-pri btn-sm" id="btnOptSheet">＋ 记录</button></div>
+  <div class="metrics metrics-2">
+    <div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev">$0</div></div>
+    <div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev">$0</div></div>
+  </div>
+  <table class="trade-table">
+    <thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>权利金</th><th>张数</th><th>到期</th><th>状态</th><th></th></tr></thead>
+    <tbody id="holdingsBody"></tbody>
+  </table>
 </div>
 
-<div class="card option-card">
-<h3>Covered Call 收入</h3>
-<div class="metrics metrics-2">
-<div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev">$0</div></div>
-<div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev">$0</div></div>
-</div></div>
-<div class="card option-card">
-<h3>持仓清单</h3>
-<table class="trade-table">
-<thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>权利金</th><th>张数</th><th>到期</th><th>状态</th><th></th></tr></thead>
-<tbody id="holdingsBody"></tbody></table></div>
 </section>
-
-
-
-
-
-
-
-
-
-
 <section class="tab-panel" id="tab-data"><div class="record-toolbar" id="recordSeg" role="tablist" aria-label="记录视图"><button type="button" class="record-seg active" data-seg="data" role="tab" aria-selected="true">明细</button><button type="button" class="record-seg" data-seg="log" role="tab" aria-selected="false">日志</button></div><div class="card ds-search-card"><div class="ds-search"><span class="ds-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/></svg></span><input id="dsSearchInput" type="search" placeholder="搜索标的、日期或金额" autocomplete="off" aria-label="搜索记录"><span class="ds-search-count" id="dsSearchCount"></span><button type="button" class="ds-search-clear" id="dsSearchClear" hidden aria-label="清除搜索">×</button></div></div><div class="ds-search-empty" id="dsSearchEmpty" hidden>没有匹配的记录</div><div class="record-group active" data-group="data">
 
 
@@ -682,6 +650,30 @@
 </div>
 
 <button class="qa-fab" id="qaFab" onclick="qaToggle()" aria-label="快捷操作"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+<div class="qa-sheet" id="optSheet" onclick="if(event.target===this)closeOptSheet()">
+  <div class="qa-panel">
+    <div class="qa-title">记录期权</div>
+    <form class="option-form" onsubmit="return false">
+      <div class="segmented-control option-type-segment" role="tablist" aria-label="期权类型">
+        <button type="button" class="segment active" data-option-type="CALL" role="tab" aria-selected="true">CALL</button>
+        <button type="button" class="segment" data-option-type="PUT" role="tab" aria-selected="false">PUT</button>
+      </div>
+      <div class="asset-chips option-asset-chips" role="group" aria-label="期权标的">
+        <button type="button" class="asset-chip active" data-option-asset="VGT">VGT</button>
+        <button type="button" class="asset-chip" data-option-asset="SMH">SMH</button>
+      </div>
+      <select id="otype" class="native-control" aria-label="期权类型" hidden><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select>
+      <select id="osym" class="native-control" aria-label="期权标的" hidden><option value="VGT">VGT</option><option value="SMH">SMH</option></select>
+      <div class="field-grid option-field-grid">
+        <div class="tf-group"><label for="ostrike">行权价 $</label><input id="ostrike" type="number" inputmode="decimal" step="0.5" min="0" placeholder="600"></div>
+        <div class="tf-group"><label for="opremium">每张权利金 $</label><input id="opremium" type="number" inputmode="decimal" step="0.01" min="0" placeholder="150"></div>
+        <div class="tf-group"><label for="oexpiry">到期日</label><input id="oexpiry" type="date"></div>
+        <div class="tf-group"><label for="ocontracts">张数</label><input id="ocontracts" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
+      </div>
+      <button class="btn btn-pri" id="btnAddOption" type="button" style="width:100%;">记录</button>
+    </form>
+  </div>
+</div>
 <div class="qa-sheet" id="qaSheet" onclick="if(event.target===this)qaClose()">
   <div class="qa-panel">
     <div class="qa-title">快捷操作</div>

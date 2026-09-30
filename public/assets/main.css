@@ -2761,3 +2761,11 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .is-skeleton{animation:none}
   .collapsible-card .collapsible-body{transition:none}
 }
+
+/* ===== v297 期权页：卡片合并后的卡头（标题 + 右侧动作） ===== */
+.opt-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.opt-card-head h3{margin:0}
+.opt-card-head .btn{flex:0 0 auto}
+/* 执行纪律：从独占一张卡降级为状态卡里的脚注 */
+.option-status-card .option-discipline{margin-top:10px;padding-top:9px;border-top:1px solid var(--rule);font-size:.68rem;line-height:1.5;color:var(--muted)}
+#optSheet .qa-title{margin-bottom:12px}

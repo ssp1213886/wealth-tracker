@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v296';var APP_DATA_VERSION=5;
+var APP_BUILD='v297';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=296',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=297',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1454,7 +1454,7 @@ var p=parseFloat(document.getElementById("opremium").value||0);
 var e=document.getElementById("oexpiry").value;
 var c=parseInt(document.getElementById("ocontracts").value||1);
 if(!t)return formError('请选择期权类型','otype');if(!s)return formError('请选择标的','osym');if(!k||k<=0)return formError('请填写行权价','ostrike');if(isNaN(p)||p<0)return formError('请填写有效的权利金','opremium');if(!e)return formError('请选择到期日','oexpiry');if(isNaN(c)||c<1)c=1;if(t==='CALL'){try{var heldShares=0;trades.forEach(function(tr){if(tr.symbol===s)heldShares+=Number(tr.shares)||0});var needShares=(Number(c)||1)*100;if(heldShares<needShares){showToast('提醒：卖 '+c+' 张 CALL 通常需要 '+needShares+' 股 '+s+'，当前 '+heldShares.toFixed(2)+' 股（仍会记录）','err')}}catch(e){logSwallowed("settleOpt",e)}}
-var premiumTotal=p*(c||1);var optObj={id:Date.now(),sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:marketDate()};optionTrades.push(optObj);addActivity('卖'+t+'开仓 '+s+'×'+c+'张 @$'+k+' 💰$'+p);
+var premiumTotal=p*(c||1);var optObj={id:Date.now(),sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:marketDate()};optionTrades.push(optObj);if(typeof closeOptSheet==="function")closeOptSheet();addActivity('卖'+t+'开仓 '+s+'×'+c+'张 @$'+k+' 💰$'+p);
 cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:marketDate(),time:marketClock(),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();updateSidebar();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";updateAllO();
 var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");
 if(cc&&cs){var nw=marketDate(),tm=nw.slice(0,7),ccTotal=0,ccCount=0;
@@ -1492,6 +1492,16 @@ function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),
 (function(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(sh)sh.addEventListener('input',refreshTradeAffordability);if(pr)pr.addEventListener('input',refreshTradeAffordability)})();
 function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else{s.classList.add('open');markAlertsSeen(alertSignature(getCurrentAlerts()||[]));updateBellBadge(getCurrentAlerts()||[]);}}
 function qaClose(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
+/* 记录期权：从底部弹层录入（原来是一张常显的大表单，占掉期权页三分之一） */
+function optSheetEl(){return document.getElementById('optSheet')}
+function openOptSheet(){var s=optSheetEl();if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.add('open');haptic('light')}
+function closeOptSheet(){var s=optSheetEl();if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
+function initOptSheet(){
+  var btn=document.getElementById('btnOptSheet');if(btn)btn.addEventListener('click',openOptSheet);
+  var s=optSheetEl();if(!s)return;
+  var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,closeOptSheet);
+}
+initOptSheet();
 function initQaDrag(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,qaClose)}
 initQaDrag();
 function qaDeposit(){qaClose();switchTab('console');setTimeout(function(){var e=document.getElementById('hmCashAmt');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
