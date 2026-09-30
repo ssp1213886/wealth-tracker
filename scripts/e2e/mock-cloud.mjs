@@ -12,6 +12,18 @@ const PUB = process.env.E2E_PUBLIC ? path.resolve(process.env.E2E_PUBLIC) : file
 const PORT = Number(process.env.E2E_PORT || 8790);
 // 可选：设了 E2E_AUTH_TOKEN 就校验 X-Auth-Token（用于测"坏令牌 → 401"这条路径）
 const AUTH_TOKEN = process.env.E2E_AUTH_TOKEN || '';
+// 多用户：按 wt_uid cookie 分区（和线上 worker 的 user_id 语义一致）。
+// 没带 cookie 就按 1 号库，老场景不受影响。
+const stores = new Map();
+function bucketFor(req) {
+  const m = String(req.headers.cookie || '').match(/wt_uid=(\d+)/);
+  const uid = m ? Number(m[1]) : 1;
+  if (!stores.has(uid)) {
+    // 1 号库直接用原来那两个全局对象：/_reset 与 /_seed 照旧对它生效，既有场景不受影响
+    stores.set(uid, uid === 1 ? { store: store, meta: meta } : { store: {}, meta: {} });
+  }
+  return stores.get(uid);
+}
 const store = {};
 const meta = {};          // 每个键的"云端版本号"（毫秒），与真 worker 的 updated_at 语义一致
 const log = [];
@@ -39,11 +51,14 @@ const server = http.createServer((req, res) => {
   // 测试专用：查看假云端收到的数据与推送历史
   if (url.pathname === '/_log') {
     res.writeHead(200, cors);
-    return res.end(JSON.stringify({ store, meta, log }));
+    const users = {};
+    stores.forEach((b, uid) => { users[uid] = b.store; });
+    return res.end(JSON.stringify({ store, meta, log, users }));
   }
   if (url.pathname === '/_reset') {
     Object.keys(store).forEach((k) => delete store[k]);
     Object.keys(meta).forEach((k) => delete meta[k]);
+    stores.clear();
     log.length = 0;
     res.writeHead(200, cors);
     return res.end(JSON.stringify({ ok: true }));
@@ -66,6 +81,10 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === '/api/sync') {
+    // 多用户：每个 wt_uid 一份独立的库
+    const bucket = bucketFor(req);
+    const store = bucket.store;
+    const meta = bucket.meta;
     // 可选鉴权：设了 E2E_AUTH_TOKEN 就校验（用于测"坏令牌"路径）；不设则全放行，既有场景不受影响
     if (AUTH_TOKEN && (req.headers['x-auth-token'] || '') !== AUTH_TOKEN) {
       res.writeHead(401, cors);
