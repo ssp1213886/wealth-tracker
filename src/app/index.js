@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v309';var APP_DATA_VERSION=5;
+var APP_BUILD='v310';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -970,7 +970,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=309',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=310',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1042,8 +1042,8 @@ var SYNC_STATE_KEY=KEYS.syncState;
 var SYNC_KEYS=SYNC_FIELDS.slice();   // 与 payload 组装共用同一份清单，避免再次漂移
 function loadSyncState(){try{var s=JSON.parse(readRaw(SYNC_STATE_KEY)||'{}');s.dirty=s.dirty||{};s.cloudTs=s.cloudTs||{};s.pendingConflicts=Array.isArray(s.pendingConflicts)?s.pendingConflicts:[];s.lastSyncAt=Number(s.lastSyncAt)||0;s.lastSyncErrorAt=Number(s.lastSyncErrorAt)||0;s.lastSyncDirection=s.lastSyncDirection||'';s.lastPushAt=Number(s.lastPushAt)||0;s.lastPullAt=Number(s.lastPullAt)||0;return s}catch(e){return{dirty:{},cloudTs:{},pendingConflicts:[],lastSyncAt:0,lastSyncErrorAt:0,lastSyncDirection:'',lastPushAt:0,lastPullAt:0}}}
 function saveSyncState(s){try{LS.setItem(SYNC_STATE_KEY,JSON.stringify(s))}catch(e){logSwallowed("saveSyncState",e)}if(document.readyState!=='loading')renderSyncHealth()}
-function recordSyncSuccess(direction,timestamp){var s=loadSyncState();s.lastSyncAt=Number(timestamp)||Date.now();s.lastSyncDirection=direction||'check';if(s.lastSyncDirection==='push')s.lastPushAt=s.lastSyncAt;else if(s.lastSyncDirection==='pull')s.lastPullAt=s.lastSyncAt;s.lastSyncErrorAt=0;s.lastSyncError='';s.failStreak=0;saveSyncState(s);renderSyncHealth()}
-function recordSyncFailure(timestamp,message){var s=loadSyncState();s.lastSyncErrorAt=Number(timestamp)||Date.now();s.lastSyncError=String(message||'').slice(0,200);s.failStreak=(Number(s.failStreak)||0)+1;saveSyncState(s);renderSyncHealth()}
+function recordSyncSuccess(direction,timestamp){try{var s=loadSyncState();s.lastSyncAt=Number(timestamp)||Date.now();s.lastSyncDirection=direction||'check';if(s.lastSyncDirection==='push')s.lastPushAt=s.lastSyncAt;else if(s.lastSyncDirection==='pull')s.lastPullAt=s.lastSyncAt;s.lastSyncErrorAt=0;s.lastSyncError='';s.failStreak=0;saveSyncState(s);renderSyncHealth()}catch(e){logSwallowed("recordSyncSuccess",e)}}
+function recordSyncFailure(timestamp,message){try{var s=loadSyncState();s.lastSyncErrorAt=Number(timestamp)||Date.now();s.lastSyncError=String(message||'').slice(0,200);s.failStreak=(Number(s.failStreak)||0)+1;saveSyncState(s);renderSyncHealth()}catch(e){logSwallowed("recordSyncFailure",e)}}
 function setSyncConflicts(conflicts){var s=loadSyncState();s.pendingConflicts=Array.from(new Set(conflicts||[]));saveSyncState(s);renderSyncHealth()}
 function renderSyncHealth(){var s=loadSyncState();var h=syncHealthSummary(s,{configured:!!(typeof syncCfg!=='undefined'&&syncCfg&&syncCfg.url),keys:SYNC_KEYS,backupAt:Number(readRaw('lastBackupTime'))||0,formatTime:formatHealthTime});renderSyncHealthView(document,h,{state:s,afterRender:updateSyncBanner})}
 function markDirty(key){var s=loadSyncState();if(!s.dirty[key]){s.dirty[key]=true;saveSyncState(s)}}
@@ -1252,7 +1252,7 @@ if(!syncCfg.url){syncCfg.url=location.origin;try{saveSyncCfg()}catch(e){logSwall
 
 
 var syncFetchWithoutHealth=syncFetch;
-syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');var clearSpin=function(){if(host)host.classList.remove('is-syncing')};if(host)host.classList.add('is-syncing');setSyncBar('busy',method==='GET'?'正在下载…':'正在上传…');var spinTimer=setTimeout(clearSpin,12000);var done=function(){clearTimeout(spinTimer);clearSpin()};try{return syncFetchWithoutHealth(method,body).then(function(result){if(method!=='GET'&&result&&result.ts&&body){try{Object.keys(body).forEach(function(k){if(k!=='__expectedVersions')setCloudTs(k,result.ts)})}catch(e){logSwallowed("syncPull",e)}}recordSyncSuccess(method==='GET'?'pull':'push',Date.now());setSyncBar('ok','已同步 '+syncClockText());done();return result}).catch(function(error){recordSyncFailure(Date.now(),error&&error.message);if(error&&console&&console.warn)console.warn('[sync]',error.message);if(error&&error.status===409)setSyncBar('busy','正在核对…');else setSyncBar('err','同步失败');done();throw error})}catch(e){done();throw e}};
+syncFetch=function(method,body){var ms=document.getElementById('msSyncText'),host=ms&&ms.closest('.ms-sync');var clearSpin=function(){if(host)host.classList.remove('is-syncing')};if(host)host.classList.add('is-syncing');setSyncBar('busy',method==='GET'?'正在下载…':'正在上传…');var spinTimer=setTimeout(clearSpin,12000);/* v310 兜底：任何情况下都不许把状态条永远挂在 busy —— 20 秒还没结果就切成可诊断的失败态 */var stallTimer=setTimeout(function(){try{setSyncBar('err','同步超时 · 可在设置里点「重试」');recordSyncFailure(Date.now(),'timeout')}catch(e){logSwallowed('syncStall',e)}},20000);var done=function(){clearTimeout(spinTimer);clearTimeout(stallTimer);clearSpin()};try{return syncFetchWithoutHealth(method,body).then(function(result){if(method!=='GET'&&result&&result.ts&&body){try{Object.keys(body).forEach(function(k){if(k!=='__expectedVersions')setCloudTs(k,result.ts)})}catch(e){logSwallowed("syncPull",e)}}setSyncBar('ok','已同步 '+syncClockText());done();recordSyncSuccess(method==='GET'?'pull':'push',Date.now());return result}).catch(function(error){done();if(error&&console&&console.warn)console.warn('[sync]',error.message);setSyncBar(error&&error.status===409?'busy':'err',error&&error.status===409?'正在核对…':('同步失败 · '+String((error&&error.message)||'未知原因').slice(0,40)));recordSyncFailure(Date.now(),error&&error.message);throw error})}catch(e){done();throw e}};
 /* 令牌输入框已移除，这里不再监听 */
 /* v242：数据健康整块可点 → 直达同步设置（原来要经过 设置 → 云端同步 → 连接配置 三层） */
 /* v242：数据健康整块可点 → 直达同步设置（DOM 细节在 sync-view.js） */
