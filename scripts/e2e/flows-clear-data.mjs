@@ -55,7 +55,20 @@ const promptText = await p.evaluate(() => {
 });
 if (!/云端/.test(promptText)) failures.push('清除提示没提到云端，说明又走回了"只清本机"分支：' + promptText.split('\n')[0]);
 
+// v305 起：危险操作要长按 3 秒（方案 C）。先确认"点一下"不会执行，再模拟长按。
 await p.evaluate(() => { const b = document.querySelector('#approvalModal [data-act="ok"]'); if (b) b.click(); });
+await p.waitForTimeout(500);
+const afterPlainClick = await p.evaluate(() => !!document.getElementById('approvalModal'));
+if (!afterPlainClick) failures.push('长按确认失效：普通点一下就执行了清除');
+
+const holdBox = await p.evaluate(() => {
+  const b = document.querySelector('#approvalModal [data-act="ok"]');
+  if (!b) return null;
+  b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+  return b.textContent;
+});
+if (!holdBox || !/长按/.test(holdBox)) failures.push('确认按钮没有提示要长按：' + holdBox);
+await p.waitForTimeout(3400);
 await p.waitForTimeout(2500);
 
 const after = await cloudGet();

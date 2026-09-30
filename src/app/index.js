@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v304';var APP_DATA_VERSION=5;
+var APP_BUILD='v305';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -207,6 +207,9 @@ async function refreshPrices(){
 
 var holdSort={col:'value',asc:false};function sortHoldRows(rows){var c=holdSort.col,a=holdSort.asc;return rows.sort(function(x,y){var vx=c==='sym'?x.sym:c==='value'?x.value||0:c==='pnl'?x.unrealPnL||0:c==='pnlPct'?x.pnlPct||0:0;var vy=c==='sym'?y.sym:c==='value'?y.value||0:c==='pnl'?y.unrealPnL||0:c==='pnlPct'?y.pnlPct||0:0;if(typeof vx==='string')return a?vy.localeCompare(vx):vx.localeCompare(vy);return a?vx-vy:vy-vx})}
 
+/* v306：给 dailyChange 组装行情入参（现价 / 昨收 / 每股涨跌），三处调用共用 */
+function buildDailyQuotes(){var q={};var keys=Object.keys(livePrices||{});keys.forEach(function(s){var d=(liveQuoteData&&liveQuoteData[s])||{};var price=Number(d.price)||Number(livePrices[s])||0;q[s]={price:price,prevClose:Number(d.prevClose)||0,change:Number(liveChanges[s])||0}});return q}
+
 
 /* ===== 持仓渲染 ===== */
 
@@ -240,7 +243,7 @@ function updatePortfolio(){
   renderMetricsTop(document,{hasPriced:hasPriced,totalValue:totalValue,totals:totals});
 
 
-  var daily=dailyChange(rows,liveChanges,totalValue),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,realizedOptionPremium:realizedOptionPremium,dailyChg:dailyChg,dailyPct:dailyPct});
+  var daily=dailyChange(rows,buildDailyQuotes(),trades,marketDate()),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,realizedOptionPremium:realizedOptionPremium,dailyChg:dailyChg,dailyPct:dailyPct});
 
 
 
@@ -825,12 +828,12 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 function updateMobStatusBar(){
   var bar=document.getElementById('mobStatusBar');if(!bar)return;
-  var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0,daily=0;ETF_SYMS.forEach(function(sym){var sh=Math.max(0,bals[sym]||0);totalV+=sh*(livePrices[sym]||0);daily+=sh*(liveChanges[sym]||0)});var nc=getNetCash();
+  var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;var mobRows=ETF_SYMS.map(function(sym){var sh=Math.max(0,bals[sym]||0);totalV+=sh*(livePrices[sym]||0);return{sym:sym,shares:sh,priced:!!livePrices[sym]}});var mobDaily=dailyChange(mobRows,buildDailyQuotes(),trades,marketDate()),daily=mobDaily.change;var nc=getNetCash();
   var vm=document.getElementById('msTotal');if(vm)animateVal(vm,totalV+nc);
   var ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalV+nc);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=(totalV+nc>0?nc/(totalV+nc)*100:0).toFixed(2)+'%';
   var mc=document.getElementById('msCash');if(mc)mc.textContent=fmtFull(nc);
   var mp=document.getElementById('msPnl'),srcPnl=document.getElementById('hmPnL');if(mp&&srcPnl){mp.textContent=srcPnl.textContent;mp.classList.toggle('pnl-neg',srcPnl.textContent.indexOf('-')===0);mp.classList.toggle('pnl-pos',srcPnl.textContent.indexOf('-')!==0)}
-  var md=document.getElementById('msDaily'),prevV=totalV-daily,dailyPct=prevV>0?daily/prevV*100:0,dailyText='今日 '+(daily>=0?'+':'-')+fmtFull(Math.abs(daily))+' · '+(dailyPct>=0?'+':'')+dailyPct.toFixed(2)+'%';if(md){md.textContent=dailyText;md.classList.toggle('negative',daily<0)}var sd=document.getElementById('sbToday');if(sd){sd.textContent=dailyText;sd.style.color=daily<0?'var(--red)':'var(--accent)'}
+  var md=document.getElementById('msDaily'),dailyPct=mobDaily.pct,dailyText='今日 '+(daily>=0?'+':'-')+fmtFull(Math.abs(daily))+' · '+(dailyPct==null?'—':((dailyPct>=0?'+':'')+dailyPct.toFixed(2)+'%'));if(md){md.textContent=dailyText;md.classList.toggle('negative',daily<0)}var sd=document.getElementById('sbToday');if(sd){sd.textContent=dailyText;sd.style.color=daily<0?'var(--red)':'var(--accent)'}
   var pp=document.getElementById('msPrices');if(pp){pp.innerHTML=ETF_SYMS.map(function(sym){var p=livePrices[sym],ch=liveChanges[sym],chHtml='',chCls='';if(ch!=null){var prev=p-ch,pct=prev>0?ch/prev*100:0;chCls=ch>=0?'ms-pos':'ms-neg';chHtml=' <span class="'+chCls+'">'+(ch>=0?'+':'')+pct.toFixed(1)+'%</span>'}return '<span class="ms-pill" data-sym="'+sym+'" data-price="'+(p||0)+'"><strong>'+sym+'</strong> '+(p?'$'+p.toFixed(2):'--')+chHtml+'</span>'}).join('')}
 }
 
@@ -993,7 +996,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=304',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=305',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1133,13 +1136,46 @@ function buildPushData(dirtyOnly){
 
 /* 退出登录：清掉服务端的会话 cookie，然后回登录页（/login 不走 SW 缓存） */
 function logoutNow(){var go=function(){location.replace('/login')};try{fetch('/api/logout',{method:'POST'}).then(go,go)}catch(e){go()}}
+/* ===== v305 回退按钮：本地快照 + 24 小时撤销条（纯前端；恢复后走现有同步推回云端） ===== */
+var CLEAR_SNAP_KEY='wealth_clear_snapshot_v1',CLEAR_SNAP_TTL=24*60*60*1000;
+function readClearSnapshot(){try{var s=JSON.parse(LS.getItem(CLEAR_SNAP_KEY)||'null');if(!s||!s.data||!s.ts)return null;if(Date.now()-s.ts>CLEAR_SNAP_TTL){LS.removeItem(CLEAR_SNAP_KEY);return null}return s}catch(e){return null}}
+function hideClearUndoBar(){var b=document.getElementById('clearUndoBar');if(b){if(b._t)clearInterval(b._t);b.remove()}}
+function restoreClearSnapshot(){
+  var s=readClearSnapshot();
+  if(!s){showToast('快照已过期，没有可恢复的数据','err');hideClearUndoBar();return}
+  showApproval({title:'撤销清除',message:'把清除前的数据恢复回来，并立即推回云端。\n\n如果清除后你又录了新数据，这段新记录会被覆盖。',confirmText:'确认恢复',danger:false,onConfirm:function(){
+    var n=0;Object.keys(s.data).forEach(function(k){try{applyCloudVal(k,s.data[k]);markDirty(k);n+=1}catch(e){logSwallowed("restoreClearSnapshot",e)}});
+    try{LS.removeItem(CLEAR_SNAP_KEY)}catch(e){logSwallowed("restoreClearSnapshot",e)}
+    try{initTradeIds();updatePortfolio();updateSidebar();renderCashLog();updateAllO();updateOtm();renderActivity()}catch(e){logSwallowed("restoreClearSnapshot",e)}
+    hideClearUndoBar();
+    showToast('已恢复清除前的数据，正在同步回云端','ok');
+    pushSoon(300);
+  }});
+}
+function renderClearUndoBar(){
+  var s=readClearSnapshot();
+  if(!s){hideClearUndoBar();return}
+  var bar=document.getElementById('clearUndoBar');
+  if(!bar){bar=document.createElement('div');bar.id='clearUndoBar';bar.className='clear-undo-bar';bar.setAttribute('role','status');document.body.appendChild(bar)}
+  bar.innerHTML='<span class="cub-text"></span><button type="button" class="cub-btn" id="clearUndoBtn">撤销</button>';
+  bar.querySelector('.cub-text').textContent='已清除全部数据 · 可撤销';
+  bar.querySelector('#clearUndoBtn').addEventListener('click',restoreClearSnapshot);
+  var left=Math.max(0,CLEAR_SNAP_TTL-(Date.now()-s.ts));
+  var hh=Math.floor(left/3600000),mm=Math.floor(left%3600000/60000);
+  bar.querySelector('.cub-text').textContent='已清除全部数据 · 还剩 '+hh+':'+(mm<10?'0':'')+mm+' 可撤销';
+  if(bar._t)clearInterval(bar._t);
+  bar._t=setInterval(function(){var t=readClearSnapshot();if(!t){hideClearUndoBar();return}var l=Math.max(0,CLEAR_SNAP_TTL-(Date.now()-t.ts));var H=Math.floor(l/3600000),M=Math.floor(l%3600000/60000);var tx=bar.querySelector('.cub-text');if(tx)tx.textContent='已清除全部数据 · 还剩 '+H+':'+(M<10?'0':'')+M+' 可撤销'},30000);
+}
+setTimeout(renderClearUndoBar,900);
 function clearAllData(){
   var cfg=syncCfg||{}; var base=(cfg.url||location.origin).replace(/\/$/,'');
   /* v302：不再用 cfg.token 判断"有没有云端"——token 已退役，登录后走的是会话 cookie。
      旧写法让非主账号（localStorage 里没有历史 token）走进"只清本机"分支，
      云端数据原样保留，重载后又被拉回来，表现就是"点了没反应"。 */
-  showApproval({title:'清除全部数据',message:'确定清除本地与云端的全部投资数据？\n\n请先确认已导出完整备份。云端清除成功后才会清理本机。',confirmText:'清除全部',onConfirm:function(){
+  showApproval({title:'清除全部数据',message:'确定清除本地与云端的全部投资数据？\n\n请先确认已导出完整备份。云端清除成功后才会清理本机。\n\n（误删可在 24 小时内用底部横条一键撤销）',confirmText:'清除全部',holdMs:3000,onConfirm:function(){
   var empty={trades:[],cashBalance:0,cashLog:[],state:{},activities:[],optionTrades:[],otmSettings:{},exit_portfolio:'',prices:{}};
+  /* v305 方案A：先留一份快照，万一误删能一键撤回（24 小时有效） */
+  try{var snap={ts:Date.now(),data:{}};SYNC_KEYS.forEach(function(k){try{snap.data[k]=localValOf(k)}catch(e){logSwallowed("clearAllData",e)}});LS.setItem(CLEAR_SNAP_KEY,JSON.stringify(snap))}catch(e){logSwallowed("clearAllData",e)}
   var clearLocal=function(){
     ['wealth_trades_v2','wealth_cash_v2','wealth_cashlog_v2','wealth_dashboard_v2','wealth_activity_v1','wealth_options_v2','otmSettings','exit_portfolio','wealth_prices_v2','wealth_sync_state','lastBackupTime','wealth_alert_snooze_v1'].forEach(function(k){try{removeKey(k)}catch(e){logSwallowed("clearAllData",e)}});
     location.reload();
@@ -1392,7 +1428,24 @@ function showApproval(opts){
     if(e.key==='Escape'){e.preventDefault();close()}
   }
   cancelBtn.addEventListener('click',close);
-  okBtn.addEventListener('click',function(){close();if(typeof o.onConfirm==='function')o.onConfirm()});
+  if(o.holdMs){
+    /* v305 方案C：危险操作要按住 holdMs 才生效，手滑点一下不会执行 */
+    var sec=Math.round(o.holdMs/1000);
+    okBtn.textContent=(o.confirmText||'确认')+'（长按 '+sec+' 秒）';
+    var held=false,holdTimer=null,raf=null,startAt=0;
+    var resetHold=function(){held=false;startAt=0;if(holdTimer){clearTimeout(holdTimer);holdTimer=null}if(raf){cancelAnimationFrame(raf);raf=null}okBtn.style.setProperty('--hold-pct','0%');okBtn.classList.remove('is-holding')};
+    var tick=function(){if(!held)return;var p=Math.min(1,(Date.now()-startAt)/o.holdMs);okBtn.style.setProperty('--hold-pct',(p*100).toFixed(1)+'%');if(p<1)raf=requestAnimationFrame(tick)};
+    var fire=function(){resetHold();close();if(typeof o.onConfirm==='function')o.onConfirm()};
+    var startHold=function(e){if(e&&e.preventDefault)e.preventDefault();held=true;startAt=Date.now();okBtn.classList.add('is-holding');okBtn.style.setProperty('--hold-pct','0%');clearTimeout(holdTimer);holdTimer=setTimeout(fire,o.holdMs);raf=requestAnimationFrame(tick)};
+    okBtn.addEventListener('pointerdown',startHold);
+    okBtn.addEventListener('pointerup',resetHold);
+    okBtn.addEventListener('pointercancel',resetHold);
+    okBtn.addEventListener('pointerleave',resetHold);
+    okBtn.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter')e.preventDefault()});
+    okBtn.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();fire()}});
+  }else{
+    okBtn.addEventListener('click',function(){close();if(typeof o.onConfirm==='function')o.onConfirm()});
+  }
   modal.addEventListener('click',function(e){if(e.target===modal)close()});
   enableSheetDrag(modal.querySelector('.ds-approval-card'),close);
   document.addEventListener('keydown',onKey);

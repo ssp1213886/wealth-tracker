@@ -29,19 +29,59 @@ export function portfolioTotals(input) {
 }
 
 /**
- * 今日变动：按"每行市值 × 当日涨跌额"累加（只算有行情的行），
- * 再用"昨日市值 = 当前市值 − 今日变动"求百分比。
+ * 今日收益：按"当日实际持有区间"算，而不是拿当前持股数 × 全天涨跌。
+ *   change = 当前市值 − 昨日收盘市值 − 今日净买入成本
+ * 展开就是：昨天就持有的吃「昨收→现价」；今天新买的只吃「买入价→现价」；今天卖出的吃「昨收→卖价」。
+ * 修掉的老 bug：今天才按现价买入的仓位，今日收益却被算成 股数 × 全天涨跌。
+ *   rows   = 当前持仓行（带 sym/shares/priced）
+ *   quotes = { sym: { price, prevClose, change } }
+ *   trades = 全部交易；today = 今天的美东交易日（与 trade.date 同格式）
+ * 收益率分母 = 昨日收盘市值 + 今日净买入额（今早才投进来的钱也算本金）。
  */
-export function dailyChange(rows, changes, totalValue) {
-  const map = changes || {};
-  let change = 0;
-  (rows || []).forEach(function (r) {
-    if (!r || !r.priced || map[r.sym] == null) return;
-    change += (Number(r.shares) || 0) * (Number(map[r.sym]) || 0);
+export function dailyChange(rows, quotes, trades, today) {
+  const q = quotes || {};
+  const list = Array.isArray(trades) ? trades : [];
+  const day = String(today || '');
+  const prevShares = {}, todayBuy = {}, todaySell = {};
+  list.forEach(function (t) {
+    if (!t) return;
+    const d = String(t.date || '');
+    const sh = Number(t.shares) || 0;
+    if (!d || !day) return;
+    const amt = Math.abs(sh) * (Number(t.price) || 0);
+    if (d < day) prevShares[t.symbol] = (prevShares[t.symbol] || 0) + sh;
+    else if (d === day) {
+      if (sh > 0) todayBuy[t.symbol] = (todayBuy[t.symbol] || 0) + amt;
+      else if (sh < 0) todaySell[t.symbol] = (todaySell[t.symbol] || 0) + amt;
+    }
   });
-  const yesterday = (Number(totalValue) || 0) - change;
-  const pct = yesterday > 0 ? (change / yesterday) * 100 : null;
-  return { change: change, pct: pct };
+  const priced = {};
+  (rows || []).forEach(function (r) { if (r && r.priced) priced[r.sym] = Number(r.shares) || 0; });
+  const syms = {};
+  [priced, prevShares, todayBuy, todaySell].forEach(function (m) {
+    Object.keys(m).forEach(function (s) { syms[s] = 1 });
+  });
+
+  let change = 0, prevValue = 0, netBuy = 0;
+  Object.keys(syms).forEach(function (sym) {
+    const info = q[sym] || {};
+    const price = Number(info.price), prev = Number(info.prevClose);
+    const cur = priced[sym] === undefined ? 0 : priced[sym];
+    const prevSh = prevShares[sym] || 0;
+    const buy = todayBuy[sym] || 0, sell = todaySell[sym] || 0;
+    if (!isFinite(price) || price <= 0 || !isFinite(prev) || prev <= 0) {
+      // 缺现价或缺昨收：退回旧口径，至少不比以前更差
+      const leg = Number(info.change);
+      if (isFinite(leg)) change += cur * leg;
+      return;
+    }
+    change += cur * price - prevSh * prev - buy + sell;
+    prevValue += prevSh * prev;
+    netBuy += buy - sell;
+  });
+  const base = prevValue + Math.max(0, netBuy);
+  const pct = base > 0 ? (change / base) * 100 : null;
+  return { change: change, pct: pct, prevValue: prevValue, netBuy: netBuy };
 }
 
 /** 目标进度：百分比封顶 100，还差多少不低于 0。 */

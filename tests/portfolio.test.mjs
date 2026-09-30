@@ -30,20 +30,38 @@ test('portfolioTotals：拿不到行情时盈亏为 null（界面显示「-」�
   assert.equal(empty.cashPct, 0, '总资产为 0 时不能除零');
 });
 
-test('dailyChange：只累加有行情的持仓，百分比以「昨日市值」为分母', () => {
-  const rows = [
-    { sym: 'VGT', shares: 15, priced: true },
-    { sym: 'SMH', shares: 2, priced: true },
-    { sym: 'BTC', shares: 1, priced: false },
-  ];
-  const d = dailyChange(rows, { VGT: 2, SMH: -1, BTC: 5 }, 1950);
-  assert.equal(d.change, 15 * 2 + 2 * -1, '没行情的行不参与');
-  assert.ok(near(d.pct, d.change / (1950 - d.change) * 100));
-  const none = dailyChange(rows, {}, 1950);
-  assert.equal(none.change, 0);
-  assert.equal(none.pct, 0, '没有涨跌数据时百分比为 0（昨日=今日）');
-  const noBase = dailyChange(rows, { VGT: 1 }, 0);
-  assert.equal(noBase.pct, null, '总市值为 0 时不计算涨跌幅');
+test('dailyChange：昨天持有的吃「昨收→现价」，今天才买的只吃「买入价→现价」', () => {
+  const DAY = '2026-09-30';
+  const rows = [{ sym: 'VGT', shares: 15, priced: true }];
+  const quotes = { VGT: { price: 100, prevClose: 98, change: 2 } };
+
+  // 昨天就持有 15 股 → 15 × (100 − 98)
+  const held = dailyChange(rows, quotes, [{ symbol: 'VGT', shares: 15, price: 90, date: '2026-09-01' }], DAY);
+  assert.equal(held.change, 30);
+  assert.ok(near(held.pct, 30 / (15 * 98) * 100));
+
+  // v306 回归：今天才按现价买入 → 今日收益必须是 0
+  const fresh = dailyChange(rows, quotes, [{ symbol: 'VGT', shares: 15, price: 100, date: DAY }], DAY);
+  assert.equal(fresh.change, 0, '按现价买入当天不该有收益');
+  assert.equal(fresh.pct, 0, '分母含今日买入成本，收益率也应是 0');
+
+  // 今天买的、但成交后到收盘涨了 → 只算「买入价→现价」
+  const quotes2 = { VGT: { price: 105, prevClose: 100, change: 5 } };
+  const bought = dailyChange(rows, quotes2, [{ symbol: 'VGT', shares: 15, price: 100, date: DAY }], DAY);
+  assert.equal(bought.change, 15 * 5);
+
+  // 今天卖出的部分：吃「昨收→卖价」
+  const soldRows = [{ sym: 'VGT', shares: 5, priced: true }];
+  const sold = dailyChange(soldRows, { VGT: { price: 100, prevClose: 98, change: 2 } }, [
+    { symbol: 'VGT', shares: 15, price: 90, date: '2026-09-01' },
+    { symbol: 'VGT', shares: -10, price: 101, date: DAY },
+  ], DAY);
+  assert.equal(sold.change, 5 * 2 + 10 * 3, '留下的 5 股吃昨收→现价，卖掉的 10 股吃昨收→卖价');
+
+  // 没行情的行不参与；缺行情时百分比给 null（界面显示 —）
+  assert.equal(dailyChange([{ sym: 'BTC', shares: 1, priced: false }], quotes, [], DAY).change, 0);
+  assert.equal(dailyChange(rows, {}, [], DAY).change, 0);
+  assert.equal(dailyChange([{ sym: 'VGT', shares: 1, priced: true }], {}, [], DAY).pct, null);
 });
 
 test('goalProgress：超额封顶 100%、缺口不为负、目标为 0 时兜底', () => {

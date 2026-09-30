@@ -2770,3 +2770,16 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 #optSheet .qa-title{margin-bottom:12px}
 /* ===== v301：可点行（div[role=button]）的键盘焦点环 ===== */
 .watch-row[role="button"]:focus-visible,.hold-row[role="button"]:focus-visible,.asset-row[role="button"]:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 72%,#fff);outline-offset:-2px;border-radius:12px}
+/* ===== v305 回退按钮：长按进度 + 撤销横条 ===== */
+.ds-approval-btn.is-holding{position:relative;overflow:hidden}
+.ds-approval-btn::after{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--hold-pct,0%);background:rgba(255,255,255,.3);pointer-events:none}
+.clear-undo-bar{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:9999;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--fg);color:#fff;box-shadow:0 12px 34px rgba(0,0,0,.3)}
+.clear-undo-bar .cub-text{flex:1;min-width:0;font-size:12.5px;line-height:1.35}
+.clear-undo-bar .cub-btn{flex:0 0 auto;min-height:44px;padding:0 16px;border:0;border-radius:11px;background:#fff;color:var(--fg);font-size:12.5px;font-weight:650;cursor:pointer}
+/* ===== v305 底层资产敞口：把原来一整行流水账拆成带标签的三行 ===== */
+.expo-note{margin-top:10px;padding-top:9px;border-top:1px solid var(--rule);display:grid;gap:5px}
+.expo-note-row{display:flex;gap:8px;align-items:baseline;font-size:11.5px;line-height:1.5}
+.expo-note-row>span{flex:0 0 30px;color:var(--muted)}
+.expo-note-row>b{font-weight:560;color:var(--fg);min-width:0;font-variant-numeric:tabular-nums}
+.expo-note-row em{font-style:normal;margin-left:5px;color:var(--muted);font-weight:450}
+@media(max-width:360px){.expo-note-row em{display:block;margin-left:0}}
