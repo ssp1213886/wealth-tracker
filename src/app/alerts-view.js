@@ -2,7 +2,7 @@
 // v253 从 index.js 抽出：这里既有"算提醒"（buildAlerts，纯函数可离线测），也有渲染与角标。
 // 快捷面板开关（qaToggle）与页面级事件委托仍留在 index.js。
 
-import { readRaw, removeKey } from './store.js';
+import { readRaw, removeKey , LS } from './store.js';
 import { marketDate } from './time.js';
 import { isActiveOption, optionExpiryState } from './options.js';
 import { fmtFull, logSwallowed } from './util.js';
@@ -36,7 +36,7 @@ bell.setAttribute('aria-label',count>0?('查看提醒，'+count+' 条待办'):'�
 /** 期权提醒的"今天不再提醒"标记（按 id 记日期）。 */
 function optPingKey(){return 'wealth_opt_ping_v1'}
 function loadOptPing(){try{var v=JSON.parse(readRaw(optPingKey())||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
-function saveOptPing(id){try{var m=loadOptPing();m[String(id)]=marketDate();localStorage.setItem(optPingKey(),JSON.stringify(m))}catch(e){logSwallowed("saveOptPing",e)}}
+function saveOptPing(id){try{var m=loadOptPing();m[String(id)]=marketDate();LS.setItem(optPingKey(),JSON.stringify(m))}catch(e){logSwallowed("saveOptPing",e)}}
 
 /** 当前这批提醒（面板打开时用它算"已读签名"）。 */
 export function getCurrentAlerts() {

@@ -1,4 +1,3 @@
-import { authRequired, isAuthorized } from './lib/auth.js';
 import { serveAsset } from './lib/assets.js';
 import { corsHeaders, json } from './lib/http.js';
 import { handlePrice } from './lib/price.js';
@@ -8,7 +7,8 @@ import { handleLog } from './lib/logs.js';
 import { handleQuotes, handleHoldings } from './lib/quotes.js';
 import { handleLogo } from './lib/logos.js';
 import { handleMarketCap } from './lib/marketcap.js';
-import { hasValidSession, issueSession, sessionCookie, clearSessionCookie, passwordMatches, sessionSecret, loginPassword } from './lib/session.js';
+import { readSession, issueSession, sessionCookie, clearSessionCookie, uidCookie, clearUidCookie, passwordMatches, sessionSecret } from './lib/session.js';
+import { ensureAccountsTable, countAccounts, findAccountByUsername, listAccounts, createAccount, verifyAccountPassword, normalizeUsername } from './lib/accounts.js';
 import { loginPageResponse, notFoundPage } from './lib/login-page.js';
 
 const rateLimiter = createRateLimiter();
@@ -74,47 +74,86 @@ export default {
       }
       let payload = null;
       try { payload = await request.json(); } catch (error) { payload = null; }
-      const matched = await passwordMatches(payload && payload.password, env);
-      if (!matched) return json({ ok: false, error: 'invalid token' }, 401);
-      const session = await issueSession(env);
+      const username = normalizeUsername(payload && payload.username);
+      const password = String((payload && payload.password) || '');
+
+      let account = null;
+      let verified = false;
+      try {
+        await ensureAccountsTable(env);
+        account = username ? await findAccountByUsername(env, username) : null;
+        if (account && !Number(account.disabled)) {
+          verified = await verifyAccountPassword(env, account, password);
+        }
+        // 首次上线引导：还没有任何账号时，用服务器上现成的密码（老的 token / APP_PASSWORD）
+        // 建主账号，用户名就用这次输入的那个；老数据本来就挂在 user_id=1 名下，直接归它。
+        if (!verified && !account) {
+          const total = await countAccounts(env);
+          if (total === 0 && await passwordMatches(password, env)) {
+            const created = await createAccount(env, username, password, username);
+            if (created.id) {
+              account = { id: 1, username, name: username };
+              verified = true;
+            }
+          }
+        }
+      } catch (error) {
+        return json({ ok: false, error: 'db error' }, 502);
+      }
+      if (!verified) return json({ ok: false, error: 'invalid credentials' }, 401);
+
+      const userId = Number(account.id);
+      const session = await issueSession(env, userId);
       if (!session) return json({ ok: false, error: 'not configured' }, 503);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: {
-          ...corsHeaders(),
-          'Set-Cookie': sessionCookie(session.value, session.maxAge),
-          'Cache-Control': 'no-store, max-age=0',
-        },
-      });
+      const headers = new Headers(corsHeaders());
+      headers.append('Set-Cookie', sessionCookie(session.value, session.maxAge));
+      // 可读的账号 id：前端要在同步读 localStorage 之前知道该用哪个空间
+      headers.append('Set-Cookie', uidCookie(userId, session.maxAge));
+      headers.set('Cache-Control', 'no-store, max-age=0');
+      return new Response(JSON.stringify({ ok: true, userId, username: account.username, name: account.name || account.username }), { status: 200, headers });
     }
     if (url.pathname === '/api/logout') {
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: {
-          ...corsHeaders(),
-          'Set-Cookie': clearSessionCookie(),
-          'Cache-Control': 'no-store, max-age=0',
-        },
-      });
+      const headers = new Headers(corsHeaders());
+      headers.append('Set-Cookie', clearSessionCookie());
+      headers.append('Set-Cookie', clearUidCookie());
+      headers.set('Cache-Control', 'no-store, max-age=0');
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+    }
+    // 账号管理（需要已有会话）
+    if (url.pathname === '/api/accounts') {
+      const current = await readSession(request, env);
+      if (!current) return json({ error: 'Unauthorized' }, 401);
+      try {
+        await ensureAccountsTable(env);
+        if (request.method === 'GET') {
+          const accounts = await listAccounts(env);
+          const me = accounts.filter((item) => Number(item.id) === current.userId)[0] || null;
+          return json({ ok: true, userId: current.userId, me, accounts });
+        }
+        if (request.method === 'POST') {
+          let body = null;
+          try { body = await request.json(); } catch (error) { body = null; }
+          const created = await createAccount(env, body && body.username, body && body.password, body && body.name);
+          if (created.error) return json({ ok: false, error: created.error }, 400);
+          return json({ ok: true, id: created.id, userId: current.userId });
+        }
+      } catch (error) {
+        return json({ ok: false, error: 'db error' }, 502);
+      }
+      return json({ error: 'Method not allowed' }, 405);
     }
     // 登录页自己的路由。少了这一条，/login 会掉到静态资源查找 → 404（真事故）
     if (url.pathname === '/login') return loginPageResponse('');
 
     // ---- 门禁：没登录就只给登录页 ----
     if (needsAuth(request, url.pathname)) {
-      // 服务器压根没配密码时不拦人（宁可当作公开站点，也不能把主人锁在门外）
-      const gateActive = Boolean(loginPassword(env));
-      // 会话 cookie 和旧的 X-Auth-Token 两种凭证都认（老设备不受影响）
-      const authorized = !gateActive || isAuthorized(request, env) || await hasValidSession(request, env);
+      // 服务器压根没配密钥时不拦人（宁可当作公开站点，也不能把主人锁在门外）
+      const gateActive = Boolean(sessionSecret(env));
+      const authorized = !gateActive || Boolean(await readSession(request, env));
       if (!authorized) {
         if (url.pathname.indexOf('/api/') === 0) return json({ error: 'Unauthorized' }, 401);
         return loginPageResponse('');
       }
-    }
-
-    // /api/sync 两种凭证都认：会话 cookie（新）或 X-Auth-Token（老客户端）
-    if (authRequired(url) && !isAuthorized(request, env) && !await hasValidSession(request, env)) {
-      return json({ error: 'Unauthorized' }, 401);
     }
 
     if (url.pathname === '/api/price') {
@@ -142,13 +181,20 @@ export default {
       return await handleLogo(request, url);
     }
     if (url.pathname === '/api/sync' && request.method === 'GET') {
-      const result = await handleSyncGet(env);
+      const session = await readSession(request, env);
+      if (!session) return json({ error: 'Unauthorized' }, 401);
+      const result = await handleSyncGet(env, session.userId);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/sync' && request.method === 'POST') {
-      const result = await handleSyncPost(request, env);
+      const session = await readSession(request, env);
+      if (!session) return json({ error: 'Unauthorized' }, 401);
+      const result = await handleSyncPost(request, env, session.userId);
       return json(result.body, result.status);
     }
+
+    // /api/* 绝不落到静态资源查找：未知接口就是 404 JSON
+    if (url.pathname.indexOf('/api/') === 0) return json({ error: 'Not Found' }, 404);
 
     const asset = await serveAsset(request, url, env);
     if (asset) {

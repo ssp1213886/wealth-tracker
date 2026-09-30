@@ -1,6 +1,46 @@
 // 本地存储基础设施：key 常量、统一读写（带容错）、数据版本迁移。
 // 只做"存取"这一件事，不掺业务副作用（同步、备份、刷新 UI 仍由 index.js 负责）。
 
+
+/* ===== 多用户：本地存储按账号分区 =====
+   登录后服务端会下发一个可读的 wt_uid cookie，index.js 在**任何读写之前**调用
+   setStorageNamespace(uid) —— 于是所有键都会带上 "u2:" 这样的前缀。
+   为什么不做成异步：App 启动时是同步从 localStorage 读初始状态的，
+   只有可读 cookie 能在这个时机给出账号。 */
+let __ns = '';
+export function setStorageNamespace(uid) {
+  __ns = uid ? 'u' + uid + ':' : '';
+}
+export function storageNamespace() {
+  return __ns;
+}
+function prefixed(key) {
+  return __ns + key;
+}
+/** localStorage 的带前缀替身：接口与 localStorage 一致，直接替换调用点即可。 */
+export const LS = {
+  getItem(key) {
+    try { return localStorage.getItem(prefixed(key)); } catch (e) { return null; }
+  },
+  setItem(key, value) {
+    try { localStorage.setItem(prefixed(key), value); return true; } catch (e) { return false; }
+  },
+  removeItem(key) {
+    try { localStorage.removeItem(prefixed(key)); } catch (e) { /* 忽略 */ }
+  },
+};
+/** 当前账号名下的所有键（清空数据/导出备份用，不会碰到别的账号）。 */
+export function namespacedKeys() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && key.indexOf(__ns) === 0) out.push(key.slice(__ns.length));
+    }
+  } catch (e) { /* 忽略 */ }
+  return out;
+}
+
 export const KEYS = {
   dashboard: 'wealth_dashboard_v2',
   prices: 'wealth_prices_v2',
@@ -26,7 +66,7 @@ export function isQuotaError(error) {
 
 export function readRaw(key) {
   try {
-    return localStorage.getItem(key);
+    return localStorage.getItem(prefixed(key));
   } catch (e) {
     return null;
   }
@@ -34,7 +74,7 @@ export function readRaw(key) {
 
 export function writeRaw(key, value) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(prefixed(key), value);
     return true;
   } catch (e) {
     return false;
@@ -43,7 +83,7 @@ export function writeRaw(key, value) {
 
 export function removeKey(key) {
   try {
-    localStorage.removeItem(key);
+    localStorage.removeItem(prefixed(key));
     return true;
   } catch (e) {
     return false;

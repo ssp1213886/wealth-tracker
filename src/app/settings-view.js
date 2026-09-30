@@ -3,7 +3,7 @@
 // 纯逻辑（面板映射、同步配置解析、数据健康文案）在 settings.js；这里只碰 DOM。
 // v248 从 index.js 抽出（行为完全一致）。
 
-import { KEYS, readRaw } from './store.js';
+import { KEYS, readRaw , LS } from './store.js';
 import { SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS } from './settings.js';
 import { logSwallowed } from './util.js';
 
@@ -68,7 +68,7 @@ export function toggleTheme() {
   updateThemeMeta();
   refreshVisualPalette();
   try {
-    localStorage.setItem(THEME_KEY, h.dataset.theme);
+    LS.setItem(THEME_KEY, h.dataset.theme);
   } catch (e) {
     logSwallowed('toggleTheme', e);
   }
@@ -95,7 +95,7 @@ export function setAccent(name) {
   document.querySelectorAll('.accent-dot').forEach(function (d) { d.classList.toggle('active', d.dataset.accent === name); });
   refreshVisualPalette();
   try {
-    localStorage.setItem(ACCENT_KEY, name);
+    LS.setItem(ACCENT_KEY, name);
   } catch (e) {
     logSwallowed('setAccent', e);
   }
@@ -340,7 +340,7 @@ export function bindShellControls() {
       this.title = '收起侧边栏';
     }
     try {
-      localStorage.setItem(SIDEBAR_KEY, sb.classList.contains('collapsed') ? '1' : '0');
+      LS.setItem(SIDEBAR_KEY, sb.classList.contains('collapsed') ? '1' : '0');
     } catch (e) {
       logSwallowed('setAccent', e);   // 标签沿用原实现（历史笔误，另行处理）
     }

@@ -29,7 +29,7 @@ await p.waitForTimeout(5000);
 
 // 线上已经开启登录门禁：未登录时这里拿到的是登录页。
 // 给了 WT_TOKEN 就自动登录继续验 App；没给就只验"门禁确实在"，不去猜别人的令牌。
-const needsLogin = await p.evaluate(() => (document.body.innerText || '').indexOf('请输入访问令牌') >= 0);
+const needsLogin = await p.evaluate(() => !!document.getElementById('loginForm'));
 if (needsLogin) {
   const token = process.env.WT_TOKEN || '';
   if (!token) {

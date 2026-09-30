@@ -11,9 +11,10 @@ async function readPayload(request) {
   }
 }
 
-export async function handleSyncGet(env) {
+export async function handleSyncGet(env, userId) {
   try {
-    const { results } = await env.DB.prepare('SELECT key, value, updated_at FROM data').all();
+    // 只读自己这个账号的数据行：多用户隔离就靠这一条 WHERE
+    const { results } = await env.DB.prepare('SELECT key, value, updated_at FROM data WHERE user_id = ?').bind(userId).all();
     const data = {};
     const meta = {};
     for (const row of results) {
@@ -24,13 +25,13 @@ export async function handleSyncGet(env) {
       }
       meta[row.key] = row.updated_at;
     }
-    return { status: 200, body: { ok: true, data, ts: Date.now(), meta } };
+    return { status: 200, body: { ok: true, userId, data, ts: Date.now(), meta } };
   } catch (error) {
     return { status: 502, body: { ok: false, error: 'DB error', detail: error.message } };
   }
 }
 
-export async function handleSyncPost(request, env) {
+export async function handleSyncPost(request, env, userId) {
   const payload = await readPayload(request);
   if (payload.error) return payload.error;
 
@@ -67,8 +68,8 @@ export async function handleSyncPost(request, env) {
       return { status: 400, body: { error: 'Value too large for key: ' + key } };
     }
     statements.push(env.DB.prepare(
-      'INSERT OR REPLACE INTO data (key, value, updated_at) VALUES (?, ?, ?)',
-    ).bind(key, serialized, syncTs));
+      'INSERT OR REPLACE INTO data (user_id, key, value, updated_at) VALUES (?, ?, ?, ?)',
+    ).bind(userId, key, serialized, syncTs));
   }
 
   try {
@@ -77,8 +78,8 @@ export async function handleSyncPost(request, env) {
       if (keys.length > 0) {
         const placeholders = keys.map(() => '?').join(',');
         const { results } = await env.DB.prepare(
-          `SELECT key, updated_at FROM data WHERE key IN (${placeholders})`,
-        ).bind(...keys).all();
+          `SELECT key, updated_at FROM data WHERE user_id = ? AND key IN (${placeholders})`,
+        ).bind(userId, ...keys).all();
         const currentVersions = Object.fromEntries(results.map((row) => [row.key, row.updated_at]));
         const conflicts = keys.filter((key) => {
           // 云端根本没有这一行（全新库、被重置、或该键从未推过）→ 不算冲突，
@@ -96,7 +97,7 @@ export async function handleSyncPost(request, env) {
     }
 
     if (statements.length > 0) await env.DB.batch(statements);
-    return { status: 200, body: { ok: true, saved: statements.length, ts: syncTs } };
+    return { status: 200, body: { ok: true, userId, saved: statements.length, ts: syncTs } };
   } catch (error) {
     return { status: 502, body: { ok: false, error: 'DB error', detail: error.message } };
   }

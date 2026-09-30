@@ -33,27 +33,31 @@ button:disabled{opacity:.6;cursor:default}
 <form class="box" id="loginForm">
 <img class="logo" src="/icon-192.png" alt="">
 <h1>My Portfolio</h1>
-<p>请输入访问令牌</p>
-<label for="pw">令牌</label>
-<input id="pw" name="password" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="粘贴你的令牌" required>
+<p>请登录</p>
+<label for="un">用户名</label>
+<input id="un" name="username" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="英文用户名" required>
+<label for="pw" style="margin-top:12px">密码</label>
+<input id="pw" name="password" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="密码" required>
 <button type="submit" id="go">登录</button>
 <div class="err" id="err">${message}</div>
-<div class="hint">就是你在云同步里用的那串令牌。登录状态会在这台设备上保留 90 天。</div>
+<div class="hint">首次登录请用你的用户名 + 原来的那串令牌作为密码（服务端会把它登记成你的账号）。登录状态在这台设备上保留 90 天。</div>
 </form>
 <script>
 (function(){
-  var form=document.getElementById('loginForm'),input=document.getElementById('pw'),btn=document.getElementById('go'),err=document.getElementById('err');
+  var form=document.getElementById('loginForm'),user=document.getElementById('un'),input=document.getElementById('pw'),btn=document.getElementById('go'),err=document.getElementById('err');
   form.addEventListener('submit',function(e){
     e.preventDefault();
+    var name=user.value.trim().toLowerCase();
     var value=input.value.trim();
-    if(!value){err.textContent='请输入令牌';return}
+    if(!name){err.textContent='请输入用户名';user.focus();return}
+    if(!value){err.textContent='请输入密码';input.focus();return}
     btn.disabled=true;err.textContent='';
-    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:value})})
+    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:name,password:value})})
       .then(function(r){return r.json().catch(function(){return {}}).then(function(j){return {ok:r.ok,status:r.status,body:j}})})
       .then(function(res){
         if(res.ok&&res.body&&res.body.ok){location.replace('/');return}
         btn.disabled=false;
-        err.textContent=res.status===429?'尝试次数过多，请过一会儿再试':(res.body&&res.body.error==='not configured'?'服务器没有配置令牌':'令牌不正确');
+        err.textContent=res.status===429?'尝试次数过多，请过一会儿再试':(res.body&&res.body.error==='not configured'?'服务器没有配置密码':'用户名或密码不正确');
         input.select();
       })
       .catch(function(){btn.disabled=false;err.textContent='网络错误，请重试'});

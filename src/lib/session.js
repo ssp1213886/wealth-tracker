@@ -4,6 +4,7 @@
 // cookie 里只有「过期时间 + 签名」，没有密码本身；改 AUTH_TOKEN 会让所有会话立即失效。
 
 const COOKIE_NAME = 'wt_session';
+const UID_COOKIE = 'wt_uid';
 const TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 天
 
 function toBase64Url(bytes) {
@@ -57,11 +58,16 @@ export function sessionSecret(env) {
   return (env && (env.SESSION_SECRET || loginPassword(env))) || '';
 }
 
-/** 登录成功后签发会话；服务器没配密码时返回 null（此时门禁会自动关闭，避免把用户锁在外面）。 */
-export async function issueSession(env, now = Date.now()) {
+/**
+ * 登录成功后签发会话。
+ * payload = `userId:过期时间`，签名覆盖两者 —— 服务器无状态，但能知道"你是谁"。
+ * 服务器没配密钥时返回 null（此时门禁自动关闭，免得把主人锁在门外）。
+ */
+export async function issueSession(env, userId, now = Date.now()) {
   const secret = sessionSecret(env);
   if (!secret) return null;
-  const payload = String(now + TTL_MS);
+  if (!Number.isFinite(Number(userId))) return null;
+  const payload = Number(userId) + ':' + (now + TTL_MS);
   const signature = await crypto.subtle.sign('HMAC', await hmacKey(secret), new TextEncoder().encode(payload));
   return { value: payload + '.' + toBase64Url(signature), maxAge: Math.floor(TTL_MS / 1000) };
 }
@@ -74,6 +80,19 @@ export function clearSessionCookie() {
   return COOKIE_NAME + '=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
 }
 
+/**
+ * 给前端看的账号 id（**故意不加 HttpOnly**）。
+ * 前端要在同步读取 localStorage 之前就知道"该读哪个账号的空间"，只能靠一个可读 cookie。
+ * 它只是标识，不是凭证：服务端永远只认签过名的 wt_session，改这个 cookie 只会让自己读到别的本地空间。
+ */
+export function uidCookie(userId, maxAge) {
+  return UID_COOKIE + '=' + Number(userId) + '; Path=/; Secure; SameSite=Lax; Max-Age=' + maxAge;
+}
+
+export function clearUidCookie() {
+  return UID_COOKIE + '=; Path=/; Secure; SameSite=Lax; Max-Age=0';
+}
+
 function readCookie(header, name) {
   const parts = String(header || '').split(';');
   for (let i = 0; i < parts.length; i += 1) {
@@ -83,25 +102,29 @@ function readCookie(header, name) {
   return '';
 }
 
-/** 请求里是否带着有效的登录会话。crypto.subtle.verify 本身就是常数时间比较。 */
-export async function hasValidSession(request, env, now = Date.now()) {
+/** 会话有效就返回 { userId }，否则返回 null。crypto.subtle.verify 是常数时间比较。 */
+export async function readSession(request, env, now = Date.now()) {
   const secret = sessionSecret(env);
-  if (!secret) return false;
+  if (!secret) return null;
   const raw = readCookie(request.headers.get('Cookie') || '', COOKIE_NAME);
   const dot = raw.lastIndexOf('.');
-  if (dot <= 0) return false;
+  if (dot <= 0) return null;
   const payload = raw.slice(0, dot);
-  const expires = Number(payload);
-  if (!Number.isFinite(expires) || expires <= now) return false;
+  const split = payload.lastIndexOf(':');
+  if (split <= 0) return null;
+  const userId = Number(payload.slice(0, split));
+  const expires = Number(payload.slice(split + 1));
+  if (!Number.isFinite(userId) || userId <= 0 || !Number.isFinite(expires) || expires <= now) return null;
   try {
-    return await crypto.subtle.verify(
+    const valid = await crypto.subtle.verify(
       'HMAC',
       await hmacKey(secret),
       fromBase64Url(raw.slice(dot + 1)),
       new TextEncoder().encode(payload),
     );
+    return valid ? { userId } : null;
   } catch (error) {
-    return false;
+    return null;
   }
 }
 

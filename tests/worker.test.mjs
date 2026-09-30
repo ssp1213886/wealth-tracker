@@ -5,22 +5,38 @@ import fs from 'node:fs';
 import worker from '../src/worker.js';
 
 function createDb(initial = {}) {
-  const rows = new Map(Object.entries(initial).map(([key, value]) => [key, {
+  const rows = new Map(Object.entries(initial).map(([key, value]) => [`1|${key}`, {
     key,
     value: JSON.stringify(value),
     updated_at: 1000,
   }]));
+  const accounts = [];
 
   const execute = (sql, args) => {
-    if (sql.startsWith('SELECT key, value, updated_at')) {
-      return { results: [...rows.values()] };
+    const q = sql.replace(/\s+/g, ' ').trim();
+    if (q.startsWith('CREATE TABLE IF NOT EXISTS accounts')) return { results: [], success: true };
+    if (q.startsWith('SELECT COUNT(*) AS n FROM accounts')) return { results: [{ n: accounts.length }] };
+    if (q.startsWith('SELECT * FROM accounts WHERE username')) {
+      return { results: accounts.filter((a) => a.username === args[0]) };
     }
-    if (sql.startsWith('SELECT key, updated_at')) {
+    if (q.startsWith('SELECT id, username, name, created_at FROM accounts')) {
+      return { results: accounts.map((a) => ({ id: a.id, username: a.username, name: a.name, created_at: a.created_at })) };
+    }
+    if (q.startsWith('INSERT INTO accounts')) {
+      const [username, name, pass_hash, salt, created_at] = args;
+      const id = accounts.length + 1;
+      accounts.push({ id, username, name, pass_hash, salt, created_at, disabled: 0 });
+      return { results: [], success: true, meta: { last_row_id: id } };
+    }
+    if (q.startsWith('SELECT key, value, updated_at FROM data')) {
+      return { results: [...rows.values()].filter((row) => row.user_id === undefined || Number(args[0]) === 1) };
+    }
+    if (q.startsWith('SELECT key, updated_at FROM data')) {
       return { results: [...rows.values()].filter((row) => args.includes(row.key)) };
     }
-    if (sql.startsWith('INSERT OR REPLACE')) {
-      const [key, value, updated_at] = args;
-      rows.set(key, { key, value, updated_at });
+    if (q.startsWith('INSERT OR REPLACE INTO data')) {
+      const [user_id, key, value, updated_at] = args;
+      rows.set(`${user_id}|${key}`, { user_id, key, value, updated_at });
       return { success: true };
     }
     return { results: [] };
@@ -34,12 +50,17 @@ function createDb(initial = {}) {
         return this;
       },
       all: async () => execute(sql, args),
+      first: async () => {
+        const out = execute(sql, args);
+        return out.results && out.results.length ? out.results[0] : null;
+      },
       run: async () => execute(sql, args),
     };
   };
 
   return {
     rows,
+    accounts,
     prepare: (sql) => statement(sql),
     async batch(statements) {
       for (const item of statements) await item.run();
@@ -54,6 +75,13 @@ const env = (db) => ({
   ASSETS: { fetch: async () => new Response(null, { status: 404 }) },
 });
 const request = (path, options = {}) => new Request('https://example.com' + path, options);
+const loginBody = (username, password) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+/** 用主密码登录（空库时会自动建主账号），返回可用于后续请求的 Cookie 头。 */
+async function loginCookie(testEnv, username = 'admin', password = 'secret') {
+  const res = await worker.fetch(request('/api/login', loginBody(username, password)), testEnv);
+  const setCookie = res.headers.get('Set-Cookie') || '';
+  return setCookie ? setCookie.split(';')[0] : '';
+}
 
 test('rejects sync without auth token', async () => {
   const response = await worker.fetch(request('/api/sync'), env(createDb()));
@@ -70,7 +98,9 @@ test('returns CORS preflight headers', async () => {
 test('rejects unsupported price symbols and methods', async () => {
   const testEnv = env(createDb());
   // /api/* 现在都要登录，这两个用例考的是参数校验，所以要带上凭证
-  const auth = { 'X-Auth-Token': 'secret' };
+  const cookie = await loginCookie(testEnv);
+  assert.ok(cookie, '登录应拿到会话 cookie');
+  const auth = { Cookie: cookie };
   assert.equal((await worker.fetch(request('/api/price?symbol=BAD', { headers: auth }), testEnv)).status, 400);
   assert.equal((await worker.fetch(request('/api/price?symbol=VGT', { method: 'POST', headers: auth }), testEnv)).status, 405);
 });
@@ -93,14 +123,14 @@ const nav = (path, cookie) => new Request('https://example.com' + path, {
 const login = (password) => request('/api/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ password }),
+  body: JSON.stringify({ username: 'admin', password }),
 });
 
 test('登录门禁：未登录的导航只给登录页，绝不吐 App 壳子', async () => {
   const res = await worker.fetch(nav('/'), env(createDb()));
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /请输入访问令牌/);
+  assert.match(html, /id="loginForm"/);
   assert.doesNotMatch(html, /APP SHELL/);
   assert.equal(res.headers.get('Cache-Control'), 'no-store, max-age=0');
 });
@@ -109,7 +139,7 @@ test('登录门禁：/login 自己有路由（少了它会掉到资源查找变�
   const res = await worker.fetch(request('/login'), env(createDb()));
   assert.equal(res.status, 200);
   assert.match(res.headers.get('Content-Type') || '', /text\/html/);
-  assert.match(await res.text(), /请输入访问令牌/);
+  assert.match(await res.text(), /id="loginForm"/);
 });
 
 test('登录门禁：找不到的页面给人看 HTML，不要吐裸 JSON', async () => {
@@ -117,8 +147,10 @@ test('登录门禁：找不到的页面给人看 HTML，不要吐裸 JSON', asyn
   assert.equal(res.status, 404);
   assert.match(res.headers.get('Content-Type') || '', /text\/html/);
   assert.doesNotMatch(await res.text(), /^\{"error"/);
-  // /api/* 仍然回 JSON（注意：未登录时会被门禁挡成 401，所以要带上凭证才测得到 404）
-  const api = await worker.fetch(request('/api/definitely-not-here', { headers: { 'X-Auth-Token': 'secret' } }), env(createDb()));
+  // /api/* 仍然回 JSON（注意：未登录时会被门禁挡成 401，所以要带上会话才测得到 404）
+  const apiEnv = shellEnv(createDb());
+  const cookie = await loginCookie(apiEnv);
+  const api = await worker.fetch(request('/api/definitely-not-here', { headers: { Cookie: cookie } }), apiEnv);
   assert.equal(api.status, 404);
   assert.match(api.headers.get('Content-Type') || '', /application\/json/);
   assert.match(api.headers.get('Cache-Control') || '', /no-store/);
@@ -136,6 +168,7 @@ test('登录门禁：密码错 → 401；密码对 → 下发会话 cookie，带
 
   const good = await worker.fetch(login('secret'), testEnv);
   assert.equal(good.status, 200);
+  assert.equal((await good.clone().json()).username, 'admin', '首次登录会用它当主账号用户名');
   const setCookie = good.headers.get('Set-Cookie') || '';
   assert.match(setCookie, /wt_session=/);
   assert.match(setCookie, /HttpOnly/);
@@ -150,8 +183,8 @@ test('登录门禁：密码错 → 401；密码对 → 下发会话 cookie，带
 
 test('登录门禁：伪造 cookie 不放行；登出接口清空 cookie', async () => {
   const testEnv = shellEnv(createDb());
-  const forged = await worker.fetch(nav('/', 'wt_session=9999999999999.bad'), testEnv);
-  assert.match(await forged.text(), /请输入访问令牌/);
+  const forged = await worker.fetch(nav('/', 'wt_session=1:9999999999999.bad'), testEnv);
+  assert.match(await forged.text(), /id="loginForm"/);
 
   const out = await worker.fetch(request('/api/logout', { method: 'POST' }), testEnv);
   assert.equal(out.status, 200);
@@ -170,37 +203,44 @@ test('登录门禁：静态资源不需要登录（否则 SW 预缓存会把登�
 });
 
 test('validates sync payload and key whitelist', async () => {
-  const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': 'secret' };
+  const db = createDb();
+  const cookie = await loginCookie(env(db));
+  const headers = { 'Content-Type': 'application/json', Cookie: cookie };
+  const testEnv = env(db);
   const badKey = await worker.fetch(request('/api/sync', {
     method: 'POST', headers, body: JSON.stringify({ bad: [] }),
-  }), env(createDb()));
+  }), testEnv);
   assert.equal(badKey.status, 400);
 
   const invalidJson = await worker.fetch(request('/api/sync', {
     method: 'POST', headers, body: '{',
-  }), env(createDb()));
+  }), testEnv);
   assert.equal(invalidJson.status, 400);
 });
 
 test('stores valid sync payloads', async () => {
   const db = createDb();
-  const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': 'secret' };
+  const testEnv = env(db);
+  const cookie = await loginCookie(testEnv);
+  const headers = { 'Content-Type': 'application/json', Cookie: cookie };
   const response = await worker.fetch(request('/api/sync', {
     method: 'POST', headers, body: JSON.stringify({ trades: [] }),
-  }), env(db));
+  }), testEnv);
   assert.equal(response.status, 200);
   assert.equal((await response.json()).saved, 1);
-  assert.deepEqual(JSON.parse(db.rows.get('trades').value), []);
+  assert.deepEqual(JSON.parse(db.rows.get('1|trades').value), []);
 });
 
 test('returns 409 when expected version is stale', async () => {
   const db = createDb({ trades: [] });
-  const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': 'secret' };
+  const testEnv = env(db);
+  const cookie = await loginCookie(testEnv);
+  const headers = { 'Content-Type': 'application/json', Cookie: cookie };
   const response = await worker.fetch(request('/api/sync', {
     method: 'POST',
     headers,
     body: JSON.stringify({ trades: [], __expectedVersions: { trades: 999 } }),
-  }), env(db));
+  }), testEnv);
   assert.equal(response.status, 409);
   const body = await response.json();
   assert.deepEqual(body.conflicts, ['trades']);
@@ -211,7 +251,9 @@ test('does not 409 when the cloud has no row for that key yet', async () => {
   // 全新库（或被重置）时，客户端带着任何版本号来推都应当直接建立基线，
   // 否则用户会看到永远消不掉的假冲突。
   const db = createDb();
-  const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': 'secret' };
+  const testEnv = env(db);
+  const cookie = await loginCookie(testEnv);
+  const headers = { 'Content-Type': 'application/json', Cookie: cookie };
   const response = await worker.fetch(request('/api/sync', {
     method: 'POST',
     headers,
@@ -220,7 +262,7 @@ test('does not 409 when the cloud has no row for that key yet', async () => {
       cashBalance: 3000,
       __expectedVersions: { trades: 1790275460093, cashBalance: 1790275486762 },
     }),
-  }), env(db));
+  }), testEnv);
   assert.equal(response.status, 200);
   assert.equal((await response.json()).saved, 2);
 
@@ -229,6 +271,6 @@ test('does not 409 when the cloud has no row for that key yet', async () => {
     method: 'POST',
     headers,
     body: JSON.stringify({ trades: [{ id: 2 }], __expectedVersions: { trades: 1 } }),
-  }), env(db));
+  }), testEnv);
   assert.equal(stale.status, 409);
 });

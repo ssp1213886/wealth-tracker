@@ -173,6 +173,15 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, cors);
     return res.end(JSON.stringify({ ok: true, caps: out, missing, ts: Date.now() }));
   }
+  // 账号接口（对应线上 src/lib/worker.js 的 /api/accounts）
+  if (url.pathname === '/api/accounts') {
+    res.writeHead(200, cors);
+    return res.end(JSON.stringify({
+      ok: true, userId: 1,
+      me: { id: 1, username: 'admin', name: 'Admin' },
+      accounts: [{ id: 1, username: 'admin', name: 'Admin' }],
+    }));
+  }
   // 其它 /api/*：返回空但结构正确，避免前端等待或报错
   if (url.pathname.startsWith('/api/')) {
     res.writeHead(200, cors);
