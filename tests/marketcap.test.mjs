@@ -12,6 +12,13 @@ function withFetch(impl, fn) {
     .finally(() => { globalThis.fetch = saved; });
 }
 
+/** CoinLore 的返回表：模块内是全局缓存，所有币的用例共用同一份，避免先到先得的顺序耦合。 */
+const COINLORE_TABLE = [
+  { symbol: 'BTC', market_cap_usd: '1663425017662.20' },
+  { symbol: 'ETH', market_cap_usd: '326869319620.04' },
+  { symbol: 'HYPE', market_cap_usd: '28615649075.35' },
+];
+
 const nasdaq = (summaryData, status = 200) => Promise.resolve(new Response(JSON.stringify({ data: { summaryData } }), { status }));
 const call = (symbols) => {
   const url = new URL('https://example.com/api/marketcap?symbols=' + encodeURIComponent(symbols));
@@ -69,7 +76,7 @@ test('handleMarketCap：Nasdaq 查不到的币，用 CoinLore 的市值补上', 
     if (target.includes('api.nasdaq.com')) return nasdaq({});
     if (target.includes('coinlore.net')) {
       return Promise.resolve(new Response(JSON.stringify({
-        data: [{ symbol: 'BTC', market_cap_usd: '1663425017662.20' }, { symbol: 'HYPE', market_cap_usd: '28615649075.35' }],
+        data: COINLORE_TABLE,
       }), { status: 200 }));
     }
     return Promise.reject(new Error('不该请求 ' + target));
@@ -111,6 +118,26 @@ test('handleMarketCap：GOLD 要的是金价（GC=F），不能被同名美股 B
     assert.deepEqual(result.body.missing, ['GOLD']);
     assert.ok(result.body.caps.NVDA > 0);
     assert.ok(!asked.some((u) => u.includes('/GOLD/')), '根本不该向上游问 GOLD');
+  });
+});
+
+test('handleMarketCap：币一律走 CoinLore，绝不先问 Nasdaq（ETH 在 Nasdaq 上是 Ethan Allen 家具公司）', async () => {
+  const asked = [];
+  const fake = (url) => {
+    const target = String(url);
+    asked.push(target);
+    if (target.includes('api.nasdaq.com')) return nasdaq({ MarketCap: { value: '1,240,847,244' } });
+    if (target.includes('coinlore.net')) {
+      return Promise.resolve(new Response(JSON.stringify({
+        data: COINLORE_TABLE,
+      }), { status: 200 }));
+    }
+    return Promise.reject(new Error('不该请求 ' + target));
+  };
+  await withFetch(fake, async () => {
+    const result = await call('ETH');
+    assert.equal(result.body.caps.ETH, 326869319620.04, 'ETH 必须是以太坊，不是 Ethan Allen');
+    assert.ok(!asked.some((u) => u.includes('/ETH/')), '根本不该拿 ETH 去问 Nasdaq');
   });
 });
 

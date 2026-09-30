@@ -115,24 +115,25 @@ export async function handleMarketCap(request, url) {
     stale.push(symbol);
   });
 
-  const fetched = await Promise.all(stale.map(async (symbol) => [symbol, await fetchCap(symbol)]));
+  // 币必须走 CoinLore，绝不能先问 Nasdaq —— ETH 在 Nasdaq 上是 Ethan Allen 家具公司（$1.2B），
+  // 会把比特币 ETF 隔壁的以太坊市值显示成一家沙发厂。这和行情模块"白名单里的代码优先当币"是同一条规则。
+  const staleStocks = stale.filter((symbol) => !CRYPTO_PAIRS[symbol]);
+  const staleCryptos = stale.filter((symbol) => CRYPTO_PAIRS[symbol]);
+
+  const fetched = await Promise.all(staleStocks.map(async (symbol) => [symbol, await fetchCap(symbol)]));
   fetched.forEach(([symbol, cap]) => {
     cache.set(symbol, { at: now, cap });
     if (cap) caps[symbol] = cap;
     else missing.push(symbol);
   });
 
-  // Nasdaq 没有的，看是不是币（只认我们自己的加密白名单，避免和同名美股撞车）
-  const maybeCrypto = missing.filter((symbol) => CRYPTO_PAIRS[symbol]);
-  if (maybeCrypto.length) {
+  if (staleCryptos.length) {
     const crypto = await fetchCryptoCaps();
-    maybeCrypto.forEach((symbol) => {
+    staleCryptos.forEach((symbol) => {
       const cap = crypto[symbol];
-      if (!cap) return;
-      caps[symbol] = cap;
       cache.set(symbol, { at: now, cap });
-      const at = missing.indexOf(symbol);
-      if (at >= 0) missing.splice(at, 1);
+      if (cap) caps[symbol] = cap;
+      else missing.push(symbol);
     });
   }
 
