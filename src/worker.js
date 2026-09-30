@@ -71,6 +71,49 @@ function needsAuth(request, pathname) {
 
 export default {
   async fetch(request, env, ctx) {
+    return withSecurityHeaders(await handleRequest(request, env, ctx));
+  },
+};
+
+/**
+ * 安全响应头（v321）。
+ *
+ * 之前一个都没有：线上首页实测只带 Content-Type / Cache-Control / X-WT-Shell。
+ * 最实在的风险是**点击劫持**——应用里有「长按 3 秒 → 清除全部数据」这类破坏性操作，
+ * 被诱导点一下（哪怕云端有快照能回滚）也是事故。
+ *
+ * CSP 说明：页面里大量使用内联 onclick 与内联样式，所以 script-src / style-src 只能先带 'unsafe-inline'
+ * （仍能挡住外链脚本注入与 eval）；connect-src 要放行浏览器端直连的腾讯行情回退。
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "connect-src 'self' https://qt.gtimg.cn",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+].join('; ');
+
+function withSecurityHeaders(response) {
+  try {
+    if (!response || !response.headers) return response;
+    const headers = new Headers(response.headers);
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Referrer-Policy', 'no-referrer');
+    headers.set('X-Frame-Options', 'DENY');
+    // CSP 只给 HTML：JSON 接口用不上，也不该被它干扰
+    if ((headers.get('Content-Type') || '').indexOf('text/html') >= 0) headers.set('Content-Security-Policy', CSP);
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  } catch (error) {
+    return response;
+  }
+}
+
+/** 真正的路由与业务逻辑（v321 从默认导出的 fetch 里拆出来，好让所有响应统一过一遍安全头）。 */
+async function handleRequest(request, env, ctx) {
     /**
      * 把"记日志 / 更新时间"这类不该阻塞响应的写入挂到 waitUntil 上。
      * ⚠️ 不能直接 fire-and-forget：Worker 一返回响应，没 await 的异步写入会被取消
@@ -396,5 +439,4 @@ export default {
     // 人看的页面永远别吐裸 JSON：浏览器里出现 {"error":"Not Found"} 根本没法自查
     if (url.pathname.indexOf('/api/') === 0) return json({ error: 'Not Found' }, 404);
     return notFoundPage();
-  },
-};
+}

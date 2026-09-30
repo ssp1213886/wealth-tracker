@@ -11,6 +11,8 @@ import {
   sparklinePath,
   dateOrdinal,
   fetchWithTimeout,
+  FETCH_TIMEOUT_MS,
+  SYNC_TIMEOUT_MS,
 } from '../src/app/util.js';
 
 test('safeNum: 非法值归零，合法值原样返回', () => {
@@ -122,4 +124,12 @@ test('fetchWithTimeout：超时必须中断，正常返回要清掉定时器', {
   } finally {
     globalThis.fetch = orig;
   }
+});
+
+// v321：两套超时常量集中在一处（以前同步那条散在 index.js 里），并保证"同步比普通宽"
+test('超时常量：同步(15s) 要宽于普通请求(10s)，且都是正数', () => {
+  assert.ok(FETCH_TIMEOUT_MS > 0 && SYNC_TIMEOUT_MS > 0);
+  assert.ok(SYNC_TIMEOUT_MS >= FETCH_TIMEOUT_MS, '同步是关键路径，慢网络下不该比普通请求先超时');
+  assert.equal(FETCH_TIMEOUT_MS, 10000);
+  assert.equal(SYNC_TIMEOUT_MS, 15000);
 });

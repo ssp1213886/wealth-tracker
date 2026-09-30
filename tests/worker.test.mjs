@@ -24,6 +24,23 @@ test('rejects sync without auth token', async () => {
   assert.equal(response.status, 401);
 });
 
+// v321：所有响应补安全头；HTML 另加 CSP（防点击劫持 —— 应用里有"长按 3 秒清除全部数据"）
+test('安全响应头：通用三项人人有，CSP 只给 HTML', async () => {
+  const html = await worker.fetch(request('/'), env(createFakeDb()));   // 未登录 → 登录页（HTML）
+  assert.equal(html.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.equal(html.headers.get('X-Frame-Options'), 'DENY');
+  assert.equal(html.headers.get('Referrer-Policy'), 'no-referrer');
+  const csp = html.headers.get('Content-Security-Policy') || '';
+  assert.match(csp, /frame-ancestors 'none'/, '必须禁止被嵌套（点击劫持）');
+  assert.match(csp, /default-src 'self'/);
+  assert.match(csp, /connect-src 'self' https:\/\/qt\.gtimg\.cn/, '浏览器端腾讯行情回退要放行');
+  assert.match(csp, /object-src 'none'/);
+
+  const api = await worker.fetch(request('/api/sync'), env(createFakeDb()));   // 401 JSON
+  assert.equal(api.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.equal(api.headers.get('Content-Security-Policy'), null, 'JSON 接口不需要 CSP');
+});
+
 test('returns CORS preflight headers', async () => {
   const response = await worker.fetch(request('/api/sync', { method: 'OPTIONS' }), env(createFakeDb()));
   assert.equal(response.status, 200);

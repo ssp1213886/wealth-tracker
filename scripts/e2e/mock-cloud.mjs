@@ -59,8 +59,31 @@ const mime = {
   '.ico': 'image/x-icon',
 };
 const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json; charset=utf-8' };
+// 安全头与真 Worker（src/worker.js 的 withSecurityHeaders）保持一致：
+// HTML 附 CSP —— 这样 e2e 的"零 console 报错"能替我们抓出 CSP 写坏（比如挡了自己的脚本/接口）。
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "connect-src 'self' https://qt.gtimg.cn",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+].join('; ');
 
 const server = http.createServer((req, res) => {
+  // 统一在出口补安全头（mock 里所有响应都走 res.writeHead(status, headersObj)）
+  const rawWriteHead = res.writeHead.bind(res);
+  res.writeHead = (status, headers) => {
+    const merged = Object.assign({}, headers);
+    merged['X-Content-Type-Options'] = 'nosniff';
+    merged['Referrer-Policy'] = 'no-referrer';
+    merged['X-Frame-Options'] = 'DENY';
+    if (String(merged['Content-Type'] || '').indexOf('text/html') >= 0) merged['Content-Security-Policy'] = CSP;
+    return rawWriteHead(status, merged);
+  };
   const url = new URL(req.url || '/', 'http://localhost');
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {

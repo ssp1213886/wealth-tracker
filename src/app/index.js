@@ -1,4 +1,4 @@
-import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed, fetchWithTimeout} from './util.js';
+import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed, fetchWithTimeout, SYNC_TIMEOUT_MS} from './util.js';
 import {computeHoldings, buildPositionRows, cashCorrectionPlan} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations, LS, setStorageNamespace, storageNamespace} from './store.js';
 import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, SYNC_FIELDS} from './sync.js';
@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v320';var APP_DATA_VERSION=5;
+var APP_BUILD='v321';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -974,7 +974,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=320',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=321',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1257,7 +1257,6 @@ ss.dirty=plan.dirty;ss.cloudTs=plan.cloudTs;saveSyncState(ss);
 if(!syncCfg.url){syncCfg.url=location.origin;try{saveSyncCfg()}catch(e){logSwallowed("defaultSyncCfg",e)}}function loadSyncCfg(){return parseSyncConfig(readRaw(SYNC_KEY))}function saveSyncCfg(){try{LS.setItem(SYNC_KEY,JSON.stringify(syncCfg))}catch(e){console.error("保存同步配置失败:",e)}}/* v316：同步请求硬超时 —— 网络黑洞时（VPN 掉线 / SNI 被拦）fetch 可能永远不返回，
    没有超时的话状态条就永远等不到结局，"连不上"会被翻译成一直"正在下载"。
    15 秒足够慢网络跑完，超时按失败处理（AbortError 由包装层翻译成人话）。 */
-var SYNC_TIMEOUT_MS=15000;
 function syncFetch(method,body,suffix){var base=syncCfg.url||location.origin;var headers={'Content-Type':'application/json'};if(syncCfg.token)headers['X-Auth-Token']=syncCfg.token;var ctrl=null;try{ctrl=new AbortController()}catch(e){logSwallowed("syncFetch",e)}var opts={method:method,headers:headers,body:body?JSON.stringify(body):undefined};var timer=0;if(ctrl){opts.signal=ctrl.signal;timer=setTimeout(function(){try{ctrl.abort()}catch(e){logSwallowed("syncFetch",e)}},SYNC_TIMEOUT_MS)}var stopTimer=function(){if(timer){clearTimeout(timer);timer=0}};return fetch(base.replace(/\/$/,'')+'/api/sync'+(suffix||''),opts).then(function(r){if(!r.ok)return r.json().then(function(body){var err=new Error(body.error||('HTTP '+r.status));err.status=r.status;err.body=body;throw err});return r.json()}).then(function(v){stopTimer();return v},function(e){stopTimer();throw e})}
 function syncPush(){var data=buildPushData(false);syncFetch('POST',data).then(function(r){Object.keys(data).forEach(function(k){if(SYNC_KEYS.indexOf(k)>=0){clearDirty(k);setCloudTs(k,(r.ts||Date.now()))}});var el=document.getElementById('syncStatus');el.textContent='已上传 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)';showToast('已上传到云端','ok')}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)';if(e&&e.status===409){healPushConflict(data)}else{showToast('同步失败: '+e.message,'err')}})}function syncPull(){var ss=loadSyncState();var dirtyN=SYNC_KEYS.filter(function(k){return ss.dirty[k]}).length;if(dirtyN>0){if(!confirm('本地有 '+dirtyN+' 项未同步改动会被云端覆盖,确定?'))return}syncFetch('GET').then(function(r){if(!r.data)throw new Error('空响应');SYNC_KEYS.forEach(function(k){if(r.data[k]!==undefined&&r.data[k]!==null)applyCloudVal(k,r.data[k])});if(r.data.prices){var lp=JSON.parse(readRaw(PRICE_KEY)||'{}');for(var k in r.data.prices){var cd=r.data.prices[k];if(!cd)continue;if(!lp[k]||!cd.time||cd.time>=(lp[k].time||0)){lp[k]=cd;livePrices[k]=cd.price}}LS.setItem(PRICE_KEY,JSON.stringify(lp))}SYNC_KEYS.forEach(function(k){clearDirty(k)});showToast('已从云端同步,刷新中...','ok');setTimeout(function(){location.reload()},600)}).catch(function(e){var el=document.getElementById('syncStatus');el.textContent='失败: '+e.message;el.style.color='var(--red)';showToast('同步失败: '+e.message,'err')})}document.getElementById('btnSyncPush').addEventListener('click',syncPush);document.getElementById('btnSyncPull').addEventListener('click',syncPull);document.getElementById('syncUrl').addEventListener('change',function(){syncCfg.url=this.value;saveSyncCfg()});(function(){var el=document.getElementById('syncUrl');if(el){if(syncCfg.url)el.value=syncCfg.url;else{el.value=location.origin;el.placeholder=location.origin;syncCfg.url=location.origin;saveSyncCfg()}}})();
 
@@ -1454,15 +1453,27 @@ function showApproval(opts){
   okBtn.textContent=o.confirmText||'确认';
   if(o.danger===false)okBtn.className='ds-approval-btn';
   var closed=false;
+  /* v321：记住弹层打开前的焦点，关闭后还回去 —— 否则键盘/读屏用户关掉弹层就"失位"了 */
+  var prevFocus=document.activeElement;
   function close(){
     if(closed)return;
     closed=true;
     modal.classList.remove('show');
     if(modal.parentNode)modal.parentNode.removeChild(modal);
     document.removeEventListener('keydown',onKey);
+    try{if(prevFocus&&prevFocus!==document.body&&prevFocus.isConnected&&typeof prevFocus.focus==='function')prevFocus.focus()}catch(e){logSwallowed("showApproval",e)}
   }
   function onKey(e){
-    if(e.key==='Escape'){e.preventDefault();close()}
+    if(e.key==='Escape'){e.preventDefault();close();return}
+    if(e.key==='Tab'){
+      /* v321：焦点陷阱 —— 别让 Tab 跑到背后的页面上（键盘用户会看不见自己在操作谁） */
+      var items=Array.prototype.slice.call(modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter(function(el){return !el.disabled});
+      if(!items.length)return;
+      var first=items[0],last=items[items.length-1],active=document.activeElement;
+      if(e.shiftKey&&active===first){e.preventDefault();last.focus()}
+      else if(!e.shiftKey&&active===last){e.preventDefault();first.focus()}
+      else if(items.indexOf(active)<0){e.preventDefault();first.focus()}
+    }
   }
   cancelBtn.addEventListener('click',close);
   if(o.holdMs){
@@ -1478,8 +1489,10 @@ function showApproval(opts){
     okBtn.addEventListener('pointerup',resetHold);
     okBtn.addEventListener('pointercancel',resetHold);
     okBtn.addEventListener('pointerleave',resetHold);
-    okBtn.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter')e.preventDefault()});
-    okBtn.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();fire()}});
+    /* v321：键盘也必须"按住"——以前是 keydown 阻止默认 + keyup 直接 fire()，
+       等于键盘一次按键就执行了本该长按的破坏性操作（读屏用户常用 Enter/Space 激活按钮）。 */
+    okBtn.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){if(!held)startHold(e)}});
+    okBtn.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();resetHold()}});
   }else{
     okBtn.addEventListener('click',function(){close();if(typeof o.onConfirm==='function')o.onConfirm()});
   }

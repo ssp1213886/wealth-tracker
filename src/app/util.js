@@ -34,6 +34,13 @@ export function dateOrdinal(value){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value|
 export const FETCH_TIMEOUT_MS = 10000;
 
 /**
+ * 同步请求（`/api/sync`）的截止时间：比普通请求宽一些。
+ * 同步是"拉全文 + 写状态"的关键路径，慢网络下"慢但成功"不该被冤枉成失败（v314 的教训）。
+ * 两套超时集中在这里，免得以后再出现"这个 8 秒那个 12 秒"的散落常量。
+ */
+export const SYNC_TIMEOUT_MS = 15000;
+
+/**
  * 带截止时间的 fetch（v320）。
  *
  * 为什么必须有：链路黑洞时（VPN 掉线 / DNS 污染 / SNI 被拦）fetch 可以**永远不返回**，

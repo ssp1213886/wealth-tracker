@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=320');
+  assert.equal(manifest.start_url, '/?v=321');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v320/);
+  assert.match(serviceWorker, /wealth-v321/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=320',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=321',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -442,7 +442,9 @@ test('同步失败不再挂死在 busy：没有 stall 兜底，失败原因说�
   assert.doesNotMatch(appSource, /stallTimer/);
   assert.doesNotMatch(appSource, /仍在同步…（网络较慢）/);
   // 硬超时 + 可行动的失败文案
-  assert.match(appSource, /var SYNC_TIMEOUT_MS=15000;/);
+  // v321：两套超时集中到 util.js（同步 15 秒 / 普通 10 秒），不再散落在 index.js 里
+  assert.match(appSource, /const SYNC_TIMEOUT_MS = 15000;/);
+  assert.match(appSource, /const FETCH_TIMEOUT_MS = 10000;/);
   assert.match(appSource, /opts\.signal=ctrl\.signal/);
   assert.match(appSource, /连不上云端 · 稍后自动重试/);
   assert.match(appSource, /当前离线 · 数据已存本机/);
@@ -470,6 +472,14 @@ test('同步失败不再挂死在 busy：没有 stall 兜底，失败原因说�
   const bareFetches = (indexSource.match(/(?<![a-zA-Z.])fetch\(/g) || []).length;
   assert.equal(bareFetches, 3, '裸 fetch 只允许 3 处，实际 ' + bareFetches + ' 处');
   assert.ok((indexSource.match(/fetchWithTimeout\(/g) || []).length >= 15, '其余网络调用都要走 fetchWithTimeout');
+  // v321：危险操作的"长按确认"对键盘同样成立 —— 以前 keydown 阻止默认 + keyup 直接 fire()，
+  // 等于键盘一次按键就执行了本该按住才生效的破坏性操作（读屏用户常用 Enter/Space 激活按钮）。
+  assert.doesNotMatch(appSource, /keyup',function\(e\)\{if\(e\.key===' '\|\|e\.key==='Enter'\)\{e\.preventDefault\(\);fire\(\)\}\}/, '键盘不能一按就执行长按确认');
+  assert.match(appSource, /if\(!held\)startHold\(e\)/);
+  // 焦点管理：打开时记住、关闭时归还；Tab 圈在弹层里
+  assert.match(appSource, /var prevFocus=document\.activeElement/);
+  assert.match(appSource, /prevFocus\.focus\(\)/);
+  assert.match(appSource, /e\.key==='Tab'/);
 });
 
 test('sync feedback has a single channel per event', () => {

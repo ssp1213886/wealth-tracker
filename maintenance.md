@@ -393,6 +393,28 @@ const steps = {
 **Service Worker 生成物**：`public/sw.js` 的 `CACHE = 'wealth-vN'`，由 `npm run bump` 与另外 4 处一起改；
 构建好的 `public/assets/app.js` 是产物，**不要手改**。
 
+## 安全响应头（v321 起）
+
+线上首页**以前一个安全头都没有**（实测只带 `Content-Type` / `Cache-Control` / `X-WT-Shell`）。
+现在由 `src/worker.js` 的 `withSecurityHeaders()` 在出口统一加：
+
+| 头 | 值 | 为什么 |
+| --- | --- | --- |
+| `X-Content-Type-Options` | `nosniff` | 防 MIME 嗅探 |
+| `Referrer-Policy` | `no-referrer` | 不把带参数的 URL 泄露给外部 |
+| `X-Frame-Options` | `DENY` | 防点击劫持 —— 应用里有「长按 3 秒 → 清除全部数据」这类破坏性操作 |
+| `Content-Security-Policy` | 见下 | **只给 HTML**（JSON 接口用不上，也不该被它干扰） |
+
+当前 CSP：`default-src 'self'` · `script-src 'self' 'unsafe-inline'` · `style-src 'self' 'unsafe-inline'` ·
+`img-src 'self' data:` · `connect-src 'self' https://qt.gtimg.cn` · `form-action 'self'` ·
+`frame-ancestors 'none'` · `base-uri 'self'` · `object-src 'none'`。
+
+- **为什么 `script-src` 带 `'unsafe-inline'`**：页面里大量使用内联 `onclick=` 与内联样式。即便如此，
+  它仍然挡得住外链脚本注入、`eval`、以及 `<object>` / `<base>` 被劫持。
+- **为什么 `connect-src` 放行腾讯**：浏览器端有一条直连 `qt.gtimg.cn` 的行情回退（Yahoo 失败时用）。
+- ⚠️ **改 CSP 之前先跑 `npm run e2e`**：`scripts/e2e/mock-cloud.mjs` 也发同一套头，
+  所以 `crawl.mjs` 的"零 console 报错"能直接抓出"CSP 把自己的脚本/接口挡了"这类错误。
+
 ## 常见故障
 
 | 症状 | 排查 |
@@ -477,6 +499,7 @@ const steps = {
 | v318 | **修「使用文档」打不开**：SW 导航分支只让 App 壳子路径用壳子缓存（以前任何导航都返回壳子，`/guide` 被顶掉）；假云端对齐真 Worker（发 `X-WT-Shell`、支持 `.html` 回退）+ 新增 e2e 场景 `flows-guide.mjs`；三份文档同步到本版 |
 | v319 | **"负现金"三条缝**：现金修正填负数改二次确认（会修成负数时警告）；CSV 导入给出跳过原因、不再静默丢弃；现金占比口径收敛成一份（总资产 ≤0 显示「—」；手机端本来就没有这个字段）。顺带修掉 `updateMobStatusBar` 里那份会覆盖结果的重复公式；**负数金额改成"负号在 $ 前"**（`-$1,234.50`）——同时修好手机端"累计收益"把亏损染成绿色的问题（它用首字符是不是 `-` 判断正负） |
 | v320 | **客户端韧性 + 测试装置保真度 + 两处结构收敛**：① 客户端 **15 处网络调用**统一走带截止时间的 `fetchWithTimeout`（默认 10 秒）——这是 v316 那条"同步硬超时"之外的同族隐患：链路黑洞时刷新按钮/列表压暗/创建账号按钮会永久卡在"进行中"② 假云端补上**登录门禁**与 `/login`，新增 e2e `flows-auth-gate.mjs`（并验证过它抓得住"登录页覆盖壳子缓存"的回归）③ 桌面指标卡的"总资产 / 现金占比"改由视图层写，手机状态栏函数不再碰桌面 DOM ④ SW 预缓存瘦身 与 `!important` 减法**都量过并决定不做**（数据见对应条目） |
+| v321 | **安全头 + 危险操作的键盘路径 + 常量收敛**：① 所有响应补 `nosniff` / `no-referrer` / `X-Frame-Options: DENY`，HTML 另加 CSP（防点击劫持；假云端同步带这套头，所以 e2e 的"零 console 报错"能抓 CSP 写坏）② `showApproval` 的"长按确认"以前**键盘一按一松就直接执行**（keyup→fire），现在键盘也要真按住；弹层补 Tab 焦点陷阱 + 关闭后焦点归还 ③ 两套超时常量（同步 15s / 普通 10s）集中到 `util.js` 一处 |
 
 ### 已知未修问题
 
