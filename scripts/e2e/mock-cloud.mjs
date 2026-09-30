@@ -15,6 +15,28 @@ const AUTH_TOKEN = process.env.E2E_AUTH_TOKEN || '';
 // 多用户：按 wt_uid cookie 分区（和线上 worker 的 user_id 语义一致）。
 // 没带 cookie 就按 1 号库，老场景不受影响。
 const stores = new Map();
+// 登录门禁（v320）：默认**关**，既有场景不受影响；测试用 POST /_gate {on:true} 打开。
+// 规则对齐真 Worker（src/worker.js 的 isOpenPath / needsAuth）：
+//   除 /login /api/login /api/logout /sw.js /manifest.json /icon*.png /splash/* 之外，
+//   文档导航一律回登录页、/api/* 一律回 401；带着 wt_uid cookie 视为已登录。
+let gateOn = false;
+const LOGIN_PAGE = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>登录 · Wealth Tracker</title></head>'
+  + '<body><h1>请登录</h1><p>mock login page</p></body></html>';
+function isOpenPath(pathname) {
+  if (pathname === '/login' || pathname === '/api/login' || pathname === '/api/logout') return true;
+  if (pathname === '/sw.js' || pathname === '/manifest.json') return true;
+  return /^\/(icon[\w.-]*\.png|splash\/)/.test(pathname);
+}
+function needsAuth(req, pathname) {
+  if (isOpenPath(pathname)) return false;
+  if (pathname.indexOf('/api/') === 0) return true;
+  const accept = req.headers.accept || '';
+  const dest = req.headers['sec-fetch-dest'] || '';
+  const mode = req.headers['sec-fetch-mode'] || '';
+  return mode === 'navigate' || dest === 'document' || accept.indexOf('text/html') >= 0;
+}
+function hasSession(req) { return /wt_uid=\d+/.test(req.headers.cookie || ''); }
+
 function bucketFor(req) {
   const m = String(req.headers.cookie || '').match(/wt_uid=(\d+)/);
   const uid = m ? Number(m[1]) : 1;
@@ -60,8 +82,35 @@ const server = http.createServer((req, res) => {
     Object.keys(meta).forEach((k) => delete meta[k]);
     stores.clear();
     log.length = 0;
+    gateOn = false;
     res.writeHead(200, cors);
     return res.end(JSON.stringify({ ok: true }));
+  }
+  // 测试专用：开关登录门禁
+  if (url.pathname === '/_gate' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      try { gateOn = !!JSON.parse(body || '{}').on; } catch (e) { gateOn = false; }
+      res.writeHead(200, cors);
+      res.end(JSON.stringify({ ok: true, gate: gateOn }));
+    });
+    return;
+  }
+  // 登录页本体（对应真 Worker 的 loginPageResponse）：始终可访问，且绝不带 X-WT-Shell。
+  // 少了它，401 自愈跳 /login 会得到 404 —— 真机上这是"登录页"，不是 not found。
+  if (url.pathname === '/login') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
+    return res.end(LOGIN_PAGE);
+  }
+  // 门禁：未登录 → 文档回登录页（不带 X-WT-Shell，SW 就不会把它当壳子缓存）、接口回 401
+  if (gateOn && needsAuth(req, url.pathname) && !hasSession(req)) {
+    if (url.pathname.indexOf('/api/') === 0) {
+      res.writeHead(401, cors);
+      return res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }));
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
+    return res.end(LOGIN_PAGE);
   }
   // 测试专用：模拟"另一台设备"往云端写入（用于验证拉取/冲突路径）
   if (url.pathname === '/_seed' && req.method === 'POST') {

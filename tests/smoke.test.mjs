@@ -40,7 +40,9 @@ function extractFunction(name) {
   const marker = `function ${name}(`;
   const start = appSource.indexOf(marker);
   assert.notEqual(start, -1, `missing ${name}`);
-  const nextNamed = /function\s+[A-Za-z_$][\w$]*\s*\(/g;
+  // v320：也要认 `async function name(` —— 否则新加的异步函数会让"上一个函数"的切片尾部残留一个 `async `，
+  // 在 vm 里直接 `ReferenceError: async is not defined`（加 fetchWithTimeout 时踩到）
+  const nextNamed = /(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(/g;
   nextNamed.lastIndex = start + marker.length;
   const next = nextNamed.exec(appSource);
   assert.ok(next, `unterminated ${name}`);
@@ -169,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=319');
+  assert.equal(manifest.start_url, '/?v=320');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v319/);
+  assert.match(serviceWorker, /wealth-v320/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -185,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=319',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=320',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -456,11 +458,18 @@ test('同步失败不再挂死在 busy：没有 stall 兜底，失败原因说�
   assert.doesNotMatch(appSource, /网络异常，同步失败/);
   assert.match(appSource, /var st=syncFailureText\(error,/);
   assert.match(appSource, /var failText=syncFailureText\(error,offline\)/);
-  // v319：现金占比的口径只能有一份 —— 两处写 DOM 的地方（renderMetricsTop / updateMobStatusBar）都走它。
-  // updateMobStatusBar 历史上自写了一份公式、还把总资产 ≤0 硬写成 0，会把刚写好的「—」覆盖回「0.00%」。
-  // （cashPctOf / cashPctText 的定义在 portfolio.js / portfolio-view.js，由各自的单测钉住）
-  assert.match(appSource, /hcp\.textContent=cashPctText\(cashPctOf\(totalV\+nc,nc\)\)/);
-  assert.doesNotMatch(appSource, /nc\/\(totalV\+nc\)\*100:0/, 'updateMobStatusBar 不许再自写一份占比公式');
+  // v319/v320：现金占比的口径与文案只能有一份，且桌面指标卡（hmTotal / hmCashPct）**只能由视图层写**。
+  // updateMobStatusBar 是手机状态栏函数，历史上它自写了一份公式、还把总资产 ≤0 硬写成 0，
+  // 会把 renderMetricsTop 刚写好的「—」覆盖回「0.00%」。（cashPctOf/cashPctText 由各自单测钉住）
+  assert.match(appSource, /function renderCashTotals\(doc, totalAssets, netCash\)/);
+  assert.match(appSource, /renderCashTotals\(document,totalV\+nc,nc\)/);
+  assert.doesNotMatch(indexSource, /hmTotal|hmCashPct/, '桌面指标卡的总资产/现金占比只能由视图层写');
+  assert.doesNotMatch(appSource, /nc\/\(totalV\+nc\)\*100:0/, '不许再出现自写的占比公式');
+  // v320：客户端网络调用统一走带截止时间的 fetchWithTimeout —— 链路黑洞时不允许再出现"永久进行中"
+  // （只放行 3 处裸 fetch：/api/log 上报、页面卸载时的 keepalive 补推、syncFetch 本身，它自带 15 秒硬超时）
+  const bareFetches = (indexSource.match(/(?<![a-zA-Z.])fetch\(/g) || []).length;
+  assert.equal(bareFetches, 3, '裸 fetch 只允许 3 处，实际 ' + bareFetches + ' 处');
+  assert.ok((indexSource.match(/fetchWithTimeout\(/g) || []).length >= 15, '其余网络调用都要走 fetchWithTimeout');
 });
 
 test('sync feedback has a single channel per event', () => {
@@ -513,6 +522,16 @@ test('market sparkline is built from real cached history points', () => {
 
 test('price refresh requests one-month history and retains valid closes', async () => {
   let requestedUrl = '';
+  const priceFetchStub = async (url) => {
+    requestedUrl = url;
+    return {
+      ok: true,
+      json: async () => ({ ok: true, data: { chart: { result: [{
+        meta: { regularMarketPrice: 28.38, chartPreviousClose: 28.41 },
+        indicators: { quote: [{ close: [27.9, null, 28.1, 28.38] }] },
+      }] } } }),
+    };
+  };
   const priceContext = vm.createContext({
     console,
     Date,
@@ -523,16 +542,9 @@ test('price refresh requests one-month history and retains valid closes', async 
     encodeURIComponent,
     PRICE_SYMBOLS: { BTC: 'BTC' },
     readPriceCache: () => ({}),
-    fetch: async (url) => {
-      requestedUrl = url;
-      return {
-        ok: true,
-        json: async () => ({ ok: true, data: { chart: { result: [{
-          meta: { regularMarketPrice: 28.38, chartPreviousClose: 28.41 },
-          indicators: { quote: [{ close: [27.9, null, 28.1, 28.38] }] },
-        }] } } }),
-      };
-    },
+    // v320：取价改走带截止时间的 fetchWithTimeout，这里两个名字都指向同一个桩
+    fetch: priceFetchStub,
+    fetchWithTimeout: priceFetchStub,
   });
   // v311：取价的实现改名成 fetchPriceImpl（外面套了一层"并发去重"的 fetchPrice），
   // 这里只测实现体，所以就地改名回 fetchPrice 再注入。
@@ -549,7 +561,8 @@ test('price refresh requests one-month history and retains valid closes', async 
     console, Date, Number, Array, Object, isFinite, encodeURIComponent,
     PRICE_SYMBOLS: { BTC: 'BTC' },
     readPriceCache: () => ({}),
-    fetch: async () => {
+    // v320：取价走带截止时间的 fetchWithTimeout，两个名字都指向同一个计数桩
+    fetchWithTimeout: async () => {
       hits += 1;
       return { ok: true, json: async () => ({ ok: true, data: { chart: { result: [{ meta: { regularMarketPrice: 30, previousClose: 29 }, indicators: { quote: [{ close: [29, 30] }] } }] } } }) };
     },

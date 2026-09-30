@@ -4,6 +4,7 @@
 
 import { fmtFull, fmtPnLFull } from './util.js';
 import { escapeHtml, emptyStateHTML } from './render.js';
+import { cashPctOf } from './portfolio.js';
 
 /** 大额金额缩写（$1.23M / $456K）——index.js 的 fmt$，其余地方也在用，这里用注入。 */
 let deps = {
@@ -38,6 +39,20 @@ export function renderMetricsTop(doc, m) {
  */
 export function cashPctText(cashPct) {
   return cashPct == null ? '—' : cashPct.toFixed(2) + '%';
+}
+
+/**
+ * 只刷新桌面指标卡里"依赖现金"的两格：总资产 + 现金占比（v320 从 index.js 的 updateMobStatusBar 挪来）。
+ *
+ * 为什么要单独一个入口：现金修正 / 入金出金 / 收权利金这些路径只动了现金，不需要重算整个组合，
+ * 但桌面卡必须跟着变。桌面卡属于本模块，DOM 写入就留在本模块 ——
+ * 手机状态栏函数（updateMobStatusBar）不该再顺手指挥桌面卡片（v319 的重复公式就是这么来的）。
+ */
+export function renderCashTotals(doc, totalAssets, netCash) {
+  const t = doc.getElementById('hmTotal');
+  if (t) t.textContent = fmtFull(totalAssets);
+  const p = doc.getElementById('hmCashPct');
+  if (p) p.textContent = cashPctText(cashPctOf(totalAssets, netCash));
 }
 
 /** 今日涨跌、总盈亏、以及"浮动/已实现/权利金"三个明细徽章。 */

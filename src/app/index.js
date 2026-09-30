@@ -1,4 +1,4 @@
-import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed} from './util.js';
+import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed, fetchWithTimeout} from './util.js';
 import {computeHoldings, buildPositionRows, cashCorrectionPlan} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations, LS, setStorageNamespace, storageNamespace} from './store.js';
 import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, SYNC_FIELDS} from './sync.js';
@@ -54,9 +54,9 @@ function symColor(sym){
 import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, syncFailureText, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices, capCellHTML, updateCapCells} from './watch-ui.js';
-import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, cashPctText} from './portfolio-view.js';
+import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, renderCashTotals} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
-import {portfolioTotals, cashPctOf, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
+import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue, csvSkipSummary} from './records-import.js';
@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v319';var APP_DATA_VERSION=5;
+var APP_BUILD='v320';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -159,7 +159,7 @@ var cachePrice=function(symbol,data){var c=readPriceCache();c[symbol]=data;if(!w
 
 
 var priceReq={};
-async function fetchPriceImpl(symbol){var cached=readPriceCache(),quoteSymbol=PRICE_SYMBOLS[symbol]||symbol;try{var r=await fetch('/api/price?symbol='+encodeURIComponent(quoteSymbol)+'&range=1mo');if(r.ok){var j=await r.json(),result=j.ok&&j.data&&j.data.chart&&j.data.chart.result&&j.data.chart.result[0],m=result&&result.meta,quote=result&&result.indicators&&result.indicators.quote&&result.indicators.quote[0],history=quote&&Array.isArray(quote.close)?quote.close.map(Number).filter(function(v){return isFinite(v)&&v>0}).slice(-20):[];if(m&&m.regularMarketPrice>0){var prevClose=Number(m.previousClose);if(!(prevClose>0))prevClose=history.length>1?history[history.length-2]:m.regularMarketPrice;return{price:m.regularMarketPrice,prevClose:prevClose,change:m.regularMarketPrice-prevClose,hi52:m.fiftyTwoWeekHigh||0,history:history,historyRange:'1mo',source:'yahoo',time:Date.now()}}}}catch(e){console.log('Yahoo error',symbol,e)}try{var r2=await fetch('https://qt.gtimg.cn/q=us'+symbol.toUpperCase());if(r2.ok){var t=await r2.text();var m2=t.match(/"([^"]+)"/);if(m2){var p=m2[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0)return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,history:cached[symbol]&&cached[symbol].history||[],historyRange:cached[symbol]&&cached[symbol].historyRange||'',source:'tencent',time:Date.now()}}}}catch(e2){console.log('Tencent error',symbol,e2)}if(cached[symbol])return Object.assign({},cached[symbol],{source:'缓存',time:cached[symbol].time||cached[symbol].ts});return null}
+async function fetchPriceImpl(symbol){var cached=readPriceCache(),quoteSymbol=PRICE_SYMBOLS[symbol]||symbol;try{var r=await fetchWithTimeout('/api/price?symbol='+encodeURIComponent(quoteSymbol)+'&range=1mo');if(r.ok){var j=await r.json(),result=j.ok&&j.data&&j.data.chart&&j.data.chart.result&&j.data.chart.result[0],m=result&&result.meta,quote=result&&result.indicators&&result.indicators.quote&&result.indicators.quote[0],history=quote&&Array.isArray(quote.close)?quote.close.map(Number).filter(function(v){return isFinite(v)&&v>0}).slice(-20):[];if(m&&m.regularMarketPrice>0){var prevClose=Number(m.previousClose);if(!(prevClose>0))prevClose=history.length>1?history[history.length-2]:m.regularMarketPrice;return{price:m.regularMarketPrice,prevClose:prevClose,change:m.regularMarketPrice-prevClose,hi52:m.fiftyTwoWeekHigh||0,history:history,historyRange:'1mo',source:'yahoo',time:Date.now()}}}}catch(e){console.log('Yahoo error',symbol,e)}try{var r2=await fetchWithTimeout('https://qt.gtimg.cn/q=us'+symbol.toUpperCase());if(r2.ok){var t=await r2.text();var m2=t.match(/"([^"]+)"/);if(m2){var p=m2[1].split('~'),pr=parseFloat(p[3]),prev=parseFloat(p[4]),hi52=parseFloat(p[48]);if(pr>0)return{price:pr,prevClose:prev,change:pr-prev,hi52:hi52||0,history:cached[symbol]&&cached[symbol].history||[],historyRange:cached[symbol]&&cached[symbol].historyRange||'',source:'tencent',time:Date.now()}}}}catch(e2){console.log('Tencent error',symbol,e2)}if(cached[symbol])return Object.assign({},cached[symbol],{source:'缓存',time:cached[symbol].time||cached[symbol].ts});return null}
 
 
 function pricePill(sym,price,change,source){return pricePillHTML(sym,price,change,source)}
@@ -806,10 +806,9 @@ function updateMobStatusBar(){
   var bar=document.getElementById('mobStatusBar');if(!bar)return;
   var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;var mobRows=ETF_SYMS.map(function(sym){var sh=Math.max(0,bals[sym]||0);totalV+=sh*(livePrices[sym]||0);return{sym:sym,shares:sh,priced:!!livePrices[sym]}});var mobDaily=dailyChange(mobRows,buildDailyQuotes(),trades,marketDate()),daily=mobDaily.change;var nc=getNetCash();
   var vm=document.getElementById('msTotal');if(vm)animateVal(vm,totalV+nc);
-  /* v319：桌面卡的「总资产 / 现金占比」这里也要刷（本函数历史上顺手接管了它）。
-     口径必须与 portfolio.js 的 cashPctOf 一致 —— 以前这里自写一份公式、≤0 硬写 0，
-     会把 renderMetricsTop 刚写好的「—」覆盖成「0.00%」。 */
-  var ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalV+nc);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=cashPctText(cashPctOf(totalV+nc,nc));
+  /* v320：桌面卡的「总资产 / 现金占比」交给视图层写（本函数是手机状态栏，不该管桌面 DOM）。
+     这里只负责在现金变化后触发一次 —— 口径与文案都在 portfolio-view.js 里，只有一份。 */
+  renderCashTotals(document,totalV+nc,nc);
   var mc=document.getElementById('msCash');if(mc)mc.textContent=fmtFull(nc);
   var mp=document.getElementById('msPnl'),srcPnl=document.getElementById('hmPnL');if(mp&&srcPnl){mp.textContent=srcPnl.textContent;mp.classList.toggle('pnl-neg',srcPnl.textContent.indexOf('-')===0);mp.classList.toggle('pnl-pos',srcPnl.textContent.indexOf('-')!==0)}
   var md=document.getElementById('msDaily'),dailyPct=mobDaily.pct,dailyText='今日 '+(daily>=0?'+':'-')+fmtFull(Math.abs(daily))+' · '+(dailyPct==null?'—':((dailyPct>=0?'+':'')+dailyPct.toFixed(2)+'%'));if(md){md.textContent=dailyText;md.classList.toggle('negative',daily<0)}var sd=document.getElementById('sbToday');if(sd){sd.textContent=dailyText;sd.style.color=daily<0?'var(--red)':'var(--accent)'}
@@ -975,7 +974,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=319',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=320',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1114,7 +1113,7 @@ function buildPushData(dirtyOnly){
 }
 
 /* 退出登录：清掉服务端的会话 cookie，然后回登录页（/login 不走 SW 缓存） */
-function logoutNow(){var go=function(){location.replace('/login')};try{fetch('/api/logout',{method:'POST'}).then(go,go)}catch(e){go()}}
+function logoutNow(){var go=function(){location.replace('/login')};try{fetchWithTimeout('/api/logout',{method:'POST'}).then(go,go)}catch(e){go()}}
 /* ===== v305 回退按钮：本地快照 + 24 小时撤销条（纯前端；恢复后走现有同步推回云端） ===== */
 var CLEAR_SNAP_KEY='wealth_clear_snapshot_v1',CLEAR_SNAP_TTL=24*60*60*1000;
 function readClearSnapshot(){try{var s=JSON.parse(LS.getItem(CLEAR_SNAP_KEY)||'null');if(!s||!s.data||!s.ts)return null;if(Date.now()-s.ts>CLEAR_SNAP_TTL){LS.removeItem(CLEAR_SNAP_KEY);return null}return s}catch(e){return null}}
@@ -1152,7 +1151,7 @@ setTimeout(renderClearUndoBar,900);
 function closeSnapshotSheet(){var s=document.getElementById('snapshotSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
 function confirmRestoreSnapshot(id){
   showApproval({title:'从云端快照恢复',message:'会用这份快照覆盖当前的云端数据，然后重新拉取到本机。\n\n快照之后新录的数据会丢失，请确认。',confirmText:'恢复',danger:false,holdMs:3000,onConfirm:function(){
-    fetch('/api/snapshots/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Number(id)})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(j){
+    fetchWithTimeout('/api/snapshots/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Number(id)})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(j){
       if(!j||!j.ok){showToast('恢复失败：'+((j&&j.error)||'未知错误'),'err');return}
       closeSnapshotSheet();
       showToast('已从云端快照恢复，正在重新拉取…','ok');
@@ -1174,7 +1173,7 @@ function openSnapshotSheet(){
   var list=sh.querySelector('#snapshotList');
   var tip=document.createElement('div');tip.className='table-empty';tip.textContent='正在读取…';
   list.textContent='';list.appendChild(tip);
-  fetch('/api/snapshots?limit=5').then(function(r){return r.ok?r.json():null}).then(function(j){
+  fetchWithTimeout('/api/snapshots?limit=5').then(function(r){return r.ok?r.json():null}).then(function(j){
     list.textContent='';
     if(!j||!j.ok){var e1=document.createElement('div');e1.className='table-empty';e1.textContent='读取失败，请检查登录状态';list.appendChild(e1);return}
     if(!j.snapshots.length){var e2=document.createElement('div');e2.className='table-empty';e2.textContent='还没有云端快照 · 点「清除所有数据」时会自动留一份';list.appendChild(e2);return}
@@ -1209,7 +1208,7 @@ function clearAllData(){
   showToast('正在清除云端数据');
   var clrHeaders={'Content-Type':'application/json'};if(cfg.token)clrHeaders['X-Auth-Token']=cfg.token;
   // __snapshotBefore：让云端先把"清除前"的样子存成一份快照（方案 B），再落空值
-  fetch(base+'/api/sync',{method:'POST',headers:clrHeaders,body:JSON.stringify(Object.assign({__snapshotBefore:true},empty))}).then(function(r){
+  fetchWithTimeout(base+'/api/sync',{method:'POST',headers:clrHeaders,body:JSON.stringify(Object.assign({__snapshotBefore:true},empty))}).then(function(r){
     // 没有云端后端（静态部署）→ 只清本机；401 说明登录失效，此时绝不能清本机，
     // 否则云端数据会在下次进入时被拉回来，用户会以为"清了个寂寞"。
     if(r.status===404)return{ok:true,noCloud:true};
@@ -1579,7 +1578,7 @@ try{document.getElementById("hmDividend").addEventListener("click",function(){va
 
 /* range=max 是历史数据：同一个标的只请求一次，年初/年末两个口径共用（原先一次开屏要打 6 次） */
 var maxPriceReq={};
-function fetchMaxData(sym){var k=String(sym);if(maxPriceReq[k])return maxPriceReq[k];var p=fetch('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=max').then(function(r){return r.json()}).catch(function(){return null});maxPriceReq[k]=p;return p}
+function fetchMaxData(sym){var k=String(sym);if(maxPriceReq[k])return maxPriceReq[k];var p=fetchWithTimeout('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=max').then(function(r){return r.json()}).catch(function(){return null});maxPriceReq[k]=p;return p}
 function fetchYearStartPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0];var ts=r.timestamp||[];var cs=r.indicators.quote[0].close||[];var tgt=year+'-01-01';for(var i=0;i<ts.length;i++){var d2=marketDate(new Date(ts[i]*1000));if(d2>=tgt&&cs[i]!=null)return cs[i]}return cs[cs.length-1]||0}).catch(function(){return null})}
 function fetchYearEndPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0];var ts=r.timestamp||[];var cs=r.indicators.quote[0].close||[];var tgt=year+'-12-31';var last=null;for(var i=0;i<ts.length;i++){var d2=marketDate(new Date(ts[i]*1000));if(d2>tgt)break;if(d2<=tgt&&cs[i]!=null)last=cs[i]}return last||cs[cs.length-1]||0}).catch(function(){return null})}
 function calcAttribution(year){var yS=year+'-01-01',yE=year+'-12-31';var ss={},es={},ac={};ETF_SYMS.forEach(function(s){ss[s]=0;es[s]=0;ac[s]=0});var sSell=0,sBuy=0,eSell=0,eBuy=0;trades.forEach(function(t){if(t.date<=yE&&es[t.symbol]!==undefined)es[t.symbol]+=t.shares;if(t.date<yS&&ss[t.symbol]!==undefined)ss[t.symbol]+=t.shares;if(t.date>=yS&&t.date<=yE&&t.shares>0&&ac[t.symbol]!==undefined)ac[t.symbol]+=t.shares*t.price;if(t.date<yS){var a=Math.abs(t.shares)*t.price;if(t.shares<0)sSell+=a;else sBuy+=a}if(t.date<=yE){var ea=Math.abs(t.shares)*t.price;if(t.shares<0)eSell+=ea;else eBuy+=ea}});var sCash=0,eCash=0,ccP=0,div=0,nd=0;cashLog.forEach(function(l){if(l.date<yS)sCash+=cashSigned(l);if(l.date<=yE)eCash+=cashSigned(l);if(l.date>=yS&&l.date<=yE){if(l.type&&l.type.indexOf('入金')>=0)nd+=l.amount||0;if(l.type&&l.type.indexOf('出金')>=0)nd-=Math.abs(l.amount||0);if(l.type&&l.type.indexOf('股息')>=0)div+=l.amount||0}});optionTrades.forEach(function(o){if(o.added&&o.added.slice(0,4)===year)ccP+=(o.premium||0)*(o.contracts||1)});Promise.all(ETF_SYMS.map(function(s){return Promise.all([fetchYearStartPrice(s,year),fetchYearEndPrice(s,year)])})).then(function(pairs){var ps={},pe={};var _unavail=false;ETF_SYMS.forEach(function(s,i){ps[s]=pairs[i][0];pe[s]=pairs[i][1];if(ps[s]===null||pe[s]===null)_unavail=true});var sA=0,eA=eCash+eSell-eBuy,cg={};ETF_SYMS.forEach(function(s){var sp=ps[s]||0,ep=pe[s]||0;sA+=ss[s]*sp;eA+=es[s]*ep;cg[s]=(es[s]*ep)-(ss[s]*sp)-ac[s]});sA+=sCash+sSell-sBuy;var tg=eA-sA-nd;var ot=tg-ETF_SYMS.reduce(function(s,sym){return s+cg[sym]},0)-ccP-div;renderAttribution({year:year,totalGain:tg,startAssets:sA,endAssets:eA,netDep:nd,capGains:cg,ccPrem:ccP,dividend:div,other:ot,unavail:_unavail})})}
@@ -1642,7 +1641,7 @@ var CAPS_KEY='wealth_marketcap_v1',CAPS_TTL=24*60*60*1000,capsFetchedAt=0;
 /* v249：观察列表的状态与写操作注入给视图层（getter 保证读的是最新值） */
 configureWatchUI({get watchList(){return watchList},get watchQuotes(){return watchQuotes},get holdingsData(){return holdingsData},get watchCaps(){return watchCaps},ensureCap:ensureCap,get watchFetchedAt(){return watchFetchedAt},get watchInvalid(){return watchInvalid},get watchMissing(){return watchMissing},get trades(){return trades},get livePrices(){return livePrices},get liveQuoteData(){return liveQuoteData},get ETF_SYMS(){return ETF_SYMS},saveWatch:saveWatch,refreshMarket:refreshMarket,showToast:showToast});
 /* v311：行情抓取并发去重 —— 启动时 BTCETF 迁移和观察列表初始化会各调一次，以前会整份重复请求（holdings ×2 + quotes ×2） */var marketInFlight=null;function fetchMarketData(){if(marketInFlight)return marketInFlight;var p=fetchMarketDataImpl();marketInFlight=p.then(function(r){marketInFlight=null;return r},function(e){marketInFlight=null;throw e});return marketInFlight}
-function fetchMarketDataImpl(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');/* v311：榜单是季度数据，30 分钟内不重复请求 */var needHold=!(holdingsData.VGT&&holdingsData.SMH&&(Date.now()-(holdingsFetchedAt||0))<30*60*1000);var holdReqs=needHold?['VGT','SMH'].map(function(sym){return fetch(base+'/api/holdings?symbol='+sym).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}):[];return Promise.all(holdReqs).then(function(list){var holdHit=false;list.forEach(function(item){if(item&&item.ok&&item.list){holdingsData[item.symbol]=item;holdHit=true}});if(holdHit)holdingsFetchedAt=Date.now();var symbols=collectQuoteSymbols(watchList,holdingsData);/* v307：买卖录入胶囊/侧边栏/持仓市值也要同一份行情，把它们一并请求（加密代码除外） */['VGT','SMH','SGOV'].forEach(function(s){if(!CRYPTO_CODES[s]&&symbols.indexOf(s)<0)symbols.push(s)});if(!symbols.length){watchFetchedAt=Date.now();renderWatch();renderHoldings();return}return fetch(base+'/api/quotes?symbols='+encodeURIComponent(symbols.join(','))).then(function(r){return r.ok?r.json():null}).then(function(data){if(data&&data.ok&&data.quotes){for(var k in data.quotes){watchQuotes[k]=data.quotes[k];mirrorQuoteIntoLive(k,data.quotes[k])}watchInvalid=data.invalid||[];watchMissing=data.missing||[];watchFetchedAt=Date.now()}scheduleCaps()}).catch(function(){})}).then(function(){renderWatch();renderHoldings();try{refreshPrices();updateSidebarPrices();updateMobStatusBar();updatePortfolio()}catch(e){logSwallowed("fetchMarketData",e)}})}function refreshMarket(force){if(watchRefreshing)return;/* v311：刚拉过就别再强拉（启动时会被连调两次） */if(force&&Date.now()-watchFetchedAt<3000)return;if(!force&&Date.now()-watchFetchedAt<60000)return;watchRefreshing=true;fetchMarketData().then(function(){watchRefreshing=false},function(){watchRefreshing=false})}
+function fetchMarketDataImpl(){var base=(syncCfg&&syncCfg.url?syncCfg.url:location.origin).replace(/\/$/,'');/* v311：榜单是季度数据，30 分钟内不重复请求 */var needHold=!(holdingsData.VGT&&holdingsData.SMH&&(Date.now()-(holdingsFetchedAt||0))<30*60*1000);var holdReqs=needHold?['VGT','SMH'].map(function(sym){return fetchWithTimeout(base+'/api/holdings?symbol='+sym).then(function(r){return r.ok?r.json():null}).catch(function(){return null})}):[];return Promise.all(holdReqs).then(function(list){var holdHit=false;list.forEach(function(item){if(item&&item.ok&&item.list){holdingsData[item.symbol]=item;holdHit=true}});if(holdHit)holdingsFetchedAt=Date.now();var symbols=collectQuoteSymbols(watchList,holdingsData);/* v307：买卖录入胶囊/侧边栏/持仓市值也要同一份行情，把它们一并请求（加密代码除外） */['VGT','SMH','SGOV'].forEach(function(s){if(!CRYPTO_CODES[s]&&symbols.indexOf(s)<0)symbols.push(s)});if(!symbols.length){watchFetchedAt=Date.now();renderWatch();renderHoldings();return}return fetchWithTimeout(base+'/api/quotes?symbols='+encodeURIComponent(symbols.join(','))).then(function(r){return r.ok?r.json():null}).then(function(data){if(data&&data.ok&&data.quotes){for(var k in data.quotes){watchQuotes[k]=data.quotes[k];mirrorQuoteIntoLive(k,data.quotes[k])}watchInvalid=data.invalid||[];watchMissing=data.missing||[];watchFetchedAt=Date.now()}scheduleCaps()}).catch(function(){})}).then(function(){renderWatch();renderHoldings();try{refreshPrices();updateSidebarPrices();updateMobStatusBar();updatePortfolio()}catch(e){logSwallowed("fetchMarketData",e)}})}function refreshMarket(force){if(watchRefreshing)return;/* v311：刚拉过就别再强拉（启动时会被连调两次） */if(force&&Date.now()-watchFetchedAt<3000)return;if(!force&&Date.now()-watchFetchedAt<60000)return;watchRefreshing=true;fetchMarketData().then(function(){watchRefreshing=false},function(){watchRefreshing=false})}
 /* ===== 市值：不占首屏 =====
    ① 首屏渲染完之后再拉（省得和价格/行情抢那 6 条并发连接）；
    ② 一次最多 12 只（服务端上限），分块串行，服务端返回 deferred 就继续下一轮；
@@ -1652,8 +1651,8 @@ function capBase(){return (syncCfg&&syncCfg.url?syncCfg.url:location.origin).rep
 function capSymsList(){var out=[],seen={};function add(s){s=String(s||'').toUpperCase();if(!s||seen[s])return;seen[s]=1;out.push(s)}normalizeWatchlist(watchList).forEach(function(i){if(i.enabled)add(i.sym)});['VGT','SMH'].forEach(function(k){var d=holdingsData[k];if(d&&d.list)d.list.forEach(function(it){add(it.sym)})});return out}
 function applyCapPayload(mc,requested){if(!mc||!mc.ok)return;var ck;for(ck in (mc.caps||{})){watchCaps[ck]=Number(mc.caps[ck])||0}(requested||[]).forEach(function(s){if(!Object.prototype.hasOwnProperty.call(watchCaps,s))watchCaps[s]=null});(mc.missing||[]).forEach(function(s){watchCaps[s]=null});(mc.deferred||[]).forEach(function(s){delete watchCaps[s]})}
 function resolveCapWaiters(sym){var list=capPending[sym];if(!list)return;delete capPending[sym];list.forEach(function(fn){try{fn(watchCaps[sym])}catch(e){logSwallowed("resolveCapWaiters",e)}})}
-function ensureCap(sym,cb){var s=String(sym||'').toUpperCase();if(!s)return;if(Object.prototype.hasOwnProperty.call(watchCaps,s)){if(cb)try{cb(watchCaps[s])}catch(e){logSwallowed("ensureCap",e)}return}var list=capPending[s];if(list){if(cb)list.push(cb);return}capPending[s]=cb?[cb]:[];fetch(capBase()+'/api/marketcap?symbols='+encodeURIComponent(s)).then(function(r){return r.ok?r.json():null}).then(function(mc){applyCapPayload(mc,[s]);resolveCapWaiters(s);saveCapsCache()}).catch(function(){resolveCapWaiters(s)})}
-function fetchMarketCaps(){var round=0;var pass=function(){if(round>=3)return Promise.resolve();round+=1;var unknown=capSymsList().filter(function(s){return !Object.prototype.hasOwnProperty.call(watchCaps,s)});if(!unknown.length)return Promise.resolve();var chunks=[],i;for(i=0;i<unknown.length;i+=CAP_CHUNK)chunks.push(unknown.slice(i,i+CAP_CHUNK));var run=function(k){if(k>=chunks.length)return Promise.resolve();var chunk=chunks[k];return fetch(capBase()+'/api/marketcap?symbols='+encodeURIComponent(chunk.join(','))).then(function(r){return r.ok?r.json():null}).then(function(mc){applyCapPayload(mc,chunk);chunk.forEach(resolveCapWaiters)}).catch(function(){}).then(function(){return run(k+1)})};return run(0).then(pass)};return pass().then(saveCapsCache)}
+function ensureCap(sym,cb){var s=String(sym||'').toUpperCase();if(!s)return;if(Object.prototype.hasOwnProperty.call(watchCaps,s)){if(cb)try{cb(watchCaps[s])}catch(e){logSwallowed("ensureCap",e)}return}var list=capPending[s];if(list){if(cb)list.push(cb);return}capPending[s]=cb?[cb]:[];fetchWithTimeout(capBase()+'/api/marketcap?symbols='+encodeURIComponent(s)).then(function(r){return r.ok?r.json():null}).then(function(mc){applyCapPayload(mc,[s]);resolveCapWaiters(s);saveCapsCache()}).catch(function(){resolveCapWaiters(s)})}
+function fetchMarketCaps(){var round=0;var pass=function(){if(round>=3)return Promise.resolve();round+=1;var unknown=capSymsList().filter(function(s){return !Object.prototype.hasOwnProperty.call(watchCaps,s)});if(!unknown.length)return Promise.resolve();var chunks=[],i;for(i=0;i<unknown.length;i+=CAP_CHUNK)chunks.push(unknown.slice(i,i+CAP_CHUNK));var run=function(k){if(k>=chunks.length)return Promise.resolve();var chunk=chunks[k];return fetchWithTimeout(capBase()+'/api/marketcap?symbols='+encodeURIComponent(chunk.join(','))).then(function(r){return r.ok?r.json():null}).then(function(mc){applyCapPayload(mc,chunk);chunk.forEach(resolveCapWaiters)}).catch(function(){}).then(function(){return run(k+1)})};return run(0).then(pass)};return pass().then(saveCapsCache)}
 function scheduleCaps(){try{clearTimeout(capTimer)}catch(e){logSwallowed("scheduleCaps",e)}if(Date.now()-capsFetchedAt<CAPS_TTL)return;capTimer=setTimeout(function(){fetchMarketCaps()},1500)}
 function saveCapsCache(){try{if(capSymsList().some(function(x){return !Object.prototype.hasOwnProperty.call(watchCaps,x)}))return;writeJSON(CAPS_KEY,{at:Date.now(),caps:watchCaps});capsFetchedAt=Date.now()}catch(e){logSwallowed("saveCapsCache",e)}}
 initWatchUI();
@@ -2171,7 +2170,7 @@ if(typeof window!=='undefined'){
     var key=need.join(',');
     if(hydratedKey===key)return;
     hydratedKey=key;
-    fetch(baseUrl()+'/api/quotes?symbols='+encodeURIComponent(key)).then(function(r){return r.ok?r.json():null}).then(function(j){
+    fetchWithTimeout(baseUrl()+'/api/quotes?symbols='+encodeURIComponent(key)).then(function(r){return r.ok?r.json():null}).then(function(j){
       if(j&&j.quotes){for(var k in j.quotes)extra[k]=j.quotes[k]}
       render(input.value);
     }).catch(function(){});
@@ -2203,7 +2202,7 @@ if(typeof window!=='undefined'){
     var base=baseUrl();
     list.textContent='';
     var em=document.createElement('div');em.className='table-empty';em.textContent='查询中';list.appendChild(em);
-    fetch(base+'/api/quotes?symbols='+encodeURIComponent(code)).then(function(r){return r.ok?r.json():null}).then(function(j){
+    fetchWithTimeout(base+'/api/quotes?symbols='+encodeURIComponent(code)).then(function(r){return r.ok?r.json():null}).then(function(j){
       var q=j&&j.quotes?j.quotes[code]:null;
       list.textContent='';
       if(!q){var e3=document.createElement('div');e3.className='table-empty';e3.textContent='没有找到 '+code+' 的行情（代码可能不存在）';list.appendChild(e3);return}
@@ -2229,7 +2228,7 @@ if(typeof window!=='undefined'){
 
 /* ===== 账号：改密码 / 管理用户（仅主账号）/ 退出登录 ===== */
 function accountRequest(method, body, path) {
-  return fetch(path || '/api/accounts', { method: method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
+  return fetchWithTimeout(path || '/api/accounts', { method: method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
     .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; }); });
 }
 function fmtAccTime(ts) {
@@ -2289,7 +2288,7 @@ function activityText(ev) {
 function loadActivity() {
   var box = document.getElementById('accountActivity');
   if (!box) return;
-  fetch('/api/activity?limit=30').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+  fetchWithTimeout('/api/activity?limit=30').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
     if (!j || !j.ok) { box.textContent = '暂时读不到活动记录'; return; }
     if (!j.events.length) { box.textContent = '还没有记录'; return; }
     var scope = j.scope === 'all' ? '（全部账号）' : '（仅自己）';

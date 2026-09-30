@@ -10,6 +10,7 @@ import {
   cashSigned,
   sparklinePath,
   dateOrdinal,
+  fetchWithTimeout,
 } from '../src/app/util.js';
 
 test('safeNum: 非法值归零，合法值原样返回', () => {
@@ -85,4 +86,40 @@ test('dateOrdinal: 把 YYYY-MM-DD 转成天数序号，非法输入返回 NaN', 
   assert.ok(Number.isNaN(dateOrdinal('2026/01/01')));
   assert.ok(Number.isNaN(dateOrdinal('')));
   assert.ok(Number.isNaN(dateOrdinal(null)));
+});
+
+// v320：客户端网络调用必须有截止时间 —— 链路黑洞时 fetch 可以永远不返回，
+// 调用方的"进行中"状态就永久卡住（刷新按钮、骨架微光、账号操作按钮）。
+test('fetchWithTimeout：超时必须中断，正常返回要清掉定时器', { timeout: 5000 }, async () => {
+  const orig = globalThis.fetch;
+  try {
+    // ① 永不返回 → 到点必须中断（与 syncFetch 的 15 秒硬超时同一套机制）
+    let aborted = false;
+    globalThis.fetch = (url, opts) => new Promise((resolve, reject) => {
+      const sig = opts && opts.signal;
+      assert.ok(sig, '必须带 AbortSignal，否则中断不了');
+      sig.addEventListener('abort', () => { aborted = true; reject(new DOMException('aborted', 'AbortError')); });
+    });
+    await assert.rejects(() => fetchWithTimeout('https://x/y', {}, 30), (e) => e && e.name === 'AbortError');
+    assert.equal(aborted, true, '超时后必须真的把请求中断');
+
+    // ② 正常返回 → 结果透传，且事后不再被中断（定时器已清）
+    let abortedOnSuccess = false;
+    globalThis.fetch = (url, opts) => {
+      opts.signal.addEventListener('abort', () => { abortedOnSuccess = true; });
+      return Promise.resolve({ ok: true, status: 200 });
+    };
+    const res = await fetchWithTimeout('https://x/y');
+    assert.equal(res.status, 200);
+    await new Promise((r) => setTimeout(r, 80));
+    assert.equal(abortedOnSuccess, false, '成功返回后不该再触发中断');
+
+    // ③ 调用方传的其它选项要保留
+    let seenMethod = null;
+    globalThis.fetch = (url, opts) => { seenMethod = opts.method; return Promise.resolve({ ok: true }); };
+    await fetchWithTimeout('https://x/y', { method: 'POST' });
+    assert.equal(seenMethod, 'POST');
+  } finally {
+    globalThis.fetch = orig;
+  }
 });

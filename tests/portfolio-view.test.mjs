@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   configurePortfolioView, fmtPnLPctParen, renderMetricsTop, renderMetricsPnl,
   renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills,
-  cashPctText,
+  cashPctText, renderCashTotals,
 } from '../src/app/portfolio-view.js';
 
 function makeEl(extra) {
@@ -61,6 +61,21 @@ test('cashPctText：null → 「—」，有值 → 两位小数百分比', () =
   assert.equal(cashPctText(96.8421), '96.84%');
   assert.equal(cashPctText(0), '0.00%', '真实的 0%（现金为 0 但总资产 > 0）仍是 0.00%');
   assert.equal(cashPctText(-510.78), '-510.78%', '现金为负但总资产 > 0 时如实显示负数');
+});
+
+// v320：桌面指标卡里"依赖现金"的两格由视图层写（原来藏在 index.js 的手机状态栏函数里）
+test('renderCashTotals：只写总资产与现金占比，且 ≤0 时显示「—」', () => {
+  const hmTotal = makeEl();
+  const hmCashPct = makeEl();
+  const doc = fakeDoc({ hmTotal, hmCashPct });
+  renderCashTotals(doc, 35234.5, 1000);
+  assert.equal(hmTotal.textContent, '$35,234.50');
+  assert.equal(hmCashPct.textContent, (1000 / 35234.5 * 100).toFixed(2) + '%');
+  renderCashTotals(doc, -400, -900);
+  assert.equal(hmTotal.textContent, '-$400.00');
+  assert.equal(hmCashPct.textContent, '—', '总资产 ≤0 时占比无意义');
+  // 元素缺失时不抛
+  assert.doesNotThrow(() => renderCashTotals(fakeDoc({}), 1, 1));
 });
 
 test('renderMetricsPnl：今日涨跌与总盈亏的正负着色', () => {

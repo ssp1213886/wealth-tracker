@@ -29,3 +29,32 @@ export function cashSigned(l){var t=l.type||'',a=l.amount||0;return (t==='出金
 export function sparklinePath(values){var points=(Array.isArray(values)?values:[]).map(Number).filter(function(v){return isFinite(v)&&v>0}).slice(-20);if(points.length<2)return'';var min=Math.min.apply(null,points),max=Math.max.apply(null,points),span=max-min;if(span<.000001)return'M1 11 H57';return points.map(function(v,i){var x=1+i*56/(points.length-1),y=20-(v-min)*18/span;return(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}).join(' ')}
 
 export function dateOrdinal(value){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value||'');return m?Math.floor(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]))/86400000):NaN}
+
+/** 客户端网络调用的默认截止时间（毫秒）。行情/榜单这类"页面上看得见在转圈"的请求，超了就别再等。 */
+export const FETCH_TIMEOUT_MS = 10000;
+
+/**
+ * 带截止时间的 fetch（v320）。
+ *
+ * 为什么必须有：链路黑洞时（VPN 掉线 / DNS 污染 / SNI 被拦）fetch 可以**永远不返回**，
+ * 而客户端的写法几乎都是"先置为进行中 → 在 then/catch 里复位"——请求不落地，
+ * 那些「刷新」按钮、骨架微光、账号操作按钮就永久卡在"进行中"。
+ * v316 给同步请求补了 15 秒硬超时，这里是同一件事在其余网络调用上的补齐
+ * （服务端的 price / quotes / marketcap 早就有超时）。
+ *
+ * 超时会抛 AbortError，调用方按"普通失败"处理即可（该复位的状态都会走到 catch）。
+ */
+export async function fetchWithTimeout(url, opts, timeoutMs) {
+  const ms = Number(timeoutMs) > 0 ? Number(timeoutMs) : FETCH_TIMEOUT_MS;
+  const options = Object.assign({}, opts || {});
+  let ctrl = null;
+  try { ctrl = new AbortController(); } catch (e) { /* 极老环境：退化成普通 fetch */ }
+  if (!ctrl) return fetch(url, options);
+  options.signal = ctrl.signal;
+  const timer = setTimeout(function () { try { ctrl.abort(); } catch (e) { logSwallowed('fetchWithTimeout', e); } }, ms);
+  try {
+    return await fetch(url, options);
+  } finally {
+    clearTimeout(timer);
+  }
+}
