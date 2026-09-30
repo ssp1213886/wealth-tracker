@@ -1459,7 +1459,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .asset-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 10px}
 .asset-chip{min-height:38px;padding:0 6px;border:1px solid var(--rule);background:var(--surface);color:var(--muted);transition:border-color .16s ease,color .16s ease,background .16s ease}
 .asset-chip.active{border-color:color-mix(in srgb,var(--accent) 48%,transparent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent)}
-.trade-native-controls{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;margin-bottom:10px}
+.trade-native-controls{display:none}
 .native-control{height:var(--ds-control-height);min-height:var(--ds-control-height);padding:0 10px;border:1px solid var(--rule);border-radius:var(--ds-control-radius);background-color:var(--surface);color:var(--fg);font-size:.78rem}
 .console-form,.option-form{display:grid;gap:var(--ds-gap)}
 .field-grid,.option-field-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ds-gap)}
@@ -1536,7 +1536,6 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   #tab-data .collapsible-header select{width:auto!important;min-height:44px!important;padding:0 28px 0 10px!important;border-radius:12px!important;font-size:16px!important}
   #tab-console :is(.btn,.btn-pri),#tab-option :is(.btn,.btn-pri),#tab-data :is(.btn,.btn-pri),#tab-log :is(.btn,.btn-pri){height:var(--ds-action-height)!important;min-height:var(--ds-action-height)!important;padding:0 13px!important;border-radius:12px!important;font-size:.71rem!important;font-weight:620!important}
   #tab-console .btn-pri,#tab-option .btn-pri,#tab-data .btn-pri,#tab-log .btn-pri{height:var(--ds-primary-height)!important;min-height:var(--ds-primary-height)!important;border-radius:14px!important;background:var(--accent)!important;color:#fff!important;font-size:.82rem!important;font-weight:650!important}
-  .trade-native-controls{display:none}
   .segmented-control{height:42px;margin-bottom:10px;border-radius:14px}
   .segment{min-height:38px;border-radius:12px;font-size:.76rem}
   .asset-chips{gap:var(--ds-gap);margin-bottom:10px}
