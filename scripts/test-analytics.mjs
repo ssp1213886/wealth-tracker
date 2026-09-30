@@ -5,7 +5,8 @@ await page.route("**/assets/*", (route) =>
   route.continue({ headers: { ...route.request().headers(), "cache-control": "no-cache", pragma: "no-cache" } }),
 );
 await page.setViewportSize({ width: 390, height: 844 });
-await page.goto("http://127.0.0.1:8788/", { waitUntil: "load" });
+// v322：认 E2E_BASE（默认仍是 8788），便于纳入 e2e:all 常跑
+await page.goto((process.env.E2E_BASE || "http://127.0.0.1:8788/"), { waitUntil: "load" });
 await page.evaluate(async () => {
   const regs = await navigator.serviceWorker.getRegistrations();
   await Promise.all(regs.map((r) => r.unregister()));

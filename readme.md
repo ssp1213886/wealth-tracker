@@ -138,10 +138,11 @@ npm run preview:lan  # 局域网静态预览，手机可访问（调移动端用
 
 ```bash
 npm run build        # 打包 src/app/* → public/assets/app.js（改完前端必跑）
-npm test             # 单元测试（341 项）
+npm test             # 单元测试（350 项）
 npm run lint         # 语法检查 + !important 预算守卫（当前上限 1511，只减不增）
 npm run audit        # 静态审计：死 id / 死按钮 / 空 catch / 跨模块漏 import
 npm run e2e          # 无头端到端（自带假云端，不碰生产数据）
+npm run e2e:all      # 常跑总入口：主套件 + 全站回归 + 期权/备份/分析卡 + 同步全链路 + 真机模拟（约 6 分钟）
 npm run bump         # 版本号 +1（改 5 处）→ 重新打包 → 跑测试
 npm run deploy       # 构建 + 部署到 Cloudflare（不会漏构建）
 npm run check        # test + build + wrangler deploy --dry-run
@@ -170,7 +171,7 @@ npm run deploy
 | `src/lib/` | 后端模块：auth / assets / http / price / quotes / holdings / marketcap / sync / **snapshots** / logs / events / rate-limit |
 | `src/app/` | **前端源码**：`index.js`（页面逻辑与装配）+ 纯逻辑（calc / portfolio / options / plan / rows / records-import / symbols / charts / time / util）+ 视图层（sync-view / settings-view / watch-ui / portfolio-view / alerts-view）+ 数据（store / sync / sync-engine / backup / watch / watch-view / settings） |
 | `scripts/` | bundle / bump / lint / build / lan-preview + e2e 与专项测试脚本 |
-| `tests/` | 单元测试（`node --test`，**341 项**） |
+| `tests/` | 单元测试（`node --test`，**350 项**） |
 | `schema.sql` | D1 建表语句 |
 | `wrangler.toml` | Cloudflare Workers 配置 |
 | `INVESTMENT_STRATEGY.md` | 投资策略定义（AI 助手读取） |
@@ -182,10 +183,11 @@ npm run deploy
 
 | 层级 | 命令 | 覆盖 |
 | --- | --- | --- |
-| 单元测试 | `npm test` | **341 项**：工具函数、持仓计算与成本结转、组合/期权/计划纯计算、存储容错、迁移链、同步 payload 与 409 分类、备份导入计划、待办判定、转义安全、时区与交易日、**今日收益口径**、**并发取价去重**、**云端快照读写与账号隔离**、**同步请求的 15 秒硬超时**、**失败文案四分类（离线/超时/HTTP/其它）** |
+| 单元测试 | `npm test` | **350 项**：工具函数、持仓计算与成本结转、组合/期权/计划纯计算、存储容错、迁移链、同步 payload 与 409 分类、备份导入计划、待办判定、转义安全、时区与交易日、**今日收益口径**、**并发取价去重**、**云端快照读写与账号隔离**、**同步请求的 15 秒硬超时**、**失败文案四分类（离线/超时/HTTP/其它）**、**客户端网络调用必须有截止时间**、**安全响应头**、**场景脚本不许漏挂** |
 | 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出的 inline onclick / 空 catch / 跨模块漏 import，纯 Node，CI 会跑 |
-| 端到端（无头） | `npm run e2e` | **6 个场景**：全页爬查零报错 / 数据流（买入·入金·卖 CALL 落库并同步）/ 交互流（搜索·撤销·结算·备份·操作台弹层·刷新反馈）/ 市值与敞口（含**行情一致性护栏**）/ 使用文档可达性（装了 SW 后 `/guide` 仍是文档，不被壳子缓存顶掉）/ 清除数据（非主账号也真清到云端） |
+| 端到端（无头） | `npm run e2e` | **7 个场景**：全页爬查零报错 / 数据流（买入·入金·卖 CALL 落库并同步）/ 交互流（搜索·撤销·结算·备份·操作台弹层·刷新反馈）/ 市值与敞口（含**行情一致性护栏**）/ 使用文档可达性（装了 SW 后 `/guide` 仍是文档，不被壳子缓存顶掉）/ 登录门禁（未登录只能看到登录页）/ 清除数据（非主账号也真清到云端） |
 | 端到端回归 | `node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | 47 项：仪表盘 / 操作台 / 期权 / 记录页 / 侧边栏 / 主题 / 响应式 |
+| 常跑总入口 | `npm run e2e:all` | 主套件 + 全站回归 47 项 + 期权 / 备份 / 分析卡专项 + 同步全链路（含 409/401）+ 真机模拟触摸端；**已接进 CI**，脚本漏挂会被 `tests/test-inventory.test.mjs` 拦下 |
 | 专项验证 | `scripts/test-options.mjs` 等 | 期权行权与结算、备份往返、分析卡片数值与手算比对 |
 
 > `npm run e2e` 默认用**无头 Chrome**（`scripts/e2e/driver.mjs`：不弹窗、不占用你的调试窗口），自带假云端 `scripts/e2e/mock-cloud.mjs`。

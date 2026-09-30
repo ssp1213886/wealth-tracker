@@ -12,7 +12,8 @@ await page.setViewportSize({ width: 390, height: 844 });
 const consoleErrors = [];
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 120)); });
 
-await page.goto("http://127.0.0.1:8788/", { waitUntil: "load" });
+// v322：认 E2E_BASE（默认仍是 8788），这样它能被 run-all 统一调度，不再写死端口
+await page.goto((process.env.E2E_BASE || "http://127.0.0.1:8788/"), { waitUntil: "load" });
 await page.evaluate(async () => {
   const regs = await navigator.serviceWorker.getRegistrations();
   await Promise.all(regs.map((r) => r.unregister()));

@@ -39,3 +39,9 @@ jobs:
       - run: npm run e2e
         env:
           PW_CORE_PATH: ${{ github.workspace }}/node_modules/playwright-core
+
+      # v322：常跑总入口 —— 把"按需再跑"的专项脚本也一起跑（全站回归 47 项 / 期权 / 备份 / 分析卡 /
+      # 同步全链路 / 真机模拟触摸端）。脚本不常跑必腐烂：上一轮就是靠终测才发现两个脚本早已过时。
+      - run: npm run e2e:all
+        env:
+          PW_CORE_PATH: ${{ github.workspace }}/node_modules/playwright-core
