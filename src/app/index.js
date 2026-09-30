@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v305';var APP_DATA_VERSION=5;
+var APP_BUILD='v306';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -996,7 +996,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=305',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=306',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1157,9 +1157,11 @@ function renderClearUndoBar(){
   if(!s){hideClearUndoBar();return}
   var bar=document.getElementById('clearUndoBar');
   if(!bar){bar=document.createElement('div');bar.id='clearUndoBar';bar.className='clear-undo-bar';bar.setAttribute('role','status');document.body.appendChild(bar)}
-  bar.innerHTML='<span class="cub-text"></span><button type="button" class="cub-btn" id="clearUndoBtn">撤销</button>';
+  bar.innerHTML='<span class="cub-text"></span><button type="button" class="cub-btn" id="clearUndoBtn">撤销</button><button type="button" class="cub-x" id="clearUndoDismiss" aria-label="关闭提示条">×</button>';
   bar.querySelector('.cub-text').textContent='已清除全部数据 · 可撤销';
   bar.querySelector('#clearUndoBtn').addEventListener('click',restoreClearSnapshot);
+  /* × 只是把提示条收起来，不删快照 —— 之后还能在「设置 → 数据与备份 → 云端快照」里恢复 */
+  bar.querySelector('#clearUndoDismiss').addEventListener('click',hideClearUndoBar);
   var left=Math.max(0,CLEAR_SNAP_TTL-(Date.now()-s.ts));
   var hh=Math.floor(left/3600000),mm=Math.floor(left%3600000/60000);
   bar.querySelector('.cub-text').textContent='已清除全部数据 · 还剩 '+hh+':'+(mm<10?'0':'')+mm+' 可撤销';
@@ -1167,6 +1169,51 @@ function renderClearUndoBar(){
   bar._t=setInterval(function(){var t=readClearSnapshot();if(!t){hideClearUndoBar();return}var l=Math.max(0,CLEAR_SNAP_TTL-(Date.now()-t.ts));var H=Math.floor(l/3600000),M=Math.floor(l%3600000/60000);var tx=bar.querySelector('.cub-text');if(tx)tx.textContent='已清除全部数据 · 还剩 '+H+':'+(M<10?'0':'')+M+' 可撤销'},30000);
 }
 setTimeout(renderClearUndoBar,900);
+/* v306 方案 B：云端快照列表 —— 清除前由服务端留一份，换设备也能恢复 */
+function closeSnapshotSheet(){var s=document.getElementById('snapshotSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
+function confirmRestoreSnapshot(id){
+  showApproval({title:'从云端快照恢复',message:'会用这份快照覆盖当前的云端数据，然后重新拉取到本机。\n\n快照之后新录的数据会丢失，请确认。',confirmText:'恢复',danger:false,holdMs:3000,onConfirm:function(){
+    fetch('/api/snapshots/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Number(id)})}).then(function(r){return r.json().catch(function(){return{}})}).then(function(j){
+      if(!j||!j.ok){showToast('恢复失败：'+((j&&j.error)||'未知错误'),'err');return}
+      closeSnapshotSheet();
+      showToast('已从云端快照恢复，正在重新拉取…','ok');
+      setTimeout(function(){location.reload()},900);
+    }).catch(function(){showToast('恢复失败，请稍后再试','err')});
+  }});
+}
+function openSnapshotSheet(){
+  var sh=document.getElementById('snapshotSheet');
+  if(!sh){
+    sh=document.createElement('div');sh.id='snapshotSheet';sh.className='qa-sheet';
+    sh.innerHTML='<div class="qa-panel"><div class="qa-title">云端快照</div><div class="snapshot-list" id="snapshotList"></div><button type="button" class="btn btn-out" id="snapshotClose" style="width:100%;margin-top:12px;">关闭</button></div>';
+    sh.addEventListener('click',function(e){if(e.target===sh)closeSnapshotSheet()});
+    sh.querySelector('#snapshotClose').addEventListener('click',closeSnapshotSheet);
+    try{enableSheetDrag(sh.querySelector('.qa-panel'),closeSnapshotSheet)}catch(e){logSwallowed("openSnapshotSheet",e)}
+    document.body.appendChild(sh);
+  }
+  sh.classList.add('open');
+  var list=sh.querySelector('#snapshotList');
+  var tip=document.createElement('div');tip.className='table-empty';tip.textContent='正在读取…';
+  list.textContent='';list.appendChild(tip);
+  fetch('/api/snapshots?limit=5').then(function(r){return r.ok?r.json():null}).then(function(j){
+    list.textContent='';
+    if(!j||!j.ok){var e1=document.createElement('div');e1.className='table-empty';e1.textContent='读取失败，请检查登录状态';list.appendChild(e1);return}
+    if(!j.snapshots.length){var e2=document.createElement('div');e2.className='table-empty';e2.textContent='还没有云端快照 · 点「清除所有数据」时会自动留一份';list.appendChild(e2);return}
+    j.snapshots.forEach(function(s){
+      var sum={};try{sum=JSON.parse(s.summary||'{}')}catch(e){logSwallowed("openSnapshotSheet",e)}
+      var when=new Date(s.createdAt).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      var row=document.createElement('div');row.className='snapshot-row';
+      var meta=document.createElement('div');meta.className='snapshot-meta';
+      var b=document.createElement('b');b.textContent=when;
+      var small=document.createElement('small');small.textContent=(sum.trades||0)+' 笔交易 · '+(sum.options||0)+' 个期权 · 现金 '+fmtFull(Number(sum.cash)||0);
+      meta.appendChild(b);meta.appendChild(small);
+      var btn=document.createElement('button');btn.type='button';btn.className='btn btn-out btn-sm';btn.textContent='恢复';
+      btn.addEventListener('click',function(){confirmRestoreSnapshot(s.id)});
+      row.appendChild(meta);row.appendChild(btn);list.appendChild(row);
+    });
+  }).catch(function(){list.textContent='';var e3=document.createElement('div');e3.className='table-empty';e3.textContent='读取失败，请稍后再试';list.appendChild(e3)});
+}
+(function(){var b=document.getElementById('btnCloudSnapshots');if(b)b.addEventListener('click',openSnapshotSheet)})();
 function clearAllData(){
   var cfg=syncCfg||{}; var base=(cfg.url||location.origin).replace(/\/$/,'');
   /* v302：不再用 cfg.token 判断"有没有云端"——token 已退役，登录后走的是会话 cookie。
@@ -1182,7 +1229,8 @@ function clearAllData(){
   };
   showToast('正在清除云端数据');
   var clrHeaders={'Content-Type':'application/json'};if(cfg.token)clrHeaders['X-Auth-Token']=cfg.token;
-  fetch(base+'/api/sync',{method:'POST',headers:clrHeaders,body:JSON.stringify(empty)}).then(function(r){
+  // __snapshotBefore：让云端先把"清除前"的样子存成一份快照（方案 B），再落空值
+  fetch(base+'/api/sync',{method:'POST',headers:clrHeaders,body:JSON.stringify(Object.assign({__snapshotBefore:true},empty))}).then(function(r){
     // 没有云端后端（静态部署）→ 只清本机；401 说明登录失效，此时绝不能清本机，
     // 否则云端数据会在下次进入时被拉回来，用户会以为"清了个寂寞"。
     if(r.status===404)return{ok:true,noCloud:true};

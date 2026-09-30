@@ -1,4 +1,5 @@
 import { SYNC_KEYS } from './http.js';
+import { saveSnapshot } from './snapshots.js';
 
 const MAX_KEYS = 50;
 const MAX_VALUE_LENGTH = 512 * 1024;
@@ -52,7 +53,9 @@ export async function handleSyncPost(request, env, userId) {
     }
   }
 
-  const entries = Object.entries(body).filter(([key]) => key !== '__expectedVersions');
+  // __snapshotBefore：清除全部数据前先留一份云端快照（方案 B）。它本身不是数据键，写完要剔除。
+  const snapshotBefore = body.__snapshotBefore === true;
+  const entries = Object.entries(body).filter(([key]) => key !== '__expectedVersions' && key !== '__snapshotBefore');
   if (entries.length > MAX_KEYS) return { status: 400, body: { error: 'Too many keys' } };
 
   const statements = [];
@@ -96,8 +99,14 @@ export async function handleSyncPost(request, env, userId) {
       }
     }
 
+    // 快照必须在写入之前：先把"清除前"的样子存下来，再落空值。
+    let snapshot = null;
+    if (snapshotBefore) {
+      // 快照失败不能让"清除"本身失败，所以单独 try
+      try { snapshot = await saveSnapshot(env, userId, 'clear'); } catch { snapshot = null; }
+    }
     if (statements.length > 0) await env.DB.batch(statements);
-    return { status: 200, body: { ok: true, userId, saved: statements.length, ts: syncTs } };
+    return { status: 200, body: { ok: true, userId, saved: statements.length, ts: syncTs, snapshot } };
   } catch (error) {
     return { status: 502, body: { ok: false, error: 'DB error', detail: error.message } };
   }

@@ -10,13 +10,48 @@ export function createFakeDb(initial = {}) {
   }]));
   const accounts = [];
   const events = [];
+  const snapshots = [];
 
   const route = (sql, args) => {
     const q = sql.replace(/\s+/g, ' ').trim();
 
     if (q.startsWith('CREATE TABLE IF NOT EXISTS accounts')) return { results: [], success: true };
     if (q.startsWith('CREATE TABLE IF NOT EXISTS events')) return { results: [], success: true };
+    if (q.startsWith('CREATE TABLE IF NOT EXISTS snapshots')) return { results: [], success: true };
     if (q.startsWith('CREATE INDEX')) return { results: [], success: true };
+    if (q.startsWith('INSERT INTO snapshots')) {
+      const [user_id, payload, summary, reason, created_at] = args;
+      const id = snapshots.reduce((max, s) => Math.max(max, s.id), 0) + 1;
+      snapshots.push({ id, user_id: Number(user_id), payload, summary, reason, created_at: Number(created_at) });
+      return { results: [], success: true, meta: { last_row_id: id } };
+    }
+    if (q.startsWith('DELETE FROM snapshots WHERE user_id = ? AND id NOT IN')) {
+      // 测试里不真裁剪（只验证 SQL 能被识别）
+      return { results: [], success: true };
+    }
+    if (q.startsWith('SELECT id, summary, reason, created_at FROM snapshots')) {
+      const list = snapshots
+        .filter((s) => s.user_id === Number(args[0]))
+        .sort((a, b) => b.created_at - a.created_at);
+      const limit = Number(args[1]) || 5;
+      return { results: list.slice(0, limit) };
+    }
+    if (q.startsWith('SELECT payload FROM snapshots WHERE user_id = ? AND id = ?')) {
+      const hit = snapshots.filter((s) => s.user_id === Number(args[0]) && s.id === Number(args[1]))[0];
+      return { results: hit ? [{ payload: hit.payload }] : [] };
+    }
+    if (q.startsWith('SELECT key, value FROM data WHERE user_id = ?')) {
+      const userId = Number(args[0]);
+      return { results: [...rows.values()].filter((row) => row.user_id === userId).map((row) => ({ key: row.key, value: row.value })) };
+    }
+    if (q.startsWith('SELECT key FROM data WHERE user_id = ?')) {
+      const userId = Number(args[0]);
+      return { results: [...rows.values()].filter((row) => row.user_id === userId).map((row) => ({ key: row.key })) };
+    }
+    if (q.startsWith('DELETE FROM data WHERE user_id = ? AND key = ?')) {
+      rows.delete(Number(args[0]) + '|' + args[1]);
+      return { results: [], success: true };
+    }
     if (q.startsWith('INSERT INTO events')) {
       const [user_id, ts, kind, detail] = args;
       events.push({ id: events.length + 1, user_id: Number(user_id), ts: Number(ts), kind: String(kind), detail: String(detail || '') });
@@ -146,6 +181,8 @@ export function createFakeDb(initial = {}) {
   return {
     rows,
     accounts,
+    events,
+    snapshots,
     prepare: (sql) => statement(sql),
     async batch(statements) {
       for (const item of statements) await item.run();

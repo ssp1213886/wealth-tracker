@@ -2,6 +2,7 @@ import { serveAsset } from './lib/assets.js';
 import { corsHeaders, json } from './lib/http.js';
 import { handlePrice } from './lib/price.js';
 import { handleSyncGet, handleSyncPost } from './lib/sync.js';
+import { listSnapshots, restoreSnapshot } from './lib/snapshots.js';
 import { createRateLimiter } from './lib/rate-limit.js';
 import { handleLog } from './lib/logs.js';
 import { handleQuotes, handleHoldings } from './lib/quotes.js';
@@ -358,6 +359,23 @@ export default {
       const result = await handleSyncPost(request, env, account.id);
       const saved = result.body && result.body.saved;
       bg(logEventThrottled(env, account.id, 'sync', saved ? ('上传 ' + saved + ' 项到云端') : '推送云端数据'));
+      return json(result.body, result.status);
+    }
+
+    // 云端快照（方案 B）：清除全部数据前的备份，换设备也能救回来
+    if (url.pathname === '/api/snapshots' && request.method === 'GET') {
+      const account = await activeAccount(request, env);
+      if (!account) return json({ error: 'Unauthorized' }, 401);
+      const result = await listSnapshots(env, account.id, url.searchParams.get('limit'));
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/snapshots/restore' && request.method === 'POST') {
+      const account = await activeAccount(request, env);
+      if (!account) return json({ error: 'Unauthorized' }, 401);
+      let snapBody = {};
+      try { snapBody = await request.json() } catch { return json({ ok: false, error: 'Invalid JSON' }, 400) }
+      const result = await restoreSnapshot(env, account.id, snapBody && snapBody.id);
+      if (result.status === 200) bg(logEvent(env, account.id, 'data', '从云端快照恢复数据'));
       return json(result.body, result.status);
     }
 
