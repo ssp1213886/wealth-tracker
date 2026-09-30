@@ -400,7 +400,7 @@
   </div>
   <div class="collapsible-body">
     <div class="price-list" id="hmPricesCompact" aria-label="实时价格" aria-busy="true"><div class="ds-skeleton" aria-hidden="true"><i></i><i></i><i></i></div></div>
-    <div class="price-meta-row"><div class="price-meta" id="hmPriceTime"></div><span class="price-hint">点价格可自动填入</span><span id="mktStatus" class="market-status"></span></div>
+    <div class="price-meta-row"><div class="price-meta" id="hmPriceTime"></div><span id="mktStatus" class="market-status"></span></div>
     <form class="trade-form console-form" onsubmit="return false">
       <div class="trade-native-controls">
         <select id="tfType" class="native-control" aria-label="交易类型"><option value="buy">买入</option><option value="sell">卖出</option></select>
@@ -423,7 +423,6 @@
       <div class="trade-summary"><span>预计金额</span><strong id="tfEstimated">$0.00</strong></div>
       <button class="btn btn-pri" id="btnAddTrade" type="button">添加交易</button>
     </form>
-    <div class="recent-trades" id="recentTrades" hidden></div>
   </div>
 </div>
 
@@ -431,18 +430,10 @@
     <h3>现金管理</h3>
     <div class="cash-balance-row"><span>现金余额</span><strong id="dataCashBal">$0.00</strong></div>
     <div class="cash-form">
-      <div class="segmented-control cash-type-segment" role="tablist" aria-label="现金操作">
-        <button type="button" class="segment active" data-cash-type="in" role="tab" aria-selected="true">入金</button>
-        <button type="button" class="segment" data-cash-type="out" role="tab" aria-selected="false">出金</button>
+      <div class="cash-row">
+        <div class="tf-group"><label for="hmCashAmt">入金 / 出金</label><input type="number" inputmode="decimal" id="hmCashAmt" placeholder="金额"></div>
+        <div class="cash-actions"><button type="button" class="cash-action is-primary" id="hmDeposit">入金</button><button type="button" class="cash-action" id="hmWithdraw">出金</button></div>
       </div>
-      <div class="tf-group"><label for="hmCashAmt">金额 $</label><input type="number" inputmode="decimal" id="hmCashAmt" placeholder="入金金额"></div>
-      <button type="button" class="btn btn-pri" id="cashSubmit">入金</button>
-      <!-- 原按钮保留在 DOM 里（hidden）：主按钮只是按分段去点它们，现金逻辑一行都不用改 -->
-      <div class="cash-actions" hidden><button type="button" class="cash-action is-primary" id="hmDeposit">入金</button><button type="button" class="cash-action" id="hmWithdraw">出金</button></div>
-      <details class="cash-more">
-      <summary>更多：现金修正 · 股息记录</summary>
-      <details class="cash-more">
-      <summary>更多：现金修正 · 股息记录</summary>
       <div class="cash-row">
         <div class="tf-group"><label for="hmCorrectAmt">现金修正</label><input type="number" inputmode="decimal" id="hmCorrectAmt" placeholder="修正金额"></div>
         <button type="button" class="cash-action" id="hmCorrect">修正</button>
@@ -451,7 +442,6 @@
         <div class="tf-group"><label for="divAmt">股息记录</label><div class="cash-fields"><select id="divSym" aria-label="股息标的"><option value="VGT">VGT</option><option value="SMH">SMH</option></select><input type="number" inputmode="decimal" id="divAmt" placeholder="股息金额"></div></div>
         <button type="button" class="cash-action is-primary" id="hmDividend">记录</button>
       </div>
-      </details>
     </div>
     <div class="cash-summary">累计 入金 <span id="dataDep">$0</span> · 卖出 <span id="dataSel">$0</span> · 买入 <span id="dataBuy">$0</span></div>
   </div>
