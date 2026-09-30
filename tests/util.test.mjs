@@ -34,7 +34,8 @@ test('cleanText: 清掉控制字符、去空白、按长度截断', () => {
 test('fmtFull: 千分位 + 两位小数', () => {
   assert.equal(fmtFull(1234.5), '$1,234.50');
   assert.equal(fmtFull(0), '$0.00');
-  assert.equal(fmtFull(-2500), '$-2,500.00');
+  // v319：负号必须在 $ 前面（手机端累计收益靠"首字符是不是 -"判断盈亏染色）
+  assert.equal(fmtFull(-2500), '-$2,500.00');
   assert.equal(fmtFull('abc'), '$0.00');
 });
 
@@ -51,9 +52,9 @@ test('fmtShares: 去掉无意义的尾零，最多四位小数', () => {
 
 test('fmtPnLFull: 正数带 +，非法值显示占位', () => {
   assert.equal(fmtPnLFull(12.5), '+$12.50');
-  // 现状：负数沿用 fmtFull 的写法，符号在 $ 之后（$-8.00）。
+  // v319 起：负数也是"符号在前"（-$8.00），与正数 +$12.50 对称
   // 如果哪天要改成 -$8.00，先改这条断言，再改实现。
-  assert.equal(fmtPnLFull(-8), '$-8.00');
+  assert.equal(fmtPnLFull(-8), '-$8.00');
   assert.equal(fmtPnLFull(NaN), '-');
 });
 

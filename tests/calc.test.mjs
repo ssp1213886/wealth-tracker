@@ -1,7 +1,7 @@
 // 持仓与盈亏计算单测（src/app/calc.js）—— 这部分是"算错了也不会报错、只会算错钱"的地方
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeHoldings, buildPositionRows } from '../src/app/calc.js';
+import { computeHoldings, buildPositionRows, cashCorrectionPlan } from '../src/app/calc.js';
 
 const trade = (id, symbol, shares, price, date) => ({ id, symbol, shares, price, date });
 
@@ -114,4 +114,19 @@ test('buildPositionRows: 已清仓的标的不出现在行里', () => {
   const r = buildPositionRows(holdings, { VGT: 100, SMH: 210 });
   assert.equal(r.rows.length, 1);
   assert.equal(r.rows[0].sym, 'SMH');
+});
+
+// v319：现金修正的执行计划 —— 负数修正是"往回改"，必须二次确认；会修成负数时还要警告
+test('cashCorrectionPlan：正数直接执行，负数要确认，修成负数要警告', () => {
+  const up = cashCorrectionPlan(34000, 500);
+  assert.deepEqual(up, { delta: 500, next: 34500, needsConfirm: false, willGoNegative: false });
+  const down = cashCorrectionPlan(34000, -500);
+  assert.deepEqual(down, { delta: -500, next: 33500, needsConfirm: true, willGoNegative: false });
+  const intoNegative = cashCorrectionPlan(100, -500);
+  assert.equal(intoNegative.next, -400);
+  assert.equal(intoNegative.needsConfirm, true);
+  assert.equal(intoNegative.willGoNegative, true, '修成负数要能识别出来，好让确认框给出警告');
+  // 脏输入归零，不抛
+  const dirty = cashCorrectionPlan(undefined, 'abc');
+  assert.deepEqual(dirty, { delta: 0, next: 0, needsConfirm: false, willGoNegative: false });
 });

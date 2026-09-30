@@ -1,5 +1,5 @@
 import {safeNum, cleanText, fmtFull, fmtShares, fmtPnLFull, cashSigned, sparklinePath, dateOrdinal, logSwallowed} from './util.js';
-import {computeHoldings, buildPositionRows} from './calc.js';
+import {computeHoldings, buildPositionRows, cashCorrectionPlan} from './calc.js';
 import {KEYS, readRaw, writeRaw, removeKey, readJSON, writeJSON, isQuotaError, runMigrations, LS, setStorageNamespace, storageNamespace} from './store.js';
 import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, SYNC_FIELDS} from './sync.js';
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
@@ -54,12 +54,12 @@ function symColor(sym){
 import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, syncFailureText, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices, capCellHTML, updateCapCells} from './watch-ui.js';
-import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills} from './portfolio-view.js';
+import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, cashPctText} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
-import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
+import {portfolioTotals, cashPctOf, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
-import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue} from './records-import.js';
+import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue, csvSkipSummary} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
 import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS, WATCH_HELD_OF, resolveHeldSymbol, mergeWatchlist, splitByHolding} from './watch.js';
@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v318';var APP_DATA_VERSION=5;
+var APP_BUILD='v319';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -806,7 +806,10 @@ function updateMobStatusBar(){
   var bar=document.getElementById('mobStatusBar');if(!bar)return;
   var bals={};trades.forEach(function(t){bals[t.symbol]=(bals[t.symbol]||0)+t.shares});var totalV=0;var mobRows=ETF_SYMS.map(function(sym){var sh=Math.max(0,bals[sym]||0);totalV+=sh*(livePrices[sym]||0);return{sym:sym,shares:sh,priced:!!livePrices[sym]}});var mobDaily=dailyChange(mobRows,buildDailyQuotes(),trades,marketDate()),daily=mobDaily.change;var nc=getNetCash();
   var vm=document.getElementById('msTotal');if(vm)animateVal(vm,totalV+nc);
-  var ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalV+nc);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=(totalV+nc>0?nc/(totalV+nc)*100:0).toFixed(2)+'%';
+  /* v319：桌面卡的「总资产 / 现金占比」这里也要刷（本函数历史上顺手接管了它）。
+     口径必须与 portfolio.js 的 cashPctOf 一致 —— 以前这里自写一份公式、≤0 硬写 0，
+     会把 renderMetricsTop 刚写好的「—」覆盖成「0.00%」。 */
+  var ht=document.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalV+nc);var hcp=document.getElementById('hmCashPct');if(hcp)hcp.textContent=cashPctText(cashPctOf(totalV+nc,nc));
   var mc=document.getElementById('msCash');if(mc)mc.textContent=fmtFull(nc);
   var mp=document.getElementById('msPnl'),srcPnl=document.getElementById('hmPnL');if(mp&&srcPnl){mp.textContent=srcPnl.textContent;mp.classList.toggle('pnl-neg',srcPnl.textContent.indexOf('-')===0);mp.classList.toggle('pnl-pos',srcPnl.textContent.indexOf('-')!==0)}
   var md=document.getElementById('msDaily'),dailyPct=mobDaily.pct,dailyText='今日 '+(daily>=0?'+':'-')+fmtFull(Math.abs(daily))+' · '+(dailyPct==null?'—':((dailyPct>=0?'+':'')+dailyPct.toFixed(2)+'%'));if(md){md.textContent=dailyText;md.classList.toggle('negative',daily<0)}var sd=document.getElementById('sbToday');if(sd){sd.textContent=dailyText;sd.style.color=daily<0?'var(--red)':'var(--accent)'}
@@ -972,7 +975,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=318',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=319',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1284,7 +1287,7 @@ document.getElementById('syncPanelHeader').addEventListener('click',function(){d
 function parseSchwabCSV(text){
   var parsed=parseSchwabCSVIn(text,{symbols:ETF_SYMS,existingTrades:trades});
   parsed.rows.forEach(function(r){r.id=tradeIdCounter++;trades.push(r)});
-  return parsed.imported;
+  return {imported:parsed.imported,skipped:parsed.skipped};
 }
 
 
@@ -1303,10 +1306,13 @@ function doCSVImport(file){
     try{
 
 
-      var imported=parseSchwabCSV(reader.result);
+      var res=parseSchwabCSV(reader.result);
+      /* v319：被跳过的行要说清楚（标的不在核心仓 / 价格无效 / 与已有记录重复…），
+         以前只报"已导入 N 笔"，用户根本不知道有行没进来 */
+      var skippedText=csvSkipSummary(res.skipped);
 
 
-      if(imported>0){
+      if(res.imported>0){
 
 
         trades.sort(function(a,b){return String(a.date).localeCompare(String(b.date))});
@@ -1315,10 +1321,10 @@ function doCSVImport(file){
         saveTrades();initTradeIds();updatePortfolio();updateSidebar();updateSidebarPrices();
 
 
-        showToast('已导入 '+imported+' 笔交易','ok');
+        showToast('已导入 '+res.imported+' 笔交易'+(skippedText?'（'+skippedText+'）':''),'ok');
 
 
-      }else showToast('未识别有效交易，需 Schwab CSV 格式','err');
+      }else showToast(skippedText?('没有可导入的交易（'+skippedText+'）'):'未识别有效交易，需 Schwab CSV 格式','err');
 
 
     }catch(e){showToast('解析失败: '+e.message,'err')}
@@ -1565,7 +1571,10 @@ if(!ac.length){sh.innerHTML=emptyStateHTML({title:'暂无期权持仓',compact:t
 else{sh.innerHTML=ac.map(function(o){var d=optionExpiryState(o.expiry,nowInstant).days;return '<div class="sb-option-line"><span><b>'+escapeHtml(o.sym)+'</b> '+escapeHtml(o.type)+' $'+Number(o.strike||0).toFixed(0)+' ×'+(o.contracts||1)+'</span><strong>'+d+'天</strong></div>'}).join("")}
 }
 };
-try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return formError("请输入修正金额","hmCorrectAmt");cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:v>0?"修正+":"修正-",amount:v});saveCashLog();document.getElementById("hmCorrectAmt").value="";addActivity("现金修正 "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()})}catch(e){logSwallowed("settleOpt",e)}
+/* v319：负数修正是"往回改"的非常规操作，先二次确认（会修成负数时再明确警告一次）——
+   以前只挡了 v===0，填负数就能把可用现金直接改成负数，总资产跟着变负而且毫无提示 */
+function applyCashCorrection(v){cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:v>0?"修正+":"修正-",amount:v});saveCashLog();document.getElementById("hmCorrectAmt").value="";addActivity("现金修正 "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()}
+try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return formError("请输入修正金额","hmCorrectAmt");var plan=cashCorrectionPlan(cashBalance,v);if(!plan.needsConfirm)return applyCashCorrection(v);showApproval({title:"确认减少现金",message:"现金修正填了负数，会把可用现金从 "+fmtFull(cashBalance)+" 改成 "+fmtFull(plan.next)+"。"+(plan.willGoNegative?"\n\n⚠️ 修正后可用现金为负数，总资产也会跟着变成负数。":""),confirmText:"确认修正",onConfirm:function(){applyCashCorrection(v)}})})}catch(e){logSwallowed("settleOpt",e)}
 try{document.getElementById("hmDividend").addEventListener("click",function(){var s=document.getElementById("divSym").value;var v=parseFloat(document.getElementById("divAmt").value)||0;if(!s)return formError("请选择股息标的","divSym");if(v===0)return formError("请输入股息金额","divAmt");cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:"股息+"+s,amount:v});saveCashLog();document.getElementById("divAmt").value="";addActivity("股息收入 "+s+" "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()})}catch(e){logSwallowed("settleOpt",e)}setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},500);
 
 /* range=max 是历史数据：同一个标的只请求一次，年初/年末两个口径共用（原先一次开屏要打 6 次） */

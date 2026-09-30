@@ -29,7 +29,15 @@ export function renderMetricsTop(doc, m) {
     const el = doc.getElementById(id);
     if (el && el.classList && el.classList.toggle) el.classList.toggle('is-skeleton', !m.hasPriced);
   });
-  doc.getElementById('hmValue').textContent=m.hasPriced?fmtFull(m.totalValue):'-';var totalAssetValue=m.totals.totalAssets,ht=doc.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalAssetValue);var hcp=doc.getElementById('hmCashPct');if(hcp)hcp.textContent=m.totals.cashPct.toFixed(2)+'%';
+  doc.getElementById('hmValue').textContent=m.hasPriced?fmtFull(m.totalValue):'-';var totalAssetValue=m.totals.totalAssets,ht=doc.getElementById('hmTotal');if(ht)ht.textContent=fmtFull(totalAssetValue);var hcp=doc.getElementById('hmCashPct');if(hcp)hcp.textContent=cashPctText(m.totals.cashPct);
+}
+
+/**
+ * 现金占比的显示文案：null（总资产 ≤ 0，占比无意义）→「—」。
+ * 与 `portfolio.js` 的 `cashPctOf` 配对：口径一份、文案一份，两处调用点共用（见 cashPctOf 的注释）。
+ */
+export function cashPctText(cashPct) {
+  return cashPct == null ? '—' : cashPct.toFixed(2) + '%';
 }
 
 /** 今日涨跌、总盈亏、以及"浮动/已实现/权利金"三个明细徽章。 */

@@ -93,6 +93,9 @@ export function parseSchwabCSV(text, opts) {
     seen[[t.date, t.symbol, t.shares, t.price].join('|')] = true;
   });
   const rows = [];
+  // 被跳过的行要能说清楚原因：以前全是 `continue`，用户只看到"已导入 N 笔"，
+  // 不知道有几行没进来、为什么（v318 补：交给调用方给行级反馈）
+  const skipped = { badDate: 0, symbol: 0, qty: 0, price: 0, dup: 0 };
   let colMap = {};
   let headerFound = false;
   for (let i = 0; i < lines.length; i += 1) {
@@ -115,11 +118,14 @@ export function parseSchwabCSV(text, opts) {
     const qty = Math.abs(parseMoneyValue(row[colMap.qty]));
     const price = parseMoneyValue(row[colMap.price]);
     const action = colMap.action >= 0 ? cleanText(row[colMap.action], 80).toLowerCase() : '';
-    if (!date || !symbols.includes(sym) || qty <= 0 || price <= 0) continue;
+    if (!date) { skipped.badDate += 1; continue; }
+    if (!symbols.includes(sym)) { skipped.symbol += 1; continue; }
+    if (qty <= 0) { skipped.qty += 1; continue; }
+    if (price <= 0) { skipped.price += 1; continue; }
     const isSell = action.indexOf('sell') >= 0 || action.indexOf('sold') >= 0 || action.indexOf('卖') >= 0;
     const shares = isSell ? -qty : qty;
     const fingerprint = [date, sym, shares, price].join('|');
-    if (seen[fingerprint]) continue;
+    if (seen[fingerprint]) { skipped.dup += 1; continue; }
     seen[fingerprint] = true;
     rows.push({
       symbol: sym,
@@ -131,5 +137,22 @@ export function parseSchwabCSV(text, opts) {
     });
   }
   if (!headerFound) throw new Error('未找到 Date、Symbol、Quantity、Price 列');
-  return { rows: rows, imported: rows.length };
+  return { rows: rows, imported: rows.length, skipped: skipped };
+}
+
+/**
+ * 把上面那份"被跳过"的统计翻成一句人话（没有跳过时返回空串）。
+ * 纯文本、不碰 DOM，所以直接单测。
+ */
+export function csvSkipSummary(skipped) {
+  const s = skipped || {};
+  const label = { badDate: '日期无法识别', symbol: '标的不在核心仓', qty: '股数无效', price: '价格无效', dup: '与已有记录重复' };
+  const parts = [];
+  let total = 0;
+  Object.keys(label).forEach(function (k) {
+    const n = Number(s[k]) || 0;
+    if (n > 0) { parts.push(label[k] + ' ' + n); total += n; }
+  });
+  if (!parts.length) return '';
+  return '跳过 ' + total + ' 行：' + parts.join('、');
 }

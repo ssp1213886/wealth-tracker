@@ -9,7 +9,7 @@ import { computeHoldings, buildPositionRows } from './calc.js';
  *   total       总盈亏 = 浮动 + 已实现 + 权利金
  *   pct         总收益率（分母是累计买入 totalInvested）
  *   totalAssets 持仓市值 + 净现金
- *   cashPct     现金占总资产比例（%）
+ *   cashPct     现金占总资产比例（%）；总资产 ≤ 0 时为 null（占比无意义，界面显示「—」）
  */
 export function portfolioTotals(input) {
   const o = input || {};
@@ -24,8 +24,21 @@ export function portfolioTotals(input) {
   const total = (hasPriced && unreal !== null) ? unreal + totalRealized + optionPremium : null;
   const pct = (hasPriced && totalInvested > 0) ? total / totalInvested : null;
   const totalAssets = totalValue + netCash;
-  const cashPct = totalAssets > 0 ? netCash / totalAssets * 100 : 0;
+  const cashPct = cashPctOf(totalAssets, netCash);
   return { unreal: unreal, total: total, pct: pct, totalAssets: totalAssets, cashPct: cashPct };
+}
+
+/**
+ * 现金占总资产的比例（%）。总资产 ≤ 0 时返回 null —— 占比没有意义，界面显示「—」。
+ *
+ * 为什么单独抽出来：这个值有**两处**要写进 DOM（`renderMetricsTop` 走 `updatePortfolio`；
+ * `updateMobStatusBar` 顺手也刷桌面卡）。历史上那两处各写了一份公式，其中一份还把 ≤0 硬写成 0，
+ * 于是刚修好的「—」会被后一次调用覆盖回「0.00%」。口径只能有一份。
+ */
+export function cashPctOf(totalAssets, netCash) {
+  const assets = Number(totalAssets) || 0;
+  if (assets <= 0) return null;
+  return (Number(netCash) || 0) / assets * 100;
 }
 
 /**

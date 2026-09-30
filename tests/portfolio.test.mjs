@@ -1,7 +1,7 @@
 // 持仓/组合纯计算单测（v243 从 index.js 抽出，并统一了 updatePnlSummary 里重复的成本结转）
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows } from '../src/app/portfolio.js';
+import { portfolioTotals, cashPctOf, dailyChange, goalProgress, drawdownLine, summaryRows } from '../src/app/portfolio.js';
 
 const near = (a, b) => Math.abs(a - b) < 1e-9;
 const trade = (over) => Object.assign({ id: 1, symbol: 'VGT', date: '2026-01-01', time: '10:00', shares: 1, price: 100 }, over);
@@ -27,7 +27,22 @@ test('portfolioTotals：拿不到行情时盈亏为 null（界面显示「-」�
   assert.equal(t.cashPct, 100);
   const empty = portfolioTotals({});
   assert.equal(empty.totalAssets, 0);
-  assert.equal(empty.cashPct, 0, '总资产为 0 时不能除零');
+  // v319：占比在总资产 ≤ 0 时没有意义 —— 以前硬返回 0，界面会显示「现金占比 0.00%」，
+  // 看着像"现金花光了"，实际是总资产已经为负。现在返回 null，界面显示「—」。
+  assert.equal(empty.cashPct, null, '总资产 ≤ 0 时占比为 null（且不能除零）');
+  const negative = portfolioTotals({ hasPriced: true, totalValue: 0, totalCost: 0, totalInvested: 100, totalRealized: 0, optionPremium: 0, netCash: -500 });
+  assert.equal(negative.totalAssets, -500);
+  assert.equal(negative.cashPct, null, '总资产为负时同样不给百分比');
+});
+
+// v319：现金占比的口径只有一份 —— 两处写 DOM 的地方（renderMetricsTop / updateMobStatusBar）都走它
+test('cashPctOf：唯一的占比口径（≤0 给 null，脏输入不抛）', () => {
+  assert.equal(cashPctOf(34000, 1000), 1000 / 34000 * 100);
+  assert.equal(cashPctOf(0, 0), null, '总资产 0：不能除零，也不该显示 0%');
+  assert.equal(cashPctOf(0, 500), null);
+  assert.equal(cashPctOf(-500, -100), null, '总资产为负：占比无意义');
+  assert.equal(cashPctOf(undefined, undefined), null);
+  assert.equal(cashPctOf(1000, 'abc'), 0, '脏现金当 0，但不抛');
 });
 
 test('dailyChange：昨天持有的吃「昨收→现价」，今天才买的只吃「买入价→现价」', () => {

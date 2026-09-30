@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {
   configurePortfolioView, fmtPnLPctParen, renderMetricsTop, renderMetricsPnl,
   renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills,
+  cashPctText,
 } from '../src/app/portfolio-view.js';
 
 function makeEl(extra) {
@@ -47,6 +48,19 @@ test('renderMetricsTop：总市值 / 总资产 / 现金占比；没行情时市�
   renderMetricsTop(doc, { hasPriced: false, totalValue: 0, totals: { totalAssets: 34000, cashPct: 100 } });
   assert.equal(hmValue.textContent, '-');
   assert.equal(hmCashPct.textContent, '100.00%');
+  // v319：总资产 ≤ 0 时 cashPct 是 null → 显示「—」，而不是 0.00%
+  renderMetricsTop(doc, { hasPriced: true, totalValue: 0, totals: { totalAssets: -500, cashPct: null } });
+  assert.equal(hmTotal.textContent, '-$500.00', '负号在 $ 前面（v319）');
+  assert.equal(hmCashPct.textContent, '—');
+});
+
+// v319：占比文案与 cashPctOf 配对；null（总资产 ≤ 0）必须显示「—」而不是 0.00%
+test('cashPctText：null → 「—」，有值 → 两位小数百分比', () => {
+  assert.equal(cashPctText(null), '—');
+  assert.equal(cashPctText(undefined), '—');
+  assert.equal(cashPctText(96.8421), '96.84%');
+  assert.equal(cashPctText(0), '0.00%', '真实的 0%（现金为 0 但总资产 > 0）仍是 0.00%');
+  assert.equal(cashPctText(-510.78), '-510.78%', '现金为负但总资产 > 0 时如实显示负数');
 });
 
 test('renderMetricsPnl：今日涨跌与总盈亏的正负着色', () => {
@@ -67,7 +81,7 @@ test('renderMetricsPnl：今日涨跌与总盈亏的正负着色', () => {
   assert.equal(hp.className, 'm-val pnl-pos');
   assert.match(hpp.innerHTML, /\(\+7\.8%\)/);
   assert.match(hpp.innerHTML, /浮动 \+\$88\.75/);
-  assert.match(hpp.innerHTML, /已实现 \$-12\.00/, '负数时符号在 $ 后面（fmtPnLFull 的既有格式）');
+  assert.match(hpp.innerHTML, /已实现 -\$12\.00/, '负数时符号在 $ 前面（v319）');
   assert.match(hpp.innerHTML, /权利金 \+\$120\.00/);
 });
 
@@ -86,7 +100,7 @@ test('renderMetricsPnl：跌的时候走 pnl-neg', () => {
   assert.match(hup.innerHTML, /-1\.10% 今日/);
   assert.equal(hp.className, 'm-val pnl-neg');
   assert.match(hpp.innerHTML, /\(-5\.0%\)/);
-  assert.match(hpp.innerHTML, /权利金 \$-30\.00/);
+  assert.match(hpp.innerHTML, /权利金 -\$30\.00/);
 });
 
 test('renderMetricsPnl：没有实时价时不加方向类，并点名需要设价的标的', () => {
@@ -116,7 +130,7 @@ test('renderHoldingsBody：每行带资产色、股数、均价、市值、盈�
   assert.match(holdBody.innerHTML, /data-cell="shares">8\.62/);
   assert.match(holdBody.innerHTML, /data-cell="avg">\$116\.01/);
   assert.match(holdBody.innerHTML, /data-cell="value">\$936\.40/);
-  assert.match(holdBody.innerHTML, /class="pnl-neg">\$-63\.70/);
+  assert.match(holdBody.innerHTML, /class="pnl-neg">-\$63\.70/);
   assert.match(holdBody.innerHTML, /data-cell="value"><span style="color:orange;">-<\/span>/);
   assert.match(holdBody.innerHTML, /data-hold="BTC"/);
 });

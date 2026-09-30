@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TRADE_SYMBOLS, normalizeTrades, normalizeCashLogs, normalizeActivities,
-  parseCSVRow, parseMoneyValue, parseSchwabCSV,
+  parseCSVRow, parseMoneyValue, parseSchwabCSV, csvSkipSummary,
 } from '../src/app/records-import.js';
 
 test('normalizeTrades：合法记录通过，日期归一化，方向与 tag 正确', () => {
@@ -101,4 +101,25 @@ test('parseSchwabCSV：中文表头识别；缺表头时报错；与已有交易
   assert.throws(() => parseSchwabCSV('foo,bar\n1,2'), /未找到 Date、Symbol、Quantity、Price 列/);
   const dup = parseSchwabCSV(cn, { existingTrades: [{ date: '2026-07-18', symbol: 'BTC', shares: 10, price: 28.38 }] });
   assert.equal(dup.imported, 0, '与已有交易重复时不重复导入');
+});
+
+// v319：被跳过的行不再静默 —— 解析器给出分类统计，导入提示用 csvSkipSummary 说明原因
+test('parseSchwabCSV：跳过原因分类统计（标的不支持 / 价格无效 / 重复）', () => {
+  const csv = [
+    'Date,Action,Symbol,Quantity,Price',
+    '07/18/2026,Buy,BTC,10,"$28.38"',   // 正常
+    '07/18/2026,Buy,SPY,1,"$500.00"',   // 不在白名单
+    '07/18/2026,Buy,VGT,1,"$0.00"',     // 价格无效
+    '07/18/2026,Buy,VGT,1,"$0"',        // 价格无效（零价）
+    '07/18/2026,Buy,BTC,10,"$28.38"',   // 与第 1 行重复
+  ].join('\n');
+  const out = parseSchwabCSV(csv, { symbols: TRADE_SYMBOLS, existingTrades: [] });
+  assert.equal(out.imported, 1);
+  assert.deepEqual(out.skipped, { badDate: 0, symbol: 1, qty: 0, price: 2, dup: 1 });
+  assert.equal(
+    csvSkipSummary(out.skipped),
+    '跳过 4 行：标的不在核心仓 1、价格无效 2、与已有记录重复 1',
+  );
+  assert.equal(csvSkipSummary({ badDate: 0, symbol: 0, qty: 0, price: 0, dup: 0 }), '', '没有跳过时不给文案');
+  assert.equal(csvSkipSummary(null), '', '空输入安全返回');
 });
