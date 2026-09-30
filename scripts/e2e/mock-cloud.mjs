@@ -224,14 +224,25 @@ const server = http.createServer((req, res) => {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
     return res.end('forbidden');
   }
-  try {
-    const buf = fs.readFileSync(file);
-    res.writeHead(200, { 'Content-Type': mime[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store' });
-    res.end(buf);
-  } catch (e) {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('not found');
+  // 两个行为必须与真 Worker 逐字对齐（否则测出来的症状是错的，见 maintenance.md 的测试装置铁律 1）：
+  //   ① 无扩展名路径回退到 .html（/guide → /guide.html）—— 对应 src/lib/assets.js 的 assetCandidates
+  //   ② 壳子响应带 X-WT-Shell:1 —— 对应 src/worker.js；SW 只缓存带这个标记的导航响应，
+  //      缺了它壳子根本进不了缓存，"导航被壳子顶掉"这类 bug 在本地就复现不出来
+  const cands = [file];
+  if (!/\.[a-z0-9]+$/i.test(rel.split('/').pop() || '')) cands.push(file.replace(/\/$/, '') + '.html');
+  let buf = null;
+  let hit = null;
+  for (const candidate of cands) {
+    try { buf = fs.readFileSync(candidate); hit = candidate; break; } catch (e) { /* 试下一个候选 */ }
   }
+  if (buf) {
+    const headers = { 'Content-Type': mime[path.extname(hit).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store' };
+    if (hit === path.join(PUB, 'index.html')) headers['X-WT-Shell'] = '1';
+    res.writeHead(200, headers);
+    return res.end(buf);
+  }
+  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end('not found');
 });
 
 server.listen(PORT, () => console.log('mock-cloud listening on http://127.0.0.1:' + PORT));

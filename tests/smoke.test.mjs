@@ -169,20 +169,23 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=317');
+  assert.equal(manifest.start_url, '/?v=318');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v317/);
+  assert.match(serviceWorker, /wealth-v318/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
   assert.doesNotMatch(serviceWorker, /Navigation timeout/);
-  assert.match(serviceWorker, /caches\.match\('\/'\)\.then\(function\(cached\)/);
+  // v318：壳子缓存只能顶「App 壳子路径」。以前对任何导航都先返回 caches.match('/')，
+  // 于是同作用域的 /guide 被顶掉（点「使用文档」看到的还是 App）。
+  assert.match(serviceWorker, /var isShellPath = \(url\.pathname === '\/' \|\| url\.pathname === '\/index\.html'\)/);
+  assert.match(serviceWorker, /\(isShellPath \? caches\.match\('\/'\) : caches\.match\(request\)\)\.then\(function\(cached\)/);
   assert.match(serviceWorker, /cache\.put\('\/', response\.clone\(\)\)/);
   // 新版本接管时不再整页 reload（那会在启动瞬间再白一次）
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=317',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=318',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

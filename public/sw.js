@@ -1,5 +1,5 @@
-// Service Worker v317 - focus scroll and unified press feedback
-var CACHE = 'wealth-v317';
+// Service Worker v318 - 导航分支只让 App 壳子走壳子缓存（/guide 这类同作用域页面不再被顶掉）
+var CACHE = 'wealth-v318';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
@@ -48,8 +48,14 @@ self.addEventListener('fetch', function(event) {
   if (url.pathname.indexOf('/api/') === 0 || request.method !== 'GET') return;
 
   if (request.mode === 'navigate') {
+    // v318 修：只有「App 壳子本身」才拿壳子缓存顶。以前对任何导航都先返回 caches.match('/')，
+    // 于是同作用域里的普通页面（/guide）永远被壳子顶掉 —— 侧边栏点「使用文档」看到的还是 App。
+    var isShellPath = (url.pathname === '/' || url.pathname === '/index.html');
     var network = fetch(request).then(function(response) {
       if (!response || !response.ok || !(response.headers.get('content-type') || '').includes('text/html')) throw new Error('Invalid navigation response');
+      // 非壳子页面（如 /guide）走透传、不进缓存：未登录时这些路径返回的也是登录页，
+      // 缓存下来会让用户登录后打开文档却看到登录页。（要缓存它们得先给"真页面"打标记。）
+      if (!isShellPath) return response;
       // 只缓存真正的 App 壳子（Worker 会打 X-WT-Shell 标记）；未登录时同一路径返回登录页，
       // 那个进了缓存就会变成"登出后永远回不去"的事故
       if (response.headers.get('X-WT-Shell') !== '1') return response;
@@ -59,7 +65,7 @@ self.addEventListener('fetch', function(event) {
     // 缓存优先 + 后台更新（v273 改）。
     // 以前是「网络优先 + 3.5 秒竞速」：冷启动（尤其 iOS 重开 PWA）要等满超时才回落缓存，
     // 用户看到的就是白屏。现在只要缓存里有壳子就立刻返回，网络在后台把新版本写进缓存。
-    event.respondWith(caches.match('/').then(function(cached) {
+    event.respondWith((isShellPath ? caches.match('/') : caches.match(request)).then(function(cached) {
       if (cached) return cached;
       return caches.match(request).then(function(hit) {
         return hit || network.catch(function() { return offlineDocument(); });
