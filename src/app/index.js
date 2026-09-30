@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v289';var APP_DATA_VERSION=5;
+var APP_BUILD='v290';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=289',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=290',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -2048,45 +2048,152 @@ if(typeof window!=='undefined'){
 })();
 
 
-/* ===== 账号：当前账号 / 新增账号 / 退出登录 ===== */
-function accountRequest(method,body){
-  return fetch('/api/accounts',{method:method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined})
-    .then(function(r){return r.json().catch(function(){return{}}).then(function(j){return {status:r.status,body:j}})});
+/* ===== 账号：改密码 / 管理用户（仅主账号）/ 退出登录 ===== */
+function accountRequest(method, body, path) {
+  return fetch(path || '/api/accounts', { method: method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; }); });
 }
-function renderAccountPanel(info){
-  var cur=document.getElementById('accountCurrent'),list=document.getElementById('accountList');
-  if(cur)cur.textContent=(info&&info.me)?('当前账号：'+info.me.username+(info.me.name&&info.me.name!==info.me.username?'（'+info.me.name+'）':'')+' · ID '+info.me.id):'未取到账号信息';
-  if(list)list.textContent=(info&&info.accounts&&info.accounts.length>1)?('这台服务器上已有：'+info.accounts.map(function(a){return a.username}).join('、')):'';
+function fmtAccTime(ts) {
+  if (!ts) return '—';
+  try { return new Date(ts).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return '—'; }
 }
-function loadAccounts(){accountRequest('GET').then(function(res){if(res.status===200&&res.body&&res.body.ok)renderAccountPanel(res.body)}).catch(function(){})}
-function initAccountPanel(){
-  var btn=document.getElementById('accountCreateBtn');
-  if(btn)btn.addEventListener('click',function(){
-    var st=document.getElementById('accountStatus');
-    var u=String((document.getElementById('accountNewUser')||{}).value||'').trim().toLowerCase();
-    var p=String((document.getElementById('accountNewPass')||{}).value||'');
-    var n=String((document.getElementById('accountNewName')||{}).value||'').trim();
-    if(!/^[a-z][a-z0-9._-]{2,31}$/.test(u)){if(st)st.textContent='用户名要英文小写字母开头，3-32 位，可含数字 . _ -';return}
-    if(p.length<6){if(st)st.textContent='密码至少 6 位';return}
-    btn.disabled=true;if(st)st.textContent='正在创建…';
-    accountRequest('POST',{username:u,password:p,name:n}).then(function(res){
-      btn.disabled=false;
-      if(res.status===200&&res.body&&res.body.ok){
-        if(st)st.textContent='已创建账号 '+u+' —— 用它登录即可，两边数据完全独立';
-        var pw=document.getElementById('accountNewPass');if(pw)pw.value='';
-        var nu=document.getElementById('accountNewUser');if(nu)nu.value='';
+function accEsc(text) { return escapeHtml(String(text == null ? '' : text)); }
+function renderAccountPanel(info) {
+  var cur = document.getElementById('accountCurrent');
+  var box = document.getElementById('accountAdminBox');
+  var list = document.getElementById('accountListBox');
+  var me = info && info.me;
+  if (cur) cur.textContent = me ? ('当前账号：' + me.username + (me.role === 'owner' ? '（主账号）' : '')) : '未取到账号信息';
+  var isOwner = !!(me && me.role === 'owner');
+  if (box) box.hidden = !isOwner;
+  if (!list || !isOwner) return;
+  list.innerHTML = (info.accounts || []).map(function (a) {
+    var self = Number(a.id) === Number(me.id);
+    return '<div class="acc-row' + (a.disabled ? ' is-off' : '') + '" data-acc-id="' + a.id + '">'
+      + '<span class="acc-name">' + accEsc(a.username) + (self ? '<em>我</em>' : '') + (a.disabled ? '<em>已禁用</em>' : '') + '</span>'
+      + '<span class="acc-meta">' + a.keys + ' 行 · 最近登录 ' + fmtAccTime(a.lastSeenAt) + '</span>'
+      + '<span class="acc-actions" data-acc-actions="' + a.id + '">'
+      + '<button type="button" data-acc-act="reset">重置密码</button>'
+      + (self ? '' : '<button type="button" data-acc-act="toggle">' + (a.disabled ? '启用' : '禁用') + '</button><button type="button" class="danger" data-acc-act="delete">删除</button>')
+      + '</span></div>';
+  }).join('');
+}
+function loadAccounts() {
+  accountRequest('GET').then(function (res) {
+    if (res.status === 200 && res.body && res.body.ok) renderAccountPanel(res.body);
+    else if (res.status === 401) location.replace('/login');
+  }).catch(function () {});
+}
+function downloadJson(name, obj) {
+  try {
+    var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  } catch (e) { logSwallowed('downloadJson', e); }
+}
+function setAccStatus(text, id) {
+  var el = document.getElementById(id || 'accountStatus');
+  if (el) el.textContent = text || '';
+}
+function initAccountPanel() {
+  var createBtn = document.getElementById('accountCreateBtn');
+  if (createBtn) createBtn.addEventListener('click', function () {
+    var u = String((document.getElementById('accountNewUser') || {}).value || '').trim().toLowerCase();
+    var p = String((document.getElementById('accountNewPass') || {}).value || '');
+    if (!/^[a-z][a-z0-9._-]{2,31}$/.test(u)) { setAccStatus('用户名要英文小写字母开头，3-32 位，可含数字 . _ -'); return; }
+    if (p.length < 6) { setAccStatus('密码至少 6 位'); return; }
+    createBtn.disabled = true; setAccStatus('正在创建…');
+    accountRequest('POST', { username: u, password: p }).then(function (res) {
+      createBtn.disabled = false;
+      if (res.status === 200 && res.body && res.body.ok) {
+        setAccStatus('已创建 ' + u + ' —— 用它登录即可，数据完全独立');
+        var pw = document.getElementById('accountNewPass'); if (pw) pw.value = '';
+        var nu = document.getElementById('accountNewUser'); if (nu) nu.value = '';
         loadAccounts();
-      }else{
-        var map={'username taken':'这个用户名已被占用','invalid username':'用户名格式不对','password too short':'密码至少 6 位'};
-        var code=(res.body&&res.body.error)||res.status;
-        if(st)st.textContent=map[code]||('创建失败：'+code);
+      } else {
+        var map = { 'username taken': '这个用户名已被占用', 'invalid username': '用户名格式不对', 'password too short': '密码至少 6 位', forbidden: '只有主账号能加人' };
+        var code = (res.body && res.body.error) || res.status;
+        setAccStatus(map[code] || ('创建失败：' + code));
       }
-    },function(){btn.disabled=false;if(st)st.textContent='网络错误，请重试'});
+    }, function () { createBtn.disabled = false; setAccStatus('网络错误，请重试'); });
   });
-  var out=document.getElementById('accountLogoutBtn');
-  if(out)out.addEventListener('click',logoutNow);
-  var entry=document.getElementById('sbSettingsEntry');
-  if(entry)entry.addEventListener('click',function(){setTimeout(loadAccounts,80)});
+  var passBtn = document.getElementById('accountPassBtn');
+  if (passBtn) passBtn.addEventListener('click', function () {
+    var cur = String((document.getElementById('accountCurPass') || {}).value || '');
+    var next = String((document.getElementById('accountNewPassSelf') || {}).value || '');
+    if (!cur) { setAccStatus('请输入当前密码', 'accountPassStatus'); return; }
+    if (next.length < 6) { setAccStatus('新密码至少 6 位', 'accountPassStatus'); return; }
+    passBtn.disabled = true; setAccStatus('正在保存…', 'accountPassStatus');
+    accountRequest('POST', { current: cur, next: next }, '/api/me/password').then(function (res) {
+      passBtn.disabled = false;
+      if (res.status === 200 && res.body && res.body.ok) {
+        setAccStatus('密码已更新（其它设备上的旧登录已失效）', 'accountPassStatus');
+        var a = document.getElementById('accountCurPass'); if (a) a.value = '';
+        var b = document.getElementById('accountNewPassSelf'); if (b) b.value = '';
+      } else {
+        setAccStatus((res.body && res.body.error) === 'wrong password' ? '当前密码不对' : '改密码失败：' + ((res.body && res.body.error) || res.status), 'accountPassStatus');
+      }
+    }, function () { passBtn.disabled = false; setAccStatus('网络错误，请重试', 'accountPassStatus'); });
+  });
+  var listBox = document.getElementById('accountListBox');
+  if (listBox) listBox.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-acc-act]') : null;
+    if (!btn) return;
+    var row = btn.closest('[data-acc-id]');
+    if (!row) return;
+    var id = row.getAttribute('data-acc-id');
+    var act = btn.getAttribute('data-acc-act');
+    var actions = row.querySelector('[data-acc-actions]');
+    if (act === 'reset') {
+      actions.innerHTML = '<input type="password" class="acc-inline" placeholder="新密码（≥6 位）"><button type="button" data-acc-act="reset-ok">确定</button><button type="button" data-acc-act="cancel">取消</button>';
+      return;
+    }
+    if (act === 'cancel') { loadAccounts(); return; }
+    if (act === 'reset-ok') {
+      var val = String((row.querySelector('.acc-inline') || {}).value || '');
+      if (val.length < 6) { setAccStatus('密码至少 6 位'); return; }
+      setAccStatus('正在重置…');
+      accountRequest('PATCH', { password: val }, '/api/accounts/' + id).then(function (res) {
+        if (res.status === 200 && res.body && res.body.ok) { setAccStatus('已重置该账号的密码，旧设备上的登录已失效'); loadAccounts(); }
+        else setAccStatus('重置失败：' + ((res.body && res.body.error) || res.status));
+      }, function () { setAccStatus('网络错误'); });
+      return;
+    }
+    if (act === 'toggle') {
+      var turnOff = btn.textContent === '禁用';
+      accountRequest('PATCH', { disabled: turnOff }, '/api/accounts/' + id).then(function (res) {
+        if (res.status === 200 && res.body && res.body.ok) { setAccStatus(turnOff ? '已禁用（数据保留）' : '已启用'); loadAccounts(); }
+        else setAccStatus('操作失败：' + ((res.body && res.body.error) || res.status));
+      }, function () { setAccStatus('网络错误'); });
+      return;
+    }
+    if (act === 'delete') {
+      var name = (row.querySelector('.acc-name') || {}).textContent || '';
+      showApproval({
+        title: '删除账号 ' + name.trim(),
+        message: '该账号的全部云端数据会被删除（删除前会自动导出一份 JSON 文件给你）。此操作不可撤销。',
+        confirmText: '导出并删除',
+        onConfirm: function () {
+          setAccStatus('正在删除…');
+          accountRequest('DELETE', null, '/api/accounts/' + id).then(function (res) {
+            if (res.status === 200 && res.body && res.body.ok) {
+              if (res.body.exported) downloadJson('account-' + res.body.exported.username + '-' + Date.now() + '.json', res.body.exported);
+              setAccStatus('已删除，数据已导出到下载目录');
+              loadAccounts();
+            } else setAccStatus('删除失败：' + ((res.body && res.body.error) || res.status));
+          }, function () { setAccStatus('网络错误'); });
+        },
+      });
+      return;
+    }
+  });
+  var out = document.getElementById('accountLogoutBtn');
+  if (out) out.addEventListener('click', logoutNow);
+  var entry = document.getElementById('sbSettingsEntry');
+  if (entry) entry.addEventListener('click', function () { setTimeout(loadAccounts, 80); });
   loadAccounts();
 }
 initAccountPanel();

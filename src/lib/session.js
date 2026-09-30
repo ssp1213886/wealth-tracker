@@ -63,11 +63,13 @@ export function sessionSecret(env) {
  * payload = `userId:过期时间`，签名覆盖两者 —— 服务器无状态，但能知道"你是谁"。
  * 服务器没配密钥时返回 null（此时门禁自动关闭，免得把主人锁在门外）。
  */
-export async function issueSession(env, userId, now = Date.now()) {
+export async function issueSession(env, userId, tokenVersion, now = Date.now()) {
   const secret = sessionSecret(env);
   if (!secret) return null;
   if (!Number.isFinite(Number(userId))) return null;
-  const payload = Number(userId) + ':' + (now + TTL_MS);
+  // 带上会话版本：管理员重置密码时把它 +1，别的设备上的旧会话立刻作废
+  const tv = Number.isFinite(Number(tokenVersion)) ? Number(tokenVersion) : 0;
+  const payload = Number(userId) + ':' + tv + ':' + (now + TTL_MS);
   const signature = await crypto.subtle.sign('HMAC', await hmacKey(secret), new TextEncoder().encode(payload));
   return { value: payload + '.' + toBase64Url(signature), maxAge: Math.floor(TTL_MS / 1000) };
 }
@@ -110,10 +112,11 @@ export async function readSession(request, env, now = Date.now()) {
   const dot = raw.lastIndexOf('.');
   if (dot <= 0) return null;
   const payload = raw.slice(0, dot);
-  const split = payload.lastIndexOf(':');
-  if (split <= 0) return null;
-  const userId = Number(payload.slice(0, split));
-  const expires = Number(payload.slice(split + 1));
+  const parts = payload.split(':');
+  if (parts.length !== 3) return null;
+  const userId = Number(parts[0]);
+  const tokenVersion = Number(parts[1]);
+  const expires = Number(parts[2]);
   if (!Number.isFinite(userId) || userId <= 0 || !Number.isFinite(expires) || expires <= now) return null;
   try {
     const valid = await crypto.subtle.verify(
@@ -122,7 +125,7 @@ export async function readSession(request, env, now = Date.now()) {
       fromBase64Url(raw.slice(dot + 1)),
       new TextEncoder().encode(payload),
     );
-    return valid ? { userId } : null;
+    return valid ? { userId, tokenVersion: Number.isFinite(tokenVersion) ? tokenVersion : 0 } : null;
   } catch (error) {
     return null;
   }

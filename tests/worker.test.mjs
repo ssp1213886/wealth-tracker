@@ -3,71 +3,7 @@ import assert from 'node:assert/strict';
 
 import fs from 'node:fs';
 import worker from '../src/worker.js';
-
-function createDb(initial = {}) {
-  const rows = new Map(Object.entries(initial).map(([key, value]) => [`1|${key}`, {
-    key,
-    value: JSON.stringify(value),
-    updated_at: 1000,
-  }]));
-  const accounts = [];
-
-  const execute = (sql, args) => {
-    const q = sql.replace(/\s+/g, ' ').trim();
-    if (q.startsWith('CREATE TABLE IF NOT EXISTS accounts')) return { results: [], success: true };
-    if (q.startsWith('SELECT COUNT(*) AS n FROM accounts')) return { results: [{ n: accounts.length }] };
-    if (q.startsWith('SELECT * FROM accounts WHERE username')) {
-      return { results: accounts.filter((a) => a.username === args[0]) };
-    }
-    if (q.startsWith('SELECT id, username, name, created_at FROM accounts')) {
-      return { results: accounts.map((a) => ({ id: a.id, username: a.username, name: a.name, created_at: a.created_at })) };
-    }
-    if (q.startsWith('INSERT INTO accounts')) {
-      const [username, name, pass_hash, salt, created_at] = args;
-      const id = accounts.length + 1;
-      accounts.push({ id, username, name, pass_hash, salt, created_at, disabled: 0 });
-      return { results: [], success: true, meta: { last_row_id: id } };
-    }
-    if (q.startsWith('SELECT key, value, updated_at FROM data')) {
-      return { results: [...rows.values()].filter((row) => row.user_id === undefined || Number(args[0]) === 1) };
-    }
-    if (q.startsWith('SELECT key, updated_at FROM data')) {
-      return { results: [...rows.values()].filter((row) => args.includes(row.key)) };
-    }
-    if (q.startsWith('INSERT OR REPLACE INTO data')) {
-      const [user_id, key, value, updated_at] = args;
-      rows.set(`${user_id}|${key}`, { user_id, key, value, updated_at });
-      return { success: true };
-    }
-    return { results: [] };
-  };
-
-  const statement = (sql) => {
-    let args = [];
-    return {
-      bind(...values) {
-        args = values;
-        return this;
-      },
-      all: async () => execute(sql, args),
-      first: async () => {
-        const out = execute(sql, args);
-        return out.results && out.results.length ? out.results[0] : null;
-      },
-      run: async () => execute(sql, args),
-    };
-  };
-
-  return {
-    rows,
-    accounts,
-    prepare: (sql) => statement(sql),
-    async batch(statements) {
-      for (const item of statements) await item.run();
-      return statements.map(() => ({ success: true }));
-    },
-  };
-}
+import { createFakeDb } from './helpers/fake-d1.mjs';
 
 const env = (db) => ({
   AUTH_TOKEN: 'secret',
@@ -84,19 +20,19 @@ async function loginCookie(testEnv, username = 'admin', password = 'secret') {
 }
 
 test('rejects sync without auth token', async () => {
-  const response = await worker.fetch(request('/api/sync'), env(createDb()));
+  const response = await worker.fetch(request('/api/sync'), env(createFakeDb()));
   assert.equal(response.status, 401);
 });
 
 test('returns CORS preflight headers', async () => {
-  const response = await worker.fetch(request('/api/sync', { method: 'OPTIONS' }), env(createDb()));
+  const response = await worker.fetch(request('/api/sync', { method: 'OPTIONS' }), env(createFakeDb()));
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
   assert.equal(response.headers.get('Access-Control-Max-Age'), '86400');
 });
 
 test('rejects unsupported price symbols and methods', async () => {
-  const testEnv = env(createDb());
+  const testEnv = env(createFakeDb());
   // /api/* 现在都要登录，这两个用例考的是参数校验，所以要带上凭证
   const cookie = await loginCookie(testEnv);
   assert.ok(cookie, '登录应拿到会话 cookie');
@@ -127,7 +63,7 @@ const login = (password) => request('/api/login', {
 });
 
 test('登录门禁：未登录的导航只给登录页，绝不吐 App 壳子', async () => {
-  const res = await worker.fetch(nav('/'), env(createDb()));
+  const res = await worker.fetch(nav('/'), env(createFakeDb()));
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.match(html, /id="loginForm"/);
@@ -136,19 +72,19 @@ test('登录门禁：未登录的导航只给登录页，绝不吐 App 壳子', 
 });
 
 test('登录门禁：/login 自己有路由（少了它会掉到资源查找变成 404）', async () => {
-  const res = await worker.fetch(request('/login'), env(createDb()));
+  const res = await worker.fetch(request('/login'), env(createFakeDb()));
   assert.equal(res.status, 200);
   assert.match(res.headers.get('Content-Type') || '', /text\/html/);
   assert.match(await res.text(), /id="loginForm"/);
 });
 
 test('登录门禁：找不到的页面给人看 HTML，不要吐裸 JSON', async () => {
-  const res = await worker.fetch(request('/definitely-not-here'), env(createDb()));
+  const res = await worker.fetch(request('/definitely-not-here'), env(createFakeDb()));
   assert.equal(res.status, 404);
   assert.match(res.headers.get('Content-Type') || '', /text\/html/);
   assert.doesNotMatch(await res.text(), /^\{"error"/);
   // /api/* 仍然回 JSON（注意：未登录时会被门禁挡成 401，所以要带上会话才测得到 404）
-  const apiEnv = shellEnv(createDb());
+  const apiEnv = shellEnv(createFakeDb());
   const cookie = await loginCookie(apiEnv);
   const api = await worker.fetch(request('/api/definitely-not-here', { headers: { Cookie: cookie } }), apiEnv);
   assert.equal(api.status, 404);
@@ -157,13 +93,13 @@ test('登录门禁：找不到的页面给人看 HTML，不要吐裸 JSON', asyn
 });
 
 test('登录门禁：/api/* 未登录返回 401 JSON（不是登录页）', async () => {
-  const res = await worker.fetch(request('/api/quotes?symbols=VGT'), env(createDb()));
+  const res = await worker.fetch(request('/api/quotes?symbols=VGT'), env(createFakeDb()));
   assert.equal(res.status, 401);
   assert.match(res.headers.get('Content-Type') || '', /application\/json/);
 });
 
 test('登录门禁：密码错 → 401；密码对 → 下发会话 cookie，带着它才能拿到壳子（且带壳子标记）', async () => {
-  const testEnv = shellEnv(createDb());
+  const testEnv = shellEnv(createFakeDb());
   assert.equal((await worker.fetch(login('wrong'), testEnv)).status, 401);
 
   const good = await worker.fetch(login('secret'), testEnv);
@@ -182,7 +118,7 @@ test('登录门禁：密码错 → 401；密码对 → 下发会话 cookie，带
 });
 
 test('登录门禁：伪造 cookie 不放行；登出接口清空 cookie', async () => {
-  const testEnv = shellEnv(createDb());
+  const testEnv = shellEnv(createFakeDb());
   const forged = await worker.fetch(nav('/', 'wt_session=1:9999999999999.bad'), testEnv);
   assert.match(await forged.text(), /id="loginForm"/);
 
@@ -192,18 +128,18 @@ test('登录门禁：伪造 cookie 不放行；登出接口清空 cookie', async
 });
 
 test('登录门禁：服务器没配 AUTH_TOKEN 时不拦人（避免把自己锁在门外）', async () => {
-  const bare = { DB: createDb(), ASSETS: shellEnv(createDb()).ASSETS };
+  const bare = { DB: createFakeDb(), ASSETS: shellEnv(createFakeDb()).ASSETS };
   const res = await worker.fetch(nav('/'), bare);
   assert.match(await res.text(), /APP SHELL/);
 });
 
 test('登录门禁：静态资源不需要登录（否则 SW 预缓存会把登录页当成 App 壳子）', async () => {
-  const res = await worker.fetch(new Request('https://example.com/assets/app.js', { headers: { Accept: '*/*' } }), shellEnv(createDb()));
+  const res = await worker.fetch(new Request('https://example.com/assets/app.js', { headers: { Accept: '*/*' } }), shellEnv(createFakeDb()));
   assert.notEqual(res.status, 401);
 });
 
 test('validates sync payload and key whitelist', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const cookie = await loginCookie(env(db));
   const headers = { 'Content-Type': 'application/json', Cookie: cookie };
   const testEnv = env(db);
@@ -219,7 +155,7 @@ test('validates sync payload and key whitelist', async () => {
 });
 
 test('stores valid sync payloads', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const testEnv = env(db);
   const cookie = await loginCookie(testEnv);
   const headers = { 'Content-Type': 'application/json', Cookie: cookie };
@@ -232,7 +168,7 @@ test('stores valid sync payloads', async () => {
 });
 
 test('returns 409 when expected version is stale', async () => {
-  const db = createDb({ trades: [] });
+  const db = createFakeDb({ trades: [] });
   const testEnv = env(db);
   const cookie = await loginCookie(testEnv);
   const headers = { 'Content-Type': 'application/json', Cookie: cookie };
@@ -250,7 +186,7 @@ test('returns 409 when expected version is stale', async () => {
 test('does not 409 when the cloud has no row for that key yet', async () => {
   // 全新库（或被重置）时，客户端带着任何版本号来推都应当直接建立基线，
   // 否则用户会看到永远消不掉的假冲突。
-  const db = createDb();
+  const db = createFakeDb();
   const testEnv = env(db);
   const cookie = await loginCookie(testEnv);
   const headers = { 'Content-Type': 'application/json', Cookie: cookie };

@@ -5,76 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../src/worker.js';
-
-function createDb() {
-  const accounts = [];
-  const data = new Map(); // `${user_id}|${key}` -> { user_id, key, value, updated_at }
-
-  const route = (sql, args) => {
-    const q = sql.replace(/\s+/g, ' ').trim();
-    if (q.startsWith('CREATE TABLE IF NOT EXISTS accounts')) return { results: [], success: true };
-    if (q.startsWith('SELECT COUNT(*) AS n FROM accounts')) return { results: [{ n: accounts.length }] };
-    if (q.startsWith('SELECT * FROM accounts WHERE username = ?')) {
-      return { results: accounts.filter((a) => a.username === args[0]) };
-    }
-    if (q.startsWith('SELECT id, username, name, created_at FROM accounts')) {
-      return { results: accounts.map((a) => ({ id: a.id, username: a.username, name: a.name, created_at: a.created_at })) };
-    }
-    if (q.startsWith('INSERT INTO accounts (id,')) {
-      const [id, username, name, pass_hash, salt, created_at] = args;
-      accounts.push({ id, username, name, pass_hash, salt, created_at, disabled: 0 });
-      return { results: [], success: true, meta: { last_row_id: id } };
-    }
-    if (q.startsWith('INSERT INTO accounts (username,')) {
-      const [username, name, pass_hash, salt, created_at] = args;
-      const id = accounts.reduce((max, a) => Math.max(max, a.id), 0) + 1;
-      if (accounts.some((a) => a.username === username)) {
-        const err = new Error('UNIQUE constraint failed: accounts.username');
-        throw err;
-      }
-      accounts.push({ id, username, name, pass_hash, salt, created_at, disabled: 0 });
-      return { results: [], success: true, meta: { last_row_id: id } };
-    }
-    if (q.startsWith('SELECT key, value, updated_at FROM data WHERE user_id = ?')) {
-      const userId = Number(args[0]);
-      return { results: [...data.values()].filter((row) => row.user_id === userId) };
-    }
-    if (q.startsWith('SELECT key, updated_at FROM data WHERE user_id = ? AND key IN')) {
-      const userId = Number(args[0]);
-      const wanted = new Set(args.slice(1));
-      return { results: [...data.values()].filter((row) => row.user_id === userId && wanted.has(row.key)).map((row) => ({ key: row.key, updated_at: row.updated_at })) };
-    }
-    if (q.startsWith('INSERT OR REPLACE INTO data')) {
-      const [user_id, key, value, updated_at] = args;
-      data.set(user_id + '|' + key, { user_id, key, value, updated_at });
-      return { results: [], success: true };
-    }
-    throw new Error('未预期的 SQL: ' + q);
-  };
-
-  const statement = (sql) => {
-    let args = [];
-    return {
-      bind(...values) { args = values; return this; },
-      all: async () => route(sql, args),
-      first: async () => {
-        const out = route(sql, args);
-        return out.results && out.results.length ? out.results[0] : null;
-      },
-      run: async () => route(sql, args),
-    };
-  };
-
-  return {
-    accounts,
-    data,
-    prepare: (sql) => statement(sql),
-    async batch(statements) {
-      for (const item of statements) await item.run();
-      return statements.map(() => ({ success: true }));
-    },
-  };
-}
+import { createFakeDb } from './helpers/fake-d1.mjs';
 
 const SHELL = '<!doctype html><html><body>APP SHELL</body></html>';
 const makeEnv = (db) => ({
@@ -82,7 +13,11 @@ const makeEnv = (db) => ({
   DB: db,
   ASSETS: { fetch: async () => new Response(SHELL, { status: 200, headers: { 'Content-Type': 'text/html' } }) },
 });
-const req = (path, options = {}) => new Request('https://example.com' + path, options);
+let ipSeq = 0;
+/** 每个请求给一个独立 IP：登录限流是按 IP 计的，测试之间不该互相影响。 */
+const req = (path, options = {}) => new Request('https://example.com' + path, Object.assign({}, options, {
+  headers: Object.assign({ 'CF-Connecting-IP': '10.0.0.' + (++ipSeq) }, options.headers || {}),
+}));
 const jsonReq = (path, body, cookie) => req(path, {
   method: 'POST',
   headers: Object.assign({ 'Content-Type': 'application/json' }, cookie ? { Cookie: cookie } : {}),
@@ -104,7 +39,7 @@ const postSync = async (env, cookie, payload) => {
 };
 
 test('多用户：空库首次登录会用服务器密码自动建主账号（id 固定为 1）', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const env = makeEnv(db);
   const res = await login(env, 'admin', 'master-secret');
   assert.equal(res.status, 200);
@@ -117,7 +52,7 @@ test('多用户：空库首次登录会用服务器密码自动建主账号（id
 });
 
 test('多用户：两个账号的数据互相看不见（核心验收）', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const env = makeEnv(db);
   const mine = await login(env, 'admin', 'master-secret');
   assert.equal(mine.status, 200);
@@ -152,7 +87,7 @@ test('多用户：两个账号的数据互相看不见（核心验收）', async
 });
 
 test('多用户：同名账号、非法用户名、过短密码都被拒', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const env = makeEnv(db);
   const mine = await login(env, 'admin', 'master-secret');
   const create = (body) => worker.fetch(jsonReq('/api/accounts', body, mine.cookie), env);
@@ -165,7 +100,7 @@ test('多用户：同名账号、非法用户名、过短密码都被拒', async
 });
 
 test('多用户：密码错误 / 不存在的用户名都登不进去', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const env = makeEnv(db);
   await login(env, 'admin', 'master-secret');
   assert.equal((await login(env, 'admin', 'wrong-password')).status, 401);
@@ -174,7 +109,7 @@ test('多用户：密码错误 / 不存在的用户名都登不进去', async ()
 });
 
 test('多用户：改 cookie 里的 userId 冒充别人会验签失败', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const env = makeEnv(db);
   const mine = await login(env, 'admin', 'master-secret');
   await worker.fetch(jsonReq('/api/accounts', { username: 'lily', password: 'lily-pass-1' }, mine.cookie), env);
@@ -187,7 +122,7 @@ test('多用户：改 cookie 里的 userId 冒充别人会验签失败', async (
 });
 
 test('多用户：账号接口需要登录；列表里能看到有哪些账号', async () => {
-  const db = createDb();
+  const db = createFakeDb();
   const env = makeEnv(db);
   assert.equal((await worker.fetch(req('/api/accounts'), env)).status, 401, '未登录不能看/建账号');
 
@@ -201,4 +136,91 @@ test('多用户：账号接口需要登录；列表里能看到有哪些账号',
   // 绝不能把哈希/盐泄给前端
   assert.equal(body.accounts[0].pass_hash, undefined);
   assert.equal(body.accounts[0].salt, undefined);
+});
+
+/* ===== 管理功能 ===== */
+
+async function ownerAndMember() {
+  const db = createFakeDb();
+  const env = makeEnv(db);
+  const owner = await login(env, 'ssp', 'master-secret');
+  await worker.fetch(jsonReq('/api/accounts', { username: 'lily', password: 'lily-pass-1' }, owner.cookie), env);
+  const member = await login(env, 'lily', 'lily-pass-1');
+  return { db, env, owner, member };
+}
+const patch = (env, cookie, id, body) => worker.fetch(req('/api/accounts/' + id, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', Cookie: cookie },
+  body: JSON.stringify(body),
+}), env);
+
+test('管理：只有主账号能建账号，成员被拒（403）且只看得到自己', async () => {
+  const { env, owner, member } = await ownerAndMember();
+  assert.equal((await worker.fetch(jsonReq('/api/accounts', { username: 'nope', password: 'whatever1' }, member.cookie), env)).status, 403);
+  const list = await (await worker.fetch(req('/api/accounts', { headers: { Cookie: member.cookie } }), env)).json();
+  assert.equal(list.accounts.length, 1, '成员只看得到自己');
+  assert.equal(list.me.username, 'lily');
+  assert.equal(list.me.role, 'member');
+  const ownerList = await (await worker.fetch(req('/api/accounts', { headers: { Cookie: owner.cookie } }), env)).json();
+  assert.equal(ownerList.accounts.length, 2, '主账号看得到全部');
+  assert.equal(ownerList.me.role, 'owner');
+});
+
+test('管理：重置密码后旧密码失效、旧设备会话立刻作废', async () => {
+  const { env, owner, member } = await ownerAndMember();
+  assert.equal((await getSync(env, member.cookie)).status, 200, '重置前会话有效');
+
+  const res = await patch(env, owner.cookie, 2, { password: 'new-pass-99' });
+  assert.equal(res.status, 200);
+
+  assert.equal((await getSync(env, member.cookie)).status, 401, '旧会话必须立刻失效（token_version 变了）');
+  assert.equal((await login(env, 'lily', 'lily-pass-1')).status, 401, '旧密码不能再用');
+  assert.equal((await login(env, 'lily', 'new-pass-99')).status, 200, '新密码可用');
+});
+
+test('管理：禁用账号后同步被拒，启用后恢复', async () => {
+  const { env, owner, member } = await ownerAndMember();
+  assert.equal((await patch(env, owner.cookie, 2, { disabled: true })).status, 200);
+  assert.equal((await getSync(env, member.cookie)).status, 401, '被禁用后数据接口要拒绝');
+  assert.equal((await login(env, 'lily', 'lily-pass-1')).status, 401, '被禁用后登不进来');
+  assert.equal((await patch(env, owner.cookie, 2, { disabled: false })).status, 200);
+  assert.equal((await login(env, 'lily', 'lily-pass-1')).status, 200);
+});
+
+test('管理：主账号不能禁用或删除自己（否则没人能管理了）', async () => {
+  const { env, owner } = await ownerAndMember();
+  assert.equal((await patch(env, owner.cookie, 1, { disabled: true })).status, 400);
+  const del = await worker.fetch(req('/api/accounts/1', { method: 'DELETE', headers: { Cookie: owner.cookie } }), env);
+  assert.equal(del.status, 400);
+});
+
+test('管理：删除成员会连带删掉它的数据，并把数据先导出返回', async () => {
+  const { env, owner, member } = await ownerAndMember();
+  await postSync(env, member.cookie, { trades: [{ id: 9, symbol: 'SMH' }], cashBalance: 555 });
+
+  const del = await worker.fetch(req('/api/accounts/2', { method: 'DELETE', headers: { Cookie: owner.cookie } }), env);
+  assert.equal(del.status, 200);
+  const body = await del.json();
+  assert.equal(body.exported.username, 'lily');
+  assert.deepEqual(body.exported.data.trades, [{ id: 9, symbol: 'SMH' }], '删除前要把数据导出来');
+  assert.equal(body.exported.data.cashBalance, 555);
+
+  assert.equal((await login(env, 'lily', 'lily-pass-1')).status, 401, '账号没了就登不进');
+  const list = await (await worker.fetch(req('/api/accounts', { headers: { Cookie: owner.cookie } }), env)).json();
+  assert.deepEqual(list.accounts.map((a) => a.username), ['ssp']);
+});
+
+test('管理：改自己的密码要验旧密码，改完当前设备不掉线、旧密码失效', async () => {
+  const { env, member } = await ownerAndMember();
+  const wrong = await worker.fetch(jsonReq('/api/me/password', { current: 'nope', next: 'brand-new-1' }, member.cookie), env);
+  assert.equal(wrong.status, 401);
+
+  const ok = await worker.fetch(jsonReq('/api/me/password', { current: 'lily-pass-1', next: 'brand-new-1' }, member.cookie), env);
+  assert.equal(ok.status, 200);
+  const refreshed = (ok.headers.get('Set-Cookie') || '').split(';')[0];
+  assert.ok(refreshed.indexOf('wt_session=') === 0, '改完密码要换发新会话，别把自己踢下线');
+  assert.equal((await getSync(env, refreshed)).status, 200, '新会话可用');
+  assert.equal((await getSync(env, member.cookie)).status, 401, '旧会话作废');
+  assert.equal((await login(env, 'lily', 'brand-new-1')).status, 200);
+  assert.equal((await login(env, 'lily', 'lily-pass-1')).status, 401);
 });

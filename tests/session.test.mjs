@@ -8,34 +8,34 @@ const requestWith = (cookie) => new Request('https://example.com/', { headers: c
 const cookieOf = (setCookie) => setCookie.split(';')[0];
 
 test('session：签发的会话能被验签通过，v 前面的 payload 就是过期时间', async () => {
-  const session = await issueSession(ENV, 7, 1_700_000_000_000);
+  const session = await issueSession(ENV, 7, 0, 1_700_000_000_000);
   assert.ok(session && session.value.indexOf('.') > 0);
   // payload 是「userId:过期时间」，过期时间 = 签发时刻 + 90 天
-  assert.equal(session.value.split('.')[0], '7:' + (1_700_000_000_000 + 90 * 24 * 60 * 60 * 1000));
+  assert.equal(session.value.split('.')[0], '7:0:' + (1_700_000_000_000 + 90 * 24 * 60 * 60 * 1000));
   assert.equal(session.maxAge, 90 * 24 * 60 * 60);
   const cookie = sessionCookie(session.value, session.maxAge);
   assert.match(cookie, /HttpOnly/);
   assert.match(cookie, /Secure/);
   assert.match(cookie, /SameSite=Lax/);
-  assert.deepEqual(await readSession(requestWith(cookieOf(cookie)), ENV, 1_700_000_000_000 + 1000), { userId: 7 });
+  assert.deepEqual(await readSession(requestWith(cookieOf(cookie)), ENV, 1_700_000_000_000 + 1000), { userId: 7, tokenVersion: 0 });
 });
 
 test('session：过期的时间戳一定失效', async () => {
-  const session = await issueSession(ENV, 7, 1_700_000_000_000);
+  const session = await issueSession(ENV, 7, 0, 1_700_000_000_000);
   const cookie = cookieOf(sessionCookie(session.value, session.maxAge));
   const afterTtl = 1_700_000_000_000 + 90 * 24 * 60 * 60 * 1000 + 1;
   assert.equal(await readSession(requestWith(cookie), ENV, afterTtl), null);
 });
 
 test('session：签名被改动 / 换一把密钥都会失效', async () => {
-  const session = await issueSession(ENV, 7, 1_700_000_000_000);
+  const session = await issueSession(ENV, 7, 0, 1_700_000_000_000);
   const [payload, sig] = session.value.split('.');
   const tampered = payload + '.' + sig.slice(0, -2) + (sig.slice(-2) === 'aa' ? 'bb' : 'aa');
   assert.equal(await readSession(requestWith('wt_session=' + tampered), ENV), null);
   // 换个 AUTH_TOKEN（等于换密钥）后老会话作废
   assert.equal(await readSession(requestWith('wt_session=' + session.value), { AUTH_TOKEN: 'another' }), null);
   // 把 userId 改掉但签名不变 → 必须失效（不能靠改 cookie 冒充别人）
-  const forged = '9:' + payload.split(':')[1] + '.' + sig;
+  const forged = '9:' + payload.split(':')[1] + ':' + payload.split(':')[2] + '.' + sig;
   assert.equal(await readSession(requestWith('wt_session=' + forged), ENV), null);
   // 没有 cookie / cookie 里没有这一段
   assert.equal(await readSession(requestWith(''), ENV), null);
@@ -45,15 +45,15 @@ test('session：签名被改动 / 换一把密钥都会失效', async () => {
 
 test('session：服务器没配密钥时签不出会话（门禁会自动关闭，避免锁死自己）', async () => {
   assert.equal(sessionSecret({}), '');
-  assert.equal(await issueSession({}, 1), null);
+  assert.equal(await issueSession({}, 1, 0), null);
   assert.equal(await readSession(requestWith('wt_session=1:2.3'), {}), null);
   assert.equal(await passwordMatches('x', {}), false);
 });
 
 test('session：SESSION_SECRET 优先于 AUTH_TOKEN', async () => {
   assert.equal(sessionSecret({ AUTH_TOKEN: 'a', SESSION_SECRET: 'b' }), 'b');
-  const session = await issueSession({ SESSION_SECRET: 'b' }, 3);
-  assert.deepEqual(await readSession(requestWith('wt_session=' + session.value), { SESSION_SECRET: 'b' }), { userId: 3 });
+  const session = await issueSession({ SESSION_SECRET: 'b' }, 3, 0);
+  assert.deepEqual(await readSession(requestWith('wt_session=' + session.value), { SESSION_SECRET: 'b' }), { userId: 3, tokenVersion: 0 });
   assert.equal(await readSession(requestWith('wt_session=' + session.value), { AUTH_TOKEN: 'a' }), null);
 });
 

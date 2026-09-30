@@ -14,7 +14,8 @@
     "e2e": "node scripts/e2e/run.mjs",
     "test:all": "npm test && npm run lint && npm run audit && npm run e2e",
     "build": "node scripts/bundle.mjs && node scripts/build.mjs",
-    "bump": "node scripts/bump.mjs"
+    "bump": "node scripts/bump.mjs",
+    "account:reset": "node scripts/account-reset.mjs"
   },
   "keywords": [
     "portfolio",

@@ -8,12 +8,30 @@ import { handleQuotes, handleHoldings } from './lib/quotes.js';
 import { handleLogo } from './lib/logos.js';
 import { handleMarketCap } from './lib/marketcap.js';
 import { readSession, issueSession, sessionCookie, clearSessionCookie, uidCookie, clearUidCookie, passwordMatches, sessionSecret } from './lib/session.js';
-import { ensureAccountsTable, countAccounts, findAccountByUsername, listAccounts, createAccount, verifyAccountPassword, normalizeUsername } from './lib/accounts.js';
+import { ensureAccountsTable, countAccounts, findAccountByUsername, findAccountById, listAccounts, dataRowCounts, touchLastSeen, setAccountPassword, setAccountDisabled, deleteAccount, createAccount, verifyAccountPassword, normalizeUsername } from './lib/accounts.js';
 import { loginPageResponse, notFoundPage } from './lib/login-page.js';
 
 const rateLimiter = createRateLimiter();
 /** 登录接口单独限流：10 分钟内最多 12 次尝试（比全站的 240/分钟严得多）。 */
 const loginLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 12 });
+
+/**
+ * 取"当前登录且仍然有效"的账号。
+ * 三层校验：会话签名有效 → 账号还在且没被禁用 → 会话版本一致（管理员重置密码会 +1，旧设备立刻失效）。
+ * 代价是每次要查一次库（~1ms），所以只用在对数据敏感的路径（同步、账号管理）上。
+ */
+async function activeAccount(request, env) {
+  const session = await readSession(request, env);
+  if (!session) return null;
+  try {
+    const account = await findAccountById(env, session.userId);
+    if (!account || Number(account.disabled)) return null;
+    if (Number(account.token_version || 0) !== Number(session.tokenVersion || 0)) return null;
+    return account;
+  } catch (error) {
+    return null;
+  }
+}
 
 /** 不需要登录就能碰的路径：登录页本体、登录/登出接口、SW、清单、图标与启动图。 */
 function isOpenPath(pathname) {
@@ -66,12 +84,6 @@ export default {
     if (url.pathname === '/api/login') {
       if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
       if (!sessionSecret(env)) return json({ ok: false, error: 'not configured' }, 503);
-      if (!loginLimiter.check(ip)) {
-        return new Response(JSON.stringify({ ok: false, error: 'too many attempts' }), {
-          status: 429,
-          headers: { ...corsHeaders(), 'Retry-After': '600', 'Cache-Control': 'no-store' },
-        });
-      }
       let payload = null;
       try { payload = await request.json(); } catch (error) { payload = null; }
       const username = normalizeUsername(payload && payload.username);
@@ -91,9 +103,9 @@ export default {
           const total = await countAccounts(env);
           if (total === 0 && await passwordMatches(password, env)) {
             // 主账号必须正好是 id=1 —— 老数据全挂在 user_id=1 名下
-            const created = await createAccount(env, username, password, username, 1);
+            const created = await createAccount(env, username, password, { id: 1, role: 'owner' });
             if (created.id) {
-              account = { id: created.id, username, name: username };
+              account = { id: created.id, username, role: 'owner', token_version: 0 };
               verified = true;
             }
           }
@@ -101,17 +113,28 @@ export default {
       } catch (error) {
         return json({ ok: false, error: 'db error' }, 502);
       }
-      if (!verified) return json({ ok: false, error: 'invalid credentials' }, 401);
+      if (!verified) {
+        // 只有**失败**才计入限流：正常登录不该消耗配额（否则一家人共用一个出口 IP，
+        // 谁多登几次就把全家锁在门外 10 分钟）。
+        if (!loginLimiter.check(ip)) {
+          return new Response(JSON.stringify({ ok: false, error: 'too many attempts' }), {
+            status: 429,
+            headers: { ...corsHeaders(), 'Retry-After': '600', 'Cache-Control': 'no-store' },
+          });
+        }
+        return json({ ok: false, error: 'invalid credentials' }, 401);
+      }
 
       const userId = Number(account.id);
-      const session = await issueSession(env, userId);
+      const session = await issueSession(env, userId, Number(account.token_version || 0));
       if (!session) return json({ ok: false, error: 'not configured' }, 503);
+      touchLastSeen(env, userId);
       const headers = new Headers(corsHeaders());
       headers.append('Set-Cookie', sessionCookie(session.value, session.maxAge));
       // 可读的账号 id：前端要在同步读 localStorage 之前知道该用哪个空间
       headers.append('Set-Cookie', uidCookie(userId, session.maxAge));
       headers.set('Cache-Control', 'no-store, max-age=0');
-      return new Response(JSON.stringify({ ok: true, userId, username: account.username, name: account.name || account.username }), { status: 200, headers });
+      return new Response(JSON.stringify({ ok: true, userId, username: account.username, role: account.role || 'member' }), { status: 200, headers });
     }
     if (url.pathname === '/api/logout') {
       const headers = new Headers(corsHeaders());
@@ -120,28 +143,120 @@ export default {
       headers.set('Cache-Control', 'no-store, max-age=0');
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
     }
-    // 账号管理（需要已有会话）
-    if (url.pathname === '/api/accounts') {
-      const current = await readSession(request, env);
-      if (!current) return json({ error: 'Unauthorized' }, 401);
+    // 账号：查看 / 新增 / 管理（数据敏感，所以走 activeAccount 的三层校验）
+    if (url.pathname === '/api/accounts' || url.pathname.indexOf('/api/accounts/') === 0) {
+      const me = await activeAccount(request, env);
+      if (!me) return json({ error: 'Unauthorized' }, 401);
+      const isOwner = me.role === 'owner';
+      const decorate = (row, counts) => ({
+        id: Number(row.id),
+        username: row.username,
+        role: row.role || 'member',
+        disabled: Number(row.disabled) ? 1 : 0,
+        createdAt: Number(row.created_at) || 0,
+        lastSeenAt: Number(row.last_seen_at) || 0,
+        keys: counts[Number(row.id)] || 0,
+      });
       try {
         await ensureAccountsTable(env);
-        if (request.method === 'GET') {
-          const accounts = await listAccounts(env);
-          const me = accounts.filter((item) => Number(item.id) === current.userId)[0] || null;
-          return json({ ok: true, userId: current.userId, me, accounts });
+        const counts = await dataRowCounts(env);
+
+        if (url.pathname === '/api/accounts' && request.method === 'GET') {
+          const mine = decorate(me, counts);
+          // 普通成员只看得到自己；主账号能看到全部（含数据量与最近登录）
+          const all = isOwner ? (await listAccounts(env)).map((row) => decorate(row, counts)) : [mine];
+          return json({ ok: true, userId: Number(me.id), me: mine, accounts: all });
         }
-        if (request.method === 'POST') {
+
+        if (url.pathname === '/api/accounts' && request.method === 'POST') {
+          if (!isOwner) return json({ ok: false, error: 'forbidden' }, 403);
           let body = null;
           try { body = await request.json(); } catch (error) { body = null; }
-          const created = await createAccount(env, body && body.username, body && body.password, body && body.name);
+          const created = await createAccount(env, body && body.username, body && body.password);
           if (created.error) return json({ ok: false, error: created.error }, 400);
-          return json({ ok: true, id: created.id, userId: current.userId });
+          return json({ ok: true, id: created.id });
+        }
+
+        const targetId = url.pathname.indexOf('/api/accounts/') === 0
+          ? Number(url.pathname.slice('/api/accounts/'.length))
+          : NaN;
+        if (Number.isFinite(targetId) && targetId > 0) {
+          if (!isOwner) return json({ ok: false, error: 'forbidden' }, 403);
+          const target = await findAccountById(env, targetId);
+          if (!target) return json({ ok: false, error: 'not found' }, 404);
+          const isSelf = Number(target.id) === Number(me.id);
+
+          if (request.method === 'PATCH') {
+            let body = null;
+            try { body = await request.json(); } catch (error) { body = null; }
+            if (body && typeof body.password === 'string') {
+              if (body.password.length < 6) return json({ ok: false, error: 'password too short' }, 400);
+              const done = await setAccountPassword(env, target.id, body.password);
+              if (done.error) return json({ ok: false, error: done.error }, 400);
+              // 改了自己的密码：会话版本也变了，顺手给自己换一张新会话，别把自己踢下线
+              if (isSelf) {
+                // 重新读一次：token_version 是数据库 +1 出来的，别拿内存里的旧行去猜
+                const fresh = await findAccountById(env, me.id);
+                const refreshed = await issueSession(env, me.id, Number((fresh && fresh.token_version) || 0));
+                if (refreshed) {
+                  const headers = new Headers(corsHeaders());
+                  headers.append('Set-Cookie', sessionCookie(refreshed.value, refreshed.maxAge));
+                  headers.append('Set-Cookie', uidCookie(me.id, refreshed.maxAge));
+                  headers.set('Cache-Control', 'no-store, max-age=0');
+                  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+                }
+              }
+            }
+            if (body && body.disabled !== undefined) {
+              // 不能把自己禁用，否则没人能管理了
+              if (isSelf && body.disabled) return json({ ok: false, error: 'cannot disable self' }, 400);
+              await setAccountDisabled(env, target.id, !!body.disabled);
+            }
+            return json({ ok: true });
+          }
+
+          if (request.method === 'DELETE') {
+            if (isSelf) return json({ ok: false, error: 'cannot delete self' }, 400);
+            // 删除前先把它的云端数据整份导出，随响应返回（前端会存成文件）
+            const { results } = await env.DB.prepare('SELECT key, value, updated_at FROM data WHERE user_id = ?').bind(target.id).all();
+            const data = {};
+            (results || []).forEach((row) => {
+              try { data[row.key] = JSON.parse(row.value); } catch (error) { data[row.key] = row.value; }
+            });
+            await deleteAccount(env, target.id);
+            return json({ ok: true, exported: { userId: Number(target.id), username: target.username, exportedAt: Date.now(), data } });
+          }
+          return json({ error: 'Method not allowed' }, 405);
         }
       } catch (error) {
         return json({ ok: false, error: 'db error' }, 502);
       }
-      return json({ error: 'Method not allowed' }, 405);
+      return json({ error: 'Not Found' }, 404);
+    }
+
+    // 改自己的密码（谁都能改自己的）
+    if (url.pathname === '/api/me/password' && request.method === 'POST') {
+      const me = await activeAccount(request, env);
+      if (!me) return json({ error: 'Unauthorized' }, 401);
+      let body = null;
+      try { body = await request.json(); } catch (error) { body = null; }
+      const current = String((body && body.current) || '');
+      const next = String((body && body.next) || '');
+      if (next.length < 6) return json({ ok: false, error: 'password too short' }, 400);
+      if (!await verifyAccountPassword(env, me, current)) return json({ ok: false, error: 'wrong password' }, 401);
+      const done = await setAccountPassword(env, me.id, next);
+      if (done.error) return json({ ok: false, error: done.error }, 400);
+      touchLastSeen(env, me.id);
+      // 改密码会让 token_version +1：重新读一次，再给自己换一张带新版本号的会话，避免当场掉线
+      const fresh = await findAccountById(env, me.id);
+      const refreshed = await issueSession(env, me.id, Number((fresh && fresh.token_version) || 0));
+      const headers = new Headers(corsHeaders());
+      if (refreshed) {
+        headers.append('Set-Cookie', sessionCookie(refreshed.value, refreshed.maxAge));
+        headers.append('Set-Cookie', uidCookie(me.id, refreshed.maxAge));
+      }
+      headers.set('Cache-Control', 'no-store, max-age=0');
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
     }
     // 登录页自己的路由。少了这一条，/login 会掉到静态资源查找 → 404（真事故）
     if (url.pathname === '/login') return loginPageResponse('');
@@ -182,15 +297,16 @@ export default {
       return await handleLogo(request, url);
     }
     if (url.pathname === '/api/sync' && request.method === 'GET') {
-      const session = await readSession(request, env);
-      if (!session) return json({ error: 'Unauthorized' }, 401);
-      const result = await handleSyncGet(env, session.userId);
+      // 走 activeAccount：被禁用 / 会话版本过期（管理员重置过密码）都会立刻拒绝
+      const account = await activeAccount(request, env);
+      if (!account) return json({ error: 'Unauthorized' }, 401);
+      const result = await handleSyncGet(env, account.id);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/sync' && request.method === 'POST') {
-      const session = await readSession(request, env);
-      if (!session) return json({ error: 'Unauthorized' }, 401);
-      const result = await handleSyncPost(request, env, session.userId);
+      const account = await activeAccount(request, env);
+      if (!account) return json({ error: 'Unauthorized' }, 401);
+      const result = await handleSyncPost(request, env, account.id);
       return json(result.body, result.status);
     }
 
