@@ -2800,3 +2800,8 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 #tab-console .console-entry-card .trade-summary strong{font-size:13.5px}
 #tab-console .console-entry-card .trade-type-segment{margin-bottom:8px}
 #tab-console .console-entry-card .asset-chips{margin-bottom:4px}
+/* ===== v308 方案B：卡头两个按钮并排 + 弹层里的表单间距 ===== */
+.collapsible-header .card-head-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.collapsible-header .card-head-actions .btn{margin:0}
+#tradeSheet .qa-panel .console-form{margin-top:2px}
+#cashSheet .qa-panel .cash-form{margin-top:2px}

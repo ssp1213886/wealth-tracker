@@ -396,53 +396,17 @@
 <div class="card collapsible-card console-entry-card">
   <div class="collapsible-header">
     <div class="section-title"><span class="collapse-arrow">▼</span><h3>买卖操作录入</h3></div>
-    <button type="button" class="btn btn-out btn-sm inline-action" id="hmRefresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 8A7 7 0 0 1 18.7 7L20 12M4 12l1.3 5A7 7 0 0 0 17.9 16"/></svg>刷新</button>
+<div class="card-head-actions"><button type="button" class="btn btn-out btn-sm inline-action" id="hmRefresh"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 8A7 7 0 0 1 18.7 7L20 12M4 12l1.3 5A7 7 0 0 0 17.9 16"/></svg>刷新</button><button type="button" class="btn btn-pri btn-sm" id="btnTradeSheet">＋ 记录</button></div>
   </div>
   <div class="collapsible-body">
     <div class="price-list" id="hmPricesCompact" aria-label="实时价格" aria-busy="true"><div class="ds-skeleton" aria-hidden="true"><i></i><i></i><i></i></div></div>
     <div class="price-meta-row"><div class="price-meta" id="hmPriceTime"></div><span id="mktStatus" class="market-status"></span></div>
-    <form class="trade-form console-form" onsubmit="return false">
-      <div class="trade-native-controls">
-        <select id="tfType" class="native-control" aria-label="交易类型"><option value="buy">买入</option><option value="sell">卖出</option></select>
-        <select id="tfAsset" class="native-control" aria-label="交易标的"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC ETF</option></select>
-      </div>
-      <div class="segmented-control trade-type-segment" role="tablist" aria-label="交易类型">
-        <button type="button" class="segment active" data-trade-type="buy" role="tab" aria-selected="true">买入</button>
-        <button type="button" class="segment" data-trade-type="sell" role="tab" aria-selected="false">卖出</button>
-      </div>
-      <div class="asset-chips" role="group" aria-label="交易标的">
-        <button type="button" class="asset-chip active" data-asset="VGT">VGT</button>
-        <button type="button" class="asset-chip" data-asset="SMH">SMH</button>
-        <button type="button" class="asset-chip" data-asset="BTC">BTC ETF</button>
-      </div>
-      <div class="field-grid">
-        <div class="tf-group tf-group-date"><label for="tfDate">日期</label><input type="date" id="tfDate" aria-label="交易日期"></div>
-        <div class="tf-group"><label for="tfPrice">价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div>
-        <div class="tf-group"><label for="tfShares">数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div>
-      </div>
-      <div class="trade-summary"><span>预计金额</span><strong id="tfEstimated">$0.00</strong></div>
-      <button class="btn btn-pri" id="btnAddTrade" type="button">添加交易</button>
-    </form>
   </div>
 </div>
 
   <div class="card cash-card">
-    <h3>现金管理</h3>
+    <div class="opt-card-head"><h3>现金管理</h3><button type="button" class="btn btn-pri btn-sm" id="btnCashSheet">＋ 记一笔</button></div>
     <div class="cash-balance-row"><span>现金余额</span><strong id="dataCashBal">$0.00</strong></div>
-    <div class="cash-form">
-      <div class="cash-row">
-        <div class="tf-group"><label for="hmCashAmt">入金 / 出金</label><input type="number" inputmode="decimal" id="hmCashAmt" placeholder="金额"></div>
-        <div class="cash-actions"><button type="button" class="cash-action is-primary" id="hmDeposit">入金</button><button type="button" class="cash-action" id="hmWithdraw">出金</button></div>
-      </div>
-      <div class="cash-row">
-        <div class="tf-group"><label for="hmCorrectAmt">现金修正</label><input type="number" inputmode="decimal" id="hmCorrectAmt" placeholder="修正金额"></div>
-        <button type="button" class="cash-action" id="hmCorrect">修正</button>
-      </div>
-      <div class="cash-row">
-        <div class="tf-group"><label for="divAmt">股息记录</label><div class="cash-fields"><select id="divSym" aria-label="股息标的"><option value="VGT">VGT</option><option value="SMH">SMH</option></select><input type="number" inputmode="decimal" id="divAmt" placeholder="股息金额"></div></div>
-        <button type="button" class="cash-action is-primary" id="hmDividend">记录</button>
-      </div>
-    </div>
     <div class="cash-summary">累计 入金 <span id="dataDep">$0</span> · 卖出 <span id="dataSel">$0</span> · 买入 <span id="dataBuy">$0</span></div>
   </div>
 
@@ -647,6 +611,52 @@
 </div>
 
 <button class="qa-fab" id="qaFab" onclick="qaToggle()" aria-label="快捷操作"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+<div class="qa-sheet" id="tradeSheet" onclick="if(event.target===this)closeTradeSheet()">
+  <div class="qa-panel">
+    <div class="qa-title">记录买卖</div>
+    <form class="trade-form console-form" onsubmit="return false">
+      <div class="trade-native-controls">
+        <select id="tfType" class="native-control" aria-label="交易类型"><option value="buy">买入</option><option value="sell">卖出</option></select>
+        <select id="tfAsset" class="native-control" aria-label="交易标的"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC ETF</option></select>
+      </div>
+      <div class="segmented-control trade-type-segment" role="tablist" aria-label="交易类型">
+        <button type="button" class="segment active" data-trade-type="buy" role="tab" aria-selected="true">买入</button>
+        <button type="button" class="segment" data-trade-type="sell" role="tab" aria-selected="false">卖出</button>
+      </div>
+      <div class="asset-chips" role="group" aria-label="交易标的">
+        <button type="button" class="asset-chip active" data-asset="VGT">VGT</button>
+        <button type="button" class="asset-chip" data-asset="SMH">SMH</button>
+        <button type="button" class="asset-chip" data-asset="BTC">BTC ETF</button>
+      </div>
+      <div class="field-grid">
+        <div class="tf-group tf-group-date"><label for="tfDate">日期</label><input type="date" id="tfDate" aria-label="交易日期"></div>
+        <div class="tf-group"><label for="tfPrice">价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="580"></div>
+        <div class="tf-group"><label for="tfShares">数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div>
+      </div>
+      <div class="trade-summary"><span>预计金额</span><strong id="tfEstimated">$0.00</strong></div>
+      <button class="btn btn-pri" id="btnAddTrade" type="button">添加交易</button>
+    </form>
+  </div>
+</div>
+<div class="qa-sheet" id="cashSheet" onclick="if(event.target===this)closeCashSheet()">
+  <div class="qa-panel">
+    <div class="qa-title">记一笔现金</div>
+    <div class="cash-form">
+      <div class="cash-row">
+        <div class="tf-group"><label for="hmCashAmt">入金 / 出金</label><input type="number" inputmode="decimal" id="hmCashAmt" placeholder="金额"></div>
+        <div class="cash-actions"><button type="button" class="cash-action is-primary" id="hmDeposit">入金</button><button type="button" class="cash-action" id="hmWithdraw">出金</button></div>
+      </div>
+      <div class="cash-row">
+        <div class="tf-group"><label for="hmCorrectAmt">现金修正</label><input type="number" inputmode="decimal" id="hmCorrectAmt" placeholder="修正金额"></div>
+        <button type="button" class="cash-action" id="hmCorrect">修正</button>
+      </div>
+      <div class="cash-row">
+        <div class="tf-group"><label for="divAmt">股息记录</label><div class="cash-fields"><select id="divSym" aria-label="股息标的"><option value="VGT">VGT</option><option value="SMH">SMH</option></select><input type="number" inputmode="decimal" id="divAmt" placeholder="股息金额"></div></div>
+        <button type="button" class="cash-action is-primary" id="hmDividend">记录</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="qa-sheet" id="optSheet" onclick="if(event.target===this)closeOptSheet()">
   <div class="qa-panel">
     <div class="qa-title">记录期权</div>

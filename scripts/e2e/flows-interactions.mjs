@@ -277,6 +277,27 @@ if (!healthJump.settingsOpen) failures.push('点数据健康没有打开设置�
 if (!healthJump.panelVisible) failures.push('同步设置面板打开后仍不可见（移动端曾被整屏设置面板挡住）');
 if (!healthJump.syncPanelOpen) failures.push('点数据健康没有自动展开「连接配置」');
 
+/* 操作台两个录入弹层（v308 方案B）：卡片上只留「＋」按钮，表单在底部弹层里 */
+const consoleSheets = await ev(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  switchTab('console'); await sleep(600);
+  const t = document.getElementById('tradeSheet');
+  const c = document.getElementById('cashSheet');
+  document.getElementById('btnTradeSheet').click(); await sleep(500);
+  const tradeOpen = !!t && t.classList.contains('open');
+  const tradeHasForm = !!(t && t.querySelector('#btnAddTrade') && t.querySelector('#tfPrice'));
+  closeTradeSheet(); await sleep(300);
+  document.getElementById('btnCashSheet').click(); await sleep(500);
+  const cashOpen = !!c && c.classList.contains('open');
+  const cashHasForm = !!(c && c.querySelector('#hmDeposit') && c.querySelector('#hmCashAmt'));
+  closeCashSheet(); await sleep(200);
+  return { tradeOpen, tradeHasForm, cashOpen, cashHasForm };
+});
+if (!consoleSheets.tradeOpen) failures.push('点「＋ 记录」没有打开买卖弹层');
+if (!consoleSheets.tradeHasForm) failures.push('买卖弹层里没有找到录入表单');
+if (!consoleSheets.cashOpen) failures.push('点「＋ 记一笔」没有打开现金弹层');
+if (!consoleSheets.cashHasForm) failures.push('现金弹层里没有找到现金表单');
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -288,6 +309,7 @@ console.log('记录页汇总：累计入金 ' + totals.dep + ' · 累计买入 '
 console.log('入口体验：现金不足提示="' + cashGuard.toast.slice(0, 40) + '" 焦点=' + cashGuard.focused + ' · 移动端同步面板可见=' + healthJump.panelVisible + ' · 连接配置展开=' + healthJump.syncPanelOpen);
 console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
 console.log('观察列表：' + watchBefore.length + ' → ' + watchAfter.list.length + ' 项（添加 SPY：按钮="' + addRow.btnText + '"，分组 ' + watchAfter.groups.map((g) => g.title + g.count).join('/') + '，云端 ' + (cloudWatch.store.watchlist || []).length + ' 项）');
+console.log('操作台弹层：买卖 ' + (consoleSheets.tradeOpen ? '可开' : '打不开') + '（表单 ' + (consoleSheets.tradeHasForm ? '在' : '缺失') + '）· 现金 ' + (consoleSheets.cashOpen ? '可开' : '打不开') + '（表单 ' + (consoleSheets.cashHasForm ? '在' : '缺失') + '）');
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('交互流测试失败：\n  - ' + failures.join('\n  - '));

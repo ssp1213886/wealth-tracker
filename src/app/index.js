@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v307';var APP_DATA_VERSION=5;
+var APP_BUILD='v308';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -655,7 +655,7 @@ document.getElementById('btnAddTrade').addEventListener('click',function(){
   addActivity((type==='sell'?'卖出 ':'买入 ')+sym+' '+shares.toFixed(2)+'股 @ $'+price.toFixed(2));
 
 
-  haptic('success');showToast('✅ 录入成功','ok')
+haptic('success');showToast('✅ 录入成功','ok');try{closeTradeSheet()}catch(e){logSwallowed("closeTradeSheet",e)}
 
 
 });
@@ -970,7 +970,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=307',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=308',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1581,7 +1581,7 @@ function qaClose(){var s=document.getElementById('qaSheet');if(!s)return;var p=s
 function optSheetEl(){return document.getElementById('optSheet')}
 function openOptSheet(){var s=optSheetEl();if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.add('open');haptic('light')}
 function closeOptSheet(){var s=optSheetEl();if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
-function initOptSheet(){
+/* v308 方案B：买卖录入 / 现金管理各自进底部弹层（表单内容原地搬，未改任何字段与逻辑） */function sheetOpen(id){var s=document.getElementById(id);if(!s)return;var p=s.querySelector(".qa-panel");if(p)p.style.transform="";s.classList.add("open")}function sheetClose(id){var s=document.getElementById(id);if(!s)return;var p=s.querySelector(".qa-panel");if(p)p.style.transform="";s.classList.remove("open")}function openTradeSheet(){sheetOpen("tradeSheet");try{haptic("light")}catch(e){logSwallowed("openTradeSheet",e)}}function closeTradeSheet(){sheetClose("tradeSheet")}function openCashSheet(){sheetOpen("cashSheet");try{haptic("light")}catch(e){logSwallowed("openCashSheet",e)}}function closeCashSheet(){sheetClose("cashSheet")}(function initConsoleSheets(){[["btnTradeSheet","tradeSheet",closeTradeSheet],["btnCashSheet","cashSheet",closeCashSheet]].forEach(function(pair){var btn=document.getElementById(pair[0]);if(btn)btn.addEventListener("click",function(){sheetOpen(pair[1])});var s=document.getElementById(pair[1]);if(!s)return;var p=s.querySelector(".qa-panel");if(p)enableSheetDrag(p,pair[2]);});})();function initOptSheet(){
   var btn=document.getElementById('btnOptSheet');if(btn)btn.addEventListener('click',openOptSheet);
   var s=optSheetEl();if(!s)return;
   var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,closeOptSheet);
@@ -1589,9 +1589,9 @@ function initOptSheet(){
 initOptSheet();
 function initQaDrag(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,qaClose)}
 initQaDrag();
-function qaDeposit(){qaClose();switchTab('console');setTimeout(function(){var e=document.getElementById('hmCashAmt');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
-function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
-function qaSell(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='sell';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
+function qaDeposit(){qaClose();switchTab('console');setTimeout(function(){openCashSheet();var e=document.getElementById('hmCashAmt');if(e)e.focus()},260)}
+function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';syncTradeControls();setTimeout(function(){openTradeSheet();var e=document.getElementById('tfShares');if(e)e.focus()},260)}
+function qaSell(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='sell';syncTradeControls();setTimeout(function(){openTradeSheet();var e=document.getElementById('tfShares');if(e)e.focus()},260)}
 function qaCall(){qaClose();switchTab('option');setTimeout(function(){var e=document.getElementById('ostrike');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 
 
@@ -1644,7 +1644,7 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 
 /* 打包成 IIFE 后，把内联事件用到的入口显式暴露到 window */
 if(typeof window!=='undefined'){
-  var __globals={clearAllData:clearAllData,logoutNow:logoutNow,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,openOptSheet:openOptSheet,closeOptSheet:closeOptSheet,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
+  var __globals={clearAllData:clearAllData,logoutNow:logoutNow,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,openOptSheet:openOptSheet,closeOptSheet:closeOptSheet,openTradeSheet:openTradeSheet,closeTradeSheet:closeTradeSheet,openCashSheet:openCashSheet,closeCashSheet:closeCashSheet,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
   for(var __k in __globals){try{if(typeof __globals[__k]==='function')window[__k]=__globals[__k]}catch(e){logSwallowed("initForceUpload",e)}}
 }
 
