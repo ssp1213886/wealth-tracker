@@ -37,6 +37,10 @@ const BRANDS = {
   ethereum: ['ethereum'],
   binance: ['binance'],
   solana: ['solana'],
+  visa: ['visa'],
+  mastercard: ['mastercard'],
+  coinbase: ['coinbase'],
+  supermicro: ['supermicro'],
 };
 
 /** 股票代码 → 品牌键（同品牌共用；没登记的走字母徽标兜底） */
@@ -60,6 +64,10 @@ const SYMBOLS = {
   BNB: 'binance',
   SOL: 'solana',
   GOLD: 'gold',      // 金价（GC=F）不是公司，用"金条"图标表示资产类型
+  V: 'visa',
+  MA: 'mastercard',
+  COIN: 'coinbase',
+  SMCI: 'supermicro',
 };
 
 /** 没有开源矢量可用的品牌，但知道它的官方品牌色 → 字母徽标用这个底色（比默认强调色更有品牌感） */

@@ -2630,3 +2630,10 @@ html[data-brand="mono"] .sym-badge.is-img img{filter:grayscale(1);opacity:.72}
 /* 深色模式下官方品牌色偏暗的（Apple 纯黑、Ethereum 深灰）在黑底上会糊，提亮一档 */
 html[data-theme="dark"] .sym-badge{background:color-mix(in srgb,var(--brand,var(--muted)) 18%,transparent)}
 html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--brand,var(--muted)) 78%,#fff 22%)}
+
+/* 敞口/持仓行的内联详情里那行"现价 + 今日涨跌"（v260） */
+.rd-mkt{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.7rem;color:var(--muted)}
+.rd-mkt strong{font-size:.78rem;font-weight:600;color:var(--text)}
+.rd-mkt .rd-chg{font-variant-numeric:tabular-nums;font-weight:600}
+.rd-mkt .rd-chg.is-up{color:var(--accent)}
+.rd-mkt .rd-chg.is-down{color:var(--red)}

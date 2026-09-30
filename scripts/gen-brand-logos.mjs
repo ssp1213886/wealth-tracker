@@ -18,8 +18,14 @@ const DOMAIN_SYMBOLS = {
   'vanguard.com': ['VGT', 'VOO'],
   // vaneck.com 故意不放：官网只给了 321×76 的横长条文字标和一张 545 字节的低清图标，
   // 缩到 18px 必然糊 —— SMH 改用"品牌蓝 + V"的字母徽标（见 brand-icons.js 的 BRAND_COLORS）。
-  'invesco.com': ['QQQM'],
-  'ishares.com': ['SGOV'],
+  'invesco.com': ['QQQM', 'QQQ'],
+  'ishares.com': ['SGOV', 'IWM', 'TLT'],
+  'ssga.com': ['SPY'],
+  'jpmorganchase.com': ['JPM'],
+  'unitedhealthgroup.com': ['UNH'],
+  'exxonmobil.com': ['XOM'],
+  'costco.com': ['COST'],
+  'lilly.com': ['LLY'],
   'grayscale.com': ['BTCG'],
   'microsoft.com': ['MSFT'],
   'amazon.com': ['AMZN'],
