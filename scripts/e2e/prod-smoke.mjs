@@ -27,6 +27,34 @@ await p.evaluate(async () => {
 await p.goto(BASE + '?smoke=' + Date.now(), { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(5000);
 
+// 线上已经开启登录门禁：未登录时这里拿到的是登录页。
+// 给了 WT_TOKEN 就自动登录继续验 App；没给就只验"门禁确实在"，不去猜别人的令牌。
+const needsLogin = await p.evaluate(() => (document.body.innerText || '').indexOf('请输入访问令牌') >= 0);
+if (needsLogin) {
+  const token = process.env.WT_TOKEN || '';
+  if (!token) {
+    console.log('线上冒烟：检测到登录门禁（未提供 WT_TOKEN，跳过 App 断言）');
+    console.log('✓ 门禁生效：未登录只能看到登录页');
+    await p.close();
+    process.exit(0);
+  }
+  const loginResult = await p.evaluate(async (value) => {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: value }),
+    });
+    return res.status;
+  }, token);
+  if (loginResult !== 200) {
+    console.error('登录失败（HTTP ' + loginResult + '），WT_TOKEN 是否正确？');
+    await p.close();
+    process.exit(1);
+  }
+  await p.goto(BASE + '?smoke=' + Date.now(), { waitUntil: 'domcontentloaded' });
+  await p.waitForTimeout(5000);
+}
+
 async function ev(fn, arg) {
   let last = null;
   for (let i = 0; i < 6; i += 1) {

@@ -1,5 +1,5 @@
-// Service Worker v281 - focus scroll and unified press feedback
-var CACHE = 'wealth-v281';
+// Service Worker v282 - focus scroll and unified press feedback
+var CACHE = 'wealth-v282';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {
@@ -19,7 +19,10 @@ self.addEventListener('install', function(event) {
   event.waitUntil(caches.open(CACHE).then(function(cache) {
     return Promise.all(PRECACHE.map(function(url) {
       return fetch(new Request(url, {cache: 'reload'})).then(function(response) {
-        if (response.ok) return cache.put(url, response);
+        if (!response.ok) return undefined;
+        // 预缓存 '/' 时可能还没登录，拿到的是登录页 —— 那不是 App 壳子，绝不能存
+        if (url === '/' && response.headers.get('X-WT-Shell') !== '1') return undefined;
+        return cache.put(url, response);
       }).catch(function() {});
     }));
   }).then(function() { return self.skipWaiting(); }));
@@ -40,11 +43,16 @@ self.addEventListener('fetch', function(event) {
   var url = new URL(request.url);
   // A worker must never answer its own update check from Cache Storage.
   if (url.pathname === '/sw.js') return;
+  // 登录页永远走网络：否则已装 PWA 的机器会拿缓存的 App 壳子顶上登录页
+  if (url.pathname === '/login') return;
   if (url.pathname.indexOf('/api/') === 0 || request.method !== 'GET') return;
 
   if (request.mode === 'navigate') {
     var network = fetch(request).then(function(response) {
       if (!response || !response.ok || !(response.headers.get('content-type') || '').includes('text/html')) throw new Error('Invalid navigation response');
+      // 只缓存真正的 App 壳子（Worker 会打 X-WT-Shell 标记）；未登录时同一路径返回登录页，
+      // 那个进了缓存就会变成"登出后永远回不去"的事故
+      if (response.headers.get('X-WT-Shell') !== '1') return response;
       return cacheResponse(request, response).then(function() { return response; });
     });
     event.waitUntil(network.catch(function() {}));

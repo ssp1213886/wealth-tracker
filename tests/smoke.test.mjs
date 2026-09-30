@@ -169,9 +169,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=281');
+  assert.equal(manifest.start_url, '/?v=282');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v281/);
+  assert.match(serviceWorker, /wealth-v282/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -182,9 +182,28 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=281',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=282',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
+});
+
+test('登录门禁：Worker 接了门禁/登录页，SW 不会把登录页当成 App 壳子缓存', () => {
+  const worker = fs.readFileSync('src/worker.js', 'utf8');
+  const serviceWorker = fs.readFileSync('public/sw.js', 'utf8');
+  const assets = fs.readFileSync('src/lib/assets.js', 'utf8');
+  const wrangler = fs.readFileSync('wrangler.toml', 'utf8');
+
+  // 静态资源默认由资源层直发、不经过 Worker，不开这个开关门禁就是摆设
+  assert.match(wrangler, /run_worker_first\s*=\s*true/);
+  assert.match(worker, /'\/api\/login'/);
+  assert.match(worker, /hasValidSession/);
+  assert.match(worker, /X-WT-Shell/);
+  // 只拦"要 HTML 的导航"，资产放行 —— 否则 SW 预缓存 '/' 会把登录页存成壳子
+  assert.match(worker, /function needsAuth\(request, pathname\)/);
+  // 壳子标记 + SW 只缓存带标记的导航 + 登录页走网络
+  assert.match(serviceWorker, /X-WT-Shell/);
+  assert.match(serviceWorker, /url\.pathname === '\/login'/);
+  assert.match(assets, /no-store/);
 });
 
 test('观察列表搜索内置名单 = S&P100 ∪ 纳斯达克100（167 条）', () => {

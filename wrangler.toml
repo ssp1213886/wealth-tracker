@@ -5,6 +5,9 @@ compatibility_date = "2025-01-01"
 [assets]
 binding = "ASSETS"
 directory = "public"
+# 静态资源默认由 Cloudflare 资源层直接发出去、根本不经过 Worker，
+# 那样就无法在服务端做登录门禁。打开它让每个请求先过 Worker。
+run_worker_first = true
 
 [[d1_databases]]
 binding = "DB"
