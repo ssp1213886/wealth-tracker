@@ -9,7 +9,7 @@ import { handleQuotes, handleHoldings } from './lib/quotes.js';
 import { handleLogo } from './lib/logos.js';
 import { handleMarketCap } from './lib/marketcap.js';
 import { hasValidSession, issueSession, sessionCookie, clearSessionCookie, passwordMatches, sessionSecret, loginPassword } from './lib/session.js';
-import { loginPageResponse } from './lib/login-page.js';
+import { loginPageResponse, notFoundPage } from './lib/login-page.js';
 
 const rateLimiter = createRateLimiter();
 /** 登录接口单独限流：10 分钟内最多 12 次尝试（比全站的 240/分钟严得多）。 */
@@ -159,6 +159,8 @@ export default {
       }
       return asset;
     }
-    return json({ error: 'Not Found' }, 404);
+    // 人看的页面永远别吐裸 JSON：浏览器里出现 {"error":"Not Found"} 根本没法自查
+    if (url.pathname.indexOf('/api/') === 0) return json({ error: 'Not Found' }, 404);
+    return notFoundPage();
   },
 };

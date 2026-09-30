@@ -74,3 +74,38 @@ export function loginPageResponse(error) {
     },
   });
 }
+
+/** 找不到页面时给人看的小页面（绝不吐裸 JSON —— 那玩意儿在手机上没法自查）。 */
+export function notFoundPage() {
+  return new Response(`<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f6f3">
+<meta name="robots" content="noindex">
+<title>页面不存在 · My Portfolio</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f3f5f2;color:#17211b;font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;text-align:center}
+main{max-width:300px}
+strong{font-size:1rem;font-weight:650}
+p{margin:10px 0 0;color:#6e7771;font-size:.8rem;line-height:1.6}
+a{display:inline-block;margin-top:18px;min-height:44px;line-height:44px;padding:0 20px;border-radius:12px;background:#147a4b;color:#fff;text-decoration:none;font-weight:600;font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+<strong>页面不存在</strong>
+<p>这个地址没有对应的页面。如果你刚才是从旧书签打开的，回到首页即可。</p>
+<a href="/">回到首页</a>
+</main>
+</body>
+</html>`, {
+    status: 404,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, max-age=0',
+      'X-Robots-Tag': 'noindex',
+    },
+  });
+}
