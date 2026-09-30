@@ -143,37 +143,60 @@ export function togglePrivacy() {
   document.body.classList.toggle('privacy-mode');
 }
 
+/**
+ * 设置里的二级页面：**推入**而不是"滚动到那一块"。
+ * 原生 app 里点一行是整页滑进来，不是让用户自己往下找 —— 这是之前"网页感"的最大来源。
+ */
+function settingsScreen() {
+  return document.querySelector('.sb-section.sb-settings');
+}
+function setScreenTitle(title) {
+  const sec = settingsScreen();
+  if (!sec) return;
+  const label = sec.querySelector('.sb-panel-head span');
+  if (label) label.textContent = title;
+}
+/** 返回索引页；返回 true 表示"确实是从二级页退回来的"（调用方据此决定是否关闭整个抽屉）。 */
+export function closeAdvancedSettings() {
+  const sec = settingsScreen();
+  if (!sec || !sec.classList.contains('is-detail')) return false;
+  sec.classList.remove('is-detail');
+  sec.querySelectorAll('.settings-panel.is-current').forEach(function (el) { el.classList.remove('is-current'); });
+  setScreenTitle('设置');
+  sec.scrollTop = 0;
+  const index = sec.querySelector('.sb-quick-menu');
+  if (index) {
+    index.style.animation = 'none';
+    // 强制回流后再挂上动画，"返回"也有原生那种滑入
+    void index.offsetWidth;
+    index.style.animation = '';
+  }
+  return true;
+}
 export function openAdvancedSettings(section) {
+  const sec = settingsScreen();
+  if (!sec) return;
   const details = document.querySelector('.advanced-settings');
   if (!details) return;
   details.open = true;
-  const panels = {};
   const panelId = SETTINGS_PANEL_IDS[section];
-  if (panelId) panels[section] = document.getElementById(panelId);
-  const panel = panels[section] || details;
-  const targetId = SETTINGS_FOCUS_IDS[section];
-  const target = targetId ? document.getElementById(targetId) : panel;
+  const panel = panelId ? document.getElementById(panelId) : null;
   if (section === 'sync') {
     const sync = document.getElementById('syncPanel');
     if (sync) sync.classList.add('open');
   }
-  document.querySelectorAll('.settings-panel.is-highlighted').forEach(function (el) { el.classList.remove('is-highlighted'); });
-  if (panel.classList) panel.classList.add('is-highlighted');
-  setTimeout(function () {
-    const scroller = panel.closest('.sb-section.sb-settings') || panel.closest('.sidebar');
-    if (scroller) {
-      const sr = scroller.getBoundingClientRect();
-      const pr = panel.getBoundingClientRect();
-      const next = scroller.scrollTop + (pr.top - sr.top) - 64;
-      scroller.scrollTo({ top: Math.max(0, next), behavior: 'smooth' });
-    } else {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-    if (target && typeof target.focus === 'function' && (section === 'price' || section === 'preferences')) target.focus({ preventScroll: true });
-    setTimeout(function () {
-      if (panel.classList) panel.classList.remove('is-highlighted');
-    }, 900);
-  }, 240);
+  if (!panel) return;
+  sec.querySelectorAll('.settings-panel.is-current').forEach(function (el) { el.classList.remove('is-current'); });
+  panel.classList.add('is-current');
+  sec.classList.add('is-detail');
+  const title = panel.querySelector('.settings-panel-head strong');
+  setScreenTitle(title ? title.textContent.trim() : '设置');
+  sec.scrollTop = 0;
+  const targetId = SETTINGS_FOCUS_IDS[section];
+  const target = targetId ? document.getElementById(targetId) : null;
+  if (target && typeof target.focus === 'function') {
+    setTimeout(function () { target.focus({ preventScroll: true }); }, 260);
+  }
 }
 
 /**
@@ -235,7 +258,7 @@ export function initMobileSettingsDrawer() {
     if (overlay) overlay.classList.remove('show');
   }
   entry.addEventListener('click', open);
-  if (panelHead) panelHead.addEventListener('click', close);
+  if (panelHead) panelHead.addEventListener('click', function () { closeAdvancedSettings(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       const sec = panel();

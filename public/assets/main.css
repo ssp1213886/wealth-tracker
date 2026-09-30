@@ -1671,7 +1671,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .sidebar .sb-header h1{font-size:1.16rem;font-weight:700!important;letter-spacing:-.035em!important}
   .sidebar>.sb-section{margin:0 0 10px!important;padding:15px!important;border:1px solid var(--rule)!important;border-radius:18px!important;background:var(--card-bg)!important;box-shadow:none!important}
   .sidebar h3{margin:0 0 11px!important;font-size:.68rem!important;font-weight:620!important;color:var(--muted)!important;letter-spacing:.006em!important}
-  .sb-quick-menu{display:flex!important;flex-direction:column!important;padding:6px 14px!important;border:1px solid var(--rule)!important;border-radius:16px!important;background:var(--card-bg)!important}
+  .sb-quick-menu{display:flex;flex-direction:column!important;padding:6px 14px!important;border:1px solid var(--rule)!important;border-radius:16px!important;background:var(--card-bg)!important}
   .sb-quick-menu button{min-height:48px!important;padding:0 2px!important;border-bottom:1px solid var(--rule)!important;background:transparent!important}
   .sb-quick-menu button:last-child{border-bottom:0!important}
   .sb-quick-menu button:active{background:color-mix(in srgb,var(--accent) 7%,transparent)!important}
@@ -1935,7 +1935,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,va
   #sbSettingsBack{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:10px;background:var(--surface);color:var(--fg);font-size:1.15rem;line-height:1;cursor:pointer;touch-action:manipulation}
   .sb-panel-head span{font-size:.82rem;font-weight:640}
 }
-@media(min-width:801px){.sb-settings-entry,.sb-panel-head{display:none!important}}
+@media(min-width:801px){.sb-settings-entry{display:none!important}.sb-panel-head{display:none}}
 @media(prefers-reduced-motion:reduce){.sb-section.sb-settings{transition:none}}
 
 /* ===== Inline quick settings (mobile) ===== */
@@ -2708,3 +2708,25 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .acc-ev-kind{flex:0 0 auto;padding:1px 7px;border-radius:999px;background:var(--accent-l);color:var(--accent);font-size:.62rem;font-weight:600}
 .acc-ev-text{min-width:0;flex:1;color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acc-ev-note{margin-top:6px;font-size:.64rem;color:var(--muted)}
+
+/* ===== v292 设置二级页：原生式"推入/返回" ===== */
+.sb-settings .settings-heading,
+.sb-settings .sb-quick-menu,
+.sb-settings .advanced-settings > summary{animation:settingsIndexIn .3s var(--ease-out) both}
+/* 二级页：藏掉索引，只留被推入的那一个面板 */
+.sb-settings .advanced-settings-body > .settings-panel{display:none}
+.sb-settings.is-detail .settings-heading,
+.sb-settings.is-detail .sb-quick-menu,
+.sb-settings.is-detail .advanced-settings > summary{display:none}
+.sb-settings.is-detail .advanced-settings-body > .settings-panel.is-current{display:block;animation:settingsPushIn .3s var(--ease-drawer) both}
+.sb-settings.is-detail .advanced-settings{margin-top:0}
+/* 二级页要有自己的返回条（桌面端原本是隐藏的） */
+.sb-settings.is-detail .sb-panel-head{display:flex;position:static;margin:0 0 10px;padding:0 0 10px;border-bottom:1px solid var(--rule);background:transparent}
+.sb-settings.is-detail .sb-panel-head button{width:32px;height:32px;border:0;border-radius:10px;background:var(--surface);color:var(--fg);font-size:1.05rem;line-height:1;cursor:pointer}
+.sb-settings.is-detail .sb-panel-head span{font-size:.84rem;font-weight:650}
+@keyframes settingsPushIn{from{opacity:.15;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes settingsIndexIn{from{opacity:.15;transform:translateX(-16px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  .sb-settings .settings-heading,.sb-settings .sb-quick-menu,.sb-settings .advanced-settings > summary,
+  .sb-settings.is-detail .advanced-settings-body > .settings-panel.is-current{animation:none}
+}
