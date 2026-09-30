@@ -1,0 +1,22 @@
+# 启动图与图标是纯装饰的静态资源，给长缓存。
+# 为什么必须在这里配：Cloudflare 的静态资源层会直接把这些文件发出去，**不会经过 Worker**，
+# 所以 src/lib/assets.js 里的 Cache-Control 对它们无效（只有 _headers 才管用）。
+# iOS 冷启动要先拿到启动图才会画画面，如果每次都回源（max-age=0），启动画面本身就变成一次网络往返。
+
+/splash/*
+  Cache-Control: public, max-age=2592000
+
+/icon.png
+  Cache-Control: public, max-age=2592000
+
+/icon-32.png
+  Cache-Control: public, max-age=2592000
+
+/icon-180.png
+  Cache-Control: public, max-age=2592000
+
+/icon-192.png
+  Cache-Control: public, max-age=2592000
+
+/icon-512.png
+  Cache-Control: public, max-age=2592000
