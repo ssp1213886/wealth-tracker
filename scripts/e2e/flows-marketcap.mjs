@@ -156,6 +156,28 @@ const secondOpen = await ev(() => ({
 if (secondOpen.marketcap !== 0) failures.push('市值本地缓存没生效：第二次打开又打了 ' + secondOpen.marketcap + ' 次市值接口');
 if (!secondOpen.capShown) failures.push('第二次打开时市值没有从本地缓存直接显示出来');
 
+/* F) v307 行情总线：同一个标的在「买卖录入的行情胶囊」和「观察列表」里必须是同一个价、同一个涨跌。
+   以前这两处各走一个接口（/api/price 会退腾讯+本地缓存，/api/quotes 走 Yahoo），
+   实测能差 1 块钱，这条断言就是钉住"不许再长出第二条线"。 */
+const busConsistency = await ev(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  switchTab('console'); await sleep(700);
+  const pill = document.querySelector('#hmPricesCompact .price-pill[data-sym="VGT"]');
+  const pillPrice = pill ? Number(pill.getAttribute('data-price')) : 0;
+  const pillText = pill ? pill.textContent.replace(/\s+/g, ' ').trim() : '';
+  const row = document.querySelector('#watchRows .watch-row .watch-sym');
+  let rowPrice = 0;
+  const vgtRow = [...document.querySelectorAll('#watchRows .watch-row')].filter((r) => /VGT/.test(r.textContent))[0];
+  const rowPriceEl = vgtRow && vgtRow.querySelector('.watch-price');
+  if (rowPriceEl) rowPrice = Number(String(rowPriceEl.textContent).replace(/[^\d.]/g, ''));
+  return { pillPrice, pillText, rowPrice };
+});
+if (!(busConsistency.pillPrice > 0)) failures.push('买卖录入的行情胶囊没有 VGT 价格：' + busConsistency.pillText);
+else if (!(busConsistency.rowPrice > 0)) failures.push('观察行详情里没读到 VGT 现价，无法比对');
+else if (Math.abs(busConsistency.pillPrice - busConsistency.rowPrice) > 0.011) {
+  failures.push('行情两条线还是不一致：胶囊 $' + busConsistency.pillPrice + ' vs 观察 $' + busConsistency.rowPrice);
+}
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -165,6 +187,7 @@ await p.close();
 console.log('市值：观察行详情 ' + (watchDetail.hasCap ? '有' : '无') + '「总市值」 · 排序 ' + (sorted.rows || []).join(' > '));
 console.log('敞口：SKHYV ' + (exposure.syms && exposure.syms.includes('SKHYV') ? '在列' : '缺失') + ' · 共 ' + ((exposure.syms && exposure.syms.length) || 0) + ' 行 · 脚注「' + sourceText.slice(0, 60) + '」');
 console.log('二次打开：市值接口调用 ' + secondOpen.marketcap + ' 次（应为 0）· 缓存直接显示 ' + secondOpen.capShown);
+console.log('行情一致性：VGT 胶囊 $' + busConsistency.pillPrice + ' vs 观察 $' + busConsistency.rowPrice);
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('市值流测试失败：\n  - ' + failures.join('\n  - '));

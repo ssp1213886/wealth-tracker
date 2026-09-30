@@ -201,7 +201,9 @@ async function fetchStockQuote(symbol) {
   const meta = data && data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].meta;
   if (!meta) return null;
   const price = num(meta.regularMarketPrice);
-  const prev = num(meta.chartPreviousClose) || num(meta.previousClose);
+  // v307：优先用 meta.previousClose —— chartPreviousClose 是"图表区间开始前那天"的收盘，
+  // 只有在 range=1d 时才恰好等于昨收；一旦有人改了 range，涨跌就会整体算错。
+  const prev = num(meta.previousClose) || num(meta.chartPreviousClose);
   if (price === null) return null;
   const quote = {
     price,
