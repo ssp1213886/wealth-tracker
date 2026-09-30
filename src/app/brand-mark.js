@@ -1,7 +1,7 @@
 // 标的品牌徽标的统一入口：优先矢量（simple-icons，内联路径），其次位图（favicon base64），
 // 都没有就回落"品牌色底 + 首字母"的字母徽标 —— 保证任何标的都有标可显示，列表不会出现空洞。
 
-import { brandIconFor } from './brand-icons.js';
+import { brandIconFor, BRAND_COLORS } from './brand-icons.js';
 import { brandLogoFor } from './brand-logos.js';
 
 /** 代码 → 徽标描述；查不到品牌返回 null（由调用方决定是否用字母兜底）。 */
@@ -20,7 +20,9 @@ export function brandMarkFor(sym) {
 export function brandBadgeHTML(sym, opts) {
   const s = String(sym || '').toUpperCase();
   if (!s) return '';
-  const accent = (opts && opts.accent) || '';
+  // 字母徽标的底色：优先用该标的的官方品牌色，其次调用方给的资产色
+  const brandColor = BRAND_COLORS[s];
+  const accent = brandColor ? '#' + brandColor : ((opts && opts.accent) || '');
   const styleAttr = accent ? ' style="--brand:' + accent + '"' : '';
   const mark = brandMarkFor(s);
   if (mark && mark.kind === 'svg') {

@@ -59,10 +59,23 @@ const SYMBOLS = {
   ETH: 'ethereum',
   BNB: 'binance',
   SOL: 'solana',
+  GOLD: 'gold',      // 金价（GC=F）不是公司，用"金条"图标表示资产类型
+};
+
+/** 没有开源矢量可用的品牌，但知道它的官方品牌色 → 字母徽标用这个底色（比默认强调色更有品牌感） */
+const BRAND_COLORS = {
+  SMH: '17468F',     // VanEck 蓝（官网 logo-blue.svg 的填充色）。它的方形图标不存在：官网只有
+                     // 321×76 的横长条文字标 + 一张 545 字节的低清 favicon，缩到 18px 必糊。
+};
+
+/** 手写的补充图标（simple-icons 里没有、但我们需要）：金条 = 三块梯形叠放 */
+const EXTRA_ICONS = {
+  gold: { hex: 'D4A017', title: 'Gold bars', path: 'M9 3h6l1.5 4h-9zM6.5 9h11l1.5 4h-14zM4 15h16l1.5 4h-19z' },
 };
 
 const icons = {};
 const missing = [];
+Object.keys(EXTRA_ICONS).forEach((k) => { icons[k] = EXTRA_ICONS[k]; });
 for (const [key, slugs] of Object.entries(BRANDS)) {
   const hit = slugs.map((s) => bySlug.get(s)).find(Boolean);
   if (!hit) { missing.push(key + '（' + slugs.join('/') + '）'); continue; }
@@ -78,6 +91,9 @@ export const BRAND_ICONS = ${JSON.stringify(icons, null, 2)};
 
 /** 股票/基金代码 → 品牌键（同品牌共用，例如 BTC 与 BTCETF 都用比特币标） */
 export const SYM_TO_BRAND = ${JSON.stringify(usedSymbols, null, 2)};
+
+/** 没有图形标、但知道官方品牌色的代码 → 十六进制色（字母徽标用它做底色）。 */
+export const BRAND_COLORS = ${JSON.stringify(BRAND_COLORS, null, 2)};
 
 /** 代码 → { hex, path }；没有登记品牌的返回 null（调用方走字母徽标）。 */
 export function brandIconFor(sym) {

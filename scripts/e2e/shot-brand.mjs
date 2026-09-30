@@ -41,6 +41,12 @@ async function shoot(label, width, height, url) {
     const card = document.getElementById('watchCard');
     if (card) card.scrollIntoView({ block: 'center', behavior: 'auto' });
   });
+  // 展开"关注"分组，好把 GOLD / HYPE 这些也截进去
+  await p.evaluate(() => {
+    Array.prototype.forEach.call(document.querySelectorAll('.watch-group-head'), (h) => {
+      if (/展开/.test(h.textContent)) h.click();
+    });
+  });
   await p.waitForTimeout(800);
   const file = OUT + '/' + label + '.png';
   await p.screenshot({ path: file });
@@ -51,8 +57,8 @@ async function shoot(label, width, height, url) {
 
 const files = [];
 // 主要看移动端：iPhone 视口 + 触摸
-files.push(await shoot('brand-mobile-color', 390, 844, BASE + '?s=' + Date.now()));
-files.push(await shoot('brand-mobile-mono', 390, 844, BASE + '?brand=mono&s=' + Date.now()));
+files.push(await shoot('brand-mobile-color', 390, 1500, BASE + '?s=' + Date.now()));
+files.push(await shoot('brand-mobile-mono', 390, 1500, BASE + '?brand=mono&s=' + Date.now()));
 files.push(await shoot('brand-desktop-color', 1280, 900, BASE + '?s=' + Date.now()));
 files.push(await shoot('brand-desktop-mono', 1280, 900, BASE + '?brand=mono&s=' + Date.now()));
 console.log('截图：\n  ' + files.join('\n  '));
