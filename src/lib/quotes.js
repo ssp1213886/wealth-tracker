@@ -334,7 +334,8 @@ export async function handleQuotes(request, url) {
   });
 
   const body = { ok: true, quotes, missing, invalid, ts: Date.now() };
-  edgePutJson(url.origin, quoteKey, body, QUOTE_TTL / 1000);
+  // 必须 await：Worker 返回后未完成的异步写入会被取消
+  await edgePutJson(url.origin, quoteKey, body, QUOTE_TTL / 1000);
   return { status: 200, body };
 }
 
@@ -493,7 +494,7 @@ export async function handleHoldings(request, url) {
   // 只有拿到外部实时数据才缓存；静态兜底每次都重试外部源
   if (source !== 'static') {
     holdingsCache.set(symbol, { at: Date.now(), body });
-    edgePutJson(url.origin, holdingsKey, body, HOLDINGS_TTL / 1000);
+    await edgePutJson(url.origin, holdingsKey, body, HOLDINGS_TTL / 1000);
   }
   return { status: 200, body };
 }

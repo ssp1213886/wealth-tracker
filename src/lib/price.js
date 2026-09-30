@@ -84,7 +84,8 @@ export async function handlePrice(request, url) {
     const data = await response.json();
     await ensureHistory(data, quoteSymbol);
     const body = { ok: true, data };
-    edgePutJson(url.origin, edgeKey, body, ttl);
+    // 必须 await：Worker 一旦返回响应，没跑完的异步写入会被取消（缓存就白写了）
+    await edgePutJson(url.origin, edgeKey, body, ttl);
     return { status: 200, body };
   } catch (error) {
     return {
