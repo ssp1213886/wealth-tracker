@@ -71,7 +71,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v292';var APP_DATA_VERSION=5;
+var APP_BUILD='v293';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -993,7 +993,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=292',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
+if('serviceWorker' in navigator){/* 新版 SW 接管时不再整页 reload（那会在启动瞬间白一次）；只提示一句，下次打开自然是新版 */var swHadController=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;try{showToast('新版本已就绪 · 下次打开生效','ok')}catch(e){logSwallowed("swUpdate",e)}});navigator.serviceWorker.register('/sw.js?v=293',{updateViaCache:'none'}).then(function(reg){return reg.update()}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1323,6 +1323,39 @@ function showBusyToast(msg){
   t.lastElementChild.textContent=msg;
 }
 
+/**
+ * 底部面板的"下拉关闭"：跟手位移，松手时超过阈值或快速下滑就关。
+ * 原生 sheet 的手感基本就靠这一条 —— 之前只能点遮罩或按钮。
+ */
+function enableSheetDrag(panel, onClose){
+  if(!panel||panel.dataset.dragReady)return;
+  panel.dataset.dragReady='1';
+  var startY=0,dy=0,active=false,t0=0;
+  function reset(){
+    panel.style.transition='';
+    panel.style.transform='';
+  }
+  panel.addEventListener('pointerdown',function(e){
+    // 面板里可点的控件不参与拖拽（否则点按钮会变成拖拽）
+    if(e.target.closest('input,textarea,button,select,a,label'))return;
+    active=true;startY=e.clientY;dy=0;t0=Date.now();
+    panel.style.transition='none';
+  });
+  panel.addEventListener('pointermove',function(e){
+    if(!active)return;
+    dy=Math.max(0,e.clientY-startY);
+    panel.style.transform='translateY('+dy+'px)';
+  });
+  function end(){
+    if(!active)return;
+    active=false;
+    var fast=(Date.now()-t0)<450;
+    if(dy>110||(fast&&dy>56)){panel.style.transform='translateY(102%)';onClose();}
+    else reset();
+  }
+  panel.addEventListener('pointerup',end);
+  panel.addEventListener('pointercancel',end);
+}
 function showApproval(opts){
   var o=opts||{};
   var existing=document.getElementById('approvalModal');
@@ -1351,6 +1384,7 @@ function showApproval(opts){
   cancelBtn.addEventListener('click',close);
   okBtn.addEventListener('click',function(){close();if(typeof o.onConfirm==='function')o.onConfirm()});
   modal.addEventListener('click',function(e){if(e.target===modal)close()});
+  enableSheetDrag(modal.querySelector('.ds-approval-card'),close);
   document.addEventListener('keydown',onKey);
   document.body.appendChild(modal);
   haptic('warning');
@@ -1457,7 +1491,9 @@ try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adj
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
 (function(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(sh)sh.addEventListener('input',refreshTradeAffordability);if(pr)pr.addEventListener('input',refreshTradeAffordability)})();
 function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else{s.classList.add('open');markAlertsSeen(alertSignature(getCurrentAlerts()||[]));updateBellBadge(getCurrentAlerts()||[]);}}
-function qaClose(){document.getElementById('qaSheet').classList.remove('open')}
+function qaClose(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
+function initQaDrag(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,qaClose)}
+initQaDrag();
 function qaDeposit(){qaClose();switchTab('console');setTimeout(function(){var e=document.getElementById('hmCashAmt');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 function qaSell(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='sell';syncTradeControls();setTimeout(function(){var e=document.getElementById('tfShares');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
