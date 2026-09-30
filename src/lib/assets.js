@@ -17,9 +17,11 @@ function assetCandidates(pathname) {
 
 /** 启动图与图标是纯装饰的静态资源，给长缓存；其余一律 no-store（由 Service Worker 管）。 */
 function cacheControlFor(pathname) {
-  return /^\/(splash\/|icon[\w.-]*\.png$)/.test(pathname)
-    ? 'public, max-age=2592000'
-    : 'no-store, max-age=0';
+  // 启动图/图标：基本不变，给 30 天
+  if (/^\/(splash\/|icon[\w.-]*\.png$)/.test(pathname)) return 'public, max-age=2592000';
+  // 品牌徽标：一天。换了图标顶多旧一天，比 30 天安全。
+  if (/^\/assets\/logo\//.test(pathname)) return 'public, max-age=86400';
+  return 'no-store, max-age=0';
 }
 
 export async function serveAsset(request, url, env) {

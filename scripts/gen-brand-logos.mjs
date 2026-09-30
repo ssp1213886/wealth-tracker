@@ -91,21 +91,35 @@ for (const [domain, syms] of Object.entries(DOMAIN_SYMBOLS)) {
   byDomain[domain] = { syms: syms, bytes: buf.length };
 }
 
-const out = `// 品牌位图标（favicon，内联 base64）——由 \`node scripts/gen-brand-logos.mjs\` 生成，别手改。
-// 用于 simple-icons 没有矢量的品牌（Vanguard / Microsoft / Amazon 等受版权保护的图形标）。
-// 运行时零网络请求；商标权属各公司，这里仅用于"指代该标的"的展示。
+// 图片写成独立文件（原来内联在 JS 里，132KB 占了整个 bundle 的 37%），JS 只留代码清单
+const logoDir = 'public/assets/logo/';
+fs.mkdirSync(logoDir, { recursive: true });
+const index = {};
+Object.entries(data).forEach(([sym, url]) => {
+  const hit = /^data:image\/(\w+);base64,(.+)$/.exec(url);
+  if (!hit) return;
+  fs.writeFileSync(logoDir + sym + '.' + hit[1], Buffer.from(hit[2], 'base64'));
+  index[sym] = hit[1];
+});
 
-export const BRAND_LOGOS = ${JSON.stringify(data, null, 2)};
+const out = `// 品牌位图标的**索引**（真实图片在 /assets/logo/<代码>.<格式>，由 \`node scripts/gen-brand-logos.mjs\` 生成，别手改）。
+// 拆成独立文件的原因：内联版本有 132KB（占 app.js 的 37%），冷启动白传一大截。
+// 商标权属各公司，这里仅用于"指代该标的"的展示。
+
+/** 有内置位图的代码 → 文件后缀。 */
+export const BRAND_LOGO_SYMS = ${JSON.stringify(index, null, 2)};
 
 /** 这些代码的图标是"白色 logo"，要配深色底才看得见。 */
 export const WHITE_LOGO_SYMS = ${JSON.stringify(WHITE_LOGOS)};
 
-/** 代码 → data URL；没有的返回 null（调用方继续回落字母徽标）。 */
+/** 代码 → 图片地址；没有的返回 null（调用方继续回落矢量/远程/字母徽标）。 */
 export function brandLogoFor(sym) {
-  return BRAND_LOGOS[String(sym || '').toUpperCase()] || null;
+  const key = String(sym || '').toUpperCase();
+  const ext = BRAND_LOGO_SYMS[key];
+  return ext ? ('/assets/logo/' + encodeURIComponent(key) + '.' + ext) : null;
 }
 `;
 fs.writeFileSync('src/app/brand-logos.js', out, 'utf8');
-console.log('✓ 生成 src/app/brand-logos.js：' + Object.keys(data).length + ' 个代码（其中公司图标 ' + fmpCount + ' 个）/' + Object.keys(byDomain).length + ' 个域名，' + (out.length / 1024).toFixed(1) + 'KB（内联）');
-console.log('  原始图片合计 ' + (Object.values(byDomain).reduce((n, x) => n + x.bytes, 0) / 1024).toFixed(1) + 'KB');
+console.log('✓ 生成 src/app/brand-logos.js（索引 ' + Object.keys(index).length + ' 个代码，其中公司图标 ' + fmpCount + ' 个）');
+console.log('✓ 图片写入 ' + logoDir + '：' + Object.keys(index).length + ' 个，' + (Object.values(byDomain).reduce((n, x) => n + x.bytes, 0) / 1024).toFixed(1) + 'KB');
 if (missing.length) console.log('  缺文件：' + missing.join(', '));
