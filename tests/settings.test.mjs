@@ -3,8 +3,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary } from '../src/app/settings.js';
 
-test('面板映射：五个面板 + 两个聚焦目标', () => {
-  assert.deepEqual(Object.keys(SETTINGS_PANEL_IDS).sort(), ['account', 'data', 'preferences', 'price', 'sync']);
+test('面板映射：七个面板 + 两个聚焦目标', () => {
+  assert.deepEqual(Object.keys(SETTINGS_PANEL_IDS).sort(), ['account', 'activity', 'data', 'preferences', 'price', 'sync', 'users']);
+  assert.equal(SETTINGS_PANEL_IDS.users, 'settingsUsers');
+  assert.equal(SETTINGS_PANEL_IDS.activity, 'settingsActivity');
   assert.equal(SETTINGS_PANEL_IDS.sync, 'settingsSync');
   assert.equal(SETTINGS_PANEL_IDS.account, 'settingsAccount');
   assert.deepEqual(SETTINGS_FOCUS_IDS, { price: 'hmManualSym', preferences: 'monthlyDCAInput' });

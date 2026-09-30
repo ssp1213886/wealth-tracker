@@ -4,6 +4,8 @@
 /** 设置抽屉里四个面板的 id（openAdvancedSettings 用） */
 export const SETTINGS_PANEL_IDS = {
   account: 'settingsAccount',
+  users: 'settingsUsers',
+  activity: 'settingsActivity',
   sync: 'settingsSync',
   price: 'settingsPrice',
   data: 'settingsData',
