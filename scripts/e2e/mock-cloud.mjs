@@ -123,6 +123,56 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800' });
     return res.end(png);
   }
+  // 行情代理（对应线上 src/lib/quotes.js 的 handleQuotes）：给一份确定性的报价
+  if (url.pathname === '/api/quotes') {
+    const prices = {
+      NVDA: 186.4, AAPL: 231.2, MSFT: 512.6, VGT: 124.85, SMH: 606.9, TSM: 456.94,
+      IWM: 242.3, BTC: 83042.73, BTCETF: 29.38, SPY: 640.1, SKHYV: 31.5, MRVL: 78.2, KLAC: 105.4,
+    };
+    const symbols = String(url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+    const quotes = {};
+    const missing = [];
+    symbols.forEach((sym) => {
+      const price = prices[sym];
+      if (price) quotes[sym] = { price, prevClose: Number((price / 1.01).toFixed(2)), changePct: 1, name: sym, currency: 'USD', source: 'yahoo', asOf: Date.now() };
+      else missing.push(sym);
+    });
+    res.writeHead(200, cors);
+    return res.end(JSON.stringify({ ok: true, quotes, missing, invalid: [], ts: Date.now() }));
+  }
+  // 前十大（对应线上 src/lib/quotes.js 的 handleHoldings）：SMH 用 stockanalysis 那份（含 SKHYV）
+  if (url.pathname === '/api/holdings') {
+    const lists = {
+      VGT: [['NVDA', 'NVIDIA Corp', 17.74], ['AAPL', 'Apple Inc', 15.8], ['MSFT', 'Microsoft Corp', 11.52], ['AVGO', 'Broadcom Inc', 4.52], ['MU', 'Micron Technology Inc', 4.18], ['AMD', 'Advanced Micro Devices Inc', 2.95], ['CSCO', 'Cisco Systems Inc', 1.71], ['PLTR', 'Palantir Technologies Inc', 1.61], ['INTC', 'Intel Corp', 1.54], ['LRCX', 'Lam Research Corp', 1.49]],
+      SMH: [['NVDA', 'Nvidia Corp', 19.14], ['TSM', 'Taiwan Semiconductor Manufacturing', 9.16], ['AMD', 'Advanced Micro Devices Inc', 5.76], ['AVGO', 'Broadcom Inc', 5.24], ['MU', 'Micron Technology Inc', 5.01], ['INTC', 'Intel Corp', 4.94], ['SKHYV', 'SK hynix Inc.', 4.59], ['TXN', 'Texas Instruments Inc', 4.54], ['MRVL', 'Marvell Technology Inc', 4.44], ['AMAT', 'Applied Materials Inc', 4.42]],
+    };
+    const symbol = String(url.searchParams.get('symbol') || '').toUpperCase();
+    if (!lists[symbol]) {
+      res.writeHead(400, cors);
+      return res.end(JSON.stringify({ error: 'Unsupported symbol' }));
+    }
+    res.writeHead(200, cors);
+    return res.end(JSON.stringify({
+      ok: true, symbol, name: symbol, source: 'stockanalysis', asOf: 'Sep 26, 2026',
+      list: lists[symbol].map(([sym, name, weight]) => ({ sym, name, weight })), ts: Date.now(),
+    }));
+  }
+  // 市值代理（对应线上 src/lib/marketcap.js）：固定值，未列出的进 missing
+  if (url.pathname === '/api/marketcap') {
+    const caps = {
+      NVDA: 5475761000000, AAPL: 4169451600000, MSFT: 3810000000000, AVGO: 1450000000000,
+      MU: 210000000000, AMD: 340000000000, CSCO: 260000000000, PLTR: 449111939156,
+      INTC: 612698108410, LRCX: 190000000000, TSM: 2369921550834, TXN: 180000000000,
+      MRVL: 230861463000, AMAT: 200000000000, VGT: 6966630000, SMH: 78467697147, IWM: 68000000000,
+      BTC: 1663425017662, ETH: 326869319620,
+    };
+    const symbols = String(url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+    const out = {};
+    const missing = [];
+    symbols.forEach((sym) => { if (caps[sym]) out[sym] = caps[sym]; else missing.push(sym); });
+    res.writeHead(200, cors);
+    return res.end(JSON.stringify({ ok: true, caps: out, missing, ts: Date.now() }));
+  }
   // 其它 /api/*：返回空但结构正确，避免前端等待或报错
   if (url.pathname.startsWith('/api/')) {
     res.writeHead(200, cors);

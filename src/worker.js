@@ -7,6 +7,7 @@ import { createRateLimiter } from './lib/rate-limit.js';
 import { handleLog } from './lib/logs.js';
 import { handleQuotes, handleHoldings } from './lib/quotes.js';
 import { handleLogo } from './lib/logos.js';
+import { handleMarketCap } from './lib/marketcap.js';
 
 const rateLimiter = createRateLimiter();
 
@@ -51,6 +52,10 @@ export default {
     }
     if (url.pathname === '/api/holdings') {
       const result = await handleHoldings(request, url);
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/marketcap') {
+      const result = await handleMarketCap(request, url);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/logo') {

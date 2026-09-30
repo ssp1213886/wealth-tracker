@@ -168,12 +168,12 @@ const holdingsCache = new Map();
 
 const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : null);
 
-async function fetchJson(url, timeoutMs) {
+async function fetchJson(url, timeoutMs, extraHeaders) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json,text/html;q=0.9' },
+      headers: Object.assign({ 'User-Agent': 'Mozilla/5.0', Accept: 'application/json,text/html;q=0.9' }, extraHeaders || {}),
       signal: controller.signal,
     });
     if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -349,6 +349,83 @@ function parseYahooHoldings(html) {
   return items.sort((a, b) => b.weight - a.weight).slice(0, 10);
 }
 
+/** 上游榜单代码 → 我们内部的代码（stockanalysis 用韩股代码 SKHY，我们沿用 Yahoo 的 ADR 代码 SKHYV）。 */
+/** 有的站点（stockanalysis）对通用 UA 直接 403，必须报一个像浏览器的 UA。 */
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+const HOLDING_SYM_ALIAS = { SKHY: 'SKHYV' };
+
+/** HTML 实体：上游的公司名里偶有 &amp; 这类字符，进 JSON 前先还原。 */
+function decodeEntities(text) {
+  return String(text || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x27;/g, "'");
+}
+
+/**
+ * stockanalysis.com 的 ETF 持仓页（服务端渲染，含完整持仓表）。
+ * 样本：<td class="rrpad svelte-x">7</td>…<a href="/stocks/skhy/" >SKHY</a>…
+ *       <td class="shr svelte-x">SK hynix Inc.</td>…<td class="svelte-x">4.59%</td>
+ * 页面里还有 "as of Sep 26, 2026" 这样的日期，一并带出来给前端显示。
+ */
+function parseStockanalysisHoldings(html) {
+  const itemRe = /<td class="rrpad [^"]*">(\d+)<\/td>[\s\S]*?<a href="\/stocks\/[^"]*"\s*>([A-Z0-9.\-]+)<\/a>[\s\S]*?<td class="shr [^"]*">([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d.]+)%<\/td>/g;
+  const items = [];
+  let hit;
+  while ((hit = itemRe.exec(html))) {
+    const weight = Number(hit[4]);
+    if (!Number.isFinite(weight) || weight <= 0) continue;
+    const raw = String(hit[2]).toUpperCase();
+    items.push({ sym: HOLDING_SYM_ALIAS[raw] || raw, name: decodeEntities(hit[3]).trim(), weight });
+  }
+  if (!items.length) return null;
+  // 页面上是 " As of Sep 26, 2026 "（首字母大写）
+  const dateMatch = html.match(/as of ([A-Z][a-z]+ \d{1,2}, \d{4})/i);
+  return { list: items.sort((a, b) => b.weight - a.weight).slice(0, 10), asOf: dateMatch ? dateMatch[1] : null };
+}
+
+/**
+ * 第一道防线：内部不变量。拿到的必须"像一份真的前十大"（降序、无重复、合计落在合理区间），
+ * 拦的是解析错位、只抄到零星几行这类明显坏掉的情况。
+ */
+export function validHoldingList(list) {
+  if (!Array.isArray(list) || list.length < 5 || list.length > 10) return false;
+  const seen = new Set();
+  let previous = Infinity;
+  let sum = 0;
+  for (const item of list) {
+    const weight = Number(item && item.weight);
+    if (!item || !item.sym || !Number.isFinite(weight) || weight <= 0 || weight >= 100) return false;
+    // 榜单本来就按权重降序：出现回升说明解析错位，宁可不显示
+    if (weight > previous + 1e-9) return false;
+    if (seen.has(item.sym)) return false;
+    seen.add(item.sym);
+    previous = weight;
+    sum += weight;
+  }
+  // 前十大合计落在 30%~95%：太低＝只抄到零星几行，太高＝把整个组合都塞进来了
+  return sum >= 30 && sum <= 95;
+}
+
+/**
+ * 第二道防线：与手工维护的官方榜做「集合一致性」比对，前十大至少 7 个代码对得上才算可信。
+ *
+ * 这道才是真正拦住 Yahoo 那份 SMH 榜单的：它内部完全自洽、能过不变量，但和 VanEck 官方榜
+ * 只对得上 6 个（缺 INTC/SKHY/TXN/MRVL/KLAC，还把 NVDA 权重抬高了 3.5 个点）。
+ * 对了 7 个以上说明只是权重随行情漂移，对不上说明拿到的根本不是同一份名单 —— 宁可用手工榜。
+ */
+export function agreesWithStatic(list, symbol) {
+  const known = STATIC_HOLDINGS[symbol];
+  if (!known || !Array.isArray(known.list) || !known.list.length) return true;
+  const official = new Set(known.list.map((item) => item.sym));
+  const hit = (Array.isArray(list) ? list : []).filter((item) => item && official.has(item.sym)).length;
+  return hit >= 7;
+}
+
 export async function handleHoldings(request, url) {
   if (request.method !== 'GET') return { status: 405, body: { error: 'Method not allowed' } };
   const symbol = (url.searchParams.get('symbol') || '').toUpperCase();
@@ -359,19 +436,48 @@ export async function handleHoldings(request, url) {
 
   const fallback = STATIC_HOLDINGS[symbol];
   let list = null;
-  const res = await fetchJson(`https://finance.yahoo.com/quote/${symbol}/holdings/`, 8000);
-  if (res.ok) list = parseYahooHoldings(res.text);
+  let asOf = null;
+  let source = 'static';
+
+  // ① 主源：stockanalysis.com。它的前十大和 VanEck/Vanguard 官方榜逐个吻合
+  //    （SMH 的 SKHY 4.59%、INTC 4.94% 都在），而 VanEck 官网有 cookie 同意页、
+  //    服务端抓取会 302 死循环，只能退而用这份交叉校验过的镜像。
+  const remote = await fetchJson(`https://stockanalysis.com/etf/${symbol.toLowerCase()}/holdings/`, 9000, { 'User-Agent': BROWSER_UA });
+  if (remote.ok) {
+    const parsed = parseStockanalysisHoldings(remote.text);
+    if (parsed && validHoldingList(parsed.list) && agreesWithStatic(parsed.list, symbol)) {
+      list = parsed.list;
+      asOf = parsed.asOf;
+      source = 'stockanalysis';
+    }
+  }
+
+  // ② 兜底：Yahoo 只留给 VGT。SMH 的 Yahoo 榜单实测是错的，宁可回落到手工抄的官方榜。
+  if (!list && symbol === 'VGT') {
+    const res = await fetchJson(`https://finance.yahoo.com/quote/${symbol}/holdings/`, 8000);
+    const parsed = res.ok ? parseYahooHoldings(res.text) : null;
+    if (validHoldingList(parsed) && agreesWithStatic(parsed, symbol)) {
+      list = parsed;
+      source = 'yahoo';
+    }
+  }
+
+  // ③ 手工维护的官方榜（每季度核对，带 asOf）
+  if (!list) {
+    list = fallback.list;
+    source = 'static';
+  }
 
   const body = {
     ok: true,
     symbol,
     name: fallback.name,
-    asOf: list ? null : fallback.asOf,
-    source: list ? 'yahoo' : 'static',
-    list: list || fallback.list,
+    asOf: source === 'static' ? fallback.asOf : asOf,
+    source,
+    list,
     ts: Date.now(),
   };
-  // 只有拿到实时数据才缓存；静态兜底每次都重试外部源
-  if (list) holdingsCache.set(symbol, { at: Date.now(), body });
+  // 只有拿到外部实时数据才缓存；静态兜底每次都重试外部源
+  if (source !== 'static') holdingsCache.set(symbol, { at: Date.now(), body });
   return { status: 200, body };
 }
