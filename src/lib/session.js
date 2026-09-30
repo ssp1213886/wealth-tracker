@@ -39,6 +39,19 @@ export function loginPassword(env) {
   return (env && (env.APP_PASSWORD || env.AUTH_TOKEN)) || '';
 }
 
+/**
+ * 额外的临时/测试密码（逗号分隔，来自 EXTRA_PASSWORDS secret）。
+ * 用途：临时开一个口令给别的设备用，不想把主密码说出去；测完
+ * `npx wrangler secret delete EXTRA_PASSWORDS` 就立刻失效。
+ * ⚠️ 短口令（比如 6 位数字）只靠登录限流挡爆破，别长期留着。
+ */
+export function extraPasswords(env) {
+  return String((env && env.EXTRA_PASSWORDS) || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 /** 会话签名用的密钥：优先 SESSION_SECRET，没配就用登录密码本身。 */
 export function sessionSecret(env) {
   return (env && (env.SESSION_SECRET || loginPassword(env))) || '';
@@ -94,11 +107,17 @@ export async function hasValidSession(request, env, now = Date.now()) {
 
 /** 密码比对：先把两边都哈希再逐字节比，避免"长度不同就提前返回"这种时间差。 */
 export async function passwordMatches(input, env) {
-  const secret = loginPassword(env);
-  if (!secret) return false;
-  const a = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(input || ''))));
-  const b = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret)));
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
-  return diff === 0;
+  const candidates = [loginPassword(env)].concat(extraPasswords(env)).filter(Boolean);
+  if (!candidates.length) return false;
+  const digest = async (text) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  const given = await digest(String(input || ''));
+  let matched = false;
+  // 不提前 return：否则响应时间会泄露"命中的是第几个密码"
+  for (const candidate of candidates) {
+    const expected = await digest(candidate);
+    let diff = 0;
+    for (let i = 0; i < expected.length; i += 1) diff |= expected[i] ^ given[i];
+    if (diff === 0) matched = true;
+  }
+  return matched;
 }

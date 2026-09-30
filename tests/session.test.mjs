@@ -1,7 +1,7 @@
 // 登录会话（src/lib/session.js）：签名、过期、篡改、密码比对。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { issueSession, hasValidSession, sessionCookie, clearSessionCookie, passwordMatches, sessionSecret, loginPassword } from '../src/lib/session.js';
+import { issueSession, hasValidSession, sessionCookie, clearSessionCookie, passwordMatches, sessionSecret, loginPassword, extraPasswords } from '../src/lib/session.js';
 
 const ENV = { AUTH_TOKEN: 'token-abc-123' };
 const requestWith = (cookie) => new Request('https://example.com/', { headers: cookie ? { Cookie: cookie } : {} });
@@ -77,4 +77,18 @@ test('session：登录密码优先 APP_PASSWORD，没配才沿用老的 AUTH_TOK
   // 会话密钥可以单独指定，没指定就跟着登录密码
   assert.equal(sessionSecret({ APP_PASSWORD: 'p' }), 'p');
   assert.equal(sessionSecret({ APP_PASSWORD: 'p', SESSION_SECRET: 's' }), 's');
+});
+
+test('session：EXTRA_PASSWORDS 里的额外口令也能登录（主密码照旧有效）', async () => {
+  const env = { AUTH_TOKEN: 'main-token', EXTRA_PASSWORDS: '123456, temp-pass ' };
+  assert.deepEqual(extraPasswords(env), ['123456', 'temp-pass']);
+  assert.equal(await passwordMatches('main-token', env), true, '主密码不能被顶掉');
+  assert.equal(await passwordMatches('123456', env), true, '额外口令要能登');
+  assert.equal(await passwordMatches('temp-pass', env), true, '前后空格要 trim');
+  assert.equal(await passwordMatches('123457', env), false);
+  assert.equal(await passwordMatches('', env), false);
+  // 没配 EXTRA_PASSWORDS 时不影响原有行为
+  assert.deepEqual(extraPasswords({}), []);
+  assert.deepEqual(extraPasswords({ EXTRA_PASSWORDS: '  ,  ' }), []);
+  assert.equal(await passwordMatches('123456', { AUTH_TOKEN: 'main-token' }), false);
 });
