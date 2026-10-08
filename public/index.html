@@ -455,6 +455,18 @@
   <div class="option-discipline"><strong>执行纪律</strong>：切勿主动平仓，被行权不必慌，T+1 市价买回，踏空代价远高于追高成本</div>
 </div>
 
+<div class="card option-card">
+  <div class="opt-card-head"><h3>持仓与收入</h3><button type="button" class="btn btn-pri btn-sm" id="btnOptSheet">＋ 记录</button></div>
+  <div class="metrics metrics-2">
+    <div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev">$0</div></div>
+    <div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev">$0</div></div>
+  </div>
+  <table class="trade-table">
+    <thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>权利金</th><th>张数</th><th>到期</th><th>状态</th><th></th></tr></thead>
+    <tbody id="holdingsBody"></tbody>
+  </table>
+</div>
+
 <div class="card option-card prob-card">
   <div class="opt-card-head"><h3>被行权概率</h3><div class="prob-chips" id="probTabs"></div></div>
   <div class="prob-controls">
@@ -476,18 +488,6 @@
     <button type="button" class="btn btn-out btn-sm" id="calToggle">显示全部到期日</button>
     <div class="prob-note">★ = 按固定节奏该卖的档位。「行权价间距」= 平值附近相邻行权价的真实间距（占现价 %）—— 数字越粗，越难精确挑到目标 OTM%。到期判定：到期日当天美东 16:00 收盘，收盘时实值 ≥ $0.01 即自动行权，ETF 期权为实物交割、T+1 划走股份。被行权概率 = 到期时现价 &gt; 行权价（未含除息日提前行权）。</div>
   </div>
-</div>
-
-<div class="card option-card">
-  <div class="opt-card-head"><h3>持仓与收入</h3><button type="button" class="btn btn-pri btn-sm" id="btnOptSheet">＋ 记录</button></div>
-  <div class="metrics metrics-2">
-    <div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev">$0</div></div>
-    <div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev">$0</div></div>
-  </div>
-  <table class="trade-table">
-    <thead><tr><th>标的</th><th>类型</th><th>行权价</th><th>权利金</th><th>张数</th><th>到期</th><th>状态</th><th></th></tr></thead>
-    <tbody id="holdingsBody"></tbody>
-  </table>
 </div>
 
 </section>
