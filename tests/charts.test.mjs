@@ -1,9 +1,121 @@
 // 图表数据整形单测（v245 抽出）：纪律月度、年度矩阵、甜甜圈切片、热力色阶
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { disciplineMonths, annualMatrix, heatColorFor, donutSlices } from '../src/app/charts.js';
+import { disciplineMonths, monthlyPnl, annualMatrix, heatColorFor, donutSlices } from '../src/app/charts.js';
 
 const buy = (date, symbol, shares, price) => ({ date, symbol, shares, price, id: date + symbol });
+
+/* ---------------- 月度收益（口径 A：当月整个组合，总资产含现金） ---------------- */
+
+/**
+ * 一个固定的"世界"，后面几条共用：
+ *   8/05 入金 10,000 → 8/10 买 VGT 100 股 @$100（现金刚好花光）
+ *   8 月末 VGT $100 → 总资产 10,000
+ *   9/05 入金 2,000；9 月末 VGT $101.8 → 总资产 = 持股 10,180 + 现金 2,000 = 12,180
+ */
+const SEPT_WORLD = {
+  months: ['2026-09'],
+  trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+  cashLog: [
+    { type: '入金', date: '2026-08-05', amount: 10000 },
+    { type: '入金', date: '2026-09-05', amount: 2000 },
+  ],
+  priceByMonth: { VGT: { '2026-08': 100, '2026-09': 101.8 } },
+};
+
+test('monthlyPnl：收益额 = 月末总资产 − 月初总资产 − 当月入金（必须减掉入金）', () => {
+  const r = monthlyPnl(SEPT_WORLD)['2026-09'];
+  // 账面从 10,000 涨到 12,180，但其中 2,000 是当月入金 → 真实收益只有 180
+  assert.equal(r.computed, true);
+  assert.equal(r.amount, 180, '入金不能算成收益');
+});
+
+test('monthlyPnl：总资产要含现金 —— 入金还没买股票的那个月，收益额必须是 0 而不是负数', () => {
+  const r = monthlyPnl({
+    months: ['2026-09'],
+    trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 10000 },
+      { type: '入金', date: '2026-09-05', amount: 2000 },   // 只是躺在现金里，没买
+    ],
+    priceByMonth: { VGT: { '2026-08': 100, '2026-09': 100 } },   // 股价整月没动
+  })['2026-09'];
+  assert.equal(r.amount, 0, '股没动、钱还在现金里 → 这个月没赚没亏；若把现金排除会错算成 −2000');
+});
+
+test('monthlyPnl：收益率用 Modified Dietz —— 按入金的"在场天数"加权', () => {
+  const r = monthlyPnl(SEPT_WORLD)['2026-09'];
+  // 9/5 入金 → 在场 26 天 → 权重 26/30；分母 = 10,000 + 2,000×26/30 = 11,733.33
+  const denom = 10000 + 2000 * (26 / 30);
+  assert.ok(Math.abs(r.rate - 180 / denom) < 1e-9, '实际 ' + (r.rate * 100).toFixed(3) + '%');
+  assert.ok(r.rate < 180 / 10000 - 1e-6, '必须比"只用月初资产"（1.80%）低');
+  assert.ok(r.rate > 180 / 12180 + 1e-6, '必须比"只用月末资产"高');
+});
+
+test('monthlyPnl：持有中但缺当月行情 → computed=false（界面显示「—」，不编数字）', () => {
+  const r = monthlyPnl({ ...SEPT_WORLD, priceByMonth: { VGT: { '2026-08': 100 } } })['2026-09'];
+  assert.equal(r.computed, false);
+  assert.equal(r.amount, null);
+  assert.equal(r.rate, null);
+  assert.equal(r.gap, true);
+});
+
+test('monthlyPnl：出金不是亏损（收益额 0、收益率 0%）', () => {
+  const r = monthlyPnl({
+    months: ['2026-09'],
+    trades: [],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 10000 },
+      { type: '出金', date: '2026-09-10', amount: 500 },
+    ],
+    priceByMonth: { VGT: { '2026-08': 100, '2026-09': 100 } },
+  })['2026-09'];
+  assert.equal(r.computed, true);
+  assert.equal(r.amount, 0, '纯出金不该被算成亏损');
+  assert.equal(r.rate, 0);
+});
+
+test('monthlyPnl：分母 ≤ 0 时只给金额、不给收益率（不编一个百分比出来）', () => {
+  const r = monthlyPnl({
+    months: ['2026-09'],
+    trades: [],
+    cashLog: [],
+    priceByMonth: { VGT: { '2026-08': 100, '2026-09': 100 } },
+  })['2026-09'];
+  assert.equal(r.computed, true);
+  assert.equal(r.amount, 0);
+  assert.equal(r.rate, null, '月初没有资产、当月也没有进出 → 收益率没有意义');
+});
+
+test('monthlyPnl：股息算收益、不算注资（跟年度归因同口径）', () => {
+  const r = monthlyPnl({
+    months: ['2026-09'],
+    trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 10000 },
+      { type: '股息', date: '2026-09-15', amount: 100 },
+    ],
+    priceByMonth: { VGT: { '2026-08': 100, '2026-09': 100 } },
+  })['2026-09'];
+  assert.equal(r.amount, 100, '股息是收益');
+  assert.ok(r.rate > 0);
+});
+
+test('monthlyPnl：收益额按月可加 —— 两个月的和 = 期末资产 − 期初资产 − 净入金之和', () => {
+  const p = monthlyPnl({
+    months: ['2026-08', '2026-09'],
+    trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 10000 },
+      { type: '入金', date: '2026-09-05', amount: 2000 },
+    ],
+    priceByMonth: { VGT: { '2026-07': 98, '2026-08': 100, '2026-09': 101.8 } },
+  });
+  assert.equal(p['2026-08'].amount, 0, '8 月：只入金 + 买入，没有涨跌');
+  assert.equal(p['2026-09'].amount, 180);
+  assert.equal(p['2026-08'].amount + p['2026-09'].amount, 12180 - 0 - 12000,
+    '月收益额加起来 = 期末 − 期初 − 净入金（与年度归因同口径）');
+});
 
 test('disciplineMonths：12 个月、完成判定（≥目标×0.7）、state 与 icon', () => {
   const trades = [

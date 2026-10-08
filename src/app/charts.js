@@ -1,6 +1,7 @@
 // 图表的数据整形（纯逻辑）：纪律热力图的月度数据、年度矩阵、甜甜圈切片、热力色阶。
 // 只做"算数据"，画布/HTML 仍留在 index.js；因此这些数字可以离线单测。
 import { marketDate } from './time.js';
+import { cashSigned } from './util.js';
 
 /**
  * 纪律热力图：最近 N 个月（默认 12）的定投完成情况 + 连续完成月数。
@@ -40,6 +41,120 @@ export function disciplineMonths(input) {
     else break;
   }
   return { months: months, streak: streak };
+}
+
+/**
+ * 月度收益（口径 A：当月**整个组合**的收益）—— 不是"当月新投那笔"的收益，也不是累计收益。
+ *
+ *   收益额 = 月末总资产 − 月初总资产 − 当月净入金
+ *   收益率 = 收益额 ÷ (月初总资产 + Σ 每笔入金 × 在场时间占比)     ← Modified Dietz
+ *
+ * 为什么收益率要加权：定投的钱不是整月都在场。只用月初资产当分母 → 分母偏小、收益率偏高；
+ * 只用月末资产 → 分母偏大、收益率偏低；按"这笔钱待了几天"加权才是行业标准做法。
+ *
+ * 资产口径跟 app 里已有的「年度归因」（index.js 的 calcAttribution）**完全一致**：
+ *   · 资产 = Σ(持股 × 月末收盘价) + Σ 现金流水的累计 + 卖出所得 − 买入支出
+ *     （现金流水只记外部进出：入金/出金/股息/权利金/修正；买卖股票对现金的影响由 trades 自己算）
+ *   · 净入金只数「入金 / 出金」—— 股息、权利金、修正是收益或调整，不能当注资
+ *   于是有个可测的好性质：同一年 12 个月的收益额加起来 ≈ 那一年的总收益，两处不会互相打脸。
+ *
+ * ⚠️ 铁律：**必须减掉当月入金**，否则定投会被当成收益。
+ *
+ * 输入
+ *   months       ['2026-08','2026-09']（要算的月份，升序）
+ *   trades      交易（shares 带正负、date 'YYYY-MM-DD'）
+ *   cashLog     现金流水（type / date / amount）
+ *   priceByMonth { VGT: {'2026-07': 118.2, '2026-08': 121.4, ...}, ... }
+ *                —— 每个标的、每个月给"该月最后一个交易日的收盘价"。
+ *                   **建议多给一个月**：列表里第一个月的"月初资产"要用上个月末的价。
+ * 输出
+ *   { '2026-09': { amount, rate, computed, gap } }
+ *   computed=false（缺行情）→ 界面显示「—」，绝不编数字；
+ *   amount 有值但 rate=null（分母 ≤ 0，例如入金发生在当月最后一天）→ 只显示金额。
+ */
+export function monthlyPnl(input) {
+  const o = input || {};
+  const months = (Array.isArray(o.months) ? o.months : []).map(String).filter(Boolean);
+  const trades = Array.isArray(o.trades) ? o.trades : [];
+  const cashLog = Array.isArray(o.cashLog) ? o.cashLog : [];
+  const px = o.priceByMonth || {};
+  const syms = Object.keys(px);
+  const out = {};
+  if (!months.length) return out;
+
+  /* 'YYYY-MM-DD' ≤ 'YYYY-MM-31' 即"在该月之内"，字符串比较就够，不用建 Date */
+  const endOf = function (ym) { return ym + '-31'; };
+  const daysIn = function (ym) { return new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0).getDate(); };
+  const prevOf = function (ym) {
+    const y = Number(ym.slice(0, 4));
+    const m = Number(ym.slice(5, 7));
+    return m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
+  };
+  const inMonth = function (date, ym) { return typeof date === 'string' && date.slice(0, 7) === ym; };
+  /* 只有"外部进出"算注资；股息 / 权利金 / 修正是收益或调整 */
+  const isExternal = function (l) {
+    const t = String((l && l.type) || '');
+    return t.indexOf('入金') >= 0 || t.indexOf('出金') >= 0;
+  };
+
+  /** 到 end 为止的累计：现金流水 / 买入支出 / 卖出所得，以及当时的持股。 */
+  const cumulative = function (end) {
+    let cash = 0; let buy = 0; let sell = 0;
+    cashLog.forEach(function (l) { if (l && l.date && l.date <= end) cash += cashSigned(l); });
+    const sh = {};
+    trades.forEach(function (t) {
+      if (!t || !t.date || t.date > end) return;
+      const n = Number(t.shares) || 0;
+      const a = Math.abs(n) * (Number(t.price) || 0);
+      if (n < 0) sell += a; else buy += a;
+      const s = String(t.symbol);
+      sh[s] = (sh[s] || 0) + n;
+    });
+    return { cash: cash, buy: buy, sell: sell, sh: sh };
+  };
+
+  /** 某个（月末）时点的总资产。持有中但缺当月行情 → gap=true（这个月就判为算不出来）。 */
+  const valueAt = function (ym, end) {
+    const c = cumulative(end);
+    let mv = 0; let gap = false;
+    syms.forEach(function (s) {
+      const n = c.sh[s] || 0;
+      if (!n) return;
+      const p = Number((px[s] || {})[ym]);
+      if (!(p > 0)) { gap = true; return; }
+      mv += n * p;
+    });
+    return { value: c.cash + c.sell - c.buy + mv, gap: gap };
+  };
+
+  months.forEach(function (ym) {
+    const prevYm = prevOf(ym);
+    const prev = valueAt(prevYm, endOf(prevYm));
+    const now = valueAt(ym, endOf(ym));
+    const days = daysIn(ym);
+    let netDep = 0;
+    let weighted = 0;
+    cashLog.forEach(function (l) {
+      if (!l || !isExternal(l) || !inMonth(l.date, ym)) return;
+      const amt = cashSigned(l);                                  /* 入金为正、出金为负 */
+      netDep += amt;
+      const day = Number(String(l.date).slice(8, 10));            /* 当月第几天 */
+      const left = Math.max(0, days - day + 1);                   /* 在场天数（含入金当天） */
+      weighted += amt * (left / days);
+    });
+    const computed = !prev.gap && !now.gap;
+    const amount = now.value - prev.value - netDep;
+    const denom = prev.value + weighted;
+    out[ym] = {
+      amount: computed ? amount : null,
+      rate: computed && denom > 0 ? amount / denom : null,
+      computed: computed,
+      gap: prev.gap || now.gap,
+      /* blank：这个月前后都没有任何资产、也没有进出 —— 界面连「—」都不用画（比如你还没开始记账的那些月） */
+      blank: !(prev.value > 0 || now.value > 0 || netDep !== 0),
+    };
+  });
+  return out;
 }
 
 /**

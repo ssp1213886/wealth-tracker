@@ -60,7 +60,7 @@ import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, render
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, renderCashTotals} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
-import {disciplineMonths, annualMatrix, heatColorFor, donutSlices} from './charts.js';
+import {disciplineMonths, monthlyPnl, annualMatrix, heatColorFor, donutSlices} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue, csvSkipSummary} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v365';var APP_DATA_VERSION=5;
+var APP_BUILD='v366';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -379,37 +379,88 @@ function addActivity(action,detail){var acts=[];try{acts=JSON.parse(readRaw(ACTI
 function renderActivity(){var el=document.getElementById('activityLog');if(!el)return;var acts=normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]'));if(!acts.length){el.innerHTML='<div class="table-empty">暂无操作记录</div>';return}el.innerHTML=acts.slice().reverse().map(function(a){var kind=a.action.indexOf('买入')>=0?'buy':a.action.indexOf('卖出')>=0?'sell':a.action.indexOf('入金')>=0?'deposit':a.action.indexOf('出金')>=0?'withdraw':'note',icon=kind==='buy'||kind==='deposit'?'<path d="m5 12 4 4 10-10"/>':kind==='sell'||kind==='withdraw'?'<path d="M6 6l12 12M18 6 6 18"/>':'<path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/>';return'<div class="activity-item"><span class="activity-mark '+kind+'"><svg viewBox="0 0 24 24" aria-hidden="true">'+icon+'</svg></span><div class="activity-body"><div class="activity-title">'+escapeHtml(a.action)+'</div>'+(a.detail?'<div class="activity-detail">'+escapeHtml(a.detail)+'</div>':'')+'</div><span class="activity-time">'+escapeHtml(a.date.slice(5)+' '+a.time)+'</span><button class="trade-del" data-act="'+a.id+'" aria-label="删除这条日志">×</button></div>'}).join('')}
 
 
+/* ===== v366 月度收益（口径 A：当月**整个组合**的收益）=====
+   收益额 = 月末总资产 − 月初总资产 − 当月入金（总资产含现金）；
+   收益率 = 收益额 ÷ 加权在场资金（Modified Dietz，按每笔入金待了几天加权）。
+   口径与「年度归因」完全一致 —— 详见 charts.js 的 monthlyPnl 注释。
+   要历史月线 → 复用 fetchMaxData（请求级缓存，重复调用不重复打网）；
+   算完用 JSON 比对，值没变就不重绘 —— 否则"重绘 → 再拉 → 再重绘"会自己转圈。 */
+var logPnl=null,logPnlJson='',logPnlMonths=[];
+
+/** '2026-01' 的上一个月 → '2025-12'（月初资产要用上月末的价）。 */
+function prevYmOf(ym){var y=Number(String(ym).slice(0,4)),m=Number(String(ym).slice(5,7));return m===1?(y-1)+'-12':y+'-'+String(m-1).padStart(2,'0')}
+
+/** 从 range=max 的响应里，取"每个标的、每月最后一个交易日"的收盘价。 */
+function buildPriceByMonth(list,syms,months){
+  var out={};
+  syms.forEach(function(s,i){
+    var d=list[i];
+    var r=d&&d.ok&&d.data&&d.data.chart&&d.data.chart.result&&d.data.chart.result[0];
+    if(!r)return;
+    var ts=r.timestamp||[];
+    var q=r.indicators&&r.indicators.quote&&r.indicators.quote[0];
+    var cs=(q&&q.close)||[];
+    var map={};
+    months.forEach(function(ym){
+      for(var j=ts.length-1;j>=0;j-=1){
+        var v=Number(cs[j]);
+        if(!(v>0))continue;
+        if(marketDate(new Date(ts[j]*1000)).slice(0,7)===ym){map[ym]=v;break}
+      }
+    });
+    out[s]=map;
+  });
+  return out;
+}
+
+/** 拉历史 → 算月度收益 → 结果变了才重绘。 */
+function refreshMonthlyPnl(){
+  if(!logPnlMonths.length)return;
+  Promise.all(ETF_SYMS.map(function(s){return fetchMaxData(s).catch(function(){return null})})).then(function(list){
+    try{
+      var out=monthlyPnl({months:logPnlMonths,trades:trades,cashLog:cashLog,priceByMonth:buildPriceByMonth(list,ETF_SYMS,logPnlMonths)});
+      var json=JSON.stringify(out);
+      if(json===logPnlJson)return;
+      logPnlJson=json;logPnl=out;renderLogHeatmap();
+    }catch(e){logSwallowed("monthlyPnl",e)}
+  },function(){});
+}
+
 function renderLogHeatmap(){
-
-
   var container=document.getElementById('logHeatmap');if(!container)return;
-
-
   var dca=getEffectiveDCA(),pack=disciplineMonths({trades:trades,dca:dca,symbols:ETF_SYMS}),months=pack.months,streak=pack.streak;
   var sc=document.getElementById('streakCount');if(sc)sc.textContent=streak;
-
-
-  // Render
-
-
-  var htm='';months.forEach(function(mt){var bg,txt,icon;
-
-
-    if(mt.isFuture){bg='transparent';txt='var(--rule)';icon=mt.icon}
-
-
-    else if(!mt.hasBuy){bg='rgba(217,69,53,.08)';txt='var(--red)';icon=mt.icon}
-
-
-    else if(mt.complete){bg='var(--accent)';txt='#fff';icon=mt.icon}
-
-
-    else{bg='var(--orange)';txt='#fff';icon=mt.icon}
-
-
-    var state=mt.state;htm+='<div class="discipline-month '+state+'" title="'+mt.ym+'：'+fmt$(mt.totalV)+'/'+fmt$(dca)+(mt.isFuture?' (未来)':'')+'"><span>'+mt.label+'</span>'+(icon?'<strong>'+icon+'</strong>':'')+'<span>'+fmt$(mt.totalV)+'</span></div>'});container.innerHTML=htm
-
-
+  /* 月度收益要算"月初资产" → 多带上列表首月的前一个月 */
+  logPnlMonths=months.length?[prevYmOf(months[0].ym)].concat(months.map(function(m){return m.ym})):[];
+  var htm='';
+  months.forEach(function(mt){
+    var icon=mt.icon;
+    var pnl=logPnl?logPnl[mt.ym]:null;
+    var title=mt.ym+' · 投了 '+fmt$(mt.totalV)+'/'+fmt$(dca);
+    var pnlTxt='';
+    if(mt.isFuture){title+='（未来）'}
+    else if(pnl&&!pnl.blank){
+      if(!pnl.computed){pnlTxt='—';title+=' · 组合收益 —（缺行情或没有月初资产）'}
+      else{
+        var a=Math.round(pnl.amount);
+        var sgn=a>0?'+':(a<0?'−':'');
+        var arrow=a>0?'▲':(a<0?'▼':'·');
+        /* 收益率的符号要用它自己的（不能复用金额的符号，否则负数会出现「−-2.1%」） */
+        var rsgn=pnl.rate>0?'+':(pnl.rate<0?'−':'');
+        var rate=(pnl.rate==null)?'':(' · '+rsgn+(Math.abs(pnl.rate)*100).toFixed(1)+'%');
+        pnlTxt=arrow+' '+sgn+fmt$(Math.abs(a))+rate;
+        title+=' · 组合 '+sgn+fmt$(Math.abs(a))+(pnl.rate==null?'（收益率无意义：当月分母≤0）':'（'+rsgn+(Math.abs(pnl.rate)*100).toFixed(1)+'%）');
+      }
+    }
+    var pnlCls=(pnlTxt==='—'||!pnlTxt)?' is-blank':'';
+    htm+='<div class="discipline-month '+mt.state+'" title="'+title+'">'+
+      '<span class="dm-m">'+mt.label+'</span>'+
+      '<span class="dm-disc">'+(icon?icon+' ':'')+fmt$(mt.totalV)+'</span>'+
+      '<span class="dm-pnl'+pnlCls+'">'+pnlTxt+'</span>'+
+    '</div>';
+  });
+  container.innerHTML=htm;
+  refreshMonthlyPnl();
 }
 
 
@@ -977,7 +1028,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=365',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=366',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
