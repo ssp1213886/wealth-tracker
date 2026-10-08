@@ -145,12 +145,20 @@ test('probViewChipsHtml：概率 / 权利金 / 年化三视角，只有当前那
 
 test('probSummaryHtml：取 ★该卖 那一行 ∩ 当前 OTM 那一列，一句话给全 行权价/概率/权利金/年化', () => {
   const html = probSummaryHtml(MX, { otm: 7 });
-  assert.match(html, /本轮该卖 <b>2026-12-18<\/b> · 71 天/);
+  assert.match(html, /本轮该卖 <b>2026-12-18<\/b> · 还有 71 天/);
+  assert.match(html, /（2026-11-20 卖出 · 持有 28 天）/, '要写清「到期日当天卖下一档」——到期日是 12-18，但这一轮 11-20 就卖出、只持有 28 天');
   assert.match(html, /\$152\.00/);
   assert.match(html, /25\.6%/, '被行权概率');
   assert.match(html, /约 4 轮 1 次/, '1/0.256 ≈ 4 轮');
   assert.match(html, /\$2\.90/, '权利金');
   assert.match(html, /12\.1%/, '年化');
+});
+
+test('probSummaryHtml：没有「本轮该处理」那一档时，省略持有天数而不是编一个', () => {
+  const noSettle = { otms: [3, 5, 7, 10, 15], rows: [{ date: '2026-12-18', dte: 71, sell: true, cells: [cell(0.3, 138, 2, 9), cell(0.2, 145, 1.5, 7), cell(0.19, 152, 1.2, 6), cell(0.1, 160, 0.8, 4), cell(0.05, 168, 0.4, 2)] }] };
+  const html = probSummaryHtml(noSettle, { otm: 7 });
+  assert.match(html, /本轮该卖 <b>2026-12-18<\/b> · 还有 71 天/);
+  assert.doesNotMatch(html, /持有 \d+ 天/, '算不出卖出日就别写');
 });
 
 test('probSummaryHtml：没有 ★ 档 / 该 OTM 那格没挂牌时给明确提示，不显示半截数字', () => {

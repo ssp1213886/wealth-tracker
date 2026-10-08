@@ -232,6 +232,15 @@ export function probMatrixHtml(matrix, ctx) {
  * 「本轮该卖」结论行：把 25 个数字收敛成一句话 —— 行权价 / 被行权概率 / 权利金 / 年化。
  * 取的是 ★ 那一行 ∩ 当前 OTM 那一列，也就是你这轮真正会下的单。
  */
+/** 两个 'YYYY-MM-DD' 相差几天；格式不对返回 null（界面据此不显示这一句）。 */
+function dayGap(from, to) {
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  const a = re.test(String(from || '')) ? Date.parse(from + 'T00:00:00Z') : NaN;
+  const b = re.test(String(to || '')) ? Date.parse(to + 'T00:00:00Z') : NaN;
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.round((b - a) / 86400000);
+}
+
 export function probSummaryHtml(matrix, ctx) {
   const c = ctx || {};
   const m = matrix || { otms: [], rows: [] };
@@ -240,7 +249,13 @@ export function probSummaryHtml(matrix, ctx) {
   const cur = Number(c.otm);
   const idx = (Array.isArray(m.otms) ? m.otms : []).indexOf(cur);
   const cell = idx >= 0 ? (sell.cells || [])[idx] : null;
-  const head = '<div class="mx-sum-head">本轮该卖 <b>' + escapeHtml(sell.date) + '</b> · ' + sell.dte + ' 天' +
+  /* 「还有 N 天」＝从今天到到期日；括号里的「持有 N 天」＝这一轮真正持有多久（卖出日 → 到期日）。
+     两者对 3 周节奏的 SMH 差得很远：今天看还有 43 天，但 10-30 卖出、11-20 到期，持有只有 21 天。
+     不写清楚的话，VGT(35 天) 和 SMH(21 天) 两张卡都会顶着一个「43 天」，看着像同一个周期。 */
+  const from = ((Array.isArray(m.rows) ? m.rows : []).filter(function (r) { return r.settle; })[0] || {}).date || '';
+  const tenor = from ? dayGap(from, sell.date) : null;
+  const held = (from && tenor != null) ? '（' + escapeHtml(from) + ' 卖出 · 持有 ' + tenor + ' 天）' : '';
+  const head = '<div class="mx-sum-head">本轮该卖 <b>' + escapeHtml(sell.date) + '</b> · 还有 ' + sell.dte + ' 天' + held +
     (idx < 0 ? ' · ' + cur + '%' : '') + '</div>';
   if (!cell || cell.prob == null) {
     return '<div class="mx-sum">' + head +
