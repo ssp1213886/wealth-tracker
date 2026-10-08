@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=355');
+  assert.equal(manifest.start_url, '/?v=356');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v355/);
+  assert.match(serviceWorker, /wealth-v356/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=355',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=356',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -750,4 +750,18 @@ test('index.js：节奏档要先吸附到真实挂牌到期日，链没到时按
   assert.match(indexSource, /shiftNote:roll\.shifted\?\([^)]*rollRaw/, '顺延提示里的日期要用「该卖」那一档的节奏日，别写成本期');
   assert.match(indexSource, /function listedExpiries\(chain\)/, '要取链里真实挂牌的到期日列表');
   assert.match(indexSource, /shiftNote:roll\.shifted/, '顺延了要写在结论行上，不能悄悄换日期');
+});
+
+/**
+ * v356：到期日历原本默认只筛「月度档」，可 VGT 和 SMH 的市场月度档**本来就是同几天**
+ * （每月第三个周五）—— 于是两张标的的日历看起来一模一样，SMH 的周度档全被滤掉了。
+ * 改成：默认列**周五档**的前 3 个，并且永远带上该标的的节奏档。
+ */
+test('到期日历：默认列「周五档」而不是「月度档」，并永远带上该标的的节奏档', () => {
+  assert.match(indexSource, /all\.filter\(function\(e\)\{return weekdayOf\(e\.date\)===5\}\)\.slice\(0,3\)/,
+    '默认要按周五筛（VGT 全是周五；SMH 才留下周度档）');
+  assert.match(indexSource, /var beat=ccRollExpiry\(sym\)/, '日历要知道该标的的节奏档');
+  assert.match(indexSource, /picked=picked\.concat\(\[hitStep\]\)/, '节奏档必须并进默认视图，否则 SMH 会跟 VGT 一样');
+  assert.doesNotMatch(indexSource, /all\.filter\(function\(e\)\{return isMonthlyExpiry\(e\.date\)\}\)\.slice\(0,3\)/,
+    '不要再按"月度档"筛默认视图');
 });
