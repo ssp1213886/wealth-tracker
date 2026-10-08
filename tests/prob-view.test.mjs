@@ -83,7 +83,7 @@ const MX_ROWS = [
   { date: '2026-12-18', dte: 71, sell: true, settle: false,
     cells: [cell(0.398, 138, 4.6, 17.9), cell(0.324, 145, 3.4, 15.3), cell(0.256, 152, 2.9, 12.1), cell(0.180, 160, 1.9, 9.4), cell(null, 0, null, null)] },
 ];
-const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS };
+const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS, spot: 129.37 };
 
 test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，★该卖/该处理两档分别打标', () => {
   const html = probMatrixHtml(MX, { otm: 7 });
@@ -92,6 +92,9 @@ test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，�
   assert.equal((html.match(/mx-col/g) || []).length, 5, '五档 OTM 各自一个按钮');
   assert.equal((html.match(/is-on/g) || []).length, 1, '只有当前 OTM 那个列头按钮带 is-on');
   assert.equal((html.match(/mx-on/g) || []).length, 2, '每行当前 OTM 那一格带 mx-on');
+  // 列头第二行＝这一档 OTM 对应的价格（现价 ×(1+OTM)），给"距离多少钱"一个参照
+  assert.match(html, /7%<\/button><small class="mx-target">\$138\.43<\/small>/, '7% → 129.37×1.07 = $138.43');
+  assert.match(html, /15%<\/button><small class="mx-target">\$148\.78<\/small>/);
   assert.match(html, /class="mx-sell-row"/, '本轮该卖的整行要高亮');
   assert.match(html, /mx-sell-tag">★ 本轮该卖</);
   assert.match(html, /class="mx-settle-row"/, '本轮该处理的那行也要能看出来');
@@ -118,6 +121,7 @@ test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
   assert.match(probMatrixHtml(null, {}), /prob-empty/);
   assert.match(probMatrixHtml({ otms: [], rows: [] }, { emptyHint: '没有 14 天以上的档' }), /没有 14 天以上的档/);
   assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, cells: null }] }, {}), /—|prob-empty/);
+  assert.doesNotMatch(probMatrixHtml({ otms: [7], rows: MX_ROWS.slice(0, 1) }, {}), /mx-target/, '没有现价就不算目标价，别编一个');
 });
 
 test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺挂牌两行都给「—」', () => {
@@ -158,7 +162,7 @@ test('probSummaryHtml：取 ★该卖 那一行 ∩ 当前 OTM 那一列，一�
   assert.match(html, /（2026-11-20 卖出 · 持有 28 天）/, '要写清「到期日当天卖下一档」——到期日是 12-18，但这一轮 11-20 就卖出、只持有 28 天');
   assert.match(html, /\$152\.00/);
   assert.match(html, /25\.6%/, '被行权概率');
-  assert.match(html, /约 4 轮 1 次/, '1/0.256 ≈ 4 轮');
+  assert.doesNotMatch(html, /轮 1 次/, '「约 N 轮 1 次」已按用户要求去掉');
   assert.match(html, /\$2\.90/, '权利金');
   assert.match(html, /12\.1%/, '年化');
 });

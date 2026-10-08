@@ -191,6 +191,7 @@ const TRUNCATED_CHAIN = {
 test('probMatrix：行=到期日、列=OTM%，每格挂在真实挂牌档上且概率随 OTM 递减', () => {
   const m = probMatrix(DENSE_CHAIN, { fixed: '2026-12-18', minDte: 14, maxRows: 3 });
   assert.deepEqual(m.otms, [3, 5, 7, 10, 15], '默认五档 OTM');
+  assert.equal(m.spot, 130, '现价要一起带出去 —— 列头要用它算各档对应的价格');
   assert.deepEqual(m.rows.map((r) => r.date), ['2026-11-20', '2026-12-18']);
   m.rows.forEach((r) => {
     assert.equal(r.cells.length, 5, '每行五格');

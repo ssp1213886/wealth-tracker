@@ -206,11 +206,15 @@ export function probMatrixHtml(matrix, ctx) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
   const cur = Number(c.otm);
+  /* 列头第二行：这一档 OTM 对应的价格＝现价 ×(1+OTM%)，给你一个"距离多少钱"的参照。
+     实际下单看的是真实挂牌档（可能差一点），那个写在每格的悬停提示里。 */
+  const spot = Number(m.spot) || 0;
   /* 刻意不加 .prob-table：那套手机端规则会把 td 变成 grid 单元格，而矩阵要的是横向滚动 */
   let html = '<table class="mx-table"><thead><tr><th>到期日</th><th>剩余</th>' +
     otms.map(function (o) {
+      const tgt = spot > 0 ? '<small class="mx-target">$' + (spot * (1 + Number(o) / 100)).toFixed(2) + '</small>' : '';
       return '<th><button type="button" class="mx-col' + (Number(o) === cur ? ' is-on' : '') +
-        '" data-probotm="' + o + '" title="把 OTM 设成 ' + o + '%">' + o + '%</button></th>';
+        '" data-probotm="' + o + '" title="把 OTM 设成 ' + o + '%">' + o + '%</button>' + tgt + '</th>';
     }).join('') + '</tr></thead><tbody>';
   rows.forEach(function (r) {
     /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
@@ -271,12 +275,11 @@ export function probSummaryHtml(matrix, ctx) {
       '<div class="mx-sum-meta">' + cur + '% OTM 在这一档没有挂牌行权价 —— 换一档 OTM 或看下一行</div></div>';
   }
   const drift = (cell.drift || 0) * 100;
-  const every = cell.prob > 0 ? Math.round(1 / cell.prob) : 0;
   return '<div class="mx-sum">' + head +
     '<div class="mx-sum-main">$' + Number(cell.strike).toFixed(2) +
       ' <small>（' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '% OTM）</small></div>' +
     '<div class="mx-sum-meta">被行权 <b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b>' +
-      '（约 ' + every + ' 轮 1 次） · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
+      ' · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
       ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') + '</div></div>';
 }
 

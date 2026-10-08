@@ -268,7 +268,7 @@ export function probMatrix(chain, opts) {
   const maxRows = Number(o.maxRows) > 0 ? Number(o.maxRows) : 5;
   const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
   const spot = Number(chain && chain.spot);
-  if (!(spot > 0)) return { otms: otms, rows: [] };
+  if (!(spot > 0)) return { otms: otms, rows: [], spot: 0 };
   const beat = String(o.fixed || '');       /* ★ 本轮该卖的那一档 */
   const settle = String(o.settle || '');    /* 本轮该处理（结算/行权）的那一档 */
   const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
@@ -292,7 +292,8 @@ export function probMatrix(chain, opts) {
       const cells = otms.map(function (pct) { return matrixCell(e, spot, pct, rate); });
       return { date: e.date, dte: e.dte, sell: e.date === beat, settle: e.date === settle, cells: cells, probs: cells.map(function (c) { return c.prob; }) };
     });
-  return { otms: otms, rows: rows };
+  /* spot 一起带出去：列头要用它算「这一档 OTM 对应的价格」＝现价 ×(1+OTM%)。 */
+  return { otms: otms, rows: rows, spot: spot };
 }
 
 /** 挂牌档偏离目标 OTM 超过这个比例就当"这一档不存在"（阶梯够不到）。 */
