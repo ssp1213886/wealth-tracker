@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   probColor, fmtProb, fmtIv,
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
-  probMatrixHtml, probTabsHtml, probViewChipsHtml, matrixCellText, probSummaryHtml,
+  probMatrixHtml, probTabsHtml, matrixCellHtml, probSummaryHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -105,17 +105,13 @@ test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，�
   assert.doesNotMatch(html, /prob-table/, '矩阵不能用 prob-table（那套手机端规则会把 td 变 grid）');
 });
 
-test('probMatrixHtml：权利金 / 年化视角不按概率着色，缺挂牌那格一律「—」', () => {
-  const prem = probMatrixHtml(MX, { otm: 7, view: 'premium' });
-  assert.match(prem, /\$2\.90/);
-  assert.match(prem, /\$4\.60/);
-  assert.doesNotMatch(prem, /var\(--red\)/, '看权利金时不该出现「高权利金=红」的误导');
-  assert.doesNotMatch(prem, /var\(--accent\)/);
-  assert.match(prem, /—/, '缺挂牌那一格显示破折号');
-  const ann = probMatrixHtml(MX, { otm: 7, view: 'annual' });
-  assert.match(ann, /27\.4%/);
-  assert.match(ann, /17\.9%/);
-  assert.doesNotMatch(ann, /var\(--red\)/);
+test('probMatrixHtml：每格同时给概率与权利金（不用切视角），年化只在悬停提示里', () => {
+  const html = probMatrixHtml(MX, { otm: 7 });
+  assert.match(html, /class="mx-prem">\$2\.90</, '下行是权利金');
+  assert.match(html, /class="mx-prem">\$4\.60</);
+  assert.doesNotMatch(html, /data-probview/, '视角切换已删 —— 两个数同格显示，不需要它');
+  assert.match(html, /年化 27\.4%/, '年化挪进悬停提示，不占格位');
+  assert.match(html, /class="mx-prem">—</, '缺挂牌那一格下行显示破折号');
 });
 
 test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
@@ -124,23 +120,16 @@ test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
   assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, cells: null }] }, {}), /—|prob-empty/);
 });
 
-test('matrixCellText：三个视角各取各的值，缺挂牌一律「—」', () => {
-  const c = cell(0.1473, 140, 1.05, 8.91);
-  assert.equal(matrixCellText(c, 'prob'), '14.7%');
-  assert.equal(matrixCellText(c, 'premium'), '$1.05');
-  assert.equal(matrixCellText(c, 'annual'), '8.9%');
-  assert.equal(matrixCellText(c, undefined), '14.7%', '不给视角默认看概率');
-  assert.equal(matrixCellText(cell(null, 0, null, null), 'premium'), '—');
-  assert.equal(matrixCellText(null, 'prob'), '—');
-});
-
-test('probViewChipsHtml：概率 / 权利金 / 年化三视角，只有当前那个 is-on', () => {
-  const html = probViewChipsHtml('premium');
-  assert.match(html, /data-probview="prob">概率</);
-  assert.match(html, /data-probview="annual">年化</);
-  assert.match(html, /class="prob-chip is-on" data-probview="premium">权利金</);
-  assert.equal((html.match(/is-on/g) || []).length, 1);
-  assert.match(probViewChipsHtml('prob'), /class="prob-chip is-on" data-probview="prob">概率</);
+test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺挂牌两行都给「—」', () => {
+  const hot = matrixCellHtml(cell(0.362, 138, 2.9, 27.4));
+  assert.match(hot, /class="mx-prob" style="color:var\(--red\)">36\.2%<\/span>/, '>25% 用红');
+  assert.match(hot, /class="mx-prem">\$2\.90<\/span>/);
+  assert.match(matrixCellHtml(cell(0.037, 168, 0.5, 4.7)), /var\(--accent\)/, '<10% 用绿');
+  const none = matrixCellHtml(cell(null, 0, null, null));
+  assert.match(none, /class="mx-prob" style="color:var\(--muted\)">—<\/span>/);
+  assert.match(none, /class="mx-prem">—<\/span>/);
+  assert.equal((matrixCellHtml(null).match(/—/g) || []).length, 2, '空 cell 也要给两行，不能少渲染一行（会整行错位）');
+  assert.match(matrixCellHtml(cell(0.2, 140, 0, 5)), /class="mx-prem">—<\/span>/, '有概率但没权利金时只这一行给「—」');
 });
 
 test('probSummaryHtml：取 ★该卖 那一行 ∩ 当前 OTM 那一列，一句话给全 行权价/概率/权利金/年化', () => {

@@ -157,46 +157,43 @@ export function renderProbUnavailable(doc, hint) {
 
 /**
  * 概率矩阵：行 = 未来到期日，列 = 各 OTM% 下的被行权概率。
- * 当前 OTM 那一列整列高亮；★ 标记本轮节奏该卖的那一档。
+ * 当前 OTM 那一列整列高亮；★ 标记本轮该卖的那一档，「本轮该处理」是手里那张。
  */
-/** 矩阵的三个视角：看概率 / 看能收多少钱 / 看年化。 */
-export const PROB_VIEWS = [{ id: 'prob', label: '概率' }, { id: 'premium', label: '权利金' }, { id: 'annual', label: '年化' }];
-
-export function probViewChipsHtml(current) {
-  return PROB_VIEWS.map(function (v) {
-    return '<button type="button" class="prob-chip' + (v.id === current ? ' is-on' : '') +
-      '" data-probview="' + v.id + '">' + v.label + '</button>';
-  }).join('');
+/**
+ * 一格：上面是被行权概率（大字、按风险着色），下面是权利金（灰色小字）。
+ * 两行同格 = 不用再来回切「看概率 / 看权利金」，风险与收益一眼同时在。
+ * 年化不占格位（放悬停提示里），免得一格挤三行。
+ * 这一档没有挂牌行权价（阶梯够不到）时两行都给「—」，不编数。
+ */
+export function matrixCellHtml(cell) {
+  if (!cell || cell.prob == null) {
+    return '<span class="mx-prob" style="color:var(--muted)">—</span><span class="mx-prem">—</span>';
+  }
+  const prem = cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—';
+  return '<span class="mx-prob" style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</span>' +
+    '<span class="mx-prem">' + prem + '</span>';
 }
 
-/** 一格该显示什么。这一档没有挂牌行权价（阶梯够不到）时一律「—」，不编数。 */
-export function matrixCellText(cell, view) {
-  if (!cell || cell.prob == null) return '—';
-  if (view === 'premium') return cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—';
-  if (view === 'annual') return cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—';
-  return fmtProb(cell.prob);
-}
-
-/** 单元格的悬浮提示：写出这一格到底挂在哪个真实行权价上。 */
+/** 单元格的悬浮提示：写出这一格挂在哪个真实行权价上、年化多少。 */
 function cellTitle(cell) {
   if (!cell || !(cell.strike > 0)) return '这一档没有挂牌行权价（行权价阶梯够不到该 OTM）';
   const drift = cell.drift == null ? 0 : cell.drift * 100;
+  const annual = cell.annualPct != null ? '，年化 ' + Number(cell.annualPct).toFixed(1) + '%' : '';
   return '真实挂牌行权价 $' + Number(cell.strike).toFixed(2) +
-    '（比目标 ' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '%）';
+    '（比目标 ' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '%）' + annual;
 }
 
 /**
  * 概率矩阵。
  *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★），settle=true 是本轮该处理（结算/行权）的那一档。
  *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
- *  · 数值颜色只在"概率"视角下按风险着色；权利金/年化视角用普通色，免得"高权利金=红"让人误读成危险。
+ *  · 每格两行：概率（按风险着色）+ 权利金（灰字）。
  */
 export function probMatrixHtml(matrix, ctx) {
   const c = ctx || {};
   const m = matrix || { otms: [], rows: [] };
   const rows = Array.isArray(m.rows) ? m.rows : [];
   const otms = Array.isArray(m.otms) ? m.otms : [];
-  const view = c.view || 'prob';
   if (!rows.length || !otms.length) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
@@ -218,10 +215,8 @@ export function probMatrixHtml(matrix, ctx) {
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
         const cell = cells[i];
-        const color = view === 'prob' ? probColor(cell && cell.prob) : 'inherit';
         return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
-          '" style="color:' + color + ';font-weight:640" title="' + escapeHtml(cellTitle(cell)) + '">' +
-          escapeHtml(matrixCellText(cell, view)) + '</td>';
+          '" title="' + escapeHtml(cellTitle(cell)) + '">' + matrixCellHtml(cell) + '</td>';
       }).join('') +
       '</tr>';
   });

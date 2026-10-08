@@ -7,7 +7,7 @@ import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {optionProbabilities, probMatrix} from './prob.js';
-import {renderProbNote, renderProbUnavailable, renderProbMatrix, renderProbSummary, probTabsHtml, probViewChipsHtml, expiryCalendarHtml, fmtChainTimeShort, fmtProb} from './prob-view.js';
+import {renderProbNote, renderProbUnavailable, renderProbMatrix, renderProbSummary, probTabsHtml, expiryCalendarHtml, fmtProb} from './prob-view.js';
 import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf, dateMs, isoOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v340';var APP_DATA_VERSION=5;
+var APP_BUILD='v342';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -977,7 +977,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=340',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=342',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1653,7 +1653,7 @@ try{
   }
 }catch(e){logSwallowed("otmSettingsInit",e)}
 
-var probTab='VGT',probViewMode='prob';
+var probTab='VGT';
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
 function otmOf(sym){var v=Number(otmSettings&&(sym==='SMH'?otmSettings.smh:otmSettings.vgt));return v>0?v:(sym==='SMH'?6:7)}
 /** 矩阵的 OTM 列：固定五档；当前 OTM 不在其中时插进去、挤掉最远的那档（保持 5 列）。
@@ -1664,34 +1664,30 @@ function matrixOtms(cur){
   return base.slice(0,base.length-1).concat([c]).sort(function(a,b){return a-b});
 }
 function renderProbCard(){
-  var src=document.getElementById('probSrc');
   var tabs=document.getElementById('probTabs');
   if(tabs)tabs.innerHTML=probTabsHtml(probTab);
-  var vtabs=document.getElementById('probViews');
-  if(vtabs)vtabs.innerHTML=probViewChipsHtml(probViewMode);
   var otm=otmOf(probTab);
   /* OTM 控件上的标的与当前值（加减号只改数字，标签随 VGT/SMH 切页变） */
   var olab=document.getElementById('probOtmSym');if(olab)olab.textContent=probTab+' OTM';
   var oval=document.getElementById('probOtmVal');if(oval)oval.textContent=otm+'%';
   var chain=chainFor(probTab);
   if(!chain){
-    if(src)src.textContent=chainStatus.loading?'加载中…':'';
     renderProbSummary(document,null,{otm:otm});
-    renderProbNote(document,{});
+    renderProbNote(document,{});          /* 先清掉上一次的说明 */
+    var nb=document.getElementById('probNote');
+    if(nb&&chainStatus.loading)nb.textContent='加载中…';
     /* 必须先写说明、再写错误提示 —— 顺序反了会被说明文案覆盖掉 */
     if(!chainStatus.loading)renderProbUnavailable(document,chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'稍后会自动重试');
     renderExpiryCalendar();
     return;
   }
-  /* 时间不能用 CBOE 的原始字符串：它是美东时间且不带时区标记，非美东用户会误读成"昨天" */
-  if(src){var _lab=chain.source==='cboe'?'CBOE 延迟':(chain.source==='yahoo'?'Yahoo':'');var _t=fmtChainTimeShort(chain.updated,Date.now());src.textContent=_lab+(_t?' · '+_t:'');src.title='点击刷新期权链（CBOE 免费接口为延迟报价，非实时）'}
   var mx=null;
   /* minDte 保持 14：SMH 有每日到期日，门槛放低会把它那堆 7/8/11 天的档全拉进来。
      ★ 与本轮该处理的那一档由 probMatrix 强制保留，不受门槛影响。
      fixed = 本轮该卖（下次卖出日会卖出的那一档）；settle = 本轮该处理（下一个到期日）。 */
   try{mx=probMatrix(chain,{fixed:ccRollExpiry(probTab),settle:ccNextExpiry(probTab),minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
   renderProbSummary(document,mx,{otm:otm});
-  renderProbMatrix(document,mx,{otm:otm,view:probViewMode,
+  renderProbMatrix(document,mx,{otm:otm,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链里没有 14 天以上的到期日'});
   renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),iv30:iv30Map()});
   renderExpiryCalendar();
@@ -1783,8 +1779,9 @@ async function refreshChains(force){
   try{renderOpt()}catch(e){logSwallowed("renderOpt",e)}
 }
 function bindProbControls(){
-  var src=document.getElementById('probSrc');
-  if(src)src.addEventListener('click',function(){if(!chainStatus.loading)refreshChains(true)});
+  /* 底部说明行（数据源 + 美东时间）同时也是刷新入口 —— 卡片上不再单独占一个控件位 */
+  var note=document.getElementById('probNote');
+  if(note)note.addEventListener('click',function(){if(!chainStatus.loading)refreshChains(true)});
   /* 行权 / 结算 / 删除之后，日历里的「我的持仓」要跟着变 —— 期权表格的按钮是 onclick 直挂的，
      所以在容器上做事件委托，等原处理器跑完再重绘。 */
   var ob=document.getElementById('holdingsBody');
@@ -1795,14 +1792,6 @@ function bindProbControls(){
   if(tabs)tabs.addEventListener('click',function(e){
     var b=e.target.closest('[data-probtab]');if(!b)return;
     probTab=b.dataset.probtab;
-    renderProbCard();
-    haptic('light');
-  });
-  /* 视角切换：概率 / 权利金 / 年化 —— 只是换显示，不动任何设置 */
-  var views=document.getElementById('probViews');
-  if(views)views.addEventListener('click',function(e){
-    var b=e.target.closest('[data-probview]');if(!b)return;
-    probViewMode=b.dataset.probview||'prob';
     renderProbCard();
     haptic('light');
   });
