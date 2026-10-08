@@ -184,10 +184,18 @@ function cellTitle(cell) {
 }
 
 /**
+ * 「同上」：这一列吸到的行权价和左边最近一个有数的列相同 —— 同一张合约（市场在这段区间
+ * 只挂了这一档），不再把同一组数字重复报一遍，否则看着像"卡住了"。
+ */
+function dittoHtml(strike) {
+  return '<span class="mx-prob mx-ditto">〃</span><span class="mx-prem">同上 $' + Number(strike).toFixed(2) + '</span>';
+}
+
+/**
  * 概率矩阵。
  *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★），settle=true 是本轮该处理（结算/行权）的那一档。
  *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
- *  · 每格两行：概率（按风险着色）+ 权利金（灰字）。
+ *  · 每格两行：概率（按风险着色）+ 权利金（灰字）；与左边同一张合约的列显示「同上」。
  */
 export function probMatrixHtml(matrix, ctx) {
   const c = ctx || {};
@@ -208,6 +216,7 @@ export function probMatrixHtml(matrix, ctx) {
     /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
     const cells = Array.isArray(r.cells) ? r.cells : [];
     const cls = (r.sell ? 'mx-sell-row' : '') + (r.settle ? (r.sell ? ' ' : '') + 'mx-settle-row' : '');
+    let prevStrike = 0;   /* 左边最近一个有挂牌档的列吸到了哪个行权价 */
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry">' + escapeHtml(r.date) +
         (r.sell ? '<small class="prob-sub mx-sell-tag">★ 本轮该卖</small>'
@@ -215,8 +224,13 @@ export function probMatrixHtml(matrix, ctx) {
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
         const cell = cells[i];
-        return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
-          '" title="' + escapeHtml(cellTitle(cell)) + '">' + matrixCellHtml(cell) + '</td>';
+        const listed = !!(cell && cell.listed && cell.prob != null && Number(cell.strike) > 0);
+        const same = listed && prevStrike === Number(cell.strike);
+        if (listed) prevStrike = Number(cell.strike);
+        const title = same ? ('和左边那一列是同一张合约 · ' + cellTitle(cell)) : cellTitle(cell);
+        return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') + (same ? ' mx-same' : '') +
+          '" title="' + escapeHtml(title) + '">' +
+          (same ? dittoHtml(cell.strike) : matrixCellHtml(cell)) + '</td>';
       }).join('') +
       '</tr>';
   });

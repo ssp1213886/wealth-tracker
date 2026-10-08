@@ -132,6 +132,26 @@ test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺�
   assert.match(matrixCellHtml(cell(0.2, 140, 0, 5)), /class="mx-prem">—<\/span>/, '有概率但没权利金时只这一行给「—」');
 });
 
+test('probMatrixHtml：相邻两列吸到同一张合约时显示「同上」，不再重复同一组数字', () => {
+  /* 实测 VGT 11-20 在 $135 与 $145 之间只挂了 $140 一档：7%/8%/10% 会全落到它。
+     重复报三遍会被读成"卡住了"，所以第二列起显示「同上」。 */
+  const dup = {
+    otms: [7, 8, 10],
+    rows: [{ date: '2026-11-20', dte: 43, cells: [cell(0.146, 140, 1.05, 6.9), cell(0.146, 140, 1.05, 6.9), cell(0.146, 140, 1.05, 6.9)] }],
+  };
+  const html = probMatrixHtml(dup, { otm: 8 });
+  assert.equal((html.match(/14\.6%/g) || []).length, 1, '同一组数字只报一次');
+  assert.equal((html.match(/mx-ditto/g) || []).length, 2, '后两列都是「同上」');
+  assert.equal((html.match(/同上 \$140\.00/g) || []).length, 2, '「同上」要写明是哪张合约');
+  assert.match(html, /和左边那一列是同一张合约/, '悬停要解释清楚');
+  // 同一行里换了一张合约就不该再叫「同上」
+  const mixed = {
+    otms: [7, 10],
+    rows: [{ date: '2026-11-20', dte: 43, cells: [cell(0.146, 140, 1.05, 6.9), cell(0.034, 150, 0.2, 1.3)] }],
+  };
+  assert.doesNotMatch(probMatrixHtml(mixed, { otm: 7 }), /mx-ditto/);
+});
+
 test('probSummaryHtml：取 ★该卖 那一行 ∩ 当前 OTM 那一列，一句话给全 行权价/概率/权利金/年化', () => {
   const html = probSummaryHtml(MX, { otm: 7 });
   assert.match(html, /本轮该卖 <b>2026-12-18<\/b> · 还有 71 天/);

@@ -2894,6 +2894,8 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* 每格两行：上行概率（按风险着色）+ 下行权利金（灰字）—— 不用再切视角 */
 .mx-cell .mx-prob{display:block;font-weight:640;font-variant-numeric:tabular-nums}
 .mx-cell .mx-prem{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:1px}
+/* 与左边同一张合约的列：显示「同上」，不再重复同一组数字 */
+.mx-cell .mx-ditto{color:var(--muted);font-weight:560}
 
 /* 列头改成按钮：点一下就把 OTM 设成那一档 */
 .mx-col{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:560;padding:2px 4px;border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums}

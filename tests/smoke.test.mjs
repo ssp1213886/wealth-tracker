@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=342');
+  assert.equal(manifest.start_url, '/?v=343');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v342/);
+  assert.match(serviceWorker, /wealth-v343/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=342',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=343',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -653,4 +653,20 @@ test('期权页：OTM 加减号与「看什么」视角都在，且加减号接�
   // 切 VGT / SMH 时标签与数值要跟着变，否则 SMH 那页会顶着「VGT OTM」
   assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,100}probTab\+' OTM'/, 'OTM 标签没跟着标的切');
   assert.match(indexSource, /getElementById\('probOtmVal'\)[\s\S]{0,100}otm\+'%'/, 'OTM 数值没跟着设置刷新');
+});
+
+/**
+ * v328–v335 有过「节奏设置」界面，点「月度」会把 ccSchedule 写进本机存储；v336 把入口删了，
+ * 但那份值还留在老设备上 —— 于是 SMH 会被算成 10-16 该处理 / 11-20 该卖 / 持有 35 天
+ * （正确值是 10-30 → 11-20 = 21 天）。v343 起一次性清掉它，回落到代码里的固定策略。
+ */
+test('index.js：清掉残留的「节奏设置」本机缓存（SMH 被算成月度 35 天的根因）', () => {
+  const reset = indexSource.indexOf("CC_RESET_KEY='cc_schedule_reset_v1'");
+  const load = indexSource.indexOf('(function loadCcSchedule');
+  assert.ok(reset > 0, '找不到一次性清理块');
+  assert.ok(load > reset, '清理必须发生在 loadCcSchedule 读存储之前，否则又被旧值覆盖回来');
+  assert.match(indexSource, /LS\.removeItem\(CC_KEY\)/, '要真的把残留删掉，只写标记没用');
+  // 只清本机偏好，不许顺手把投资数据一起干掉
+  assert.doesNotMatch(indexSource.slice(reset, load), /removeItem\('(trades|cashLog|state|optionTrades)'\)/,
+    '清理块只能碰 ccSchedule');
 });
