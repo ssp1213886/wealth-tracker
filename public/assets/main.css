@@ -1826,24 +1826,25 @@ body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 3%
 /* ===== Bottom bar follows page tint =====
    底色必须用 --bg（页面那一族），不能用 --card-bg（卡面白）—— 用卡面白会让底栏永远比页面亮一档
    （实测浅色亮 12~16、深色差 ~28），看着像另一套配色。
-   百分比故意比页面少 1 个百分点，保留"它是 chrome、不是内容"的层次。
+   ⚠️ 浓度要**看得出颜色**：v358 只混 3.5%，实测肉眼就是"没颜色"，用户直接报上来了。
+   现在浅色 9~12%、深色 16~22%（比页面那一层更浓一档，让底栏读起来是"一条带色的 chrome"）。
    --bar-solid 必须与底栏同色：它是中间那个 ＋ 的 5px 描边，用来做"从底栏挖空一个圆"的效果。 */
-body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 4%,var(--bg))!important}
-body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 3.5%,var(--bg))!important}
-body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 3%,var(--bg))!important}
-body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 2.5%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 12%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 10%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 8%,var(--bg))!important}
-[data-theme="dark"] body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 6%,var(--bg))!important}
-body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 4%,var(--bg))}
-body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 3.5%,var(--bg))}
-body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 3%,var(--bg))}
-body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 2.5%,var(--bg))}
-[data-theme="dark"] body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 12%,var(--bg))}
-[data-theme="dark"] body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 10%,var(--bg))}
-[data-theme="dark"] body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 8%,var(--bg))}
-[data-theme="dark"] body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 6%,var(--bg))}
+body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 12%,var(--bg))!important}
+body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 11%,var(--bg))!important}
+body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 10%,var(--bg))!important}
+body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 9%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="holding"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 22%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="option"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 20%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="console"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 18%,var(--bg))!important}
+[data-theme="dark"] body[data-active-tab="data"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--accent) 16%,var(--bg))!important}
+body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 12%,var(--bg))}
+body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 11%,var(--bg))}
+body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 9%,var(--bg))}
+[data-theme="dark"] body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 22%,var(--bg))}
+[data-theme="dark"] body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 20%,var(--bg))}
+[data-theme="dark"] body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 18%,var(--bg))}
+[data-theme="dark"] body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 16%,var(--bg))}
 
 /* ===== Touch press feedback (mobile) ===== */
 @media(max-width:800px){
