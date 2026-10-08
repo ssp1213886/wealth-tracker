@@ -75,7 +75,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v331';var APP_DATA_VERSION=5;
+var APP_BUILD='v332';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -978,7 +978,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=331',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=332',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1653,31 +1653,36 @@ function isMonthlyExpiry(date){
   var day=Number(String(date).slice(8,10));
   return d.getUTCDay()===5&&day>=15&&day<=21;   /* 标准月度 = 每月第三个周五 */
 }
-var calShowAll=false;
+var calShowAll=false,calTab='VGT';
 function renderExpiryCalendar(){
   var el=document.getElementById('expiryCalendar');
   if(!el)return;
+  if(calTab!=='VGT'&&calTab!=='SMH')calTab='VGT';
+  var sym=calTab;
   var fixed={};
   try{ccRows().forEach(function(r){fixed[r.sym]=r.nextExpiry})}catch(e){logSwallowed("ccRows",e)}
   var entries=[];
-  ['VGT','SMH'].forEach(function(sym){
-    var chain=chainFor(sym);if(!chain)return;
+  var chain=chainFor(sym);
+  if(chain){
     var all=(chain.expiries||[]).filter(function(e){return e&&(e.calls||[]).length});
-    /* 默认每个标的只列近 3 档：节奏那一档 + 期间的月度档。
-       SMH 的周度有十几档，全铺出来等于把有用信息淹掉。 */
+    /* 默认只列近 3 档：节奏那一档 + 期间的月度档。
+       SMH 有十几档周度，全铺出来等于把有用信息淹掉。 */
     var picked=calShowAll?all:all.filter(function(e){return isMonthlyExpiry(e.date)||e.date===fixed[sym]}).slice(0,3);
     picked.forEach(function(e){
-      var ks=(e.calls||[]).map(function(c){return Number(c.k)});
-      entries.push({sym:sym,date:e.date,dte:e.dte,monthly:isMonthlyExpiry(e.date),calls:(e.calls||[]).length,
-        lo:Math.min.apply(null,ks),hi:Math.max.apply(null,ks)});
+      entries.push({date:e.date,dte:e.dte,monthly:isMonthlyExpiry(e.date),
+        listed:Number(e.listed)||0,gapPct:Number(e.gapPct)||0});
     });
-  });
+  }
   var holdings={};
   (optionTrades||[]).forEach(function(o){
     if(!o||o.settled||o.archived||!o.expiry)return;
     var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
   });
-  el.innerHTML=expiryCalendarHtml(entries,{holdings:holdings,fixed:fixed,
+  var tabs=document.getElementById('calTabs');
+  if(tabs)tabs.innerHTML=['VGT','SMH'].map(function(s){
+    return '<button type="button" class="prob-chip'+(s===calTab?' is-on':'')+'" data-caltab="'+s+'">'+s+'</button>';
+  }).join('');
+  el.innerHTML=expiryCalendarHtml(entries,{sym:sym,holdings:holdings,fixed:fixed[sym],
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链加载中…'});
   var btn=document.getElementById('calToggle');
   if(btn)btn.textContent=calShowAll?'只看近 3 档':'显示全部到期日';
@@ -1766,6 +1771,14 @@ function bindProbControls(){
   });
   var calBtn=document.getElementById('calToggle');
   if(calBtn)calBtn.addEventListener('click',toggleCalShowAll);
+  /* 到期日历按标的切页（VGT / SMH）—— 两个标的的到期日结构完全不同，一张表塞不下 */
+  var calTabs=document.getElementById('calTabs');
+  if(calTabs)calTabs.addEventListener('click',function(e){
+    var b=e.target.closest('[data-caltab]');if(!b)return;
+    calTab=b.dataset.caltab;
+    renderExpiryCalendar();
+    haptic('light');
+  });
 }
 (function initProb(){
   var run=function(){

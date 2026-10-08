@@ -208,35 +208,32 @@ export function expiryCalendarHtml(entries, ctx) {
   const c = ctx || {};
   const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
   const holdings = c.holdings || {};
-  const fixed = c.fixed || {};   /* { VGT:'2026-11-20', SMH:'2026-10-30' } —— 固定节奏该卖的那一档 */
+  const sym = String(c.sym || '');
+  const fixed = c.fixed || '';   /* 固定节奏该卖的那一档，例如 '2026-10-16' */
   if (!list.length) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
-  const syms = [];
-  list.forEach(function (e) { if (syms.indexOf(e.sym) < 0) syms.push(e.sym); });
-  /* 按标的拆成两块表 —— 两个标的的到期日结构完全不同（VGT 只有月度、SMH 有周度），
-     混在一张表里既难比对，也没法各自"只看近几档"。 */
-  return syms.map(function (sym) {
-    const rows = list.filter(function (e) { return e.sym === sym; })
-      .sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
-    let html = '<div class="cal-section">' +
-      '<div class="prob-section-title">' + escapeHtml(sym) + '</div>' +
-      '<table class="prob-table cal-table"><thead><tr>' +
-      '<th>到期日</th><th>剩余</th><th>类型</th><th>行权价档位</th><th>我的持仓</th>' +
-      '</tr></thead><tbody>';
-    rows.forEach(function (e) {
-      const mine = holdings[sym + '|' + e.date] || 0;
-      const onBeat = fixed[sym] === e.date;
-      const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
-      html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
-        '<td data-cell="expiry">' + escapeHtml(e.date) +
-          (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
-        '<td data-cell="dte">' + e.dte + '天</td>' +
-        '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
-        '<td data-cell="strikes">' + e.calls + ' 档 · $' + Number(e.lo).toFixed(0) + '~$' + Number(e.hi).toFixed(0) + '</td>' +
-        '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +
-        '</tr>';
-    });
-    return html + '</tbody></table></div>';
-  }).join('');
+  /* 一次只渲染一个标的（由调用方的 VGT/SMH 分页决定）—— 两个标的的到期日结构差太多，
+     摆在同一张表里既难比对，也没法各自"只看近几档"。 */
+  const rows = list.slice().sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
+  let html = '<table class="prob-table cal-table"><thead><tr>' +
+    '<th>到期日</th><th>剩余</th><th>类型</th><th>行权价（市场）</th><th>我的持仓</th>' +
+    '</tr></thead><tbody>';
+  rows.forEach(function (e) {
+    const mine = holdings[sym + '|' + e.date] || 0;
+    const onBeat = fixed === e.date;
+    const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
+    /* 挂牌数用**市场真实**的（Worker 在裁剪前统计），不是 app 观察区间内的子集；
+       间距是平值附近相邻行权价的中位值 —— 它决定"能不能精确挑到目标 OTM%"。 */
+    const gap = Number(e.gapPct) > 0 ? ' · 间距 ' + Number(e.gapPct).toFixed(2) + '%' : '';
+    html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
+      '<td data-cell="expiry">' + escapeHtml(e.date) +
+        (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
+      '<td data-cell="dte">' + e.dte + '天</td>' +
+      '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
+      '<td data-cell="strikes">' + Number(e.listed) + ' 个' + gap + '</td>' +
+      '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +
+      '</tr>';
+  });
+  return html + '</tbody></table>';
 }

@@ -36,37 +36,35 @@ test('expiryCalendarHtml：空链给空态', () => {
   assert.match(expiryCalendarHtml(null, {}), /prob-empty/);
 });
 
-test('expiryCalendarHtml：按标的拆成两块表（v331），不再是「标的」一列的大表', () => {
+test('expiryCalendarHtml：一次只渲染一个标的的表（分页由调用方决定），行权价列用市场真实数据', () => {
   const html = expiryCalendarHtml([
-    { sym: 'VGT', date: '2026-11-20', dte: 43, monthly: true, calls: 35, lo: 100, hi: 190 },
-    { sym: 'SMH', date: '2026-10-30', dte: 22, monthly: false, calls: 69, lo: 530, hi: 760 },
-  ], {});
-  assert.equal((html.match(/<table/g) || []).length, 2, '一个标的一张表');
-  assert.equal((html.match(/cal-section/g) || []).length, 2);
-  assert.match(html, /VGT<\/div>/);
-  assert.match(html, /SMH<\/div>/);
-  assert.doesNotMatch(html, /<th>标的<\/th>/, '拆表后不再需要标的列');
-  assert.match(html, /2026-11-20/);
+    { date: '2026-11-20', dte: 43, monthly: true, listed: 151, gapPct: 1.32 },
+    { date: '2026-12-18', dte: 71, monthly: true, listed: 177, gapPct: 0.81 },
+    { date: '2026-10-30', dte: 22, monthly: false, listed: 69, gapPct: 0.45 },
+  ], { sym: 'VGT', fixed: '2026-11-20' });
+  assert.equal((html.match(/<table/g) || []).length, 1, '一个标的一张表');
+  assert.doesNotMatch(html, /<th>标的<\/th>/, '分页后不再需要标的列');
+  assert.match(html, /<th>行权价（市场）<\/th>/);
+  assert.match(html, /151 个 · 间距 1\.32%/, '挂牌数 + 平值附近中位间距');
+  assert.match(html, /69 个 · 间距 0\.45%/);
   assert.match(html, /is-monthly">月度/);
-  assert.match(html, /2026-10-30/);
-  assert.match(html, /周度/);
-  assert.match(html, /69 档/);
-  assert.match(html, /\$530~\$760/);
+  assert.match(html, /<span class="cal-tag">周度<\/span>/);
+  assert.match(html, /★ 按节奏该卖这档/);
 });
 
-test('expiryCalendarHtml：每块内部按剩余天数升序', () => {
+test('expiryCalendarHtml：表内按剩余天数升序', () => {
   const html = expiryCalendarHtml([
-    { sym: 'SMH', date: '2026-12-18', dte: 71, monthly: true, calls: 40, lo: 530, hi: 760 },
-    { sym: 'SMH', date: '2026-10-30', dte: 22, monthly: false, calls: 69, lo: 530, hi: 760 },
-  ], {});
+    { date: '2026-12-18', dte: 71, monthly: true, listed: 177, gapPct: 0.81 },
+    { date: '2026-10-30', dte: 22, monthly: false, listed: 69, gapPct: 0.45 },
+  ], { sym: 'SMH' });
   assert.ok(html.indexOf('2026-10-30') < html.indexOf('2026-12-18'), '近的排前面');
 });
 
 test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', () => {
   const html = expiryCalendarHtml([
-    { sym: 'VGT', date: '2026-11-20', dte: 43, monthly: true, calls: 35, lo: 100, hi: 190 },
-    { sym: 'SMH', date: '2026-11-20', dte: 43, monthly: true, calls: 40, lo: 530, hi: 760 },
-  ], { holdings: { 'VGT|2026-11-20': 2 } });
+    { date: '2026-11-20', dte: 43, monthly: true, listed: 151, gapPct: 1.32 },
+    { date: '2026-12-18', dte: 71, monthly: true, listed: 177, gapPct: 0.81 },
+  ], { sym: 'VGT', holdings: { 'VGT|2026-11-20': 2 } });
   assert.match(html, /class="cal-mine"/);
   assert.match(html, /2 张/);
   assert.equal((html.match(/cal-mine/g) || []).length, 1, '只有持有那一档高亮');

@@ -67,6 +67,17 @@ export function buildChain(contracts, meta) {
   const maxTs = now + MAX_DTE * 86400;
   const lo = spot > 0 ? spot * MIN_STRIKE_RATIO : 0;
   const hi = spot > 0 ? spot * MAX_STRIKE_RATIO : Infinity;
+  /* 先按"是不是这一天的 CALL、在不在窗口内"过一遍，**不动行权价** ——
+     这份是市场真实挂牌的阶梯，用来算 stats（挂牌数 / 极值 / 平值附近间距）。
+     下面的 byExpiry 才是给前端用的裁剪版（只留现价 0.9~1.5 倍）。 */
+  const marketByDate = new Map();
+  (Array.isArray(contracts) ? contracts : []).forEach(function (c) {
+    if (!c || c.cp !== 'C') return;
+    if (!(c.ts > now) || c.ts > maxTs) return;
+    if (!(c.strike > 0)) return;
+    if (!marketByDate.has(c.date)) marketByDate.set(c.date, []);
+    marketByDate.get(c.date).push(c.strike);
+  });
   const byExpiry = new Map();
   (Array.isArray(contracts) ? contracts : []).forEach(function (c) {
     if (!c || c.cp !== 'C') return;
@@ -90,6 +101,11 @@ export function buildChain(contracts, meta) {
   expiries.forEach(function (e) {
     e.calls.sort(function (a, b) { return a.k - b.k; });
     e.dte = Math.max(0, Math.round((e.ts - now) / 86400));
+    const ks = (marketByDate.get(e.date) || []).slice().sort(function (a, b) { return a - b; });
+    e.listed = ks.length;                        // 市场真实挂牌的行权价个数（未裁剪）
+    e.lo = ks.length ? ks[0] : 0;
+    e.hi = ks.length ? ks[ks.length - 1] : 0;
+    e.gapPct = medianGapPct(ks, spot);           // 平值附近相邻行权价的中位间距（% of spot）
   });
   // iv30 是 CBOE 顶层的官方 30 天隐含波动率（百分数，例如 22.485 = 22.485%）。
   // 它比从期权链插值算出来的更权威，前端拿来当参照；Yahoo 兜底路径没有这个字段，给 0。
@@ -101,6 +117,31 @@ export function buildChain(contracts, meta) {
     iv30: num(info.iv30),
     expiries: expiries,
   };
+}
+
+/**
+ * 平值附近相邻行权价的中位间距（占现价 %）。
+ *
+ * 为什么只看平值 ±10%：阶梯在不同行权价上密度完全不同（VGT 在 105~150 是 $0.625 一档，
+ * 更外面是 $5 一档），拿全梯度的平均值会被两翼带偏。而真正决定"能不能精确挑到 7% OTM"
+ * 的，就是你要卖的那个区域有多密。样本不足 3 个时退回整条阶梯。
+ */
+export function medianGapPct(strikes, spot) {
+  const s = num(spot);
+  const all = (Array.isArray(strikes) ? strikes : []).filter(function (v) { return Number(v) > 0; }).slice().sort(function (a, b) { return a - b; });
+  if (!(s > 0) || all.length < 2) return 0;
+  const near = all.filter(function (v) { return v >= s * 0.9 && v <= s * 1.1; });
+  const use = near.length >= 3 ? near : all;
+  const gaps = [];
+  for (let i = 1; i < use.length; i += 1) {
+    const g = use[i] - use[i - 1];
+    if (g > 0) gaps.push(g);
+  }
+  if (!gaps.length) return 0;
+  gaps.sort(function (a, b) { return a - b; });
+  const mid = Math.floor(gaps.length / 2);
+  const median = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
+  return Math.round(median / s * 10000) / 100;   // 保留两位百分数，例如 0.81
 }
 
 /** 带超时的 fetch，模式与 lib/price.js 一致。 */

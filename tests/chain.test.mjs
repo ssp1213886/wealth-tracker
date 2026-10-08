@@ -2,7 +2,7 @@
 // 这段决定了喂给概率计算的原始数据干不干净，所以脏数据必须被挡在外面。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOsiSymbol, buildChain } from '../src/lib/chain.js';
+import { parseOsiSymbol, buildChain, medianGapPct } from '../src/lib/chain.js';
 
 /** 2026-10-08 00:00 UTC 的秒级时间戳，作为所有用例的"现在"。 */
 const NOW = Math.floor(Date.UTC(2026, 9, 8) / 1000);
@@ -123,4 +123,38 @@ test('buildChain：带上 CBOE 的官方 30 天 IV（iv30，百分数），缺�
   assert.equal(buildChain([], { sym: 'VGT', spot: 100, now: NOW }).iv30, 0, 'Yahoo 兜底路径没有这个字段');
   assert.equal(buildChain([], { sym: 'VGT', spot: 100, iv30: -3, now: NOW }).iv30, 0);
   assert.equal(buildChain([], { sym: 'VGT', spot: 100, iv30: 'abc', now: NOW }).iv30, 0);
+});
+
+/* ---------------- v331：市场真实阶梯的统计（挂牌数 / 间距） ---------------- */
+
+test('medianGapPct：只看平值 ±10%，避开两翼疏档把平均值带偏', () => {
+  // 现价 100：平值附近是 $1 一档，外面是 $5 一档
+  const strikes = [50, 55, 60, 65, 70, 75, 80, 85, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 110, 115, 120];
+  assert.equal(medianGapPct(strikes, 100), 1, '平值附近间距 $1 → 1.00%');
+  assert.equal(medianGapPct(strikes.map((k) => k * 2), 200), 1, '同一组阶梯换个现价也是 1%');
+});
+
+test('medianGapPct：平值附近样本不足 3 个时退回整条阶梯；非法输入给 0', () => {
+  assert.equal(medianGapPct([500, 600, 700], 100), 100, '平值附近没档 → 用全梯度的 $100 间距');
+  assert.equal(medianGapPct([100], 100), 0, '只有一个档没有间距可言');
+  assert.equal(medianGapPct([], 100), 0);
+  assert.equal(medianGapPct(null, 100), 0);
+  assert.equal(medianGapPct([100, 101], 0), 0, '现价缺失时不算');
+});
+
+test('buildChain：每个到期日带上市场真实统计（挂牌数不因裁剪而缩水）', () => {
+  const contracts = [];
+  // 市场真实挂牌：$40 ~ $200，$1 一档
+  for (let k = 40; k <= 200; k += 1) {
+    contracts.push({ ts: day(43), date: '2026-11-20', cp: 'C', strike: k, bid: 1, ask: 2, last: 1.5, iv: 0.2, oi: 1, vol: 1, delta: 0.2 });
+  }
+  const chain = buildChain(contracts, { sym: 'VGT', spot: 100, now: NOW });
+  const e = chain.expiries[0];
+  assert.equal(e.listed, 161, '挂牌数是市场真实的 161 个（$40~$200）');
+  assert.equal(e.lo, 40);
+  assert.equal(e.hi, 200);
+  assert.equal(e.gapPct, 1, '平值附近 $1 一档 → 1%');
+  assert.ok(e.calls.length < e.listed, '喂给前端的仍是裁剪版：' + e.calls.length + ' < ' + e.listed);
+  assert.equal(Math.min.apply(null, e.calls.map((c) => c.k)), 90, '裁剪区间是现价 0.9~1.5 倍');
+  assert.equal(Math.max.apply(null, e.calls.map((c) => c.k)), 150);
 });
