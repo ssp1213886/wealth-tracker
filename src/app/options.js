@@ -118,3 +118,84 @@ export function suggestedStrike(price, pct) {
   if (p <= 0) return 0;
   return p * (1 + (Number(pct) || 0) / 100);
 }
+
+/**
+ * 被行权了但还没买回（v334）。
+ *
+ * 行权会产生一笔 -(100×张数) 的卖出（tag='assign'）；按铁律应在 T+1 用市价买回同等股数。
+ * 匹配规则：同标的、股数正好等于被行权股数、日期不早于行权日、且这笔买入还没被别的行权配走。
+ * **纯派生** —— 不新增任何字段，用户也不用额外打卡。
+ *
+ * 代价：如果你恰好手动买入了完全相同的股数，会被误判成"已买回"。月度 DCA 的股数是
+ * 「几千美元 ÷ 现价」，几乎不可能正好落在 100 的整数倍上，所以实际风险很低。
+ */
+export function pendingBuybacks(trades) {
+  const list = Array.isArray(trades) ? trades : [];
+  const assigns = list
+    .filter(function (t) { return t && t.tag === 'assign' && Number(t.shares) < 0; })
+    .sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+  const used = {};
+  const out = [];
+  assigns.forEach(function (a) {
+    const need = Math.abs(Number(a.shares) || 0);
+    if (!(need > 0)) return;
+    let hit = -1;
+    for (let i = 0; i < list.length; i += 1) {
+      const t = list[i];
+      if (used[i] || !t || t.tag === 'assign') continue;
+      if (String(t.symbol) !== String(a.symbol)) continue;
+      if (Number(t.shares) !== need) continue;
+      if (String(t.date || '') < String(a.date || '')) continue;
+      hit = i;
+      break;
+    }
+    if (hit >= 0) { used[hit] = 1; return; }
+    out.push({ kind: 'buyback', id: 'bb-' + a.id, sym: a.symbol, shares: need, assignDate: a.date, contracts: need / 100 });
+  });
+  return out;
+}
+
+/**
+ * 到期判定 + 买回待办（v334）：完全从现有数据推导，不加任何新存储。
+ *
+ * 为什么 app 能预判：判定规则是**死的** —— 到期日收盘时现价 > 行权价就一定会被行权
+ * （OCC 的 Ex-by-Ex：实值 ≥$0.01 即自动行权），所以不必等券商通知。
+ * 但只有**到期日当天**的现价才等于收盘价；过期之后现价已经变了、不敢倒推，
+ * 所以"过期未标记"的只提示还没标记，不猜结果。
+ *
+ * 返回项：
+ *   due-today  今天到期、还没到收盘 → 先提醒一句
+ *   decide     到期日当天且已收盘   → 给确定判断（itm 决定"会被行权"还是"会作废"）
+ *   unmarked   已过期但没标记结果   → 提示去券商确认
+ *   buyback    被行权了还没买回
+ */
+export function optionActionItems(options, trades, prices, now) {
+  const list = Array.isArray(options) ? options : [];
+  const quote = prices || {};
+  const clock = now || new Date();
+  const today = marketDate(clock);
+  const out = [];
+  list.forEach(function (o) {
+    if (!o || o.type !== 'CALL' || o.settled || o.archived || !o.expiry) return;
+    const base = {
+      id: o.id,
+      sym: o.sym,
+      strike: Number(o.strike) || 0,
+      contracts: Number(o.contracts) || 1,
+      expiry: o.expiry,
+    };
+    const state = optionExpiryState(o.expiry, clock);
+    if (!state.expired) {
+      if (state.days === 0) out.push(Object.assign({ kind: 'due-today' }, base));
+      return;
+    }
+    const spot = Number(quote[o.sym]) || 0;
+    if (o.expiry === today && spot > 0) {
+      out.push(Object.assign({ kind: 'decide', spot: spot, itm: spot > base.strike }, base));
+    } else {
+      out.push(Object.assign({ kind: 'unmarked', daysPast: Math.max(1, dateOrdinal(today) - dateOrdinal(o.expiry)) }, base));
+    }
+  });
+  pendingBuybacks(trades).forEach(function (b) { out.push(b); });
+  return out;
+}

@@ -4,7 +4,7 @@
 
 import { readRaw, removeKey , LS } from './store.js';
 import { marketDate } from './time.js';
-import { isActiveOption, optionExpiryState } from './options.js';
+import { isActiveOption, optionExpiryState, optionActionItems } from './options.js';
 import { fmtFull, logSwallowed } from './util.js';
 import { emptyStateHTML, renderAlertItem, alertSignature } from './render.js';
 
@@ -59,7 +59,53 @@ if(cp>0&&closest&&cp>=closest.strike*0.98){type='red';severity='critical';detail
 alerts.push({id:'call:'+sym,type:type,severity:severity,title:sym+' 已卖 '+contracts+' 张 Call',detail:detail,action:'option'})
 });
 var pingMap=ctx.pingMap,todayKey=marketDate(ctx.now);
-opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7)return;if(pingMap[o.id]===todayKey)return;var expired=st.expired,leftDays=Math.max(0,st.days),cnt=Number(o.contracts)||1;alerts.push({id:'expiry:'+o.id,type:expired?'red':'orange',severity:expired?'critical':'high',title:o.sym+' '+o.type+' $'+o.strike.toFixed(0)+(expired?' 已过期未结算':' 还剩 '+leftDays+' 天到期'),detail:'到期日 '+o.expiry+' · '+cnt+' 张'+(expired?' · 请确认行权或结算':''),action:'option',dismiss:'opt-expiry-'+o.id})});
+/* 到期预告只覆盖"还剩 1~7 天"（st.days===0 跳过）：当天及之后交给下面的 optionActions
+   （到期判定 + 买回待办），否则同一天会同时冒出来"还剩 0 天到期"和"会被行权"两条。 */
+opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7||st.days===0)return;if(pingMap[o.id]===todayKey)return;var cnt=Number(o.contracts)||1;alerts.push({id:'expiry:'+o.id,type:'orange',severity:'high',title:o.sym+' '+o.type+' $'+strikeText(o.strike)+' 还剩 '+st.days+' 天到期',detail:'到期日 '+o.expiry+' · '+cnt+' 张',action:'option',dismiss:'opt-expiry-'+o.id})});
+
+/* ===== 到期判定 + 买回待办（v334）=====
+   策略里有明确动作要求、但以前 app 完全不管的两个环节：
+     ① 到期日收盘后判断"会被行权 / 会作废"（判定规则是死的，不需要等券商通知）
+     ② 被行权后 T+1 必须市价买回 —— 忘了就会漏掉 100 股，下一轮还没正股可覆盖
+   点击条目会跳到对应页面自己动手；这里只负责把状态翻成人话。
+   数据由本模块自己从 options/trades/prices 推导（不再让调用方传），避免"忘了传就静默没有提醒"。 */
+function strikeText(k){var n=Number(k)||0;return '$'+(n===Math.floor(n)?n.toFixed(0):n.toFixed(2))}
+function money(spot){return '$'+Number(spot).toFixed(2)}
+var optionActions=[];try{optionActions=optionActionItems(opts,ctx.trades,ctx.prices,ctx.now)||[]}catch(e){logSwallowed("optionActionItems",e)}
+optionActions.forEach(function(a){
+  if(a.kind==='buyback'){
+    alerts.push({id:'buyback:'+a.id,type:'red',severity:'critical',
+      title:'待买回 '+a.shares+' 股 '+a.sym,
+      detail:a.assignDate+' 被行权（'+a.contracts+' 张 CALL）· 按铁律 T+1 市价买回，否则下轮没有正股可覆盖',
+      action:'console'});
+    return;
+  }
+  if(a.kind==='due-today'){
+    alerts.push({id:'optdue:'+a.id,type:'accent',severity:'medium',
+      title:a.sym+' CALL '+strikeText(a.strike)+' 今天到期',
+      detail:'收盘后（美东 16:00）看现价是否高于行权价 —— 高于就会被行权，明天要买回 '+(a.contracts*100)+' 股',
+      action:'option'});
+    return;
+  }
+  if(a.kind==='decide'){
+    alerts.push(a.itm
+      ? {id:'optdecide:'+a.id,type:'red',severity:'critical',
+         title:a.sym+' CALL '+strikeText(a.strike)+' 会被行权',
+         detail:'收盘 '+money(a.spot)+' > 行权价 '+strikeText(a.strike)+' · 在期权页点「行权」，明天买回 '+(a.contracts*100)+' 股',
+         action:'option'}
+      : {id:'optdecide:'+a.id,type:'blue',severity:'medium',
+         title:a.sym+' CALL '+strikeText(a.strike)+' 会作废',
+         detail:'收盘 '+money(a.spot)+' ≤ 行权价 '+strikeText(a.strike)+' · 在期权页点「结算」归档',
+         action:'option'});
+    return;
+  }
+  if(a.kind==='unmarked'){
+    alerts.push({id:'optunmarked:'+a.id,type:'orange',severity:'high',
+      title:a.sym+' CALL '+strikeText(a.strike)+' 已到期 '+a.daysPast+' 天未标记',
+      detail:'去券商确认是否被行权；若被行权，记得买回 '+(a.contracts*100)+' 股 '+a.sym,
+      action:'option'});
+  }
+});
 var monthBuys=ctx.trades.filter(function(t){return t.date.slice(0,7)===now&&t.shares>0}),buyTotal=monthBuys.reduce(function(s,t){return s+(t.price*Math.abs(t.shares))},0),dcaTarget=ctx.state.dcaOverride&&ctx.state.dcaOverride.month===now?ctx.state.dcaOverride.amount:ctx.state.monthlyDCA;
 if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id:'dca:'+now,type:'accent',severity:'low',title:'本月定投还差 '+fmtFull(gap),detail:'完成后保持目标资产配比',action:'console'})}
 /* 固定节奏提醒（v328）：到期日当天就卖下一档。节奏日历由 index.js 传进来（ccRows），

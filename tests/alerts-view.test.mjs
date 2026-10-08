@@ -52,18 +52,21 @@ test('buildAlerts：同一标的的多张 Call 合并计数，用最近到期那
   assert.match(one.detail, /最近 10-16 到期/);
 });
 
-test('buildAlerts：期权临期（≤3 天）提醒，已过期升级为红色', () => {
+test('buildAlerts：到期预告覆盖 1~7 天；到期日当天与之后交给「到期判定」', () => {
   const soon = buildAlerts(ctx({ options: [call({ id: 7, expiry: '2026-10-02' })] })).find((a) => a.id === 'expiry:7');
   assert.equal(soon.type, 'orange');
   assert.equal(soon.severity, 'high');
   assert.match(soon.title, /还剩 3 天到期/);
   assert.equal(soon.dismiss, 'opt-expiry-7');
 
-  const over = buildAlerts(ctx({ options: [call({ id: 8, expiry: '2026-09-28' })] })).find((a) => a.id === 'expiry:8');
-  assert.equal(over.type, 'red');
-  assert.equal(over.severity, 'critical');
-  assert.match(over.title, /已过期未结算/);
-  assert.match(over.detail, /请确认行权或结算/);
+  /* v334：过期未标记不再走"到期预告"（会同一天冒出两条），改由到期判定给「未标记 N 天」 */
+  const list = buildAlerts(ctx({ options: [call({ id: 8, expiry: '2026-09-28' })] }));
+  assert.equal(list.filter((a) => a.id === 'expiry:8').length, 0, '过期的不再重复出一条到期预告');
+  const over = list.find((a) => a.id === 'optunmarked:8');
+  assert.ok(over, '过期未标记要有提示');
+  assert.match(over.title, /已到期 1 天未标记/);
+  assert.match(over.detail, /确认是否被行权/);
+  assert.equal(over.action, 'option');
 });
 
 test('buildAlerts：>3 天 / 已结算 / 已归档 / 今天已提醒过的都不进列表', () => {
@@ -132,4 +135,62 @@ test('期权提醒标记：存的是"哪个 id 在今天被提醒过"', () => {
     if (saved) Object.defineProperty(globalThis, 'localStorage', saved);
     else delete globalThis.localStorage;
   }
+});
+
+/* ================= v334：到期判定 + 买回待办 ================= */
+
+const EXP_SHUT = new Date('2026-10-16T21:00:00.000Z');   // 10-16 17:00 ET，已收盘
+const expCall = (over) => Object.assign({ id: 1, sym: 'VGT', type: 'CALL', strike: 135, contracts: 1, premium: 1, expiry: '2026-10-16' }, over || {});
+const assign = (over) => Object.assign({ id: 90, symbol: 'VGT', date: '2026-10-16', shares: -100, price: 135, tag: 'assign' }, over || {});
+
+test('buildAlerts：到期日收盘后实值 → 提示会被行权，并叫你明天买回', () => {
+  const list = buildAlerts(ctx({ now: EXP_SHUT, options: [expCall()], prices: { VGT: 137.2 } }));
+  const a = list.find((x) => x.id === 'optdecide:1');
+  assert.ok(a, '应有到期判定');
+  assert.equal(a.type, 'red');
+  assert.equal(a.severity, 'critical');
+  assert.match(a.title, /VGT CALL \$135 会被行权/);
+  assert.match(a.detail, /收盘 \$137\.20 > 行权价 \$135/);
+  assert.match(a.detail, /明天买回 100 股/);
+  assert.equal(a.action, 'option');
+});
+
+test('buildAlerts：到期日收盘后虚值 → 提示会作废，去点结算', () => {
+  const list = buildAlerts(ctx({ now: EXP_SHUT, options: [expCall()], prices: { VGT: 131.5 } }));
+  const a = list.find((x) => x.id === 'optdecide:1');
+  assert.equal(a.type, 'blue');
+  assert.match(a.title, /会作废/);
+  assert.match(a.detail, /点「结算」归档/);
+});
+
+test('buildAlerts：到期日当天尚未收盘 → 只提示今天到期，不下判断', () => {
+  const list = buildAlerts(ctx({ now: new Date('2026-10-16T14:00:00.000Z'), options: [expCall()], prices: { VGT: 137.2 } }));
+  const a = list.find((x) => x.id === 'optdue:1');
+  assert.ok(a);
+  assert.equal(a.type, 'accent');
+  assert.match(a.detail, /收盘后（美东 16:00）/);
+  assert.equal(list.filter((x) => String(x.id).indexOf('optdecide:') === 0).length, 0);
+});
+
+test('buildAlerts：被行权后没有买回 → 待买回（最高优先级，且不可"今天不再提醒"）', () => {
+  const list = buildAlerts(ctx({ now: new Date('2026-10-19T14:00:00.000Z'), trades: [assign()] }));
+  const a = list.find((x) => String(x.id).indexOf('buyback:') === 0);
+  assert.ok(a, '被行权后必须有买回待办');
+  assert.equal(a.severity, 'critical');
+  assert.match(a.title, /待买回 100 股 VGT/);
+  assert.match(a.detail, /2026-10-16 被行权/);
+  assert.match(a.detail, /T\+1 市价买回/);
+  assert.equal(a.action, 'console', '点击跳到操作台去记录买回');
+  assert.equal(a.dismiss, undefined, '买回是硬性动作，不给"今天不再提醒"');
+});
+
+test('buildAlerts：记录了买回之后待办消失', () => {
+  const bought = assign({ id: 91, shares: 100, price: 137.2, date: '2026-10-19', tag: '' });
+  const list = buildAlerts(ctx({ now: new Date('2026-10-19T14:00:00.000Z'), trades: [assign(), bought] }));
+  assert.equal(list.filter((x) => String(x.id).indexOf('buyback:') === 0).length, 0);
+});
+
+test('buildAlerts：没过期的期权不会产生到期判定或买回待办', () => {
+  const list = buildAlerts(ctx({ now: EXP_SHUT, options: [expCall({ id: 5, expiry: '2026-12-18' })], prices: { VGT: 137.2 } }));
+  assert.equal(list.filter((x) => /^opt(decide|due|unmarked):/.test(String(x.id))).length, 0);
 });

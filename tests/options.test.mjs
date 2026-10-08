@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals,
-  otmPercent, stepOtmPercent, suggestedStrike,
+  otmPercent, stepOtmPercent, suggestedStrike, pendingBuybacks, optionActionItems,
 } from '../src/app/options.js';
 
 const opt = (over) => Object.assign({
@@ -127,4 +127,107 @@ test('OTM 工具：百分比回落默认、加减后钳制 1~20、建议行权�
   assert.equal(suggestedStrike(100, 7), 107);
   assert.equal(suggestedStrike(0, 7), 0, '现价缺失不显示建议价');
   assert.equal(Math.round(suggestedStrike(593.45, 5)), Math.round(593.45 * 1.05));
+});
+
+/* ================= v334：到期判定 + 买回待办 ================= */
+
+// 2026-10-16 是周五（美东）。收盘 = 16:00 ET = 20:00 UTC。
+const EXP_DAY_OPEN = new Date('2026-10-16T14:00:00.000Z');   // 10:00 ET，当天还没收盘
+const EXP_DAY_SHUT = new Date('2026-10-16T21:00:00.000Z');   // 17:00 ET，已收盘
+const THREE_DAYS_LATER = new Date('2026-10-19T14:00:00.000Z'); // 10-19 10:00 ET
+
+const callTrade = (over) => Object.assign({ id: 1, symbol: 'VGT', date: '2026-10-01', shares: 100, price: 120, tag: '' }, over);
+const callOpt = (over) => Object.assign({ id: 1, sym: 'VGT', type: 'CALL', strike: 135, premium: 1, contracts: 1, expiry: '2026-10-16' }, over);
+
+test('pendingBuybacks：行权后没有对应买入 → 待买回', () => {
+  const trades = [callTrade({ id: 9, date: '2026-10-16', shares: -100, price: 135, tag: 'assign' })];
+  const out = pendingBuybacks(trades);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].kind, 'buyback');
+  assert.equal(out[0].sym, 'VGT');
+  assert.equal(out[0].shares, 100);
+  assert.equal(out[0].contracts, 1);
+  assert.equal(out[0].assignDate, '2026-10-16');
+});
+
+test('pendingBuybacks：找到同标的、同股数、行权日之后的买入 → 不再待办', () => {
+  const trades = [
+    callTrade({ id: 9, date: '2026-10-16', shares: -100, price: 135, tag: 'assign' }),
+    callTrade({ id: 10, date: '2026-10-19', shares: 100, price: 137.2, tag: '' }),
+  ];
+  assert.deepEqual(pendingBuybacks(trades), []);
+  // 行权日之前的同股数买入不算（那是 DCA 或建仓）
+  const early = [
+    callTrade({ id: 9, date: '2026-10-16', shares: -100, price: 135, tag: 'assign' }),
+    callTrade({ id: 10, date: '2026-10-15', shares: 100, price: 130, tag: '' }),
+  ];
+  assert.equal(pendingBuybacks(early).length, 1);
+  // 股数对不上不算买回（月度 DCA 的股数不是 100 的倍数）
+  const wrongSize = [
+    callTrade({ id: 9, date: '2026-10-16', shares: -200, price: 135, tag: 'assign' }),
+    callTrade({ id: 10, date: '2026-10-19', shares: 100, price: 137.2, tag: '' }),
+  ];
+  assert.equal(pendingBuybacks(wrongSize)[0].shares, 200, '缺 200 股就报 200 股');
+});
+
+test('pendingBuybacks：两笔行权不会共用同一笔买回；无行权时返回空', () => {
+  const trades = [
+    callTrade({ id: 9, date: '2026-09-18', shares: -100, price: 130, tag: 'assign' }),
+    callTrade({ id: 10, date: '2026-09-21', shares: 100, price: 131, tag: '' }),
+    callTrade({ id: 11, date: '2026-10-16', shares: -100, price: 135, tag: 'assign' }),
+  ];
+  const out = pendingBuybacks(trades);
+  assert.equal(out.length, 1, '第二笔行权还没买回');
+  assert.equal(out[0].assignDate, '2026-10-16');
+  assert.deepEqual(pendingBuybacks([callTrade({})]), [], '没有 assign 就没有待办');
+  assert.deepEqual(pendingBuybacks(null), []);
+});
+
+test('optionActionItems：到期日当天（未收盘）只提示，不给判断', () => {
+  const out = optionActionItems([callOpt()], [], { VGT: 137.2 }, EXP_DAY_OPEN);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].kind, 'due-today');
+  assert.equal(out[0].strike, 135);
+});
+
+test('optionActionItems：到期日收盘后给确定判断 —— 实值会被行权、虚值会作废', () => {
+  const itm = optionActionItems([callOpt()], [], { VGT: 137.2 }, EXP_DAY_SHUT)[0];
+  assert.equal(itm.kind, 'decide');
+  assert.equal(itm.itm, true);
+  assert.equal(itm.spot, 137.2);
+  const otm = optionActionItems([callOpt()], [], { VGT: 131.5 }, EXP_DAY_SHUT)[0];
+  assert.equal(otm.kind, 'decide');
+  assert.equal(otm.itm, false, '收盘 131.5 ≤ 行权价 135 → 作废');
+  // 平值算作废（实值必须 > 行权价）
+  assert.equal(optionActionItems([callOpt()], [], { VGT: 135 }, EXP_DAY_SHUT)[0].itm, false);
+});
+
+test('optionActionItems：过期后不敢倒推结果，只报「未标记 N 天」', () => {
+  const out = optionActionItems([callOpt()], [], { VGT: 137.2 }, THREE_DAYS_LATER);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].kind, 'unmarked');
+  assert.equal(out[0].daysPast, 3);
+  assert.equal(out[0].itm, undefined, '过期之后不猜当时是实值还是虚值');
+});
+
+test('optionActionItems：已结算/已归档/未到期/PUT 都不参与', () => {
+  const opts = [
+    callOpt({ id: 1, settled: true }),
+    callOpt({ id: 2, archived: true }),
+    callOpt({ id: 3, expiry: '2026-12-18' }),
+    callOpt({ id: 4, type: 'PUT' }),
+  ];
+  assert.deepEqual(optionActionItems(opts, [], { VGT: 137.2 }, EXP_DAY_SHUT), []);
+});
+
+test('optionActionItems：缺现价时不给判断，落到「未标记」', () => {
+  const out = optionActionItems([callOpt()], [], {}, EXP_DAY_SHUT);
+  assert.equal(out[0].kind, 'unmarked', '没有收盘价就不敢说会被行权');
+});
+
+test('optionActionItems：买回待办和其它项一起返回', () => {
+  const trades = [callTrade({ id: 9, date: '2026-10-16', shares: -100, price: 135, tag: 'assign' })];
+  const out = optionActionItems([callOpt({ id: 7, expiry: '2026-12-18' })], trades, { VGT: 130 }, THREE_DAYS_LATER);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].kind, 'buyback', '未到期的 CALL 不产生判定项，只剩买回待办');
 });
