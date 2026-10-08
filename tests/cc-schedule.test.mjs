@@ -58,8 +58,11 @@ test('nextMonthly3：当天就是第三个周五时返回当天，否则返回�
 });
 
 test('nextEvery3W：锚点必须是周五，严格按 21 天递推', () => {
-  assert.equal(nextEvery3W('2026-10-30', '2026-10-08'), '2026-10-30');
+  // 锚点只定相位，不是"你从那天才开始"：网格可以往锚点之前延伸
+  assert.equal(nextEvery3W('2026-10-30', '2026-10-08'), '2026-10-09', '不早于今天的第一档是 10-09（10-30 的上一档）');
   assert.equal(nextEvery3W('2026-10-30', '2026-10-30'), '2026-10-30', '当天算今天');
+  assert.equal(nextEvery3W('2026-10-30', '2026-10-09'), '2026-10-09');
+  assert.equal(nextEvery3W('2026-10-30', '2026-10-10'), '2026-10-30');
   assert.equal(nextEvery3W('2026-10-30', '2026-10-31'), '2026-11-20');
   assert.equal(nextEvery3W('2026-10-30', '2026-11-20'), '2026-11-20');
   assert.equal(nextEvery3W('2026-10-30', '2026-11-21'), '2026-12-11');
@@ -79,7 +82,8 @@ test('pastExpiries：按月/按 3 周往回列，且都在 fromDate 之前', () 
     assert.equal(weekdayOf(d), 5, '每 3 周的到期日必须都是周五');
   });
   for (let i = 1; i < w.length; i += 1) assert.equal(daysBetween(w[i], w[i - 1]), 21, '间隔必须是 21 天');
-  assert.deepEqual(pastExpiries('every3w', '2026-10-30', TODAY, 3), [], '锚点在未来时没有已过的档');
+  // 锚点只是相位：空仓时"上一档"必须算得出来（否则卡片会以为你手里握着锚点那一档）
+  assert.deepEqual(pastExpiries('every3w', '2026-10-30', TODAY, 3), ['2026-09-18', '2026-08-28', '2026-08-07']);
 });
 
 test('ruleFor：非法/缺失值按标的名回落（VGT 月度、SMH 每 3 周）', () => {
@@ -99,8 +103,9 @@ test('scheduleRow：下次到期日 = 下次卖出日（到期日当天卖下一
   assert.equal(v.isDue, false);
   assert.equal(v.label, '每月第三个周五');
   const s = scheduleRow('SMH', cfg, TODAY);
-  assert.equal(s.nextExpiry, '2026-10-30');
-  assert.equal(s.daysToGo, 22);
+  // 锚点管相位：今天 10-08 → 下一档（＝下次卖出日）是 10-09，目标才是 10-30
+  assert.equal(s.nextExpiry, '2026-10-09');
+  assert.equal(s.daysToGo, 1);
   assert.equal(s.label, '每 3 周的周五');
   assert.equal(s.anchor, '2026-10-30');
   // 当天 = 该操作

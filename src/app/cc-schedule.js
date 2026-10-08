@@ -107,7 +107,10 @@ export function nextEvery3W(anchor, fromDate) {
   if (!Number.isFinite(a) || !Number.isFinite(f) || weekdayOf(anchor) !== 5) return null;
   const step = 21 * DAY;
   const k = Math.ceil((f - a) / step);
-  return isoOf(a + Math.max(0, k) * step);
+  /* 锚点只定**相位**（每 3 周落哪几个周五），不代表"你从那天才开始"。
+     网格必须能往锚点**之前**延伸，否则"上一档"算不出来，卡片就会误以为你手里已经握着锚点那一档。
+     例：锚点 10-30、今天 10-08 → 下一次卖出是 10-09（10-30 的上一档），目标 10-30 到期。 */
+  return isoOf(a + k * step);
 }
 
 /** 过去 count 个已经到过的到期日（不含 fromDate 当天），由近到远。 */
@@ -120,7 +123,8 @@ export function pastExpiries(rule, anchor, fromDate, count) {
     if (!Number.isFinite(a)) return out;
     const step = 21 * DAY;
     let k = Math.floor((f - a) / step);
-    for (let i = 0; i < count && k - i >= 0; i += 1) {
+    /* 同上：锚点只是相位，已过的档可以早于锚点（空仓时"上一档"必须算得出来）。 */
+    for (let i = 0; out.length < count && i < count + 2; i += 1) {
       const iso = isoOf(a + (k - i) * step);
       if (dateMs(iso) < f) out.push(iso);
     }

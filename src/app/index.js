@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v353';var APP_DATA_VERSION=5;
+var APP_BUILD='v354';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -977,7 +977,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=353',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=354',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1694,16 +1694,18 @@ function renderProbCard(){
      ★ 那一档由 probMatrix 强制保留，不受门槛影响。 */
   var period=ccPeriod(probTab);
   var listed=listedExpiries(chain);
-  var sellDay=snapToListed(period.date,listed);          /* 卖出日＝本期到期日 */
+  var sellDay=snapToListed(period.date,listed);          /* 卖出日＝本期那一档的到期日 */
   var rollRaw=ccRollExpiry(probTab);                     /* 纯日历推出来的那一档 */
   var roll=snapToListed(rollRaw,listed);                 /* 吸附到真实挂牌档之后的一档 */
   try{mx=probMatrix(chain,{fixed:roll.date,minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
-  renderProbSummary(document,mx,{otm:otm,ruleLabel:period.label,due:period.due,
-    from:sellDay.date,periodDate:sellDay.date,
-    daysToSale:sellDay.date?daysBetween(marketDate(),sellDay.date):period.days,
+  /* 状态挂在**该卖那一档**上（不再挂"本期"）：同一个问题只有一个答案 —— 这张 CALL 记了没有。
+     锚点只管相位，所以空仓时"下一档"就是离今天最近的那个节奏日，卖出日自然落在今天或眼前。 */
+  var toSale=sellDay.date?daysBetween(marketDate(),sellDay.date):period.days;
+  renderProbSummary(document,mx,{otm:otm,ruleLabel:period.label,
+    from:sellDay.date,daysToSale:toSale,due:toSale===0,
     tenor:(sellDay.date&&roll.date)?daysBetween(sellDay.date,roll.date):null,
     shiftNote:roll.shifted?('节奏日 '+rollRaw+' 未挂牌'):'',
-    sold:ccSold(probTab,sellDay.date)});
+    sold:ccSold(probTab,roll.date)});
   renderProbMatrix(document,mx,{otm:otm,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链里没有 14 天以上的到期日'});
   renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),iv30:iv30Map()});
@@ -1924,7 +1926,16 @@ try{
 /** 只写本地：属于本机偏好，没进 SYNC_FIELDS（所以刻意不调 markDirty，免得留下永远推不走的脏标记）。 */
 function saveCcSchedule(){LS.setItem(CC_KEY,JSON.stringify(ccSchedule))}
 var ccDividends={};
-function ccRows(){return ['VGT','SMH'].map(function(s){return scheduleRow(s,ccSchedule,marketDate())}).filter(Boolean)}
+/** 节奏每行的 nextExpiry 是**卖出日**；target 才是"卖出哪一档到期"（新模型下这两个日期是分开的）。
+    提醒文案要说清"哪天卖出 → 哪一档到期"，不能把卖出日说成到期日。 */
+function ccRows(){
+  return ['VGT','SMH'].map(function(s){
+    var r=scheduleRow(s,ccSchedule,marketDate());
+    if(!r)return null;
+    r.target=ccRollExpiry(s);
+    return r;
+  }).filter(Boolean);
+}
 function ccStreaks(){var m={};['VGT','SMH'].forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccSchedule,marketDate())});return m}
 function ccExDivItems(){
   var out=[];

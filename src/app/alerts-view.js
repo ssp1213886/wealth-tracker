@@ -134,9 +134,11 @@ ccRows.forEach(function(r){
   if(!r||!r.nextExpiry)return;
   var left=(Date.parse(r.nextExpiry+'T00:00:00Z')-todayMs)/86400000;
   if(left===0){
-    alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',detail:r.label+' 到期 · 到期日当天卖下一档（旧档到期即新档开仓）',action:'option'});
+    alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',
+      detail:r.label+' · '+(r.target?('今天卖出 → '+r.target+' 到期'):'到期日当天卖下一档（旧档到期即新档开仓）'),action:'option'});
   }else if(left===1){
-    alerts.push({id:'ccsoon:'+r.sym,type:'blue',severity:'medium',title:'明天该卖 '+r.sym+' 的下一档 CALL',detail:r.label+' 到期 · 到期日 '+r.nextExpiry,action:'option'});
+    alerts.push({id:'ccsoon:'+r.sym,type:'blue',severity:'medium',title:'明天该卖 '+r.sym+' 的下一档 CALL',
+      detail:r.label+' · '+(r.target?('明天（'+r.nextExpiry+'）卖出 → '+r.target+' 到期'):'到期日 '+r.nextExpiry),action:'option'});
   }
   var s=ccStreaks[r.sym];
   if(s&&s.missed&&s.streak===0&&s.total>0){

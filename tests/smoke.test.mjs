@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=353');
+  assert.equal(manifest.start_url, '/?v=354');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v353/);
+  assert.match(serviceWorker, /wealth-v354/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=353',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=354',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -722,7 +722,7 @@ test('index.js：本期状态由「今天 + 记录」推出，且卡片上要写
     '"已卖出"只能按记录判（同标的、同到期日的 CALL、未归档）');
   assert.match(indexSource, /fixed:roll\.date/, '★ 要标在「该卖」那一档（结论行主行说的同一档）');
   assert.match(indexSource, /ruleLabel:period\.label/, '节奏名（每月第三个周五 / 每 3 周的周五）要传到卡片上');
-  assert.match(indexSource, /sold:ccSold\(probTab,sellDay\.date\)/, '状态要跟着本期的到期日走（吸附后的挂牌日）');
+  assert.match(indexSource, /sold:ccSold\(probTab,roll\.date\)/, '状态挂在「该卖」那一档上（吸附后的挂牌日）');
 });
 
 /**

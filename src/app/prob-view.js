@@ -276,9 +276,10 @@ export function probSummaryHtml(matrix, ctx) {
   const sold = c.sold || null;
   const due = !!c.due;                       /* 今天就是卖出日 */
   const from = String(c.from || '');         /* 卖出日＝本期到期日（到期日当天卖下一档） */
-  const pdate = String(c.periodDate || from);
   const days = Number(c.daysToSale);
-  const badge = sold ? ('本期 ' + escapeHtml(pdate) + ' 已卖 ✓') : (due ? '今天该卖' : ('本期 ' + escapeHtml(pdate) + ' 未卖'));
+  /* 徽章挂在**该卖那一档**上（不是"本期"）：同一张 CALL 记了没有，只会有一个答案。
+     行首那个日期就是它，所以这里不用再重复一遍日期。 */
+  const badge = sold ? '已卖 ✓' : (due ? '今天该卖' : '未卖');
   const badgeCls = sold ? 'is-done' : (due ? 'is-due' : 'is-todo');
   const rule = c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '';
   const when = due ? '今天' : (Number.isFinite(days) && days > 0 ? '还有 ' + days + ' 天' : '');

@@ -173,7 +173,7 @@ test('probMatrixHtml：相邻两列吸到同一张合约时显示「同上」，
 test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 / 还有几天 / 持有多久」', () => {
   const html = probSummaryHtml(MX, MX_CTX);
   assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 · 2026-11-20 卖出（还有 8 天） · 持有 28 天/, '第一行就得是"卖哪一个、哪天卖"的答案');
-  assert.match(html, /mx-badge is-todo">本期 2026-11-20 未卖</, '本期状态收成徽章：没记这张 CALL 就是未卖');
+  assert.match(html, /mx-badge is-todo">未卖</, '状态徽章挂在「该卖」那一档上：没记这张 CALL 就是未卖');
   assert.match(html, /\$152\.00/);
   assert.match(html, /25\.6%/, '被行权概率');
   assert.match(html, /\$2\.90/, '权利金');
@@ -182,11 +182,11 @@ test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 /
   assert.doesNotMatch(html, /轮 1 次/, '「约 N 轮 1 次」已按用户要求去掉');
 });
 
-test('probSummaryHtml：本期已卖出 → 徽章变「已卖 ✓」，主行仍是该卖那一档', () => {
+test('probSummaryHtml：该卖那一档已卖出 → 徽章变「已卖 ✓」，主行仍是该卖那一档', () => {
   const html = probSummaryHtml(MX, { otm: 7, ruleLabel: '每 3 周的周五',
     sold: { sym: 'SMH', type: 'CALL', strike: 665, contracts: 2, premium: 13.45, added: '2026-10-30' },
     from: '2026-11-20', periodDate: '2026-11-20', daysToSale: 8, tenor: 21 });
-  assert.match(html, /mx-badge is-done">本期 2026-11-20 已卖 ✓</);
+  assert.match(html, /mx-badge is-done">已卖 ✓</);
   assert.match(html, /每 3 周的周五/, 'SMH 的节奏也要能看出来');
   assert.match(html, /该卖 <b>2026-12-18<\/b> 到期/, '主行讲的始终是"接下来该卖哪一档"');
 });
