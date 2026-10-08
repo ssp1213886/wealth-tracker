@@ -4,9 +4,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normCdf, normInv, bsCall, bsCallDelta, probITM, impliedVol, strikeForProb,
-  contractMid, sortedCalls, nearestCall, ivAtStrike, resolveIv, pickExpiry,
-  annualizedPremiumPct, planStrike, planAtOtm, optionProbabilities,
+  normCdf, normInv, bsCall, bsCallDelta, probITM, impliedVol,
+  contractMid, sortedCalls, nearestCall, ivAtStrike, resolveIv, pickExpiry, findExpiry,
+  annualizedPremiumPct, planAtOtm, optionProbabilities,
 } from '../src/app/prob.js';
 
 /** 实测自 CBOE 延迟报价（2026-10-07 收盘）：VGT 现价 129.37、SMH 现价 625.03。 */
@@ -101,29 +101,6 @@ test('impliedVol：实值且价格不高于内在价值时返回 null（不硬�
 
 // ---------- 反解行权价 ----------
 
-test('strikeForProb：闭式解回代后概率精确还原', () => {
-  [0.05, 0.10, 0.15, 0.20, 0.30].forEach((p) => {
-    const k = strikeForProb({ spot: 129.37, iv: 0.213, dte: 43, prob: p });
-    const back = probITM({ spot: 129.37, strike: k, iv: 0.213, dte: 43 });
-    assert.ok(Math.abs(back - p) < 1e-6, 'p=' + p + ' 回代得 ' + back);
-  });
-});
-
-test('strikeForProb：目标概率越低，行权价越远（单调）', () => {
-  const p30 = strikeForProb({ spot: 100, iv: 0.25, dte: 30, prob: 0.30 });
-  const p15 = strikeForProb({ spot: 100, iv: 0.25, dte: 30, prob: 0.15 });
-  const p05 = strikeForProb({ spot: 100, iv: 0.25, dte: 30, prob: 0.05 });
-  assert.ok(p30 < p15 && p15 < p05, p30 + ' < ' + p15 + ' < ' + p05);
-});
-
-test('strikeForProb：非法入参返回 null', () => {
-  assert.equal(strikeForProb({ spot: 0, iv: 0.2, dte: 30, prob: 0.15 }), null);
-  assert.equal(strikeForProb({ spot: 100, iv: 0, dte: 30, prob: 0.15 }), null);
-  assert.equal(strikeForProb({ spot: 100, iv: 0.2, dte: 0, prob: 0.15 }), null);
-  assert.equal(strikeForProb({ spot: 100, iv: 0.2, dte: 30, prob: 0 }), null);
-  assert.equal(strikeForProb({ spot: 100, iv: 0.2, dte: 30, prob: 1 }), null);
-});
-
 // ---------- 链辅助 ----------
 
 test('contractMid：优先买卖价中值，缺失时退回最新成交价/买价', () => {
@@ -179,43 +156,6 @@ test('sortedCalls / nearestCall：排序与吸附', () => {
 });
 
 // ---------- 目标概率反解（板块主功能）----------
-
-test('planStrike：目标 15% → 吸附到挂牌的 $140，概率≈14.6%，权利金用市场价', () => {
-  const plan = planStrike({ chain: VGT_CHAIN, sym: 'VGT', targetProb: 0.15, targetDte: 45 });
-  assert.equal(plan.strike, 140, '闭式解 ~139.8 应吸附到 140');
-  assert.equal(plan.expiry, '2026-11-20');
-  assert.equal(plan.dte, 43);
-  assert.ok(Math.abs(plan.prob - 0.1463) < 0.003, '实际 ' + plan.prob);
-  assert.ok(Math.abs(plan.premium - 1.05) < 1e-9, '买卖价中值 (0.70+1.40)/2，实际 ' + plan.premium);
-  assert.equal(plan.premiumIsMarket, true);
-  assert.ok(Math.abs(plan.iv - 0.213) < 0.005);
-  assert.ok(plan.otmPct > 7 && plan.otmPct < 9, '实际 OTM ' + plan.otmPct);
-  assert.ok(plan.annualPct > 6 && plan.annualPct < 8, '实际年化 ' + plan.annualPct);
-});
-
-test('planStrike：目标概率越严 → 行权价越远、权利金越薄（这正是要展示的取舍）', () => {
-  const loose = planStrike({ chain: VGT_CHAIN, sym: 'VGT', targetProb: 0.30, targetDte: 45 });
-  const tight = planStrike({ chain: VGT_CHAIN, sym: 'VGT', targetProb: 0.05, targetDte: 45 });
-  assert.ok(tight.strike > loose.strike, tight.strike + ' 应高于 ' + loose.strike);
-  assert.ok(tight.prob < loose.prob);
-  assert.ok(tight.premium <= loose.premium, '更虚值权利金不会更高');
-});
-
-test('planStrike：目标期限决定选哪个到期日', () => {
-  const near = planStrike({ chain: VGT_CHAIN, sym: 'VGT', targetProb: 0.15, targetDte: 8 });
-  assert.equal(near.expiry, '2026-10-16');
-  assert.equal(near.dte, 8);
-  const far = planStrike({ chain: VGT_CHAIN, sym: 'VGT', targetProb: 0.15, targetDte: 71 });
-  assert.equal(far.expiry, '2026-12-18');
-});
-
-test('planStrike：链不可用（缺现价 / 缺 CALL / 缺 IV）时返回 null', () => {
-  assert.equal(planStrike({ chain: { sym: 'VGT', spot: 0, expiries: VGT_CHAIN.expiries }, sym: 'VGT', targetProb: 0.15, targetDte: 45 }), null);
-  assert.equal(planStrike({ chain: { sym: 'VGT', spot: 100, expiries: [] }, sym: 'VGT', targetProb: 0.15, targetDte: 45 }), null);
-  const noIv = { sym: 'VGT', spot: 130, expiries: [{ date: 'x', dte: 43, calls: [{ k: 140, b: 0, a: 0, lp: 0, iv: 0 }] }] };
-  assert.equal(planStrike({ chain: noIv, sym: 'VGT', targetProb: 0.15, targetDte: 45 }), null);
-  assert.equal(planStrike({ chain: VGT_CHAIN, sym: 'VGT', targetProb: 0, targetDte: 45 }), null);
-});
 
 // ---------- 「行权价参考」联动 ----------
 
@@ -273,4 +213,26 @@ test('bsCall / bsCallDelta：基本性质', () => {
   assert.ok(d > 0 && d < 0.5, '虚值 call 的 delta 应小于 0.5');
   assert.ok(bsCallDelta(100, 100, 30 / 365, 0.04, 0.25) > 0.5);
   assert.equal(bsCall(100, 90, 0, 0.04, 0.25), 10, '到期日退化成内在价值');
+});
+
+/* ---------------- v330：精确锁到期日（节奏卡 → 选行权价 用同一天） ---------------- */
+
+test('findExpiry：按日期精确匹配，链里没有就返回 null', () => {
+  assert.equal(findExpiry(VGT_CHAIN, '2026-11-20').dte, 43);
+  assert.equal(findExpiry(VGT_CHAIN, '2026-12-18').dte, 71);
+  assert.equal(findExpiry(VGT_CHAIN, '2026-11-21'), null, '不是挂牌日');
+  assert.equal(findExpiry(VGT_CHAIN, ''), null);
+  assert.equal(findExpiry(null, '2026-11-20'), null);
+  assert.equal(findExpiry({ expiries: [{ date: '2026-11-20', dte: 0 }] }, '2026-11-20'), null, '已到期的档不算');
+});
+
+test('planAtOtm：给了 expiry 就精确锁到那一档；链里没有才退回 targetDte', () => {
+  const onBeat = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, expiry: '2026-11-20' });
+  assert.equal(onBeat.expiry, '2026-11-20');
+  assert.equal(onBeat.dte, 43);
+  const far = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, expiry: '2026-12-18' });
+  assert.equal(far.expiry, '2026-12-18', '锁到更远一档时到期日要跟着变');
+  assert.equal(far.dte, 71);
+  const fallback = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, expiry: '2099-01-01', targetDte: 43 });
+  assert.equal(fallback.expiry, '2026-11-20', '链里没有那一天 → 退回按天数挑最近');
 });

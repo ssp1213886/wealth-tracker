@@ -1,11 +1,11 @@
-// 「被行权概率」板块视图层单测（v325 建立 / v326 补到期日历）：
-// 概率配色与文案、目标档位按钮、反解表、活跃持仓表、到期日历。
+// 期权视图层单测（v325 建立 / v330 收敛）：
+// 概率配色与文案、到期日历、行情时间解析。
 // 这些 HTML 直接决定用户看到什么，错了不会报错、只会静静显示错东西，所以要卡住。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, probColor, fmtProb, fmtIv,
-  chipsHtml, planRowsHtml, expiryCalendarHtml, noteHtml,
+  probColor, fmtProb, fmtIv,
+  expiryCalendarHtml, noteHtml, renderProbUnavailable,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -28,54 +28,6 @@ test('fmtProb / fmtIv：缺值显示「—」而不是 NaN', () => {
   assert.equal(fmtIv(0.213), '21.3%');
   assert.equal(fmtIv(0), '—');
   assert.equal(fmtIv(null), '—');
-});
-
-test('目标档位：概率 5~30%、期限 21~45（期限刻意收窄到回测高原内）', () => {
-  assert.deepEqual(TARGET_PROB_CHOICES, [5, 10, 15, 20, 25, 30]);
-  assert.deepEqual(TARGET_DTE_CHOICES, [21, 28, 35, 45]);
-});
-
-test('chipsHtml：命中当前值的那颗按钮带 is-on，data 属性名按传入的来', () => {
-  const html = chipsHtml([5, 10, 15], 10, 'prob');
-  assert.match(html, /data-prob="5"/);
-  assert.match(html, /class="prob-chip is-on" data-prob="10"/);
-  assert.equal((html.match(/is-on/g) || []).length, 1, '只能有一颗选中');
-  assert.match(chipsHtml([21, 28], 21, 'dte'), /data-dte="21"/);
-});
-
-test('planRowsHtml：没有链时给空态文案', () => {
-  const html = planRowsHtml([], { targetProb: 15, emptyHint: '期权链加载中…' });
-  assert.match(html, /prob-empty/);
-  assert.match(html, /期权链加载中/);
-  assert.doesNotMatch(html, /prob-table/);
-  assert.match(planRowsHtml(null, {}), /prob-empty/);
-});
-
-test('planRowsHtml：渲染行权价/OTM/到期/概率/权利金，命中目标概率时不再挂「目标 X%」脚注', () => {
-  const rows = [{
-    sym: 'VGT', strike: 140, otmPct: 8.2, expiry: '2026-11-20', dte: 43,
-    iv: 0.213, prob: 0.15, premium: 1.05, premiumIsMarket: true, annualPct: 6.9,
-  }];
-  const html = planRowsHtml(rows, { targetProb: 15 });
-  assert.match(html, /VGT/);
-  assert.match(html, /\$140\.00/);
-  assert.match(html, /\+8\.2%/);
-  assert.match(html, /2026-11-20/);
-  assert.match(html, /43天/);
-  assert.match(html, /21\.3%/);
-  assert.match(html, /15\.0%/);
-  assert.match(html, /\$1\.05/);
-  assert.match(html, /6\.9%/);
-  assert.doesNotMatch(html, /目标 15%/, '正好命中目标概率时不该再提示');
-});
-
-test('planRowsHtml：实际概率偏离目标时补一行「目标 X%」；理论价要标注', () => {
-  const html = planRowsHtml([{
-    sym: 'SMH', strike: 660, otmPct: 5.6, expiry: '2026-11-20', dte: 43,
-    iv: 0.319, prob: 0.305, premium: 15.25, premiumIsMarket: false, annualPct: 20.7,
-  }], { targetProb: 15 });
-  assert.match(html, /目标 15%/);
-  assert.match(html, /理论/);
 });
 
 test('expiryCalendarHtml：空链给空态', () => {
@@ -154,4 +106,13 @@ test('noteHtml：写清数据源、美东时间与官方 IV30，以及「不含�
   assert.match(noteHtml({ source: 'yahoo' }), /反推/);
   assert.match(noteHtml({}), /N\(d2\)/, '没有数据源时也保留口径说明');
   assert.doesNotMatch(noteHtml({ source: 'cboe', iv30: { VGT: 0 } }), /官方 30 天 IV/, 'IV 无效时不显示');
+});
+
+test('renderProbUnavailable：写进 probNote，而不是已删除的 probPlan', () => {
+  const made = {};
+  const doc = { getElementById: (id) => (made[id] = { id: id, innerHTML: '' }) };
+  renderProbUnavailable(doc, '数据源暂不可用（cboe: http 502）');
+  assert.match(made.probNote.innerHTML, /期权链暂不可用/);
+  assert.match(made.probNote.innerHTML, /cboe: http 502/, '要带上原因，别只说坏了');
+  assert.ok(!made.probPlan, '不该再碰已经删掉的 probPlan');
 });

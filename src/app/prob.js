@@ -117,27 +117,6 @@ export function impliedVol(input) {
   return (lo + hi) / 2;
 }
 
-/**
- * 按目标被行权概率反解行权价（闭式解，不用迭代）。
- * 令 N(d2) = p，则 d2 = z = Φ⁻¹(p)，展开得：
- *   ln(S/K) = z·σ√T − (r − σ²/2)·T   →   K = S·exp(−(z·σ√T − (r − σ²/2)·T))
- * 结果未必落在真实挂牌行权价上，调用方应再吸附到链里最近的一档（见 planStrike）。
- */
-export function strikeForProb(input) {
-  const o = input || {};
-  const spot = Number(o.spot);
-  const iv = Number(o.iv);
-  const dte = Number(o.dte);
-  const prob = Number(o.prob);
-  const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
-  if (!(spot > 0) || !(iv > 0) || !(dte > 0) || !(prob > 0) || !(prob < 1)) return null;
-  const years = dte / 365;
-  const z = normInv(prob);
-  if (!Number.isFinite(z)) return null;
-  const k = spot * Math.exp(-(z * iv * Math.sqrt(years) - (rate - (iv * iv) / 2) * years));
-  return k > 0 ? k : null;
-}
-
 /** 链里某一档的报价：优先买卖价中值，没有就退回最新成交价。 */
 export function contractMid(call) {
   if (!call) return 0;
@@ -226,62 +205,23 @@ export function annualizedPremiumPct(price, spot, dte) {
   return (p / s) * (365 / d) * 100;
 }
 
-/**
- * 单只标的的"按目标概率反解行权价"：
- *   ① 挑最接近目标期限的到期日
- *   ② 先以平值 IV 解一次，再拿解出来的行权价重新取 IV 解第二次（吃一口波动率微笑）
- *   ③ 把结果吸附到链上真实挂牌的那一档，价格与概率都用真实档位重算
- * 返回 null 表示这条链不够用（缺现价 / 缺 IV / 缺 CALL）。
- */
-export function planStrike(input) {
-  const o = input || {};
-  const chain = o.chain;
-  const sym = String(o.sym || '').toUpperCase();
-  const targetProb = Number(o.targetProb);
-  const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
-  const spot = Number(chain && chain.spot);
-  if (!(spot > 0) || !(targetProb > 0) || !(targetProb < 1)) return null;
-  const expiry = pickExpiry(chain.expiries, o.targetDte);
-  if (!expiry || !(expiry.dte > 0)) return null;
-  const dte = expiry.dte;
-  let iv = resolveIv(expiry, spot, dte, spot, rate) || resolveIv(expiry, spot, dte, spot * 1.07, rate);
-  if (!(iv > 0)) return null;
-  let strike = strikeForProb({ spot: spot, iv: iv, dte: dte, prob: targetProb, rate: rate });
-  for (let pass = 0; pass < 2 && strike > 0; pass += 1) {
-    const next = resolveIv(expiry, spot, dte, strike, rate);
-    if (!(next > 0)) break;
-    iv = next;
-    strike = strikeForProb({ spot: spot, iv: iv, dte: dte, prob: targetProb, rate: rate });
+/** 按日期精确找到期日（链里必须有这一天）；找不到返回 null。 */
+export function findExpiry(chain, date) {
+  const want = String(date == null ? '' : date);
+  if (!want) return null;
+  const list = (chain && Array.isArray(chain.expiries) ? chain.expiries : []);
+  for (let i = 0; i < list.length; i += 1) {
+    if (list[i] && list[i].date === want && list[i].dte > 0) return list[i];
   }
-  if (!(strike > 0)) return null;
-  const calls = sortedCalls(expiry);
-  const trade = nearestCall(calls, strike) || null;
-  const tradeStrike = trade ? Number(trade.k) : strike;
-  const marketPrice = contractMid(trade);
-  const modelPrice = bsCall(spot, tradeStrike, dte / 365, rate, iv);
-  const price = marketPrice > 0 ? marketPrice : modelPrice;
-  return {
-    sym: sym,
-    spot: spot,
-    dte: dte,
-    expiry: expiry.date,
-    strike: tradeStrike,
-    strikeRaw: strike,
-    otmPct: (tradeStrike / spot - 1) * 100,
-    iv: iv,
-    delta: bsCallDelta(spot, tradeStrike, dte / 365, rate, iv),
-    prob: probITM({ spot: spot, strike: tradeStrike, iv: iv, dte: dte, rate: rate }),
-    premium: price,
-    premiumIsMarket: marketPrice > 0,
-    annualPct: annualizedPremiumPct(price, spot, dte),
-    spread: trade && Number(trade.b) > 0 && Number(trade.a) > 0 ? Number(trade.a) - Number(trade.b) : null,
-    source: String(chain.source || ''),
-  };
+  return null;
 }
 
 /**
  * 「行权价参考」那两行的联动：给定 OTM 百分比，算出被行权概率和这一档的权利金。
- * 与 planStrike 共用同一份链、同一个目标期限，所以调 OTM 时看到的概率和反解卡片是同一套口径。
+ *
+ * 到期日优先用 o.expiry **精确锁定** —— 也就是「节奏」卡算出来的那一档
+ * （VGT 月度第三个周五 / SMH 每 3 周）。这样两张卡说的是同一天，用户不用再手选期限；
+ * 链里查不到那天时才退回到"最接近 targetDte"的老行为。
  */
 export function planAtOtm(input) {
   const o = input || {};
@@ -291,7 +231,7 @@ export function planAtOtm(input) {
   const otmPct = Number(o.otmPct);
   const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
   if (!(spot > 0) || !(otmPct > 0)) return null;
-  const expiry = pickExpiry(chain && chain.expiries, o.targetDte);
+  const expiry = findExpiry(chain, o.expiry) || pickExpiry(chain && chain.expiries, o.targetDte);
   if (!expiry || !(expiry.dte > 0)) return null;
   const dte = expiry.dte;
   const wantStrike = spot * (1 + otmPct / 100);

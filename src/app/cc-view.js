@@ -20,9 +20,15 @@ function weekdayOfIso(iso) {
 }
 
 /**
+ * VGT 在 CBOE 上只有月度到期日（实测 13 个全是第三个周五），所以它的节奏不是"可选项"。
+ * 直接锁成月度并写明原因 —— 摆一个选不了的按钮只会让人误以为能做每三周。
+ */
+const LOCKED_RULE = { VGT: 'monthly3' };
+
+/**
  * 节奏表：一行一个标的。
- * 「下次到期 / 卖出日」是同一个日子 —— 口径是"到期日当天就卖下一档"，
- * 所以到期日既是旧档到期、也是新档开仓日。今天到期的行整行高亮。
+ * 到期日既是旧档到期、也是新档开仓日（口径是"到期日当天就卖下一档"），所以只列一列。
+ * 今天到期的行整行高亮。节奏本身不放表里 —— 下面的按钮/锁定说明已经表达了，重复列一遍是冗余。
  */
 export function scheduleRowsHtml(rows, ctx) {
   const c = ctx || {};
@@ -31,7 +37,7 @@ export function scheduleRowsHtml(rows, ctx) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '节奏加载中…') + '</div>';
   }
   let html = '<table class="prob-table cc-table"><thead><tr>' +
-    '<th>标的</th><th>下次到期 / 卖出日</th><th>距今</th><th>节奏</th><th>连续执行</th>' +
+    '<th>标的</th><th>下次到期日</th><th>距今</th><th>连续执行</th>' +
     '</tr></thead><tbody>';
   list.forEach(function (r) {
     const streak = c.streaks ? c.streaks[r.sym] : null;
@@ -44,15 +50,17 @@ export function scheduleRowsHtml(rows, ctx) {
       '<td data-cell="expiry">' + escapeHtml(r.nextExpiry) +
         '<small class="prob-sub">周' + escapeHtml(weekdayOfIso(r.nextExpiry)) + '</small></td>' +
       '<td data-cell="days"' + (r.isDue ? ' class="cc-due"' : '') + '>' + escapeHtml(dueText(r.daysToGo)) + '</td>' +
-      '<td data-cell="rule">' + escapeHtml(r.short) + '</td>' +
       '<td data-cell="streak">' + streakText + '</td>' +
       '</tr>';
   });
   return html + '</tbody></table>';
 }
 
-/** 节奏选择：一个标的一排按钮（月度 / 每3周）。点哪个由 index.js 委派处理。 */
+/** 节奏选择：可选的给按钮；VGT 只有月度，直接给锁定说明。 */
 export function rulePickerHtml(sym, current) {
+  if (LOCKED_RULE[sym]) {
+    return '<span class="cc-locked">' + escapeHtml(RULE_SHORT[LOCKED_RULE[sym]]) + '（VGT 没有周期权）</span>';
+  }
   return CC_RULES.map(function (rule) {
     return '<button type="button" class="prob-chip' + (rule === current ? ' is-on' : '') +
       '" data-ccrule="' + escapeHtml(sym) + '|' + rule + '" title="' + escapeHtml(RULE_LABELS[rule]) + '">' +

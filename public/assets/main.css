@@ -2838,18 +2838,32 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .prob-table tbody tr:not(.is-hidden-row){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 8px;padding:12px 14px;height:auto;border-bottom:1px solid color-mix(in srgb,var(--rule) 42%,transparent)}
   .prob-table tbody tr:last-child{border-bottom:0}
   .prob-table tbody tr:nth-child(even){background:transparent}
-  .prob-table tbody td{display:block;border:0;padding:0;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  /* 不要给 td 加 text-overflow:ellipsis —— 各表的列数不同，网格区域一旦对不上，
+     到期日这种长字符串会被截成「2026-10-…」。宁可换行也不要省略号。 */
+  .prob-table tbody td{display:block;border:0;padding:0;text-align:left;min-width:0;overflow-wrap:anywhere}
   .prob-table tbody td::before{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-bottom:1px}
-  .prob-table tbody td[data-cell="sym"]{grid-area:1/1/2/3;font-size:.9rem;font-weight:670}
-  .prob-table tbody td[data-cell="sym"]::before,.prob-table tbody td[data-cell="strike"]::before{display:none}
-  .prob-table tbody td[data-cell="strike"]{grid-area:1/3/2/5;text-align:right;font-size:.9rem;font-weight:670}
-  .prob-table tbody td[data-cell="otm"]::before{content:'OTM'}
-  .prob-table tbody td[data-cell="expiry"]::before{content:'到期'}
-  .prob-table tbody td[data-cell="iv"]::before{content:'IV'}
-  .prob-table tbody td[data-cell="prob"]::before{content:'被行权概率'}
-  .prob-table tbody td[data-cell="premium"]::before{content:'权利金'}
-  .prob-table tbody td[data-cell="annual"]::before{content:'年化'}
-  .prob-table tbody td[data-cell="dte"]::before{content:'剩余'}
+
+  /* 到期日历（6 列：标的 / 到期日 / 剩余 / 类型 / 档位 / 我的持仓） */
+  .cal-table tbody td[data-cell="sym"]{grid-area:1/1/2/3;font-size:.9rem;font-weight:670}
+  .cal-table tbody td[data-cell="sym"]::before{display:none}
+  .cal-table tbody td[data-cell="expiry"]{grid-area:1/3/2/5;text-align:right;font-size:.92rem;font-weight:670}
+  .cal-table tbody td[data-cell="expiry"]::before{display:none}
+  .cal-table tbody td[data-cell="dte"]{grid-area:2/1/3/3}
+  .cal-table tbody td[data-cell="kind"]{grid-area:2/3/3/5;text-align:right}
+  .cal-table tbody td[data-cell="strikes"]{grid-area:3/1/4/5}
+  .cal-table tbody td[data-cell="mine"]{grid-area:4/1/5/5;text-align:right}
+  .cal-table tbody td[data-cell="dte"]::before{content:'剩余'}
+  .cal-table tbody td[data-cell="kind"]::before{content:'类型';text-align:right}
+  .cal-table tbody td[data-cell="strikes"]::before{content:'行权价档位'}
+  .cal-table tbody td[data-cell="mine"]::before{content:'我的持仓';text-align:right}
+
+  /* 节奏（4 列：标的 / 下次到期日 / 距今 / 连续执行）—— 内容自解释，不加标签 */
+  .cc-table tbody td[data-cell="sym"]{grid-area:1/1/2/3;font-size:.9rem;font-weight:670}
+  .cc-table tbody td[data-cell="days"]{grid-area:1/3/2/5;text-align:right;font-size:.98rem;font-weight:680}
+  .cc-table tbody td[data-cell="expiry"]{grid-area:2/1/3/3;font-size:.92rem}
+  .cc-table tbody td[data-cell="streak"]{grid-area:2/3/3/5;text-align:right}
+  .cc-table tbody td::before{display:none}
+
   .prob-control{width:100%;justify-content:space-between}
   .prob-chip{min-width:44px;height:34px}
 }
@@ -2861,14 +2875,6 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .cal-tag.is-monthly{background:var(--accent-l);color:var(--accent-d)}
 .cal-table tbody tr.cal-mine{background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .cal-table tbody tr.cal-mine td[data-cell="mine"]{color:var(--accent-d);font-weight:640}
-@media(max-width:800px){
-  .cal-table tbody td[data-cell="kind"]::before{content:'类型'}
-  .cal-table tbody td[data-cell="strikes"]::before{content:'行权价档位'}
-  .cal-table tbody td[data-cell="mine"]::before{content:'我的持仓'}
-  .cal-table tbody td[data-cell="dte"]::before{content:'剩余'}
-  .cal-table tbody td[data-cell="expiry"]::before{content:'到期日'}
-}
-
 /* ===== v328 卖 CALL 节奏 ===== */
 .cal-table tbody tr.cal-onbeat{background:color-mix(in srgb,var(--orange) 14%,transparent)}
 .cal-table tbody tr.cal-onbeat td[data-cell="expiry"]{color:var(--orange);font-weight:640}
@@ -2878,10 +2884,6 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .cc-due{color:var(--accent-d);font-weight:700}
 .cc-streak{color:var(--accent-d)}
 .cc-missed{color:var(--orange)}
+.cc-locked{color:var(--muted);font-size:11.5px}
 /* v329：持仓表里的「被行权概率」标签（原来有一整张重复的持仓概率表） */
 .opt-prob{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;vertical-align:1px}
-@media(max-width:800px){
-  .cc-table tbody td[data-cell="days"]::before{content:'距今'}
-  .cc-table tbody td[data-cell="rule"]::before{content:'节奏'}
-  .cc-table tbody td[data-cell="streak"]::before{content:'连续执行'}
-}
