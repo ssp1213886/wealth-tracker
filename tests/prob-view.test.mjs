@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   probColor, fmtProb, fmtIv,
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
-  otmExpiryChipsHtml,
+  probMatrixHtml, probTabsHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -72,20 +72,38 @@ test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', ()
   assert.equal((html.match(/cal-mine/g) || []).length, 1, '只有持有那一档高亮');
 });
 
-test('otmExpiryChipsHtml：节奏那一档带 ★，只有一档时不占位', () => {
-  const opts = [
-    { date: '2026-10-30', dte: 22 },
-    { date: '2026-11-20', dte: 43 },
-    { date: '2026-12-18', dte: 71 },
-  ];
-  const html = otmExpiryChipsHtml('SMH', opts, '2026-11-20', '2026-10-30');
-  assert.match(html, /data-otmexp="SMH\|2026-10-30"/);
-  assert.match(html, /10-30 ★/, '节奏档带星标');
-  assert.match(html, /class="prob-chip is-on" data-otmexp="SMH\|2026-11-20"/, '选中的那档高亮');
+test('probMatrixHtml：行/列/★/当前列高亮，概率按档位着色', () => {
+  const matrix = {
+    otms: [3, 5, 7, 10, 15],
+    rows: [
+      { date: '2026-11-20', dte: 43, fixed: true, probs: [0.362, 0.269, 0.188, 0.096, 0.037] },
+      { date: '2026-12-18', dte: 71, fixed: false, probs: [0.398, 0.324, 0.256, 0.180, 0.085] },
+    ],
+  };
+  const html = probMatrixHtml(matrix, { otm: 7 });
+  assert.match(html, /<th>到期日<\/th><th>剩余<\/th>/);
+  assert.match(html, /<th class="mx-on">7%<\/th>/, '当前 OTM 那一列要高亮');
+  assert.equal((html.match(/mx-on/g) || []).length, 3, '表头 1 + 每行 1 = 3');
+  assert.match(html, /2026-11-20<small class="prob-sub">★ 本轮节奏档<\/small>/, '节奏档带星标');
+  assert.match(html, /class="mx-fixed"/);
+  assert.match(html, /36\.2%/);
+  assert.match(html, /8\.5%/);
+  assert.match(html, /var\(--red\)/, '>25% 用红');
+  assert.match(html, /var\(--accent\)/, '<10% 用绿');
+  assert.doesNotMatch(html, /prob-table/, '矩阵不能用 prob-table（那套手机端规则会把 td 变 grid）');
+});
+
+test('probMatrixHtml：空矩阵给空态；缺 probs 不抛错', () => {
+  assert.match(probMatrixHtml(null, {}), /prob-empty/);
+  assert.match(probMatrixHtml({ otms: [], rows: [] }, { emptyHint: '没有 14 天以上的档' }), /没有 14 天以上的档/);
+  assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, probs: null }] }, {}), /—|prob-empty/);
+});
+
+test('probTabsHtml：VGT / SMH 分段，只有当前那个 is-on', () => {
+  const html = probTabsHtml('SMH');
+  assert.match(html, /data-probtab="VGT"/);
+  assert.match(html, /class="prob-chip is-on" data-probtab="SMH"/);
   assert.equal((html.match(/is-on/g) || []).length, 1);
-  assert.equal(otmExpiryChipsHtml('VGT', [{ date: '2026-10-16', dte: 8 }], '2026-10-16', '2026-10-16'), '', '只有一档没有可选性');
-  assert.equal(otmExpiryChipsHtml('VGT', [], '', ''), '');
-  assert.equal(otmExpiryChipsHtml('VGT', null, '', ''), '');
 });
 
 /* ---------------- 行情时间（v327：CBOE 给的是无时区标记的美东时间） ---------------- */
@@ -136,11 +154,11 @@ test('noteHtml：只写数据源 / 美东时间 / 官方 IV30（口径说明已�
   assert.doesNotMatch(noteHtml({ source: 'cboe', iv30: { VGT: 0 } }), /官方 30 天 IV/, 'IV 无效时不显示');
 });
 
-test('renderProbUnavailable：写进 probNote，而不是已删除的 probPlan', () => {
+test('renderProbUnavailable：写进矩阵容器（v336 起概率卡只有 probMatrix 一个内容区）', () => {
   const made = {};
   const doc = { getElementById: (id) => (made[id] = { id: id, innerHTML: '' }) };
   renderProbUnavailable(doc, '数据源暂不可用（cboe: http 502）');
-  assert.match(made.probNote.innerHTML, /期权链暂不可用/);
-  assert.match(made.probNote.innerHTML, /cboe: http 502/, '要带上原因，别只说坏了');
+  assert.match(made.probMatrix.innerHTML, /期权链暂不可用/);
+  assert.match(made.probMatrix.innerHTML, /cboe: http 502/, '要带上原因，别只说坏了');
   assert.ok(!made.probPlan, '不该再碰已经删掉的 probPlan');
 });

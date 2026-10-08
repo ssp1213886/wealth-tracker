@@ -455,27 +455,17 @@
   <div class="option-discipline"><strong>执行纪律</strong>：切勿主动平仓，被行权不必慌，T+1 市价买回，踏空代价远高于追高成本</div>
 </div>
 
-<div class="card option-card cc-card">
-  <div class="opt-card-head"><h3>节奏</h3><small class="prob-src">今天该做什么</small></div>
-  <div id="ccScheduleBody"></div>
-  <div class="prob-controls" id="ccRulePickers"></div>
-  <div class="prob-note" id="ccExDiv"></div>
-  <div class="prob-note">到期日当天卖下一档；若被行权，周一 T+1 买回。IV Rank 高时可往更虚挪一档。</div>
-</div>
-
-<div class="card option-card otm-card">
-  <div class="opt-card-head"><h3>选行权价</h3><small class="prob-src" id="probSrc"></small></div>
-  <div class="otm-list">
-    <div class="otm-row">
-      <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small><div class="otm-exp" id="otmVgtExp"></div></div>
-      <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">7%</span><button type="button" id="otmVgtPlus">+</button></div>
+<div class="card option-card prob-card">
+  <div class="opt-card-head"><h3>被行权概率</h3><div class="prob-chips" id="probTabs"></div></div>
+  <div class="prob-controls">
+    <div class="prob-control"><span id="probOtmSym">VGT OTM</span>
+      <div class="prob-chips"><button type="button" class="prob-chip" id="probOtmMinus" aria-label="减少 OTM">−</button><span class="prob-chip is-on" id="probOtmVal">7%</span><button type="button" class="prob-chip" id="probOtmPlus" aria-label="增加 OTM">+</button></div>
     </div>
-    <div class="otm-row">
-      <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small><small id="otmSmhProb" class="otm-prob"></small><div class="otm-exp" id="otmSmhExp"></div></div>
-      <div class="otm-stepper"><button type="button" id="otmSmhMinus">−</button><span id="otmSmhVal">6%</span><button type="button" id="otmSmhPlus">+</button></div>
-    </div>
+    <div class="prob-control"><small class="prob-src" id="probSrc"></small></div>
   </div>
+  <div id="probMatrix"></div>
   <div class="prob-note" id="probNote"></div>
+  <div class="prob-note">行＝未来到期日（只列剩余 ≥14 天的档；★ 那档即使更近也保留），列＝OTM 百分比。★ 是本轮固定节奏该卖的那一档，高亮列是你当前的 OTM 设置。概率＝到期收盘时现价 &gt; 行权价。</div>
 </div>
 
 <div class="card collapsible-card collapsed" id="expiryCalCard">

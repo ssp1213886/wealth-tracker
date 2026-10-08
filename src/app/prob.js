@@ -205,58 +205,6 @@ export function annualizedPremiumPct(price, spot, dte) {
   return (p / s) * (365 / d) * 100;
 }
 
-/** 按日期精确找到期日（链里必须有这一天）；找不到返回 null。 */
-export function findExpiry(chain, date) {
-  const want = String(date == null ? '' : date);
-  if (!want) return null;
-  const list = (chain && Array.isArray(chain.expiries) ? chain.expiries : []);
-  for (let i = 0; i < list.length; i += 1) {
-    if (list[i] && list[i].date === want && list[i].dte > 0) return list[i];
-  }
-  return null;
-}
-
-/**
- * 「行权价参考」那两行的联动：给定 OTM 百分比，算出被行权概率和这一档的权利金。
- *
- * 到期日优先用 o.expiry **精确锁定** —— 也就是「节奏」卡算出来的那一档
- * （VGT 月度第三个周五 / SMH 每 3 周）。这样两张卡说的是同一天，用户不用再手选期限；
- * 链里查不到那天时才退回到"最接近 targetDte"的老行为。
- */
-export function planAtOtm(input) {
-  const o = input || {};
-  const chain = o.chain;
-  const sym = String(o.sym || '').toUpperCase();
-  const spot = Number(o.spot) || Number(chain && chain.spot);
-  const otmPct = Number(o.otmPct);
-  const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
-  if (!(spot > 0) || !(otmPct > 0)) return null;
-  const expiry = findExpiry(chain, o.expiry) || pickExpiry(chain && chain.expiries, o.targetDte);
-  if (!expiry || !(expiry.dte > 0)) return null;
-  const dte = expiry.dte;
-  const wantStrike = spot * (1 + otmPct / 100);
-  const calls = sortedCalls(expiry);
-  const trade = nearestCall(calls, wantStrike);
-  const strike = trade ? Number(trade.k) : wantStrike;
-  const iv = resolveIv(expiry, spot, dte, strike, rate);
-  const marketPrice = contractMid(trade);
-  const modelPrice = iv > 0 ? bsCall(spot, strike, dte / 365, rate, iv) : 0;
-  const price = marketPrice > 0 ? marketPrice : modelPrice;
-  return {
-    sym: sym,
-    spot: spot,
-    dte: dte,
-    expiry: expiry.date,
-    strike: strike,
-    otmPct: (strike / spot - 1) * 100,
-    iv: iv,
-    prob: probITM({ spot: spot, strike: strike, iv: iv, dte: dte, rate: rate }),
-    premium: price,
-    premiumIsMarket: marketPrice > 0,
-    annualPct: annualizedPremiumPct(price, spot, dte),
-  };
-}
-
 /**
  * 活跃持仓的当前被行权概率：把用户记的每张 CALL 映射到链上，算 N(d2)。
  * 链里找不到同一天到期就退到最近的到期日；行权价超出链的范围时 IV 会被两端夹住。
@@ -294,4 +242,52 @@ export function optionProbabilities(chain, options, opts) {
     if (b.prob == null) return -1;
     return b.prob - a.prob;
   });
+}
+
+/** 概率矩阵默认的 OTM 档位（%）。 */
+export const MATRIX_OTMS = [3, 5, 7, 10, 15];
+
+/**
+ * 概率矩阵：行 = 未来的到期日，列 = 各 OTM% 下的被行权概率。
+ *
+ * 两个刻意的取舍：
+ * ① **用精确的目标行权价**（现价 × (1+OTM%)）算，不吸附到最近挂牌档。
+ *    近月到期日的行权价阶梯常被截断（实测 VGT 8 天那档只挂到现价 +4.4%），
+ *    一吸附，5% / 7% / 10% / 15% 会全落到同一档、显示同一个数，参考表就废了。
+ *    这张表回答的是"如果卖 X% OTM 概率是多少"，用精确价才是它想问的问题。
+ * ② **只留剩余 ≥ minDte 的到期日**。太近的档 IV 噪、阶梯也残缺（SMH 1 天那行实测
+ *    15% 的概率比 10% 还高），放进表里只会误导。
+ */
+export function probMatrix(chain, opts) {
+  const o = opts || {};
+  const otms = Array.isArray(o.otms) && o.otms.length ? o.otms : MATRIX_OTMS;
+  const minDte = Number(o.minDte) > 0 ? Number(o.minDte) : 14;
+  const maxRows = Number(o.maxRows) > 0 ? Number(o.maxRows) : 5;
+  const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
+  const spot = Number(chain && chain.spot);
+  if (!(spot > 0)) return { otms: otms, rows: [] };
+  const fixed = String(o.fixed || '');
+  const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
+  /* ★ 那一档（本轮节奏该卖的）必须始终在表里 —— 它可能离得很近（实测 VGT 节奏档
+     只有 8 天），被 minDte 滤掉的话，最该看的那一行反而没了。 */
+  const picked = [];
+  const beat = all.filter(function (e) { return e.date === fixed; })[0];
+  if (beat) picked.push(beat);
+  all.forEach(function (e) {
+    if (picked.length >= maxRows) return;
+    if (Number(e.dte) < minDte) return;
+    if (picked.indexOf(e) >= 0) return;
+    picked.push(e);
+  });
+  picked.sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
+  const rows = picked.slice(0, maxRows)
+    .map(function (e) {
+      const probs = otms.map(function (pct) {
+        const k = spot * (1 + pct / 100);
+        const iv = resolveIv(e, spot, e.dte, k, rate);
+        return probITM({ spot: spot, strike: k, iv: iv, dte: e.dte, rate: rate });
+      });
+      return { date: e.date, dte: e.dte, fixed: e.date === fixed, probs: probs };
+    });
+  return { otms: otms, rows: rows };
 }

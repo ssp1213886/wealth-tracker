@@ -5,8 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normCdf, normInv, bsCall, bsCallDelta, probITM, impliedVol,
-  contractMid, sortedCalls, nearestCall, ivAtStrike, resolveIv, pickExpiry, findExpiry,
-  annualizedPremiumPct, planAtOtm, optionProbabilities,
+  contractMid, sortedCalls, nearestCall, ivAtStrike, resolveIv, pickExpiry,
+  annualizedPremiumPct, optionProbabilities, probMatrix, MATRIX_OTMS,
 } from '../src/app/prob.js';
 
 /** 实测自 CBOE 延迟报价（2026-10-07 收盘）：VGT 现价 129.37、SMH 现价 625.03。 */
@@ -159,24 +159,53 @@ test('sortedCalls / nearestCall：排序与吸附', () => {
 
 // ---------- 「行权价参考」联动 ----------
 
-test('planAtOtm：给定 OTM% 得到对应概率与权利金（联动那一行）', () => {
-  const at7 = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, targetDte: 45 });
-  assert.equal(at7.strike, 140, '129.37×1.07=138.43 → 吸附到 140');
-  assert.ok(Math.abs(at7.prob - 0.1463) < 0.003);
-  assert.ok(Math.abs(at7.premium - 1.05) < 1e-9, '实际 ' + at7.premium);
-});
+// ---------- 概率矩阵（周期 × OTM）----------
 
-test('planAtOtm：OTM 拉大 → 概率单调下降（这就是调 +/- 时看到的曲线）', () => {
-  const probs = [2, 5, 7, 10, 13].map((o) => planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: o, targetDte: 45 }).prob);
-  for (let i = 1; i < probs.length; i += 1) {
-    assert.ok(probs[i] <= probs[i - 1], '第 ' + i + ' 个没有更小：' + probs.join(' > '));
+test('probMatrix：行=到期日、列=OTM%，且每行概率随 OTM 单调下降', () => {
+  const m = probMatrix(VGT_CHAIN, { fixed: '2026-11-20', minDte: 14, maxRows: 3 });
+  assert.deepEqual(m.otms, [3, 5, 7, 10, 15], '默认五档 OTM');
+  assert.deepEqual(m.rows.map((r) => r.date), ['2026-11-20', '2026-12-18'], '8 天那档被 minDte 过滤掉');
+  assert.deepEqual(m.rows[0].probs.length, 5);
+  m.rows.forEach((r) => {
+    assert.ok(r.probs.every((p) => p != null && p > 0 && p < 1), '概率都在 (0,1)');
+    for (let i = 1; i < r.probs.length; i += 1) {
+      assert.ok(r.probs[i] < r.probs[i - 1], '各列必须严格递减：' + r.probs.join(' > '));
+    }
+  });
+  assert.equal(m.rows[0].fixed, true, '★ 标在节奏那一档');
+  assert.equal(m.rows[1].fixed, false);
+  // 同一 OTM 下，期限越长概率越高
+  for (let i = 0; i < m.otms.length; i += 1) {
+    assert.ok(m.rows[1].probs[i] > m.rows[0].probs[i], '同 OTM 下更长期限概率应更高');
   }
-  assert.ok(probs[0] > probs[probs.length - 1]);
 });
 
-test('planAtOtm：缺现价或 OTM 非法时返回 null（界面显示「—」）', () => {
-  assert.equal(planAtOtm({ chain: { sym: 'VGT', spot: 0, expiries: VGT_CHAIN.expiries }, sym: 'VGT', otmPct: 7, targetDte: 45 }), null);
-  assert.equal(planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 0, targetDte: 45 }), null);
+test('probMatrix：用精确目标行权价，不吸附到最近挂牌档', () => {
+  /* VGT 10-16 的挂牌档只到 $135（现价 +4.4%）。若吸附，5%/7%/10%/15% 会全落到 $135
+     显示同一个数；用精确价算才会递减。这里用一个"阶梯被截断"的链来验证。 */
+  const truncated = {
+    sym: 'VGT', spot: 129.37,
+    expiries: [{ date: '2026-10-16', ts: 1, dte: 20, calls: [
+      { k: 130, b: 2, a: 2.4, lp: 2.2, iv: 0.21, oi: 1, v: 1, d: 0.5 },
+      { k: 135, b: 0.7, a: 1.4, lp: 0.9, iv: 0.213, oi: 1, v: 1, d: 0.2 },
+    ] }],
+  };
+  const row = probMatrix(truncated, { minDte: 14 }).rows[0];
+  assert.ok(row.probs[1] > row.probs[2], '5% 的概率必须高于 7%（吸附的话会相等）');
+  assert.ok(row.probs[2] > row.probs[3], '7% 高于 10%');
+  assert.ok(row.probs[3] > row.probs[4], '10% 高于 15%');
+});
+
+test('probMatrix：现价缺失 / 没到期日 → 空表，不抛错', () => {
+  assert.deepEqual(probMatrix({ spot: 0, expiries: VGT_CHAIN.expiries }, {}).rows, []);
+  assert.deepEqual(probMatrix(VGT_CHAIN, { minDte: 400 }).rows, [], '没有满足 minDte 的档');
+  assert.deepEqual(probMatrix(null, {}).rows, []);
+  assert.equal(probMatrix(VGT_CHAIN, { otms: [5, 8], maxRows: 1 }).rows[0].probs.length, 2, '自定义 OTM 档位');
+});
+
+test('probMatrix：maxRows 限制行数', () => {
+  assert.equal(probMatrix(VGT_CHAIN, { minDte: 14, maxRows: 1 }).rows.length, 1);
+  assert.equal(probMatrix(VGT_CHAIN, { minDte: 14, maxRows: 99 }).rows.length, 2, '链里只有 2 档 ≥14 天');
 });
 
 // ---------- 活跃持仓概率 ----------
@@ -213,26 +242,4 @@ test('bsCall / bsCallDelta：基本性质', () => {
   assert.ok(d > 0 && d < 0.5, '虚值 call 的 delta 应小于 0.5');
   assert.ok(bsCallDelta(100, 100, 30 / 365, 0.04, 0.25) > 0.5);
   assert.equal(bsCall(100, 90, 0, 0.04, 0.25), 10, '到期日退化成内在价值');
-});
-
-/* ---------------- v330：精确锁到期日（节奏卡 → 选行权价 用同一天） ---------------- */
-
-test('findExpiry：按日期精确匹配，链里没有就返回 null', () => {
-  assert.equal(findExpiry(VGT_CHAIN, '2026-11-20').dte, 43);
-  assert.equal(findExpiry(VGT_CHAIN, '2026-12-18').dte, 71);
-  assert.equal(findExpiry(VGT_CHAIN, '2026-11-21'), null, '不是挂牌日');
-  assert.equal(findExpiry(VGT_CHAIN, ''), null);
-  assert.equal(findExpiry(null, '2026-11-20'), null);
-  assert.equal(findExpiry({ expiries: [{ date: '2026-11-20', dte: 0 }] }, '2026-11-20'), null, '已到期的档不算');
-});
-
-test('planAtOtm：给了 expiry 就精确锁到那一档；链里没有才退回 targetDte', () => {
-  const onBeat = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, expiry: '2026-11-20' });
-  assert.equal(onBeat.expiry, '2026-11-20');
-  assert.equal(onBeat.dte, 43);
-  const far = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, expiry: '2026-12-18' });
-  assert.equal(far.expiry, '2026-12-18', '锁到更远一档时到期日要跟着变');
-  assert.equal(far.dte, 71);
-  const fallback = planAtOtm({ chain: VGT_CHAIN, sym: 'VGT', otmPct: 7, expiry: '2099-01-01', targetDte: 43 });
-  assert.equal(fallback.expiry, '2026-11-20', '链里没有那一天 → 退回按天数挑最近');
 });

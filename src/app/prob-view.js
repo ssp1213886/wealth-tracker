@@ -117,30 +117,6 @@ export function fmtChainTimeShort(raw, nowMs) {
   return '上一交易日收盘 · ' + age;
 }
 
-/**
- * 到期档位按钮：一行一个标的，列出"节奏那一档 + 之后最近的 3 个月度"。
- * 默认选中节奏那一档（带 ★），点别的就临时看那一档 —— 只是查看口径，不改节奏。
- */
-export function otmExpiryChipsHtml(sym, options, current, fixed) {
-  const list = Array.isArray(options) ? options : [];
-  if (list.length < 2) return '';   /* 只有一档时没有"选择"可言，别占位 */
-  return list.map(function (e) {
-    const on = e.date === current;
-    const star = e.date === fixed ? ' ★' : '';
-    return '<button type="button" class="prob-chip' + (on ? ' is-on' : '') +
-      '" data-otmexp="' + escapeHtml(sym) + '|' + escapeHtml(e.date) + '">' +
-      escapeHtml(String(e.date).slice(5)) + star + '</button>';
-  }).join('');
-}
-
-/** 把到期档位按钮写进对应标的的那一行。 */
-export function renderOtmExpiryChips(doc, sym, options, current, fixed) {
-  const el = doc.getElementById(sym === 'VGT' ? 'otmVgtExp' : 'otmSmhExp');
-  if (!el) return;
-  const html = otmExpiryChipsHtml(sym, options, current, fixed);
-  el.innerHTML = html ? '<div class="prob-chips">' + html + '</div>' : '';
-}
-
 /** 数据源与口径说明。source 为 '' 时按"还没拿到"处理。 */
 export function noteHtml(meta) {
   const m = meta || {};
@@ -175,27 +151,58 @@ export function renderProbNote(doc, meta) {
  * 再调这个，否则会被说明文案覆盖掉。
  */
 export function renderProbUnavailable(doc, hint) {
-  const note = doc.getElementById('probNote');
-  if (note) note.innerHTML = '<span style="color:var(--orange)">⚠️ 期权链暂不可用：' + escapeHtml(hint || '稍后会自动重试') + '</span>';
+  const el = doc.getElementById('probMatrix');
+  if (el) el.innerHTML = '<div class="prob-empty" style="color:var(--orange)">⚠️ 期权链暂不可用：' + escapeHtml(hint || '稍后会自动重试') + '</div>';
 }
 
 /**
- * 「行权价参考」那两行的概率联动。
- * 同一条 OTM 百分比，顺带显示对应的被行权概率；链没回来就先留空，不影响原来的建议行权价。
+ * 概率矩阵：行 = 未来到期日，列 = 各 OTM% 下的被行权概率。
+ * 当前 OTM 那一列整列高亮；★ 标记本轮节奏该卖的那一档。
  */
-export function renderOtmProbLine(doc, sym, plan) {
-  const el = doc.getElementById(sym === 'VGT' ? 'otmVgtProb' : 'otmSmhProb');
-  if (!el) return;
-  if (!plan || plan.prob == null) {
-    el.textContent = '';
-    return;
+export function probMatrixHtml(matrix, ctx) {
+  const c = ctx || {};
+  const m = matrix || { otms: [], rows: [] };
+  const rows = Array.isArray(m.rows) ? m.rows : [];
+  const otms = Array.isArray(m.otms) ? m.otms : [];
+  if (!rows.length || !otms.length) {
+    return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
-  el.innerHTML = '<b>' + escapeHtml(String(plan.expiry || '')) + '</b> 到期 · ' +
-    '<span style="color:' + probColor(plan.prob) + '">被行权 ' + fmtProb(plan.prob) + '</span>' +
-    ' · 权利金 ' + fmtMoney(plan.premium) + ' · 年化 ' + fmtAnnual(plan.annualPct) +
-    ' <span style="color:var(--muted)">(' + plan.dte + ' 天 · IV ' + fmtIv(plan.iv) + ')</span>';
-  el.setAttribute('title', '按当前期权链：' + plan.sym + ' $' + Number(plan.strike).toFixed(2) +
-    '，年化权利金率 ' + fmtAnnual(plan.annualPct) + '，到期日 ' + plan.expiry);
+  const cur = Number(c.otm);
+  /* 刻意不加 .prob-table：那套手机端规则会把 td 变成 grid 单元格，而矩阵要的是横向滚动 */
+  let html = '<table class="mx-table"><thead><tr><th>到期日</th><th>剩余</th>' +
+    otms.map(function (o) {
+      return '<th' + (Number(o) === cur ? ' class="mx-on"' : '') + '>' + o + '%</th>';
+    }).join('') + '</tr></thead><tbody>';
+  rows.forEach(function (r) {
+    /* 按 otms 逐列取值，而不是遍历 r.probs —— 万一某行概率缺几列，
+       直接 map r.probs 会少渲染几个 td、整行错位。 */
+    const probs = Array.isArray(r.probs) ? r.probs : [];
+    html += '<tr' + (r.fixed ? ' class="mx-fixed"' : '') + '>' +
+      '<td data-cell="expiry">' + escapeHtml(r.date) +
+        (r.fixed ? '<small class="prob-sub">★ 本轮节奏档</small>' : '') + '</td>' +
+      '<td data-cell="dte">' + r.dte + '天</td>' +
+      otms.map(function (o, i) {
+        const p = probs[i];
+        return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
+          '" style="color:' + probColor(p) + ';font-weight:640">' + fmtProb(p) + '</td>';
+      }).join('') +
+      '</tr>';
+  });
+  return html + '</tbody></table>';
+}
+
+/** 把概率矩阵写进 DOM。 */
+export function renderProbMatrix(doc, matrix, ctx) {
+  const el = doc.getElementById('probMatrix');
+  if (el) el.innerHTML = probMatrixHtml(matrix, ctx);
+}
+
+/** 标的切换（VGT / SMH），与到期日历同一种分段控件。 */
+export function probTabsHtml(current) {
+  return ['VGT', 'SMH'].map(function (s) {
+    return '<button type="button" class="prob-chip' + (s === current ? ' is-on' : '') +
+      '" data-probtab="' + s + '">' + s + '</button>';
+  }).join('');
 }
 
 /**
