@@ -224,7 +224,7 @@ export function probMatrixHtml(matrix, ctx) {
     let prevStrike = 0;   /* 左边最近一个有挂牌档的列吸到了哪个行权价 */
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry">' + escapeHtml(r.date) +
-        (r.sell ? '<small class="prob-sub mx-sell-tag" title="按固定节奏，这一档到期日当天就把它卖出去">★ 本轮该卖</small>' : '') + '</td>' +
+        (r.sell ? '<small class="prob-sub mx-sell-tag" title="按你的固定节奏算出来的本期档位（到期日当天卖下一档）">★ 本期</small>' : '') + '</td>' +
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
         const cell = cells[i];
@@ -242,38 +242,74 @@ export function probMatrixHtml(matrix, ctx) {
 }
 
 /**
- * 「本轮该卖」结论行：把 25 个数字收敛成一句话 —— 行权价 / 被行权概率 / 权利金 / 年化。
- * 取的是 ★ 那一行 ∩ 当前 OTM 那一列，也就是你这轮真正会下的单。
+ * 「本期」结论行：整张卡的主结论不再是"你下次该卖哪一档"（那是纯日历推算），
+ * 而是**本期做到哪一步了** —— 以今天为准取本期那一档，再看记录里有没有这张 CALL：
+ *   已卖出 → 显示你实际卖的行权价 / 张数 / 收到的权利金
+ *   未卖出 → 显示按当前 OTM 算出的目标（可以现在补卖）
+ *   今天到期 → 最醒目地提示"该卖下一档了"
+ * 末尾补一句下一轮：卖出日＝本期到期日（到期日当天卖下一档）+ 这一轮实际持有多久。
  */
-/** 两个 'YYYY-MM-DD' 相差几天；格式不对返回 null（界面据此不显示这一句）。 */
-function dayGap(from, to) {
-  const re = /^\d{4}-\d{2}-\d{2}$/;
-  const a = re.test(String(from || '')) ? Date.parse(from + 'T00:00:00Z') : NaN;
-  const b = re.test(String(to || '')) ? Date.parse(to + 'T00:00:00Z') : NaN;
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  return Math.round((b - a) / 86400000);
+/** 下一轮提示：卖出日 → 到期日，以及这一轮真正持有多久（VGT 35 天 / SMH 21 天）。 */
+function rollText(roll) {
+  const r = roll || {};
+  if (!r.from || !r.date) return '';
+  return '下一轮 ' + escapeHtml(String(r.from)) + ' 卖出 → ' + escapeHtml(String(r.date)) + ' 到期' +
+    (r.tenor != null ? '（持有 ' + r.tenor + ' 天）' : '');
+}
+
+/** 当前那一列没挂牌时，退到列里最近的一个有数有档的列；都没有返回 -1。 */
+function nearestListedIdx(cells, idx) {
+  const list = Array.isArray(cells) ? cells : [];
+  const at = idx >= 0 ? idx : 0;
+  let best = -1;
+  let bestGap = Infinity;
+  for (let i = 0; i < list.length; i += 1) {
+    const c = list[i];
+    if (!c || c.prob == null || !(c.strike > 0)) continue;
+    const gap = Math.abs(i - at);
+    if (gap < bestGap) { best = i; bestGap = gap; }
+  }
+  return best;
 }
 
 export function probSummaryHtml(matrix, ctx) {
   const c = ctx || {};
   const m = matrix || { otms: [], rows: [] };
-  const sell = (Array.isArray(m.rows) ? m.rows : []).filter(function (r) { return r.sell; })[0];
-  if (!sell) return '<div class="mx-sum mx-sum-empty">还没有可卖的到期档</div>';
+  const row = (Array.isArray(m.rows) ? m.rows : []).filter(function (r) { return r.sell; })[0];
+  if (!row) return '<div class="mx-sum mx-sum-empty">还没有可卖的到期档</div>';
   const cur = Number(c.otm);
   const idx = (Array.isArray(m.otms) ? m.otms : []).indexOf(cur);
-  const cell = idx >= 0 ? (sell.cells || [])[idx] : null;
-  /* 「还有 N 天」＝从今天到到期日；括号里的「持有 N 天」＝这一轮真正持有多久（卖出日 → 到期日）。
-     两者对 3 周节奏的 SMH 差得很远：今天看还有 43 天，但 10-30 卖出、11-20 到期，持有只有 21 天。
-     不写清楚的话，VGT(35 天) 和 SMH(21 天) 两张卡都会顶着一个「43 天」，看着像同一个周期。
-     卖出日由调用方传入（＝下一个到期日，到期日当天卖下一档）—— 表里已经没有"该处理"那一行可取了。 */
-  const from = String(c.sellFrom || '');
-  const tenor = from ? dayGap(from, sell.date) : null;
-  const held = (from && tenor != null) ? '（' + escapeHtml(from) + ' 卖出 · 持有 ' + tenor + ' 天）' : '';
-  const head = '<div class="mx-sum-head">本轮该卖 <b>' + escapeHtml(sell.date) + '</b> · 还有 ' + sell.dte + ' 天' + held +
+  const cell = idx >= 0 ? (row.cells || [])[idx] : null;
+  const sold = c.sold || null;
+  const due = !!c.due;                       /* 今天就是本期到期日（＝该卖下一档的那天） */
+  const roll = rollText(c.roll);
+  const badge = sold ? '已卖出 ✓' : (due ? '今天该卖' : '未卖出');
+  const badgeCls = sold ? 'is-done' : (due ? 'is-due' : 'is-todo');
+  const rule = c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '';
+  const head = '<div class="mx-sum-head">本期 <b>' + escapeHtml(row.date) + '</b> · ' +
+    (due ? '今天到期' : '还有 ' + row.dte + ' 天') + rule +
+    ' <span class="mx-badge ' + badgeCls + '">' + badge + '</span>' +
     (idx < 0 ? ' · ' + cur + '%' : '') + '</div>';
-  if (!cell || cell.prob == null) {
+  /* 已卖出：数字全部来自你的记录，不拿行情去猜 */
+  if (sold) {
+    const n = Number(sold.contracts) || 1;
+    const got = (Number(sold.premium) || 0) * n;
     return '<div class="mx-sum">' + head +
-      '<div class="mx-sum-meta">' + cur + '% OTM 在这一档没有挂牌行权价 —— 换一档 OTM 或看下一行</div></div>';
+      '<div class="mx-sum-main">$' + Number(sold.strike || 0).toFixed(2) + ' <small>×' + n + ' 张</small></div>' +
+      '<div class="mx-sum-meta">收 <b>$' + got.toFixed(2) + '</b>' +
+        (sold.added ? ' · ' + escapeHtml(String(sold.added)) + ' 卖出' : '') +
+        (roll ? ' · ' + roll : '') + '</div></div>';
+  }
+  if (!cell || cell.prob == null) {
+    /* 当前 OTM 在这一档没挂牌（实测 VGT 10-16 上方只到 $135，7% 就够不到）。
+       别让结论行变成死胡同 —— 退到最近一个有数的列，直接告诉你现在能卖哪一档。 */
+    const alt = nearestListedIdx(row.cells, idx);
+    const tip = alt >= 0
+      ? ('最近可卖 ' + m.otms[alt] + '% = $' + Number(row.cells[alt].strike).toFixed(2))
+      : ('换一档 OTM');
+    return '<div class="mx-sum">' + head +
+      '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip +
+        (roll ? ' · ' + roll : '') + '</div></div>';
   }
   const drift = (cell.drift || 0) * 100;
   return '<div class="mx-sum">' + head +
@@ -281,10 +317,11 @@ export function probSummaryHtml(matrix, ctx) {
       ' <small>（' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '% OTM）</small></div>' +
     '<div class="mx-sum-meta">被行权 <b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b>' +
       ' · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
-      ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') + '</div></div>';
+      ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') +
+      (roll ? ' · ' + roll : '') + '</div></div>';
 }
 
-/** 把「本轮该卖」写进 DOM。 */
+/** 把「本期」结论行写进 DOM。 */
 export function renderProbSummary(doc, matrix, ctx) {
   const el = doc.getElementById('probSummary');
   if (el) el.innerHTML = probSummaryHtml(matrix, ctx);
