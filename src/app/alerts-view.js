@@ -62,6 +62,23 @@ var pingMap=ctx.pingMap,todayKey=marketDate(ctx.now);
 opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7)return;if(pingMap[o.id]===todayKey)return;var expired=st.expired,leftDays=Math.max(0,st.days),cnt=Number(o.contracts)||1;alerts.push({id:'expiry:'+o.id,type:expired?'red':'orange',severity:expired?'critical':'high',title:o.sym+' '+o.type+' $'+o.strike.toFixed(0)+(expired?' 已过期未结算':' 还剩 '+leftDays+' 天到期'),detail:'到期日 '+o.expiry+' · '+cnt+' 张'+(expired?' · 请确认行权或结算':''),action:'option',dismiss:'opt-expiry-'+o.id})});
 var monthBuys=ctx.trades.filter(function(t){return t.date.slice(0,7)===now&&t.shares>0}),buyTotal=monthBuys.reduce(function(s,t){return s+(t.price*Math.abs(t.shares))},0),dcaTarget=ctx.state.dcaOverride&&ctx.state.dcaOverride.month===now?ctx.state.dcaOverride.amount:ctx.state.monthlyDCA;
 if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id:'dca:'+now,type:'accent',severity:'low',title:'本月定投还差 '+fmtFull(gap),detail:'完成后保持目标资产配比',action:'console'})}
+/* 固定节奏提醒（v328）：到期日当天就卖下一档。节奏日历由 index.js 传进来（ccRows），
+   这里只负责把"该操作了 / 漏了"翻成人话。没有 ccRows 时（老调用方）整段跳过，行为不变。 */
+var ccRows=ctx.ccRows||[],ccStreaks=ctx.ccStreaks||{},todayMs=Date.parse(marketDate(ctx.now)+'T00:00:00Z');
+ccRows.forEach(function(r){
+  if(!r||!r.nextExpiry)return;
+  var left=(Date.parse(r.nextExpiry+'T00:00:00Z')-todayMs)/86400000;
+  if(left===0){
+    alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',detail:r.label+' 到期 · 到期日当天卖下一档（旧档到期即新档开仓）',action:'option'});
+  }else if(left===1){
+    alerts.push({id:'ccsoon:'+r.sym,type:'blue',severity:'medium',title:'明天该卖 '+r.sym+' 的下一档 CALL',detail:r.label+' 到期 · 到期日 '+r.nextExpiry,action:'option'});
+  }
+  var s=ccStreaks[r.sym];
+  if(s&&s.missed&&s.streak===0&&s.total>0){
+    var late=(todayMs-Date.parse(s.missed+'T00:00:00Z'))/86400000;
+    if(late>=5){alerts.push({id:'ccmiss:'+r.sym,type:'orange',severity:'medium',title:r.sym+' 本轮 CALL 还没记录',detail:'按节奏 '+s.missed+' 就该卖下一档了 · 已过去 '+Math.round(late)+' 天',action:'option'});}
+  }
+});
 return alerts;
 }
 

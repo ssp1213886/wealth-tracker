@@ -2868,3 +2868,18 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .cal-table tbody td[data-cell="dte"]::before{content:'剩余'}
   .cal-table tbody td[data-cell="expiry"]::before{content:'到期日'}
 }
+
+/* ===== v328 卖 CALL 节奏 ===== */
+.cal-table tbody tr.cal-onbeat{background:color-mix(in srgb,var(--orange) 14%,transparent)}
+.cal-table tbody tr.cal-onbeat td[data-cell="expiry"]{color:var(--orange);font-weight:640}
+.cc-card .prob-controls{margin:12px 0 4px}
+.cc-table tbody tr.is-due{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.cc-table tbody tr.is-due td{font-weight:640}
+.cc-due{color:var(--accent-d);font-weight:700}
+.cc-streak{color:var(--accent-d)}
+.cc-missed{color:var(--orange)}
+@media(max-width:800px){
+  .cc-table tbody td[data-cell="days"]::before{content:'距今'}
+  .cc-table tbody td[data-cell="rule"]::before{content:'节奏'}
+  .cc-table tbody td[data-cell="streak"]::before{content:'连续执行'}
+}

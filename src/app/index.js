@@ -8,6 +8,8 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {planStrike, planAtOtm, optionProbabilities} from './prob.js';
 import {TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, chipsHtml, renderProbPlan, renderProbHoldings, renderProbNote, renderProbUnavailable, renderOtmProbLine, expiryCalendarHtml, fmtChainTimeShort} from './prob-view.js';
+import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf} from './cc-schedule.js';
+import {renderSchedule} from './cc-view.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -73,7 +75,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v327';var APP_DATA_VERSION=5;
+var APP_BUILD='v328';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -976,7 +978,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=327',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=328',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1079,7 +1081,7 @@ function localValOf(key){
   if(key==='state')return state;
   if(key==='activities')return JSON.parse(readRaw(ACTIVITY_KEY)||'[]');
   if(key==='optionTrades')return JSON.parse(readRaw('wealth_options_v2')||'[]');
-  if(key==='otmSettings')return JSON.parse(readRaw('otmSettings')||'{"vgt":6,"smh":6}');
+  if(key==='otmSettings')return JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":6}');
   if(key==='exit_portfolio')return readRaw('exit_portfolio')||'';
   if(key==='watchlist')return watchList;
   return undefined;
@@ -1091,7 +1093,7 @@ function applyCloudVal(key,val){
   else if(key==='state'){state=normalizeState(val);saveStateNoPush()}
   else if(key==='activities'){LS.setItem(ACTIVITY_KEY,JSON.stringify(normalizeActivities(val)))}
   else if(key==='optionTrades'){optionTrades=normalizeOptions(val);LS.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
-  else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:6,smh:6};LS.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
+  else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:7,smh:6};LS.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
   else if(key==='exit_portfolio'){LS.setItem('exit_portfolio',val);var ep=document.getElementById('exitPortfolio');if(ep)ep.value=val}
   else if(key==='watchlist'){
     watchList=mergeWatchlist(watchList,val);   // 并集：云端项在前，本地独有的补上，按代码去重
@@ -1108,7 +1110,7 @@ function buildPushData(dirtyOnly){
     state:function(){return state},
     activities:function(){return JSON.parse(readRaw(ACTIVITY_KEY)||'[]')},
     optionTrades:function(){return JSON.parse(readRaw(KEYS.options)||'[]')},
-    otmSettings:function(){return JSON.parse(readRaw('otmSettings')||'{"vgt":6,"smh":6}')},
+    otmSettings:function(){return JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":6}')},
     exit_portfolio:function(){return readRaw('exit_portfolio')||''},
     watchlist:function(){return watchList}
   },readPrices:function(){return JSON.parse(readRaw(PRICE_KEY)||'{}')}});
@@ -1675,7 +1677,9 @@ function renderExpiryCalendar(){
     if(!o||o.settled||o.archived||!o.expiry)return;
     var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
   });
-  el.innerHTML=expiryCalendarHtml(entries,{holdings:holdings,
+  var fixed={};
+  try{ccRows().forEach(function(r){fixed[r.sym]=r.nextExpiry})}catch(e){logSwallowed("ccRows",e)}
+  el.innerHTML=expiryCalendarHtml(entries,{holdings:holdings,fixed:fixed,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链加载中…'});
 }
 /** 「行权价参考」两行的概率联动：调 OTM 百分比时实时看到对应的被行权概率。 */
@@ -1725,29 +1729,113 @@ function bindProbControls(){
 (function initProb(){
   var run=function(){
     bindProbControls();renderProbCard();
+    bindCcControls();renderCcSchedule();
     /* 切到期权页时刷新（refreshChains 自带 5 分钟节流，不会每切一次就打上游） */
     document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.tab==='option')refreshChains(false)})});
-    setTimeout(function(){refreshChains(false)},1200);
+    setTimeout(function(){refreshChains(false);refreshDividends(false)},1200);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
 })();
 
-/* v326：22 年回测（2004-2026，含买卖价差）显示 6% OTM 优于原先的 VGT 7% / SMH 5%，
-   默认值统一成 6%。老设备的存量设置用一次性标记搬过来 —— 只跑一次，
-   之后用户自己调过的值不会再被覆盖。 */
-var OTM_MIGRATE_KEY='otm6_migrated_v1';
-var otmSettings={vgt:6,smh:6};
+/* ===== 卖 CALL 的固定节奏 =====
+   15-20 年的系统化策略里，日历本身就是纪律的一部分（和月度 DCA、年度再平衡同源）。
+   只支持两种能精确算出来的规则：
+     VGT 每月第三个周五（它只有月度期权，没得选）
+     SMH 每 3 周的周五（有周期权；回测显示 21 天是区间最优）
+   卖出时点固定为**到期日当天**（旧档到期 = 新档开仓同一天，没有空档期）。
+   注意锚点：历史回测里换锚点能差 ±1.5pt，但那是路径运气、事前无法优化，所以只提供"可改"。*/
+var CC_KEY='ccSchedule';
+var CC_ANCHOR_DEFAULT='2026-10-30';   /* 让 SMH 的 11-20 正好与 VGT 的月度到期日重合 */
+var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT}};
+(function loadCcSchedule(){
+  try{
+    var raw=JSON.parse(readRaw(CC_KEY)||'null');
+    if(raw&&typeof raw==='object'){
+      ['VGT','SMH'].forEach(function(s){
+        var c=raw[s];if(!c||typeof c!=='object')return;
+        if(CC_RULES.indexOf(c.rule)>=0)ccSchedule[s].rule=c.rule;
+        if(c.anchor&&weekdayOf(c.anchor)===5)ccSchedule[s].anchor=c.anchor;
+      });
+    }
+  }catch(e){logSwallowed("loadCcSchedule",e)}
+})();
+/** 只写本地：和 probSettings 一样属于本机偏好，没进 SYNC_FIELDS（所以刻意不调 markDirty）。 */
+function saveCcSchedule(){LS.setItem(CC_KEY,JSON.stringify(ccSchedule))}
+var ccDividends={};
+function ccRows(){return ['VGT','SMH'].map(function(s){return scheduleRow(s,ccSchedule,marketDate())}).filter(Boolean)}
+function ccStreaks(){var m={};['VGT','SMH'].forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccSchedule,marketDate())});return m}
+function ccExDivItems(){
+  var out=[];
+  ['VGT','SMH'].forEach(function(s){
+    var list=ccDividends[s];if(!list||!list.length)return;
+    var next=null;try{next=estimateNextExDiv(list,marketDate())}catch(e){logSwallowed("estimateNextExDiv",e)}
+    if(next)out.push({sym:s,next:next});
+  });
+  return out;
+}
+async function fetchDividends(sym){
+  try{
+    var r=await fetchWithTimeout('/api/dividends?sym='+encodeURIComponent(sym));
+    if(!r.ok)return null;
+    var j=await r.json();
+    return (j&&j.ok&&Array.isArray(j.dividends))?j.dividends:null;
+  }catch(e){return null}
+}
+/** 节奏卡片 + CC 相关的提醒一起刷新（提醒要读 ccRows，所以绑在一起）。 */
+function renderCcSchedule(){
+  try{
+    renderSchedule(document,ccRows(),{
+      rules:{VGT:ccSchedule.VGT.rule,SMH:ccSchedule.SMH.rule},
+      streaks:ccStreaks(),
+      dividends:ccExDivItems(),
+    });
+  }catch(e){logSwallowed("renderCcSchedule",e)}
+  refreshCcAlerts();
+}
+function refreshCcAlerts(){
+  try{
+    var nowInstant=new Date();
+    renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),
+      ccRows:ccRows(),ccStreaks:ccStreaks()}));
+  }catch(e){logSwallowed("refreshCcAlerts",e)}
+}
+async function refreshDividends(force){
+  if(!force&&ccDividends.VGT&&ccDividends.SMH){renderCcSchedule();return}
+  var res=await Promise.all(['VGT','SMH'].map(fetchDividends));
+  ['VGT','SMH'].forEach(function(s,i){if(res[i])ccDividends[s]=res[i]});
+  renderCcSchedule();
+}
+function bindCcControls(){
+  var pickers=document.getElementById('ccRulePickers');
+  if(pickers)pickers.addEventListener('click',function(e){
+    var b=e.target.closest('[data-ccrule]');if(!b)return;
+    var parts=String(b.dataset.ccrule).split('|'),sym=parts[0],rule=parts[1];
+    if(CC_RULES.indexOf(rule)<0||!ccSchedule[sym])return;
+    ccSchedule[sym].rule=rule;
+    if(rule==='every3w'&&!ccSchedule[sym].anchor)ccSchedule[sym].anchor=CC_ANCHOR_DEFAULT;
+    saveCcSchedule();renderCcSchedule();haptic('light');
+  });
+}
+
+/* OTM 默认值的两次调整都来自 22 年回测（2004-2026，含买卖价差）：
+   v326 先把 VGT 7% / SMH 5% 统一成 6%；
+   v328 按**固定节奏**（VGT 月度第三个周五、SMH 每 3 周）重跑后又调开 ——
+   月度日历里有 35 天的月份，DTE 被拉到 32 天左右、行权风险上升，所以 VGT 要卖得更远（7%），
+   SMH 是 21 天短周期、行权风险低，留在 6%。
+   老设备的存量设置用一次性标记搬过来 —— 只跑一次，之后用户自己调过的值不会再被覆盖。 */
+var OTM_MIGRATE_KEY='otm76_migrated_v1';
+var otmSettings={vgt:7,smh:6};
 try{
   var s2=JSON.parse(readRaw("otmSettings"));if(s2)otmSettings=s2;
   if(!LS.getItem(OTM_MIGRATE_KEY)){
-    otmSettings.vgt=6;otmSettings.smh=6;
+    otmSettings.vgt=7;otmSettings.smh=6;
     LS.setItem("otmSettings",JSON.stringify(otmSettings));
     LS.setItem(OTM_MIGRATE_KEY,'1');
     markDirty('otmSettings');
   }
 }catch(e){logSwallowed("otmSettingsInit",e)}
-function updateOtm(){otmSettings.vgt=otmPercent(otmSettings.vgt,6);otmSettings.smh=otmPercent(otmSettings.smh,6);var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?livePrices.SMH||0:0;var v=document.getElementById("otmVgtVal");if(v)v.textContent=otmSettings.vgt+"%";var s=document.getElementById("otmSmhVal");if(s)s.textContent=otmSettings.smh+"%";var ve=document.getElementById("otmVgtStrike");if(ve&&vp>0)ve.textContent="$"+vp.toFixed(0)+" → $"+suggestedStrike(vp,otmSettings.vgt).toFixed(0);var se=document.getElementById("otmSmhStrike");if(se&&sp>0)se.textContent="$"+sp.toFixed(0)+" → $"+suggestedStrike(sp,otmSettings.smh).toFixed(0);try{renderOtmProbLines()}catch(e){logSwallowed("renderOtmProbLines",e)}}
-function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,6);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
+function updateOtm(){otmSettings.vgt=otmPercent(otmSettings.vgt,7);otmSettings.smh=otmPercent(otmSettings.smh,6);var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?livePrices.SMH||0:0;var v=document.getElementById("otmVgtVal");if(v)v.textContent=otmSettings.vgt+"%";var s=document.getElementById("otmSmhVal");if(s)s.textContent=otmSettings.smh+"%";var ve=document.getElementById("otmVgtStrike");if(ve&&vp>0)ve.textContent="$"+vp.toFixed(0)+" → $"+suggestedStrike(vp,otmSettings.vgt).toFixed(0);var se=document.getElementById("otmSmhStrike");if(se&&sp>0)se.textContent="$"+sp.toFixed(0)+" → $"+suggestedStrike(sp,otmSettings.smh).toFixed(0);try{renderOtmProbLines()}catch(e){logSwallowed("renderOtmProbLines",e)}}
+function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,key==='vgt'?7:6);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
 try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adjOtm("VGT",1)};var em=document.getElementById("otmVgtMinus");if(em)em.onclick=function(){adjOtm("VGT",-1)};var sp2=document.getElementById("otmSmhPlus");if(sp2)sp2.onclick=function(){adjOtm("SMH",1)};var sm2=document.getElementById("otmSmhMinus");if(sm2)sm2.onclick=function(){adjOtm("SMH",-1)}}catch(e){logSwallowed("adjOtm",e)}setTimeout(updateOtm,800);
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
@@ -1774,7 +1862,7 @@ function qaCall(){qaClose();switchTab('option');setTimeout(function(){var e=docu
 
 function updateAlerts(){
   var nowInstant=new Date();
-  renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing()}));
+  renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),ccRows:ccRows(),ccStreaks:ccStreaks()}));
 }
 document.addEventListener('click',function(event){var target=event.target;if(!target||!target.closest)return;var dismiss=target.closest('[data-alert-dismiss]');if(dismiss){event.preventDefault();event.stopPropagation();saveOptPing(String(dismiss.getAttribute('data-alert-dismiss')||'').replace(/^opt-expiry-/,''));updateAlerts();return}var action=target.closest('[data-alert-action]');if(action){qaClose();switchTab(action.getAttribute('data-alert-action'))}});
 

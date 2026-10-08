@@ -265,6 +265,7 @@ export function renderOtmProbLine(doc, sym, plan) {
 export function expiryCalendarHtml(entries, ctx) {
   const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
   const holdings = (ctx && ctx.holdings) || {};
+  const fixed = (ctx && ctx.fixed) || {};   /* { VGT:'2026-11-20', SMH:'2026-10-30' } —— 固定节奏该卖的那一档 */
   if (!list.length) {
     return '<div class="prob-empty">' + escapeHtml((ctx && ctx.emptyHint) || '期权链加载中…') + '</div>';
   }
@@ -273,9 +274,11 @@ export function expiryCalendarHtml(entries, ctx) {
     '</tr></thead><tbody>';
   list.forEach(function (e) {
     const mine = holdings[e.sym + '|' + e.date] || 0;
-    html += '<tr' + (mine ? ' class="cal-mine"' : '') + '>' +
+    const onBeat = fixed[e.sym] === e.date;
+    const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
+    html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="sym"><strong>' + escapeHtml(e.sym) + '</strong></td>' +
-      '<td data-cell="expiry">' + escapeHtml(e.date) + '</td>' +
+      '<td data-cell="expiry">' + escapeHtml(e.date) + (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
       '<td data-cell="dte">' + e.dte + '天</td>' +
       '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
       '<td data-cell="strikes">' + e.calls + ' 档 · $' + Number(e.lo).toFixed(0) + '~$' + Number(e.hi).toFixed(0) + '</td>' +

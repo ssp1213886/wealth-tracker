@@ -460,7 +460,7 @@
   <div class="otm-list">
     <div class="otm-row">
       <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small></div>
-      <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">6%</span><button type="button" id="otmVgtPlus">+</button></div>
+      <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">7%</span><button type="button" id="otmVgtPlus">+</button></div>
     </div>
     <div class="otm-row">
       <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small><small id="otmSmhProb" class="otm-prob"></small></div>
@@ -476,6 +476,14 @@
     <div id="expiryCalendar"></div>
     <div class="prob-note">到期判定：到期日当天美东 16:00 收盘。收盘时实值 ≥ $0.01 即自动行权（无需对手方决定），ETF 期权为实物交割，T+1 划走股份 —— 周五到期 → 周一交割，与「T+1 市价买回」正好衔接。VGT 只有月度到期日，SMH 还有周度。</div>
   </div>
+</div>
+
+<div class="card option-card cc-card">
+  <div class="opt-card-head"><h3>卖 CALL 节奏</h3><small class="prob-src">固定日历</small></div>
+  <div id="ccScheduleBody"></div>
+  <div class="prob-controls" id="ccRulePickers"></div>
+  <div class="prob-note" id="ccExDiv"></div>
+  <div class="prob-note">到期日当天就卖出下一档：旧档到期与新档开仓是同一天，没有空档期。若旧档被行权，周一 T+1 市价买回正股。VGT 只有月度期权，所以固定为每月第三个周五；SMH 有周期权，按回测最优固定为每 3 周的周五。</div>
 </div>
 
 <div class="card option-card prob-card">

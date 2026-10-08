@@ -2,6 +2,7 @@ import { serveAsset } from './lib/assets.js';
 import { corsHeaders, json } from './lib/http.js';
 import { handlePrice } from './lib/price.js';
 import { handleChain } from './lib/chain.js';
+import { handleDividends } from './lib/dividends.js';
 import { handleSyncGet, handleSyncPost } from './lib/sync.js';
 import { listSnapshots, restoreSnapshot } from './lib/snapshots.js';
 import { createRateLimiter } from './lib/rate-limit.js';
@@ -370,6 +371,10 @@ async function handleRequest(request, env, ctx) {
     }
     if (url.pathname === '/api/chain') {
       const result = await handleChain(request, url);
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/dividends') {
+      const result = await handleDividends(request, url);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/log') {
