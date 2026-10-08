@@ -18,6 +18,15 @@ test('portfolioTotals：浮动 + 已实现 + 权利金，现金占比按总资�
   assert.ok(near(t.cashPct, 1000 / 2950 * 100));
 });
 
+test('portfolioTotals：股息计入总盈亏（否则和「纪律热力图」的当月收益对不上）', () => {
+  const base = { hasPriced: true, totalValue: 1950, totalCost: 1650, totalInvested: 2200, totalRealized: 200, optionPremium: 120, netCash: 1000 };
+  assert.equal(portfolioTotals(base).total, 620, '没有股息时不变');
+  const withDiv = portfolioTotals({ ...base, dividend: 35 });
+  assert.equal(withDiv.total, 655, '股息是真实收益，要加进总盈亏');
+  assert.equal(withDiv.dividend, 35, '股息要单独带出去，界面才能标出来');
+  assert.equal(portfolioTotals({}).dividend, 0, '缺省为 0');
+});
+
 test('portfolioTotals：拿不到行情时盈亏为 null（界面显示「-」），现金占比仍可算', () => {
   const t = portfolioTotals({ hasPriced: false, totalValue: 0, totalCost: 0, totalInvested: 100, totalRealized: 5, optionPremium: 3, netCash: 200 });
   assert.equal(t.unreal, null);

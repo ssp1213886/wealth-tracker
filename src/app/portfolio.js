@@ -6,10 +6,15 @@ import { computeHoldings, buildPositionRows } from './calc.js';
 /**
  * 组合汇总：
  *   unreal      浮动盈亏（拿不到价时为 null）
- *   total       总盈亏 = 浮动 + 已实现 + 权利金
+ *   total       总盈亏 = 浮动 + 已实现 + 权利金 + 股息
  *   pct         总收益率（分母是累计买入 totalInvested）
  *   totalAssets 持仓市值 + 净现金
  *   cashPct     现金占总资产比例（%）；总资产 ≤ 0 时为 null（占比无意义，界面显示「—」）
+ *
+ * 为什么股息要单列进总盈亏：**股息是真实收益，只是以现金形式躺在账户里**，
+ * 既不是浮动盈亏（那只看持仓成本），也不是权利金。以前漏掉它，会和
+ * 「纪律热力图」的当月收益（口径 A：月末总资产 − 月初总资产 − 当月入金）对不上 ——
+ * 那两个数在没有任何现金修正时应当严格相等（差 = 股息 + 修正）。
  */
 export function portfolioTotals(input) {
   const o = input || {};
@@ -19,13 +24,14 @@ export function portfolioTotals(input) {
   const totalInvested = Number(o.totalInvested) || 0;
   const totalRealized = Number(o.totalRealized) || 0;
   const optionPremium = Number(o.optionPremium) || 0;
+  const dividend = Number(o.dividend) || 0;
   const netCash = Number(o.netCash) || 0;
   const unreal = hasPriced ? totalValue - totalCost : null;
-  const total = (hasPriced && unreal !== null) ? unreal + totalRealized + optionPremium : null;
+  const total = (hasPriced && unreal !== null) ? unreal + totalRealized + optionPremium + dividend : null;
   const pct = (hasPriced && totalInvested > 0) ? total / totalInvested : null;
   const totalAssets = totalValue + netCash;
   const cashPct = cashPctOf(totalAssets, netCash);
-  return { unreal: unreal, total: total, pct: pct, totalAssets: totalAssets, cashPct: cashPct };
+  return { unreal: unreal, total: total, pct: pct, totalAssets: totalAssets, cashPct: cashPct, dividend: dividend };
 }
 
 /**

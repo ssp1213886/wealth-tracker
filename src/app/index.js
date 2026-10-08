@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v366';var APP_DATA_VERSION=5;
+var APP_BUILD='v367';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -176,6 +176,10 @@ var CRYPTO_CODES={BTC:1,ETH:1,BNB:1,HYPE:1,SOL:1,XRP:1,DOGE:1,ADA:1,AVAX:1,LINK:
 
   updatePortfolio();updateSidebar();updateSidebarPrices();renderHoldings();
 
+  /* 行情刷新后顺手重算「当月组合收益」—— 当月那一格用的是实时价，不重算就比首页慢一拍。
+     内部用 JSON 比对，值没变就是空操作，不会来回重绘。 */
+  try{if(logPnlMonths.length)refreshMonthlyPnl()}catch(e){logSwallowed("refreshMonthlyPnl",e)}
+
 
 }
 
@@ -211,7 +215,9 @@ function updatePortfolio(){
 
 
   var realizedOptionPremium=0;try{realizedOptionPremium=optionTotals(optionTrades).total}catch(e){logSwallowed("updatePortfolio",e)}
-  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,optionPremium:realizedOptionPremium,netCash:getNetCash()});
+  /* 累计股息：股息是真实收益（只是以现金形式躺着），要计入累计收益 —— 否则会和「纪律热力图」的当月收益对不上 */
+  var dividendTotal=0;try{dividendTotal=(cashLog||[]).reduce(function(s,l){return String((l&&l.type)||'').indexOf('股息')>=0?s+(Number(l&&l.amount)||0):s},0)}catch(e){logSwallowed("dividendTotal",e)}
+  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,optionPremium:realizedOptionPremium,dividend:dividendTotal,netCash:getNetCash()});
   var totalPnL=totals.total,totalPct=totals.pct;
 
 
@@ -221,7 +227,7 @@ function updatePortfolio(){
   renderMetricsTop(document,{hasPriced:hasPriced,totalValue:totalValue,totals:totals});
 
 
-  var daily=dailyChange(rows,buildDailyQuotes(),trades,marketDate()),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,realizedOptionPremium:realizedOptionPremium,dailyChg:dailyChg,dailyPct:dailyPct});
+  var daily=dailyChange(rows,buildDailyQuotes(),trades,marketDate()),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,realizedOptionPremium:realizedOptionPremium,dividendTotal:dividendTotal,dailyChg:dailyChg,dailyPct:dailyPct});
 
 
 
@@ -408,6 +414,11 @@ function buildPriceByMonth(list,syms,months){
         if(marketDate(new Date(ts[j]*1000)).slice(0,7)===ym){map[ym]=v;break}
       }
     });
+    /* 当月还没走完 → 用**实时价**（跟首页同一个价）。日线收盘会慢一天，
+       不改的话"当月那一格"和首页的累计收益会差出一天的价格（用户看到的就是这个差）。 */
+    var curYm=marketDate().slice(0,7);
+    var live=Number(livePrices[s]);
+    if(live>0)map[curYm]=live;
     out[s]=map;
   });
   return out;
@@ -1028,7 +1039,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=366',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=367',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
