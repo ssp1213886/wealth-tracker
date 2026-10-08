@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=346');
+  assert.equal(manifest.start_url, '/?v=347');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v346/);
+  assert.match(serviceWorker, /wealth-v347/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=346',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=347',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -693,4 +693,19 @@ test('index.js：矩阵默认列是 5/6/7/8 四档，且当前 OTM 永远在表�
   const fn = indexSource.slice(indexSource.indexOf('function matrixOtms'));
   const body = fn.slice(0, fn.indexOf('\n}') + 2);
   assert.match(body, /Math\.abs\(a-c\)-Math\.abs\(b-c\)/, '区间外要按"离当前值最近"挑，而不是硬塞');
+});
+
+/**
+ * v346：观察列表移到操作台最前面（一进操作页先看到行情，而不是先看到录入表）。
+ * 顺序纯靠 HTML 位置决定，挪回去不会有任何报错、只会静静地变回原样，所以要钉住。
+ */
+test('操作台：观察列表置顶，顺序为 观察列表 → 买卖操作录入 → 现金管理 → 年度再平衡', () => {
+  const panel = html.slice(html.indexOf('id="tab-console"'), html.indexOf('id="tab-option"'));
+  assert.ok(panel.length > 0, '找不到操作台面板');
+  const at = (needle) => panel.indexOf(needle);
+  assert.ok(at('id="watchCard"') > 0, '操作台里没有观察列表');
+  assert.ok(at('id="watchCard"') < at('console-entry-card'), '观察列表要排在「买卖操作录入」之前');
+  assert.ok(at('console-entry-card') < at('现金管理'), '「买卖操作录入」在「现金管理」之前');
+  assert.ok(at('现金管理') < at('id="yearRebalanceCard"'), '「现金管理」在「年度再平衡」之前');
+  assert.equal((html.match(/id="watchCard"/g) || []).length, 1, '观察列表只能有一块（搬家用的是剪切，不是复制）');
 });
