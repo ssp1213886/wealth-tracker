@@ -3,13 +3,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary } from '../src/app/settings.js';
 
-test('面板映射：七个面板 + 两个聚焦目标', () => {
-  assert.deepEqual(Object.keys(SETTINGS_PANEL_IDS).sort(), ['account', 'activity', 'data', 'preferences', 'price', 'sync', 'users']);
+// v322：设置从 7 行收敛到 5 行 —— 活动记录并进「账号」、手动行情并进「数据与备份」，
+// 所以映射里不再有 activity / price 两个键（对应面板已从 index.html 删除）。
+test('面板映射：五个面板 + 一个聚焦目标（设置收敛后的形状）', () => {
+  assert.deepEqual(Object.keys(SETTINGS_PANEL_IDS).sort(), ['account', 'data', 'preferences', 'sync', 'users']);
   assert.equal(SETTINGS_PANEL_IDS.users, 'settingsUsers');
-  assert.equal(SETTINGS_PANEL_IDS.activity, 'settingsActivity');
   assert.equal(SETTINGS_PANEL_IDS.sync, 'settingsSync');
   assert.equal(SETTINGS_PANEL_IDS.account, 'settingsAccount');
-  assert.deepEqual(SETTINGS_FOCUS_IDS, { price: 'hmManualSym', preferences: 'monthlyDCAInput' });
+  assert.equal(SETTINGS_PANEL_IDS.data, 'settingsData');
+  assert.deepEqual(SETTINGS_FOCUS_IDS, { preferences: 'monthlyDCAInput' });
 });
 
 test('parseSyncConfig：正常读取，缺字段补空串', () => {

@@ -1,20 +1,19 @@
 // 设置抽屉 / 云同步面板的纯逻辑（DOM 事件绑定仍留在 index.js）。
 // 抽出后这两块可以离线单测：同步配置解析的容错、数据健康那几行文案的判定顺序。
 
-/** 设置抽屉里四个面板的 id（openAdvancedSettings 用） */
+/** 设置抽屉里面板的 id（openAdvancedSettings 用）。
+ *  v322：合并了两页 —— 活动记录并进账号（settingsAccount）、手动行情并进数据与备份（settingsData），
+ *  所以 map 里不再有 activity / price 两个键。 */
 export const SETTINGS_PANEL_IDS = {
   account: 'settingsAccount',
   users: 'settingsUsers',
-  activity: 'settingsActivity',
   sync: 'settingsSync',
-  price: 'settingsPrice',
   data: 'settingsData',
   preferences: 'settingsPreferences',
 };
 
 /** 打开某个面板时顺便聚焦的输入框（没有就不聚焦） */
 export const SETTINGS_FOCUS_IDS = {
-  price: 'hmManualSym',
   preferences: 'monthlyDCAInput',
 };
 

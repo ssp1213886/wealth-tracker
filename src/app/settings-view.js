@@ -181,10 +181,7 @@ export function openAdvancedSettings(section) {
   details.open = true;
   const panelId = SETTINGS_PANEL_IDS[section];
   const panel = panelId ? document.getElementById(panelId) : null;
-  if (section === 'sync') {
-    const sync = document.getElementById('syncPanel');
-    if (sync) sync.classList.add('open');
-  }
+  // v322：同步面板不再有可折叠的「连接配置」，打开即见两个动作，不用再额外展开
   if (!panel) return;
   sec.querySelectorAll('.settings-panel.is-current').forEach(function (el) { el.classList.remove('is-current'); });
   panel.classList.add('is-current');
@@ -276,7 +273,8 @@ export function setupInlineQuickSettings() {
   const menu = document.querySelector('.sb-quick-menu');
   if (!menu || menu.dataset.inlineReady) return;
   menu.dataset.inlineReady = '1';
-  const map = [['price', SETTINGS_PANEL_IDS.price], ['sync', SETTINGS_PANEL_IDS.sync], ['data', SETTINGS_PANEL_IDS.data], ['preferences', SETTINGS_PANEL_IDS.preferences]];
+  // v322：手动行情已并进「数据与备份」，这里不再有 price 那一项
+  const map = [['sync', SETTINGS_PANEL_IDS.sync], ['data', SETTINGS_PANEL_IDS.data], ['preferences', SETTINGS_PANEL_IDS.preferences]];
   map.forEach(function (pair) {
     const key = pair[0];
     const id = pair[1];

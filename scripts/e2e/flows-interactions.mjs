@@ -262,20 +262,20 @@ if (!/入金/.test(cashGuard.toast)) failures.push('现金不足的提示没引�
 if (cashGuard.focused !== 'hmCashAmt') failures.push('现金不足时没有把光标带到入金输入框（焦点在 ' + cashGuard.focused + '）');
 if (cashGuard.trades === 0) failures.push('现金不足竟然把交易录进去了');
 
-/* I2 数据健康可点 → 打开同步设置并展开连接配置 */
+/* I2 数据健康可点 → 打开同步设置（v322：不再有「连接配置」折叠，打开即见上传/同步两个动作） */
 await ev(() => {
   const row = document.querySelector('.sb-health-list .sb-health-row');
   if (row) row.click();
 });
 await p.waitForTimeout(900);
 const healthJump = await ev(() => ({
-  syncPanelOpen: !!(document.getElementById('syncPanel') || {}).classList && document.getElementById('syncPanel').classList.contains('open'),
+  actionsVisible: (() => { const a = document.getElementById('btnSyncPush'), b = document.getElementById('btnSyncPull'); return !!a && !!b && a.getBoundingClientRect().height > 0 && b.getBoundingClientRect().height > 0; })(),
   panelVisible: (() => { const el = document.getElementById('settingsSync'); return !!el && el.getBoundingClientRect().height > 0; })(),
   settingsOpen: (() => { const sec = document.querySelector('.sb-section.sb-settings'); return !!sec && (sec.classList.contains('open') || sec.getBoundingClientRect().height > 0); })(),
 }));
 if (!healthJump.settingsOpen) failures.push('点数据健康没有打开设置面板');
 if (!healthJump.panelVisible) failures.push('同步设置面板打开后仍不可见（移动端曾被整屏设置面板挡住）');
-if (!healthJump.syncPanelOpen) failures.push('点数据健康没有自动展开「连接配置」');
+if (!healthJump.actionsVisible) failures.push('点数据健康后没看到同步的两个动作（上传/同步）');
 
 /* 操作台两个录入弹层（v308 方案B）：卡片上只留「＋」按钮，表单在底部弹层里 */
 const consoleSheets = await ev(async () => {
