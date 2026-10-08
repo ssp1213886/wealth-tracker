@@ -42,6 +42,41 @@ export function daysBetween(from, to) {
   return Math.round((b - a) / DAY);
 }
 
+/** 默认的吸附窗口：假期周最多把到期日从周五挪到周四，±7 天足够覆盖。 */
+const SNAP_WINDOW_DAYS = 7;
+
+/**
+ * 把"按日历推出来的节奏档"吸附到市场**真实挂牌**的到期日上。返回 { date, shifted }。
+ *
+ * 为什么必须有这一步：节奏是纯日历推算（每月第三个周五 / 每 3 周），但市场并不总是照日历走
+ * —— 假期周会把周五的到期日**挪到周四**（耶稣受难日那周就是），那天市场上根本没有合约。
+ * 指着一张不存在的合约比不显示更糟，所以：
+ *   ① 日历日就在挂牌列表里 → 原样返回（绝大多数情况）
+ *   ② ±7 天内有挂牌档 → 取最近的那个（假期周顺延到周四就是这种）
+ *   ③ 都没有 → 顺延到之后第一个挂牌档；再没有（超出链的范围）就取最后一个
+ * 链还没加载（listed 为空）或日期非法时**原样返回**，绝不编一个"已顺延"出来。
+ */
+export function snapToListed(date, listed, opts) {
+  const d = String(date == null ? '' : date).trim();
+  const window = Number((opts || {}).windowDays) > 0 ? Number((opts || {}).windowDays) : SNAP_WINDOW_DAYS;
+  const list = (Array.isArray(listed) ? listed : [])
+    .map(function (x) { return String(x == null ? '' : x).trim(); })
+    .filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); })
+    .sort();
+  if (!d || !Number.isFinite(dateMs(d)) || !list.length) return { date: d, shifted: false };
+  if (list.indexOf(d) >= 0) return { date: d, shifted: false };
+  const t = dateMs(d);
+  let best = null;
+  let bestGap = Infinity;
+  list.forEach(function (x) {
+    const gap = Math.abs(dateMs(x) - t);
+    if (gap <= window * DAY && gap < bestGap) { best = x; bestGap = gap; }
+  });
+  if (best) return { date: best, shifted: true };
+  const after = list.filter(function (x) { return dateMs(x) >= t; })[0];
+  return { date: after || list[list.length - 1], shifted: true };
+}
+
 /** 某年某月的第三个周五（标准月度到期日）。 */
 export function thirdFriday(year, month) {
   const first = new Date(Date.UTC(year, month - 1, 1));

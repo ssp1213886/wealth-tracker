@@ -8,7 +8,7 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
 import {renderProbNote, renderProbUnavailable, renderProbMatrix, renderProbSummary, probTabsHtml, expiryCalendarHtml, fmtProb} from './prob-view.js';
-import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf, dateMs, isoOf, daysBetween} from './cc-schedule.js';
+import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf, dateMs, isoOf, daysBetween, snapToListed} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v352';var APP_DATA_VERSION=5;
+var APP_BUILD='v353';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -977,7 +977,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=352',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=353',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1688,15 +1688,22 @@ function renderProbCard(){
   var mx=null;
   /* ★ 与结论行主行说的都是**该卖的那一档**：按固定节奏，下一个到期日（本期）当天把它卖出去。
      本期那一档的状态（这张 CALL 记了没有）只做一个小徽章，不抢主行。
+     两个日期都要先吸附到链里**真实挂牌**的到期日上（假期周会把周五挪到周四，
+     纯日历推算会指到一张市场上不存在的合约）；链还没到时按日历显示，不编"已顺延"。
      minDte 保持 14：SMH 有每日到期日，门槛放低会把它那堆 7/8/11 天的档全拉进来；
      ★ 那一档由 probMatrix 强制保留，不受门槛影响。 */
   var period=ccPeriod(probTab);
-  var rollTo=ccRollExpiry(probTab);
-  try{mx=probMatrix(chain,{fixed:rollTo,minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
+  var listed=listedExpiries(chain);
+  var sellDay=snapToListed(period.date,listed);          /* 卖出日＝本期到期日 */
+  var rollRaw=ccRollExpiry(probTab);                     /* 纯日历推出来的那一档 */
+  var roll=snapToListed(rollRaw,listed);                 /* 吸附到真实挂牌档之后的一档 */
+  try{mx=probMatrix(chain,{fixed:roll.date,minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
   renderProbSummary(document,mx,{otm:otm,ruleLabel:period.label,due:period.due,
-    from:period.date,periodDate:period.date,daysToSale:period.days,
-    tenor:(period.date&&rollTo)?daysBetween(period.date,rollTo):null,
-    sold:ccSold(probTab,period.date)});
+    from:sellDay.date,periodDate:sellDay.date,
+    daysToSale:sellDay.date?daysBetween(marketDate(),sellDay.date):period.days,
+    tenor:(sellDay.date&&roll.date)?daysBetween(sellDay.date,roll.date):null,
+    shiftNote:roll.shifted?('节奏日 '+rollRaw+' 未挂牌'):'',
+    sold:ccSold(probTab,sellDay.date)});
   renderProbMatrix(document,mx,{otm:otm,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链里没有 14 天以上的到期日'});
   renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),iv30:iv30Map()});
@@ -1751,6 +1758,15 @@ function ccPeriod(sym){
     var r=scheduleRow(sym,ccSchedule,marketDate());
     return r?{date:r.nextExpiry,days:r.daysToGo,label:r.label||'',due:!!r.isDue}:empty;
   }catch(e){return empty}
+}
+/** 链里真实挂牌的到期日（升序）。链还没到就返回空数组 —— 吸附函数会原样返回日历日。 */
+function listedExpiries(chain){
+  try{
+    return ((chain&&chain.expiries)||[])
+      .map(function(e){return e&&e.date})
+      .filter(Boolean)
+      .sort();
+  }catch(e){return []}
 }
 /**
  * 本期是否已经卖出：记录里有同标的、同到期日的 CALL（未归档）就算。

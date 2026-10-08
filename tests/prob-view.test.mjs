@@ -204,6 +204,12 @@ test('probSummaryHtml：拿不到卖出日 / 持有天数时就不写那两段�
   assert.doesNotMatch(html, /持有 \d+ 天/);
 });
 
+test('probSummaryHtml：节奏日没挂牌、已顺延到真实挂牌档时要说出来', () => {
+  const html = probSummaryHtml(MX, { ...MX_CTX, shiftNote: '节奏日 2026-11-20 未挂牌' });
+  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 <span class="mx-shift">节奏日 2026-11-20 未挂牌<\/span>/);
+  assert.doesNotMatch(probSummaryHtml(MX, MX_CTX), /mx-shift/, '正常情况不该出现顺延提示');
+});
+
 test('probSummaryHtml：当前 OTM 那一档没挂牌时，退到最近可卖的那一档（别变死胡同）', () => {
   /* 复刻实测：VGT 本期 10-16 上方只挂到 $135，5%/6% 够不到，最近的 7% 有数。 */
   const row = { date: '2026-10-16', dte: 8, sell: true, cells: [

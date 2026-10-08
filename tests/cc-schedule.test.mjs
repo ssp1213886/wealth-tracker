@@ -5,11 +5,29 @@ import assert from 'node:assert/strict';
 import {
   CC_RULES, RULE_LABELS, dateMs, isoOf, weekdayOf, daysBetween, thirdFriday,
   nextMonthly3, nextEvery3W, pastExpiries, ruleFor, scheduleRow, complianceStreak,
-  estimateNextExDiv,
+  estimateNextExDiv, snapToListed,
 } from '../src/app/cc-schedule.js';
 
 // 实测自 CBOE：VGT/SMH 的 2026 年剩余月度到期日就是 10-16 / 11-20 / 12-18
 const TODAY = '2026-10-08';
+
+/** 挂牌列表：故意去掉 10-02（假期周休市，市场把那一档挪到 10-01 周四）。 */
+const LISTED = ['2026-09-18', '2026-10-01', '2026-10-16', '2026-11-20'];
+
+test('snapToListed：节奏日没挂牌时吸附到真实挂牌档（假期周：周五 → 周四）', () => {
+  assert.deepEqual(snapToListed('2026-10-16', LISTED), { date: '2026-10-16', shifted: false }, '正好挂牌 → 原样返回');
+  assert.deepEqual(snapToListed('2026-10-02', LISTED), { date: '2026-10-01', shifted: true }, '周五休市，挪到周四 → 吸附到最近的挂牌档');
+  assert.deepEqual(snapToListed('2026-11-13', LISTED), { date: '2026-11-20', shifted: true }, '窗口外 → 顺延到之后第一个挂牌档');
+  assert.deepEqual(snapToListed('2027-06-18', LISTED), { date: '2026-11-20', shifted: true }, '超出链的范围 → 取最后一个');
+});
+
+test('snapToListed：链还没到 / 日期非法时原样返回，绝不编一个「已顺延」', () => {
+  assert.deepEqual(snapToListed('2026-10-02', []), { date: '2026-10-02', shifted: false });
+  assert.deepEqual(snapToListed('2026-10-02', null), { date: '2026-10-02', shifted: false });
+  assert.deepEqual(snapToListed('', LISTED), { date: '', shifted: false });
+  assert.deepEqual(snapToListed('bad', LISTED), { date: 'bad', shifted: false });
+  assert.deepEqual(snapToListed('2026-10-16', ['bad', null, '2026-10-16']), { date: '2026-10-16', shifted: false }, '挂牌列表里的脏值要滤掉');
+});
 
 test('dateMs / isoOf / weekdayOf / daysBetween：基本换算与非法值', () => {
   assert.equal(isoOf(dateMs('2026-10-08')), '2026-10-08');

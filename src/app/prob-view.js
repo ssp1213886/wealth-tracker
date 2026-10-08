@@ -283,6 +283,7 @@ export function probSummaryHtml(matrix, ctx) {
   const rule = c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '';
   const when = due ? '今天' : (Number.isFinite(days) && days > 0 ? '还有 ' + days + ' 天' : '');
   const head = '<div class="mx-sum-head">该卖 <b>' + escapeHtml(row.date) + '</b> 到期' +
+    (c.shiftNote ? ' <span class="mx-shift">' + escapeHtml(String(c.shiftNote)) + '</span>' : '') +
     (from ? ' · ' + escapeHtml(from) + ' 卖出' + (when ? '（' + when + '）' : '') : '') +
     (c.tenor != null ? ' · 持有 ' + c.tenor + ' 天' : '') +
     ' <span class="mx-badge ' + badgeCls + '">' + badge + '</span>' +

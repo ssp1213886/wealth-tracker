@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=352');
+  assert.equal(manifest.start_url, '/?v=353');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v352/);
+  assert.match(serviceWorker, /wealth-v353/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=352',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=353',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -720,9 +720,9 @@ test('index.js：本期状态由「今天 + 记录」推出，且卡片上要写
   assert.match(indexSource, /function ccSold\(sym,expiry\)/, '缺 ccSold');
   assert.match(indexSource, /o\.sym===sym&&o\.type==='CALL'&&o\.expiry===expiry&&!o\.archived/,
     '"已卖出"只能按记录判（同标的、同到期日的 CALL、未归档）');
-  assert.match(indexSource, /fixed:rollTo/, '★ 要标在「该卖」那一档（结论行主行说的同一档）');
+  assert.match(indexSource, /fixed:roll\.date/, '★ 要标在「该卖」那一档（结论行主行说的同一档）');
   assert.match(indexSource, /ruleLabel:period\.label/, '节奏名（每月第三个周五 / 每 3 周的周五）要传到卡片上');
-  assert.match(indexSource, /sold:ccSold\(probTab,period\.date\)/, '状态要跟着本期的到期日走');
+  assert.match(indexSource, /sold:ccSold\(probTab,sellDay\.date\)/, '状态要跟着本期的到期日走（吸附后的挂牌日）');
 });
 
 /**
@@ -737,4 +737,17 @@ test('期权页：两张卡的分工写在标题上，节奏 ★ 只在「被行
   assert.doesNotMatch(indexSource, /fixed\[sym\]/, '日历卡不再收「节奏那一档」——★ 归概率卡');
   // indexSource 是剥掉 import 行的版本，所以这里只能钉"在用它"（唯一来源由 audit 的跨模块 import 规则兜底）
   assert.match(indexSource, /isMonthlyExpiry/, 'isMonthlyExpiry 已抽到 prob.js，矩阵行头与日历卡共用同一份判断');
+});
+
+/**
+ * v353：卡片上的日期是纯日历推算（每月第三个周五 / 每 3 周），但市场并不总照日历走
+ * —— 假期周会把周五的到期日挪到周四，那天市场上根本没有合约。
+ * 所以两个日期（该卖的到期日、卖出日）都必须先吸附到链里真实挂牌的档位上。
+ */
+test('index.js：节奏档要先吸附到真实挂牌到期日，链没到时按日历显示、不编「已顺延」', () => {
+  assert.match(indexSource, /snapToListed\(period\.date,listed\)/, '卖出日要吸附');
+  assert.match(indexSource, /var rollRaw=ccRollExpiry\(probTab\)[\s\S]{0,80}snapToListed\(rollRaw,listed\)/, '该卖的到期日要吸附');
+  assert.match(indexSource, /shiftNote:roll\.shifted\?\([^)]*rollRaw/, '顺延提示里的日期要用「该卖」那一档的节奏日，别写成本期');
+  assert.match(indexSource, /function listedExpiries\(chain\)/, '要取链里真实挂牌的到期日列表');
+  assert.match(indexSource, /shiftNote:roll\.shifted/, '顺延了要写在结论行上，不能悄悄换日期');
 });
