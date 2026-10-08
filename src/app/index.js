@@ -7,7 +7,7 @@ import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {planStrike, planAtOtm, optionProbabilities} from './prob.js';
-import {TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, chipsHtml, renderProbPlan, renderProbHoldings, renderProbNote, renderProbUnavailable, renderOtmProbLine, expiryCalendarHtml, fmtChainTimeShort} from './prob-view.js';
+import {TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, chipsHtml, renderProbPlan, renderProbNote, renderProbUnavailable, renderOtmProbLine, expiryCalendarHtml, fmtChainTimeShort, fmtProb} from './prob-view.js';
 import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf} from './cc-schedule.js';
 import {renderSchedule} from './cc-view.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
@@ -75,7 +75,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v328';var APP_DATA_VERSION=5;
+var APP_BUILD='v329';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -978,7 +978,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=328',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=329',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1388,13 +1388,22 @@ function updateAllO(){if(!trades||!trades.forEach||!livePrices)return;var nowIns
 function renderOpt(){
 var el=document.getElementById("holdingsBody");if(!el)return;
 optionTrades=loadOpt();var nowInstant=new Date();
+/* 被行权概率并入持仓表（v329）：原先"被行权概率"卡里另有一张活跃持仓表，和这张完全重复。
+   现在只在这里算一次，按 option.id 映射；期权链没到就整列不显示。 */
+var optProbById={};
+try{
+  ['VGT','SMH'].forEach(function(sym){
+    var ch=chainFor(sym);if(!ch)return;
+    optionProbabilities(ch,optionTrades,{chains:optionChains}).forEach(function(r){if(r.prob!=null)optProbById[r.id]=r.prob});
+  });
+}catch(e){logSwallowed("optProbById",e)}
 if(!optionTrades.length){el.innerHTML='<tr><td colspan="8" style="padding:12px 0">'+emptyStateHTML({title:'暂无期权持仓',hint:'录入一笔 Covered Call 后会显示在这里',compact:true})+'</td></tr>';return}
 var archivedCount=optionTrades.filter(function(o){return o.archived}).length;
 var visible=showArchivedOpt?optionTrades.slice():optionTrades.filter(function(o){return !o.archived});
 if(!visible.length&&archivedCount>0){showArchivedOpt=true;visible=optionTrades.slice()}
 var sorted=visible.sort(function(a,b){if(!a.settled&&b.settled)return -1;if(a.settled&&!b.settled)return 1;var ae=a.expiry||'9999',be=b.expiry||'9999';if(ae!==be)return ae.localeCompare(be);return a.type==='CALL'?-1:1});
 var rows=sorted.map(function(o){var i=optionTrades.indexOf(o);var oid=o.id;
-var exp=o.expiry||"",cp=livePrices[o.sym]||0,st=optionRowStatus(o,{now:nowInstant,spot:cp}),isExpired=st.expired,daysLeft=st.days,status="<span class=\"opt-status is-"+st.statusKind+"\">"+st.statusText+"</span>",distD=st.distancePct;var distHtml=distD==null?"":"<span class=\"opt-dist "+(distD>=0?"is-otm":"is-itm")+"\">距现价 "+(distD>=0?"+":"")+distD.toFixed(1)+"%</span>";return "<tr class=\"opt-row"+(isExpired?" is-done":"")+"\"><td data-cell=\"sym\" class=\"opt-sym\"><b>"+o.sym+"</b></td><td data-cell=\"type\"><span class=\"opt-type "+(o.type==="CALL"?"is-call":"is-put")+"\">"+o.type+"</span></td><td data-cell=\"strike\" class=\"opt-strike\">$"+o.strike.toFixed(2)+"</td><td data-cell=\"premium\">"+fmtFull(o.premium||0)+"</td><td data-cell=\"contracts\">"+(o.contracts||1)+"张</td><td data-cell=\"expiry\" class=\"opt-expiry\">"+exp+"</td><td data-cell=\"status\">"+status+"</td><td data-cell=\"actions\" class=\"opt-foot\">"+distHtml+"<span class=opt-actions><button class=\"opt-del\" onclick=delOpt(\x27"+oid+"\x27)>"+(o.archived?"恢复":o.settled?"归档":"X")+"</button>"+(st.canAssign?"<button class=\"opt-assign\" onclick=assignOpt(\x27"+oid+"\x27)>行权</button>":"")+(st.canSettle?"<button class=\"opt-settle\" onclick=settleOpt(\x27"+oid+"\x27)>结算</button>":"")+"</span></td></tr>"
+var exp=o.expiry||"",cp=livePrices[o.sym]||0,st=optionRowStatus(o,{now:nowInstant,spot:cp}),isExpired=st.expired,daysLeft=st.days,status="<span class=\"opt-status is-"+st.statusKind+"\">"+st.statusText+"</span>"+(optProbById[o.id]!=null?"<span class=\"opt-prob\">被行权 "+fmtProb(optProbById[o.id])+"</span>":""),distD=st.distancePct;var distHtml=distD==null?"":"<span class=\"opt-dist "+(distD>=0?"is-otm":"is-itm")+"\">距现价 "+(distD>=0?"+":"")+distD.toFixed(1)+"%</span>";return "<tr class=\"opt-row"+(isExpired?" is-done":"")+"\"><td data-cell=\"sym\" class=\"opt-sym\"><b>"+o.sym+"</b></td><td data-cell=\"type\"><span class=\"opt-type "+(o.type==="CALL"?"is-call":"is-put")+"\">"+o.type+"</span></td><td data-cell=\"strike\" class=\"opt-strike\">$"+o.strike.toFixed(2)+"</td><td data-cell=\"premium\">"+fmtFull(o.premium||0)+"</td><td data-cell=\"contracts\">"+(o.contracts||1)+"张</td><td data-cell=\"expiry\" class=\"opt-expiry\">"+exp+"</td><td data-cell=\"status\">"+status+"</td><td data-cell=\"actions\" class=\"opt-foot\">"+distHtml+"<span class=opt-actions><button class=\"opt-del\" onclick=delOpt(\x27"+oid+"\x27)>"+(o.archived?"恢复":o.settled?"归档":"X")+"</button>"+(st.canAssign?"<button class=\"opt-assign\" onclick=assignOpt(\x27"+oid+"\x27)>行权</button>":"")+(st.canSettle?"<button class=\"opt-settle\" onclick=settleOpt(\x27"+oid+"\x27)>结算</button>":"")+"</span></td></tr>"
 ;}).join("");
 if(archivedCount>0){rows+="<tr><td colspan=8 style=text-align:center;padding:4px><button class=\"opt-toggle\" onclick='toggleArchivedOpt()'>"+(showArchivedOpt?"📁 隐藏已归档":"📁 显示已归档 "+archivedCount+" 个")+"</button></td></tr>"}el.innerHTML=rows}
 function showBusyToast(msg){
@@ -1640,7 +1649,6 @@ function renderProbCard(){
     if(src)src.textContent=chainStatus.loading?'加载中…':'';
     if(chainStatus.loading)renderProbPlan(document,[],{targetProb:probSettings.targetProb,emptyHint:'期权链加载中…'});
     else renderProbUnavailable(document,chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'稍后会自动重试');
-    renderProbHoldings(document,[]);
     renderProbNote(document,{});
     renderExpiryCalendar();
     return;
@@ -1648,7 +1656,6 @@ function renderProbCard(){
   /* 时间不能用 CBOE 的原始字符串：它是美东时间且不带时区标记，非美东用户会误读成"昨天" */
   if(src){var _lab=chain.source==='cboe'?'CBOE 延迟':(chain.source==='yahoo'?'Yahoo':'');var _t=fmtChainTimeShort(chain.updated,Date.now());src.textContent=_lab+(_t?' · '+_t:'');src.title='点击刷新期权链（CBOE 免费接口为延迟报价，非实时）'}
   renderProbPlan(document,rows,{targetProb:probSettings.targetProb,emptyHint:'期权链里没有半年内的 CALL'});
-  try{renderProbHoldings(document,optionProbabilities(chain,optionTrades,{chains:optionChains}))}catch(e){logSwallowed("renderProbHoldings",e);renderProbHoldings(document,[])}
   renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),iv30:iv30Map()});
   renderExpiryCalendar();
 }
@@ -1715,6 +1722,8 @@ async function refreshChains(force){
   if(!errs.length)chainStatus.loadedAt=Date.now();
   renderProbCard();
   updateOtm();
+  /* 持仓表的「被行权概率」列要等期权链到位才有值 —— 链刷新后补渲一次表 */
+  try{renderOpt()}catch(e){logSwallowed("renderOpt",e)}
 }
 function bindProbControls(){
   var tc=document.getElementById('probTargetChips'),dc=document.getElementById('probDteChips'),src=document.getElementById('probSrc');

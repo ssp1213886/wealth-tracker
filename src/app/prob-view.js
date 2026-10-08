@@ -168,27 +168,6 @@ export function planRowsHtml(rows, ctx) {
   return html + '</tbody></table>';
 }
 
-/** 活跃持仓的概率表：按概率降序，越红越危险。 */
-export function holdingRowsHtml(rows) {
-  const list = Array.isArray(rows) ? rows.filter(Boolean) : [];
-  if (!list.length) return '';
-  let html = '<div class="prob-section-title">活跃持仓</div>' +
-    '<table class="prob-table"><thead><tr>' +
-    '<th>标的</th><th>行权价</th><th>到期</th><th>剩余</th><th>IV</th><th>被行权概率</th>' +
-    '</tr></thead><tbody>';
-  list.forEach(function (r) {
-    html += '<tr>' +
-      '<td data-cell="sym"><strong>' + escapeHtml(r.sym) + '</strong><small class="prob-sub">×' + (r.contracts || 1) + '</small></td>' +
-      '<td data-cell="strike">$' + Number(r.strike).toFixed(2) + '</td>' +
-      '<td data-cell="expiry">' + escapeHtml(String(r.expiry || '')) + '</td>' +
-      '<td data-cell="dte">' + (r.dte == null ? '—' : r.dte + '天') + '</td>' +
-      '<td data-cell="iv">' + fmtIv(r.iv) + '</td>' +
-      '<td data-cell="prob" style="color:' + probColor(r.prob) + ';font-weight:600">' + fmtProb(r.prob) + '</td>' +
-      '</tr>';
-  });
-  return html + '</tbody></table>';
-}
-
 /** 数据源与口径说明。source 为 '' 时按"还没拿到"处理。 */
 export function noteHtml(meta) {
   const m = meta || {};
@@ -218,12 +197,6 @@ export function renderProbPlan(doc, rows, ctx) {
   if (el) el.innerHTML = planRowsHtml(rows, ctx);
 }
 
-/** 把活跃持仓表写进 DOM。 */
-export function renderProbHoldings(doc, rows) {
-  const el = doc.getElementById('probHoldings');
-  if (el) el.innerHTML = holdingRowsHtml(rows);
-}
-
 /** 把数据源 / 口径说明写进 DOM。 */
 export function renderProbNote(doc, meta) {
   const el = doc.getElementById('probNote');
@@ -234,8 +207,6 @@ export function renderProbNote(doc, meta) {
 export function renderProbUnavailable(doc, hint) {
   const plan = doc.getElementById('probPlan');
   if (plan) plan.innerHTML = emptyStateHTML({ title: '期权链暂不可用', hint: hint || '稍后会自动重试', compact: true });
-  const hold = doc.getElementById('probHoldings');
-  if (hold) hold.innerHTML = '';
 }
 
 /**

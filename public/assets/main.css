@@ -2878,6 +2878,8 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .cc-due{color:var(--accent-d);font-weight:700}
 .cc-streak{color:var(--accent-d)}
 .cc-missed{color:var(--orange)}
+/* v329：持仓表里的「被行权概率」标签（原来有一整张重复的持仓概率表） */
+.opt-prob{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:color-mix(in srgb,var(--orange) 14%,transparent);color:var(--orange);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;vertical-align:1px}
 @media(max-width:800px){
   .cc-table tbody td[data-cell="days"]::before{content:'距今'}
   .cc-table tbody td[data-cell="rule"]::before{content:'节奏'}

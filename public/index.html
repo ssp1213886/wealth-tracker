@@ -455,8 +455,16 @@
   <div class="option-discipline"><strong>执行纪律</strong>：切勿主动平仓，被行权不必慌，T+1 市价买回，踏空代价远高于追高成本</div>
 </div>
 
+<div class="card option-card cc-card">
+  <div class="opt-card-head"><h3>节奏</h3><small class="prob-src">今天该做什么</small></div>
+  <div id="ccScheduleBody"></div>
+  <div class="prob-controls" id="ccRulePickers"></div>
+  <div class="prob-note" id="ccExDiv"></div>
+  <div class="prob-note">到期日当天卖出下一档：旧档到期与新档开仓同一天，没有空档期；若被行权，周一 T+1 市价买回正股。IV Rank 高时（权利金肥）可以往更虚挪一档。</div>
+</div>
+
 <div class="card option-card otm-card">
-  <h3>行权价参考</h3>
+  <div class="opt-card-head"><h3>选行权价</h3><small class="prob-src" id="probSrc"></small></div>
   <div class="otm-list">
     <div class="otm-row">
       <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small></div>
@@ -467,7 +475,12 @@
       <div class="otm-stepper"><button type="button" id="otmSmhMinus">−</button><span id="otmSmhVal">6%</span><button type="button" id="otmSmhPlus">+</button></div>
     </div>
   </div>
-  <div class="otm-note">历史回测最优（2004-2026，含买卖价差）：<b>VGT 6% OTM × 28 天</b> · <b>SMH 6% OTM × 21 天</b>。「天数」指卖出时距到期的天数 —— VGT 只有月度期权，28 天是月度轮转的自然周期；SMH 有周度，可选 21 天。</div>
+  <div class="prob-controls">
+    <div class="prob-control"><span>目标概率</span><div class="prob-chips" id="probTargetChips"></div></div>
+    <div class="prob-control"><span>目标期限</span><div class="prob-chips" id="probDteChips"></div></div>
+  </div>
+  <div id="probPlan"></div>
+  <div class="prob-note" id="probNote"></div>
 </div>
 
 <div class="card collapsible-card collapsed" id="expiryCalCard">
@@ -478,39 +491,8 @@
   </div>
 </div>
 
-<div class="card option-card cc-card">
-  <div class="opt-card-head"><h3>卖 CALL 节奏</h3><small class="prob-src">固定日历</small></div>
-  <div id="ccScheduleBody"></div>
-  <div class="prob-controls" id="ccRulePickers"></div>
-  <div class="prob-note" id="ccExDiv"></div>
-  <div class="prob-note">到期日当天就卖出下一档：旧档到期与新档开仓是同一天，没有空档期。若旧档被行权，周一 T+1 市价买回正股。VGT 只有月度期权，所以固定为每月第三个周五；SMH 有周期权，按回测最优固定为每 3 周的周五。</div>
-</div>
-
-<div class="card option-card prob-card">
-  <div class="opt-card-head"><h3>被行权概率</h3><small class="prob-src" id="probSrc"></small></div>
-  <div class="prob-controls">
-    <div class="prob-control"><span>目标概率</span><div class="prob-chips" id="probTargetChips"></div></div>
-    <div class="prob-control"><span>目标期限</span><div class="prob-chips" id="probDteChips"></div></div>
-  </div>
-  <div id="probPlan"></div>
-  <div id="probHoldings"></div>
-  <div class="prob-note" id="probNote"></div>
-</div>
-
-<div class="card collapsible-card checklist-card collapsed">
-  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>卖 Call 核对（嘉信看）</h3></div>
-  <div class="collapsible-body">
-    <div class="checklist">
-      <div><span><b>Delta</b> · 被行权概率</span><small>0.15–0.25</small></div>
-      <div><span><b>IV Rank</b> · 权利金肥瘦</span><small>高→卖更虚</small></div>
-      <div><span><b>DTE</b> · theta甜区</span><small>30–45天</small></div>
-      <div><span><b>权利金率</b> · 月回报</span><small>1–2%/月</small></div>
-    </div>
-  </div>
-</div>
-
 <div class="card option-card">
-  <div class="opt-card-head"><h3>收入与持仓</h3><button type="button" class="btn btn-pri btn-sm" id="btnOptSheet">＋ 记录</button></div>
+  <div class="opt-card-head"><h3>持仓与收入</h3><button type="button" class="btn btn-pri btn-sm" id="btnOptSheet">＋ 记录</button></div>
   <div class="metrics metrics-2">
     <div class="metric"><div class="m-label">本月权利金</div><div class="m-val pnl-pos" id="mrev">$0</div></div>
     <div class="metric"><div class="m-label">累计权利金</div><div class="m-val pnl-pos" id="trev">$0</div></div>

@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, probColor, fmtProb, fmtIv,
-  chipsHtml, planRowsHtml, holdingRowsHtml, expiryCalendarHtml, noteHtml,
+  chipsHtml, planRowsHtml, expiryCalendarHtml, noteHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -76,25 +76,6 @@ test('planRowsHtml：实际概率偏离目标时补一行「目标 X%」；理�
   }], { targetProb: 15 });
   assert.match(html, /目标 15%/);
   assert.match(html, /理论/);
-});
-
-test('holdingRowsHtml：没有活跃持仓时返回空串（不占版位）', () => {
-  assert.equal(holdingRowsHtml([]), '');
-  assert.equal(holdingRowsHtml(null), '');
-});
-
-test('holdingRowsHtml：渲染到期/剩余/IV/概率，缺值显示「—」', () => {
-  const html = holdingRowsHtml([
-    { sym: 'SMH', strike: 660, contracts: 2, expiry: '2026-11-20', dte: 43, iv: 0.319, prob: 0.305 },
-    { sym: 'VGT', strike: 140, contracts: 1, expiry: '2026-12-18', dte: null, iv: null, prob: null },
-  ]);
-  assert.match(html, /活跃持仓/);
-  assert.match(html, /SMH/);
-  assert.match(html, /×2/);
-  assert.match(html, /30\.5%/);
-  assert.match(html, /43天/);
-  assert.match(html, /被行权概率/);
-  assert.match(html, /—/, '算不出的行要显示破折号');
 });
 
 test('expiryCalendarHtml：空链给空态', () => {
