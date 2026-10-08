@@ -2853,3 +2853,18 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .prob-control{width:100%;justify-content:space-between}
   .prob-chip{min-width:44px;height:34px}
 }
+
+/* ===== v326 到期日历 + 行权价参考的备注 ===== */
+.otm-note{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule);color:var(--muted);font-size:11px;line-height:1.6}
+.otm-note b{color:var(--accent-d);font-weight:640}
+.cal-tag{display:inline-block;padding:1px 6px;border-radius:6px;background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted);font-size:10.5px;font-weight:600;letter-spacing:.02em}
+.cal-tag.is-monthly{background:var(--accent-l);color:var(--accent-d)}
+.cal-table tbody tr.cal-mine{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.cal-table tbody tr.cal-mine td[data-cell="mine"]{color:var(--accent-d);font-weight:640}
+@media(max-width:800px){
+  .cal-table tbody td[data-cell="kind"]::before{content:'类型'}
+  .cal-table tbody td[data-cell="strikes"]::before{content:'行权价档位'}
+  .cal-table tbody td[data-cell="mine"]::before{content:'我的持仓'}
+  .cal-table tbody td[data-cell="dte"]::before{content:'剩余'}
+  .cal-table tbody td[data-cell="expiry"]::before{content:'到期日'}
+}

@@ -102,8 +102,8 @@ export function planBackupImport(data, ctx) {
       accent: ACCENT_CHOICES.indexOf(data.accent) >= 0,
     },
     otm: hasOtm ? {
-      vgt: Math.max(1, Math.min(20, Number(data.otmSettings.vgt) || 7)),
-      smh: Math.max(1, Math.min(20, Number(data.otmSettings.smh) || 5)),
+      vgt: Math.max(1, Math.min(20, Number(data.otmSettings.vgt) || 6)),
+      smh: Math.max(1, Math.min(20, Number(data.otmSettings.smh) || 6)),
     } : null,
     exitValue: exitValue,
     prices: cleanBackupPrices(data.prices, cfg.etfSymbols),

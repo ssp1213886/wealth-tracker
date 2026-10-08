@@ -1,0 +1,133 @@
+// 「被行权概率」板块视图层单测（v325 建立 / v326 补到期日历）：
+// 概率配色与文案、目标档位按钮、反解表、活跃持仓表、到期日历。
+// 这些 HTML 直接决定用户看到什么，错了不会报错、只会静静显示错东西，所以要卡住。
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, probColor, fmtProb, fmtIv,
+  chipsHtml, planRowsHtml, holdingRowsHtml, expiryCalendarHtml, noteHtml,
+} from '../src/app/prob-view.js';
+
+test('probColor：按 10% / 25% 分级（绿 → 橙 → 红）', () => {
+  assert.equal(probColor(0.05), 'var(--accent)');
+  assert.equal(probColor(0.10), 'var(--orange)', '10% 归橙');
+  assert.equal(probColor(0.249), 'var(--orange)');
+  assert.equal(probColor(0.25), 'var(--red)', '25% 归红');
+  assert.equal(probColor(null), 'var(--muted)');
+  assert.equal(probColor(NaN), 'var(--muted)');
+});
+
+test('fmtProb / fmtIv：缺值显示「—」而不是 NaN', () => {
+  assert.equal(fmtProb(0.1473), '14.7%');
+  assert.equal(fmtProb(null), '—');
+  assert.equal(fmtProb(undefined), '—');
+  assert.equal(fmtIv(0.213), '21.3%');
+  assert.equal(fmtIv(0), '—');
+  assert.equal(fmtIv(null), '—');
+});
+
+test('目标档位：概率 5~30%、期限 21~45（期限刻意收窄到回测高原内）', () => {
+  assert.deepEqual(TARGET_PROB_CHOICES, [5, 10, 15, 20, 25, 30]);
+  assert.deepEqual(TARGET_DTE_CHOICES, [21, 28, 35, 45]);
+});
+
+test('chipsHtml：命中当前值的那颗按钮带 is-on，data 属性名按传入的来', () => {
+  const html = chipsHtml([5, 10, 15], 10, 'prob');
+  assert.match(html, /data-prob="5"/);
+  assert.match(html, /class="prob-chip is-on" data-prob="10"/);
+  assert.equal((html.match(/is-on/g) || []).length, 1, '只能有一颗选中');
+  assert.match(chipsHtml([21, 28], 21, 'dte'), /data-dte="21"/);
+});
+
+test('planRowsHtml：没有链时给空态文案', () => {
+  const html = planRowsHtml([], { targetProb: 15, emptyHint: '期权链加载中…' });
+  assert.match(html, /prob-empty/);
+  assert.match(html, /期权链加载中/);
+  assert.doesNotMatch(html, /prob-table/);
+  assert.match(planRowsHtml(null, {}), /prob-empty/);
+});
+
+test('planRowsHtml：渲染行权价/OTM/到期/概率/权利金，命中目标概率时不再挂「目标 X%」脚注', () => {
+  const rows = [{
+    sym: 'VGT', strike: 140, otmPct: 8.2, expiry: '2026-11-20', dte: 43,
+    iv: 0.213, prob: 0.15, premium: 1.05, premiumIsMarket: true, annualPct: 6.9,
+  }];
+  const html = planRowsHtml(rows, { targetProb: 15 });
+  assert.match(html, /VGT/);
+  assert.match(html, /\$140\.00/);
+  assert.match(html, /\+8\.2%/);
+  assert.match(html, /2026-11-20/);
+  assert.match(html, /43天/);
+  assert.match(html, /21\.3%/);
+  assert.match(html, /15\.0%/);
+  assert.match(html, /\$1\.05/);
+  assert.match(html, /6\.9%/);
+  assert.doesNotMatch(html, /目标 15%/, '正好命中目标概率时不该再提示');
+});
+
+test('planRowsHtml：实际概率偏离目标时补一行「目标 X%」；理论价要标注', () => {
+  const html = planRowsHtml([{
+    sym: 'SMH', strike: 660, otmPct: 5.6, expiry: '2026-11-20', dte: 43,
+    iv: 0.319, prob: 0.305, premium: 15.25, premiumIsMarket: false, annualPct: 20.7,
+  }], { targetProb: 15 });
+  assert.match(html, /目标 15%/);
+  assert.match(html, /理论/);
+});
+
+test('holdingRowsHtml：没有活跃持仓时返回空串（不占版位）', () => {
+  assert.equal(holdingRowsHtml([]), '');
+  assert.equal(holdingRowsHtml(null), '');
+});
+
+test('holdingRowsHtml：渲染到期/剩余/IV/概率，缺值显示「—」', () => {
+  const html = holdingRowsHtml([
+    { sym: 'SMH', strike: 660, contracts: 2, expiry: '2026-11-20', dte: 43, iv: 0.319, prob: 0.305 },
+    { sym: 'VGT', strike: 140, contracts: 1, expiry: '2026-12-18', dte: null, iv: null, prob: null },
+  ]);
+  assert.match(html, /活跃持仓/);
+  assert.match(html, /SMH/);
+  assert.match(html, /×2/);
+  assert.match(html, /30\.5%/);
+  assert.match(html, /43天/);
+  assert.match(html, /被行权概率/);
+  assert.match(html, /—/, '算不出的行要显示破折号');
+});
+
+test('expiryCalendarHtml：空链给空态', () => {
+  assert.match(expiryCalendarHtml([], { emptyHint: '加载中' }), /加载中/);
+  assert.match(expiryCalendarHtml(null, {}), /prob-empty/);
+});
+
+test('expiryCalendarHtml：月度标「月度」、非月度标「周度」，并列出档位区间', () => {
+  const html = expiryCalendarHtml([
+    { sym: 'VGT', date: '2026-11-20', dte: 43, monthly: true, calls: 35, lo: 100, hi: 190 },
+    { sym: 'SMH', date: '2026-10-09', dte: 1, monthly: false, calls: 75, lo: 530, hi: 760 },
+  ], {});
+  assert.match(html, /VGT/);
+  assert.match(html, /2026-11-20/);
+  assert.match(html, /is-monthly">月度/);
+  assert.match(html, /2026-10-09/);
+  assert.match(html, /36 档|35 档/);
+  assert.match(html, /\$100~\$190/);
+  assert.match(html, /周度/);
+});
+
+test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', () => {
+  const html = expiryCalendarHtml([
+    { sym: 'VGT', date: '2026-11-20', dte: 43, monthly: true, calls: 35, lo: 100, hi: 190 },
+    { sym: 'SMH', date: '2026-11-20', dte: 43, monthly: true, calls: 40, lo: 530, hi: 760 },
+  ], { holdings: { 'VGT|2026-11-20': 2 } });
+  assert.match(html, /class="cal-mine"/);
+  assert.match(html, /2 张/);
+  assert.equal((html.match(/cal-mine/g) || []).length, 1, '只有持有那一档高亮');
+});
+
+test('noteHtml：写清数据源与「不含除息日提前行权」这个口径', () => {
+  const html = noteHtml({ source: 'cboe', updated: '2026-10-07T15:59:58' });
+  assert.match(html, /CBOE/);
+  assert.match(html, /2026-10-07T15:59:58/);
+  assert.match(html, /N\(d2\)/);
+  assert.match(html, /未含除息日提前行权/);
+  assert.match(noteHtml({ source: 'yahoo' }), /反推/);
+  assert.match(noteHtml({}), /N\(d2\)/, '没有数据源时也保留口径说明');
+});

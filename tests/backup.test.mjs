@@ -100,9 +100,9 @@ test('planBackupImport：notes 当成操作日志、exit 两种键名都认', ()
   assert.equal(planBackupImport({ version: 5 }, CTX).has.exit, false);
 });
 
-test('planBackupImport：OTM 裁剪到 1~20，缺省 7 / 5', () => {
-  assert.deepEqual(planBackupImport({ version: 5, otmSettings: { vgt: 99, smh: 0 } }, CTX).otm, { vgt: 20, smh: 5 });
-  assert.deepEqual(planBackupImport({ version: 5, otmSettings: {} }, CTX).otm, { vgt: 7, smh: 5 });
+test('planBackupImport：OTM 裁剪到 1~20，缺省 6 / 6（v326 起统一为 6）', () => {
+  assert.deepEqual(planBackupImport({ version: 5, otmSettings: { vgt: 99, smh: 0 } }, CTX).otm, { vgt: 20, smh: 6 });
+  assert.deepEqual(planBackupImport({ version: 5, otmSettings: {} }, CTX).otm, { vgt: 6, smh: 6 });
   assert.equal(planBackupImport({ version: 5, otmSettings: 'nope' }, CTX).otm, null);
   assert.equal(planBackupImport({ version: 5 }, CTX).has.otmSettings, false);
 });

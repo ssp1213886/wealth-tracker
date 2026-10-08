@@ -5,8 +5,12 @@ import { emptyStateHTML, escapeHtml } from './render.js';
 
 /** 目标被行权概率的可选档位（%）。 */
 export const TARGET_PROB_CHOICES = [5, 10, 15, 20, 25, 30];
-/** 目标期限的可选档位（天）。 */
-export const TARGET_DTE_CHOICES = [30, 45, 60];
+/**
+ * 目标期限的可选档位（天）。
+ * 刻意收在 21~45：22 年回测（含买卖价差）显示净增厚在 2~4 周是一整个高原，
+ * 超过 30~35 天开始断崖式衰减（SMH 21 天 +11pt → 43 天 +3pt）。
+ */
+export const TARGET_DTE_CHOICES = [21, 28, 35, 45];
 
 /** 概率的颜色分级：越容易被行权越红。 */
 export function probColor(prob) {
@@ -64,7 +68,9 @@ export function planRowsHtml(rows, ctx) {
     '</tr></thead><tbody>';
   list.forEach(function (r) {
     const probText = fmtProb(r.prob);
-    const hit = Number.isFinite(targetProb) && r.prob != null && Math.abs(r.prob - targetProb) < 0.005;
+    // 注意单位：r.prob 是小数（0.15），targetProb 是百分数（15）——必须换算到同一量纲再比，
+    // 否则「命中目标」永远判不成立，脚注会一直挂着（v326 被测试抓到）。
+    const hit = Number.isFinite(targetProb) && r.prob != null && Math.abs(r.prob * 100 - targetProb) < 0.5;
     html += '<tr>' +
       '<td data-cell="sym"><strong>' + escapeHtml(r.sym) + '</strong></td>' +
       '<td data-cell="strike">$' + Number(r.strike).toFixed(2) + '</td>' +
@@ -153,7 +159,36 @@ export function renderOtmProbLine(doc, sym, plan) {
   }
   el.innerHTML = '被行权概率 <b style="color:' + probColor(plan.prob) + '">' + fmtProb(plan.prob) + '</b>' +
     ' · 权利金 ' + fmtMoney(plan.premium) +
-    ' <span style="color:var(--muted)">(' + plan.dte + '天 · IV ' + fmtIv(plan.iv) + ')</span>';
+    ' <span style="color:var(--muted)">(' + escapeHtml(String(plan.expiry || '')) + ' 到期 · ' + plan.dte + '天 · IV ' + fmtIv(plan.iv) + ')</span>';
   el.setAttribute('title', '按当前期权链：' + plan.sym + ' $' + Number(plan.strike).toFixed(2) +
-    '，年化权利金率 ' + fmtAnnual(plan.annualPct) + '（含主动平仓的完整口径见 CC 增厚分析）');
+    '，年化权利金率 ' + fmtAnnual(plan.annualPct) + '，到期日 ' + plan.expiry);
+}
+
+/**
+ * 期权到期日历：把市场**真实存在**的到期日列出来，而不是让用户凭记忆手输。
+ *
+ * 为什么要一栏「类型」：VGT 只有月度（第三个周五），SMH 还有周度/每日 ——
+ * 这个差别直接决定"能不能做 21 天的 CC"（见 prob.js 顶部说明），但界面上原本一个字都没有。
+ */
+export function expiryCalendarHtml(entries, ctx) {
+  const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
+  const holdings = (ctx && ctx.holdings) || {};
+  if (!list.length) {
+    return '<div class="prob-empty">' + escapeHtml((ctx && ctx.emptyHint) || '期权链加载中…') + '</div>';
+  }
+  let html = '<table class="prob-table cal-table"><thead><tr>' +
+    '<th>标的</th><th>到期日</th><th>剩余</th><th>类型</th><th>行权价档位</th><th>我的持仓</th>' +
+    '</tr></thead><tbody>';
+  list.forEach(function (e) {
+    const mine = holdings[e.sym + '|' + e.date] || 0;
+    html += '<tr' + (mine ? ' class="cal-mine"' : '') + '>' +
+      '<td data-cell="sym"><strong>' + escapeHtml(e.sym) + '</strong></td>' +
+      '<td data-cell="expiry">' + escapeHtml(e.date) + '</td>' +
+      '<td data-cell="dte">' + e.dte + '天</td>' +
+      '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
+      '<td data-cell="strikes">' + e.calls + ' 档 · $' + Number(e.lo).toFixed(0) + '~$' + Number(e.hi).toFixed(0) + '</td>' +
+      '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +
+      '</tr>';
+  });
+  return html + '</tbody></table>';
 }

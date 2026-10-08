@@ -7,7 +7,7 @@ import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {planStrike, planAtOtm, optionProbabilities} from './prob.js';
-import {TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, chipsHtml, renderProbPlan, renderProbHoldings, renderProbNote, renderProbUnavailable, renderOtmProbLine} from './prob-view.js';
+import {TARGET_PROB_CHOICES, TARGET_DTE_CHOICES, chipsHtml, renderProbPlan, renderProbHoldings, renderProbNote, renderProbUnavailable, renderOtmProbLine, expiryCalendarHtml} from './prob-view.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -73,7 +73,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v325';var APP_DATA_VERSION=5;
+var APP_BUILD='v326';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -976,7 +976,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=325',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=326',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1079,7 +1079,7 @@ function localValOf(key){
   if(key==='state')return state;
   if(key==='activities')return JSON.parse(readRaw(ACTIVITY_KEY)||'[]');
   if(key==='optionTrades')return JSON.parse(readRaw('wealth_options_v2')||'[]');
-  if(key==='otmSettings')return JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":5}');
+  if(key==='otmSettings')return JSON.parse(readRaw('otmSettings')||'{"vgt":6,"smh":6}');
   if(key==='exit_portfolio')return readRaw('exit_portfolio')||'';
   if(key==='watchlist')return watchList;
   return undefined;
@@ -1091,7 +1091,7 @@ function applyCloudVal(key,val){
   else if(key==='state'){state=normalizeState(val);saveStateNoPush()}
   else if(key==='activities'){LS.setItem(ACTIVITY_KEY,JSON.stringify(normalizeActivities(val)))}
   else if(key==='optionTrades'){optionTrades=normalizeOptions(val);LS.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
-  else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:7,smh:5};LS.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
+  else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:6,smh:6};LS.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
   else if(key==='exit_portfolio'){LS.setItem('exit_portfolio',val);var ep=document.getElementById('exitPortfolio');if(ep)ep.value=val}
   else if(key==='watchlist'){
     watchList=mergeWatchlist(watchList,val);   // 并集：云端项在前，本地独有的补上，按代码去重
@@ -1108,7 +1108,7 @@ function buildPushData(dirtyOnly){
     state:function(){return state},
     activities:function(){return JSON.parse(readRaw(ACTIVITY_KEY)||'[]')},
     optionTrades:function(){return JSON.parse(readRaw(KEYS.options)||'[]')},
-    otmSettings:function(){return JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":5}')},
+    otmSettings:function(){return JSON.parse(readRaw('otmSettings')||'{"vgt":6,"smh":6}')},
     exit_portfolio:function(){return readRaw('exit_portfolio')||''},
     watchlist:function(){return watchList}
   },readPrices:function(){return JSON.parse(readRaw(PRICE_KEY)||'{}')}});
@@ -1559,7 +1559,7 @@ var tot=optionTotals(optionTrades,{now:nowInstant,ym:thisM}),month=tot.month,tot
 var me=document.getElementById("mrev"),te=document.getElementById("trev");
 if(me)me.textContent=fmtFull(month);if(te)te.textContent=fmtFull(total);var cc=document.getElementById('ccMonthly'),cs=document.getElementById('ccSub'),ca=document.getElementById('ccActive'),cn=document.getElementById('ccNearest');if(cc)cc.textContent=fmtFull(month);if(cs)cs.textContent=tot.callsThisMonth+' 张 CALL · 复投核心仓';if(ca)ca.textContent=String(tot.activeCount);if(cn){cn.textContent=tot.nearest?('最近 '+tot.nearest.expiry.slice(5)+' · '+tot.nearest.sym+' $'+tot.nearest.strike.toFixed(0)):'暂无待到期期权'}
 }
-function updateOptStatus(){var el=document.getElementById("optStatus");if(!el)return;var nowInstant=new Date();optionTrades=loadOpt();var active=optionTrades.filter(function(o){return isActiveOption(o,nowInstant)});if(!active.length){el.innerHTML="无活跃持仓";return}el.innerHTML=active.map(function(o){var st=optionRowStatus(o,{now:nowInstant,spot:livePrices[o.sym]||0});var d=st.days;var itm=st.itm;var icon=itm?"🔵":"🟢";var txt=itm?"临近行权":"虚值";return "<div style=display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--rule)><span>"+icon+"</span><div style=flex:1><b>"+o.sym+"</b> "+o.type+" @$"+o.strike.toFixed(0)+" x"+(o.contracts||1)+"</div><div style=font-size:11.5px;color:"+(itm?"var(--blue)":"var(--accent)")+">"+txt+" · "+d+"天</div></div>";}).join("");}function delOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o)return;if(o.archived){o.archived=false;saveOpt();updateAllO();showToast("已恢复 "+o.sym+" @$"+o.strike.toFixed(2),"ok");return}if(o.settled){o.archived=true;saveOpt();updateAllO();showToast("已归档 "+o.sym+" @$"+o.strike.toFixed(2)+" · 权利金统计保留","ok");return}var pb=(o.premium||0)*(o.contracts||1);if(pb>0){cashBalance-=pb;saveCash();cashLog.push({id:Date.now(),date:marketDate(),time:marketClock(),type:"权利金退回-"+o.sym,amount:pb});saveCashLog();addActivity("删除期权 "+o.sym+" 退回权利金 "+fmtFull(pb))}optionTrades.splice(i,1);saveOpt();pushNow();updateAllO();showToast("已删除 "+o.sym+" @$"+o.strike.toFixed(2)+",退回 "+fmtFull(pb),"ok")}function assignOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o||o.type!=="CALL")return;var contracts=o.contracts||1;var need=contracts*100;var held=0;trades.forEach(function(t){if(t.symbol===o.sym)held+=t.shares});if(need>held){alert("持仓不足！\n持有："+held.toFixed(0)+"股\n行权需要："+need+"股");return}var msg="将以 $"+o.strike.toFixed(2)+" 卖出 "+contracts+"张CALL对应的 "+(contracts*100)+" 股 "+o.sym+"\n\n权利金已在卖CALL时入账，无需重复记录。";if(!confirm(msg))return;trades.push({id:tradeIdCounter++,symbol:o.sym,date:marketDate(),time:marketClock(),shares:-(contracts*100),price:o.strike,tag:'assign'});saveTrades();initTradeIds();o.settled=true;saveOpt();updateAllO();updatePortfolio();updateSidebar();updateSidebarPrices();updateTradeList();addActivity('CALL行权 '+o.sym+'×'+contracts+'张 @$'+o.strike.toFixed(2));showToast("已标记行权: "+o.sym+" @$"+o.strike.toFixed(2)+" x"+contracts,"ok")}function settleOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o)return;if(!confirm("确认到期结算 "+o.sym+" "+o.type+" @$"+o.strike.toFixed(2)+" x"+(o.contracts||1)+"张?\n\n权利金已在卖CALL时入账，到期未行权无需其他操作。"))return;o.settled=true;saveOpt();updateAllO();addActivity('CALL到期 '+o.sym+'×'+(o.contracts||1)+'张 @$'+o.strike.toFixed(2));showToast("已到期结算: "+o.sym,"ok")}
+function updateOptStatus(){var el=document.getElementById("optStatus");if(!el)return;var nowInstant=new Date();optionTrades=loadOpt();var active=optionTrades.filter(function(o){return isActiveOption(o,nowInstant)});if(!active.length){el.innerHTML="无活跃持仓";return}el.innerHTML=active.map(function(o){var st=optionRowStatus(o,{now:nowInstant,spot:livePrices[o.sym]||0});var d=st.days;var itm=st.itm;var icon=itm?"🔵":"🟢";var txt=itm?"临近行权":"虚值";return "<div style=display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--rule)><span>"+icon+"</span><div style=flex:1><b>"+o.sym+"</b> "+o.type+" @$"+o.strike.toFixed(0)+" x"+(o.contracts||1)+"</div><div style=font-size:11.5px;color:"+(itm?"var(--blue)":"var(--accent)")+">"+txt+" · "+d+"天</div></div>";}).join("");}function delOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o)return;if(o.archived){o.archived=false;saveOpt();updateAllO();showToast("已恢复 "+o.sym+" @$"+o.strike.toFixed(2),"ok");return}if(o.settled){o.archived=true;saveOpt();updateAllO();showToast("已归档 "+o.sym+" @$"+o.strike.toFixed(2)+" · 权利金统计保留","ok");return}var pb=(o.premium||0)*(o.contracts||1);if(pb>0){cashBalance-=pb;saveCash();cashLog.push({id:Date.now(),date:marketDate(),time:marketClock(),type:"权利金退回-"+o.sym,amount:pb});saveCashLog();addActivity("删除期权 "+o.sym+" 退回权利金 "+fmtFull(pb))}optionTrades.splice(i,1);saveOpt();pushNow();updateAllO();showToast("已删除 "+o.sym+" @$"+o.strike.toFixed(2)+",退回 "+fmtFull(pb),"ok")}function assignOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o||o.type!=="CALL")return;var contracts=o.contracts||1;var need=contracts*100;var held=0;trades.forEach(function(t){if(t.symbol===o.sym)held+=t.shares});if(need>held){alert("持仓不足！\n持有："+held.toFixed(0)+"股\n行权需要："+need+"股");return}var recDate=(o.expiry&&o.expiry<=marketDate())?o.expiry:marketDate();var msg="将以 $"+o.strike.toFixed(2)+" 卖出 "+contracts+"张CALL对应的 "+(contracts*100)+" 股 "+o.sym+"\n\n权利金已在卖CALL时入账，无需重复记录。\n\n记账日期：\n"+recDate+"（到期日；提前行权则记今天）";if(!confirm(msg))return;trades.push({id:tradeIdCounter++,symbol:o.sym,date:recDate,time:marketClock(),shares:-(contracts*100),price:o.strike,tag:'assign'});saveTrades();initTradeIds();o.settled=true;saveOpt();updateAllO();updatePortfolio();updateSidebar();updateSidebarPrices();updateTradeList();addActivity('CALL行权 '+o.sym+'×'+contracts+'张 @$'+o.strike.toFixed(2));showToast("已标记行权: "+o.sym+" @$"+o.strike.toFixed(2)+" x"+contracts,"ok")}function settleOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o)return;if(!confirm("确认到期结算 "+o.sym+" "+o.type+" @$"+o.strike.toFixed(2)+" x"+(o.contracts||1)+"张?\n\n权利金已在卖CALL时入账，到期未行权无需其他操作。"))return;o.settled=true;saveOpt();updateAllO();addActivity('CALL到期 '+o.sym+'×'+(o.contracts||1)+'张 @$'+o.strike.toFixed(2));showToast("已到期结算: "+o.sym,"ok")}
 document.getElementById("btnAddOption").addEventListener("click",function(){
 var t=document.getElementById("otype").value;
 var s=document.getElementById("osym").value;
@@ -1568,6 +1568,15 @@ var p=parseFloat(document.getElementById("opremium").value||0);
 var e=document.getElementById("oexpiry").value;
 var c=parseInt(document.getElementById("ocontracts").value||1);
 if(!t)return formError('请选择期权类型','otype');if(!s)return formError('请选择标的','osym');if(!k||k<=0)return formError('请填写行权价','ostrike');if(isNaN(p)||p<0)return formError('请填写有效的权利金','opremium');if(!e)return formError('请选择到期日','oexpiry');if(isNaN(c)||c<1)c=1;if(t==='CALL'){try{var heldShares=0;trades.forEach(function(tr){if(tr.symbol===s)heldShares+=Number(tr.shares)||0});var needShares=(Number(c)||1)*100;if(heldShares<needShares){showToast('提醒：卖 '+c+' 张 CALL 通常需要 '+needShares+' 股 '+s+'，当前 '+heldShares.toFixed(2)+' 股（仍会记录）','err')}}catch(e){logSwallowed("settleOpt",e)}}
+/* 到期日校验（v326）：拿市场真实挂牌的到期日对一遍。VGT 只有月度（第三个周五），
+   输一个周三的日期是很可能手滑——给提示但**不阻止**记录（行情拿不到时也照记）。 */
+try{
+  var _chkChain=chainFor(s);
+  if(_chkChain&&_chkChain.expiries&&_chkChain.expiries.length&&!_chkChain.expiries.some(function(x){return x.date===e})){
+    var _near=_chkChain.expiries.slice().sort(function(a,b){return Math.abs(Date.parse(a.date)-Date.parse(e))-Math.abs(Date.parse(b.date)-Date.parse(e))})[0];
+    showToast('提醒：'+s+' 在 '+e+' 没有挂牌到期日'+(e.slice(0,7)===_near.date.slice(0,7)?'（该月是 '+_near.date+'）':('，最近的是 '+_near.date))+'（仍会记录）','err');
+  }
+}catch(e2){logSwallowed("optExpiryCheck",e2)}
 var premiumTotal=p*(c||1);var optObj={id:Date.now(),sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:marketDate()};optionTrades.push(optObj);if(typeof closeOptSheet==="function")closeOptSheet();addActivity('卖'+t+'开仓 '+s+'×'+c+'张 @$'+k+' 💰$'+p);
 cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:marketDate(),time:marketClock(),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();updateSidebar();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";updateAllO();
 var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");
@@ -1603,10 +1612,10 @@ try{var ay=document.getElementById('attrYear');if(ay){ay.addEventListener('chang
    链数据由 Worker 代理（CBOE 主源 / Yahoo 兜底），边缘缓存 30 分钟；
    这里只负责取数、缓存、渲染，数学全在 prob.js。 */
 var PROB_KEY='probSettings';
-var probSettings={targetProb:15,dte:45};
+var probSettings={targetProb:15,dte:28};
 (function loadProbSettings(){try{var raw=JSON.parse(readRaw(PROB_KEY)||'null');if(raw&&typeof raw==='object'){if(Number(raw.targetProb)>0)probSettings.targetProb=Number(raw.targetProb);if(Number(raw.dte)>0)probSettings.dte=Number(raw.dte)}}catch(e){logSwallowed("loadProbSettings",e)}})();
 /** 只写本地：这是纯 UI 偏好，没进 SYNC_FIELDS —— 所以刻意**不**调 markDirty（那会留下永远推不走的脏标记）。 */
-function saveProbSettings(){probSettings.targetProb=Number(probSettings.targetProb)||15;probSettings.dte=Number(probSettings.dte)||45;LS.setItem(PROB_KEY,JSON.stringify(probSettings))}
+function saveProbSettings(){probSettings.targetProb=Number(probSettings.targetProb)||15;probSettings.dte=Number(probSettings.dte)||28;LS.setItem(PROB_KEY,JSON.stringify(probSettings))}
 var optionChains={};
 var chainStatus={loading:false,loadedAt:0,error:''};
 function chainFor(sym){var c=optionChains[sym];return c&&Number(c.spot)>0?c:null}
@@ -1629,12 +1638,42 @@ function renderProbCard(){
     else renderProbUnavailable(document,chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'稍后会自动重试');
     renderProbHoldings(document,[]);
     renderProbNote(document,{});
+    renderExpiryCalendar();
     return;
   }
   if(src){src.textContent=(chain.source==='cboe'?'CBOE':chain.source==='yahoo'?'Yahoo':'')+(chain.updated?' · '+chain.updated:'');src.title='点击刷新期权链'}
   renderProbPlan(document,rows,{targetProb:probSettings.targetProb,emptyHint:'期权链里没有半年内的 CALL'});
   try{renderProbHoldings(document,optionProbabilities(chain,optionTrades,{chains:optionChains}))}catch(e){logSwallowed("renderProbHoldings",e);renderProbHoldings(document,[])}
   renderProbNote(document,{source:chain.source,updated:chain.updated});
+  renderExpiryCalendar();
+}
+/** 到期日历：把市场真实挂牌的到期日列出来，标清月度/周度、剩余天数、自己有没有持仓。 */
+function isMonthlyExpiry(date){
+  var d=new Date(date+'T00:00:00Z');
+  var day=Number(String(date).slice(8,10));
+  return d.getUTCDay()===5&&day>=15&&day<=21;   /* 标准月度 = 每月第三个周五 */
+}
+function renderExpiryCalendar(){
+  var el=document.getElementById('expiryCalendar');
+  if(!el)return;
+  var entries=[];
+  ['VGT','SMH'].forEach(function(sym){
+    var chain=chainFor(sym);if(!chain)return;
+    (chain.expiries||[]).forEach(function(e){
+      var calls=e.calls||[];if(!calls.length)return;
+      var ks=calls.map(function(c){return Number(c.k)});
+      entries.push({sym:sym,date:e.date,dte:e.dte,monthly:isMonthlyExpiry(e.date),calls:calls.length,
+        lo:Math.min.apply(null,ks),hi:Math.max.apply(null,ks)});
+    });
+  });
+  entries.sort(function(a,b){return a.dte-b.dte||a.sym.localeCompare(b.sym)});
+  var holdings={};
+  (optionTrades||[]).forEach(function(o){
+    if(!o||o.settled||o.archived||!o.expiry)return;
+    var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
+  });
+  el.innerHTML=expiryCalendarHtml(entries,{holdings:holdings,
+    emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链加载中…'});
 }
 /** 「行权价参考」两行的概率联动：调 OTM 百分比时实时看到对应的被行权概率。 */
 function renderOtmProbLines(){
@@ -1673,8 +1712,12 @@ async function refreshChains(force){
 function bindProbControls(){
   var tc=document.getElementById('probTargetChips'),dc=document.getElementById('probDteChips'),src=document.getElementById('probSrc');
   if(tc)tc.addEventListener('click',function(e){var b=e.target.closest('[data-prob]');if(!b)return;probSettings.targetProb=Number(b.dataset.prob)||15;saveProbSettings();renderProbCard();haptic('light')});
-  if(dc)dc.addEventListener('click',function(e){var b=e.target.closest('[data-dte]');if(!b)return;probSettings.dte=Number(b.dataset.dte)||45;saveProbSettings();renderProbCard();updateOtm();haptic('light')});
+  if(dc)dc.addEventListener('click',function(e){var b=e.target.closest('[data-dte]');if(!b)return;probSettings.dte=Number(b.dataset.dte)||28;saveProbSettings();renderProbCard();updateOtm();haptic('light')});
   if(src)src.addEventListener('click',function(){if(!chainStatus.loading)refreshChains(true)});
+  /* 行权 / 结算 / 删除之后，日历里的「我的持仓」要跟着变 —— 期权表格的按钮是 onclick 直挂的，
+     所以在容器上做事件委托，等原处理器跑完再重绘。 */
+  var ob=document.getElementById('holdingsBody');
+  if(ob)ob.addEventListener('click',function(){setTimeout(function(){renderProbCard();updateOtm()},150)});
 }
 (function initProb(){
   var run=function(){
@@ -1686,10 +1729,22 @@ function bindProbControls(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
 })();
 
-var otmSettings={vgt:7,smh:5};
-try{var s2=JSON.parse(readRaw("otmSettings"));if(s2)otmSettings=s2}catch(e){logSwallowed("renderAttribution",e)}
-function updateOtm(){otmSettings.vgt=otmPercent(otmSettings.vgt,7);otmSettings.smh=otmPercent(otmSettings.smh,5);var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?livePrices.SMH||0:0;var v=document.getElementById("otmVgtVal");if(v)v.textContent=otmSettings.vgt+"%";var s=document.getElementById("otmSmhVal");if(s)s.textContent=otmSettings.smh+"%";var ve=document.getElementById("otmVgtStrike");if(ve&&vp>0)ve.textContent="$"+vp.toFixed(0)+" → $"+suggestedStrike(vp,otmSettings.vgt).toFixed(0);var se=document.getElementById("otmSmhStrike");if(se&&sp>0)se.textContent="$"+sp.toFixed(0)+" → $"+suggestedStrike(sp,otmSettings.smh).toFixed(0);try{renderOtmProbLines()}catch(e){logSwallowed("renderOtmProbLines",e)}}
-function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,key==='vgt'?7:5);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
+/* v326：22 年回测（2004-2026，含买卖价差）显示 6% OTM 优于原先的 VGT 7% / SMH 5%，
+   默认值统一成 6%。老设备的存量设置用一次性标记搬过来 —— 只跑一次，
+   之后用户自己调过的值不会再被覆盖。 */
+var OTM_MIGRATE_KEY='otm6_migrated_v1';
+var otmSettings={vgt:6,smh:6};
+try{
+  var s2=JSON.parse(readRaw("otmSettings"));if(s2)otmSettings=s2;
+  if(!LS.getItem(OTM_MIGRATE_KEY)){
+    otmSettings.vgt=6;otmSettings.smh=6;
+    LS.setItem("otmSettings",JSON.stringify(otmSettings));
+    LS.setItem(OTM_MIGRATE_KEY,'1');
+    markDirty('otmSettings');
+  }
+}catch(e){logSwallowed("otmSettingsInit",e)}
+function updateOtm(){otmSettings.vgt=otmPercent(otmSettings.vgt,6);otmSettings.smh=otmPercent(otmSettings.smh,6);var vp=livePrices?livePrices.VGT||0:0;var sp=livePrices?livePrices.SMH||0:0;var v=document.getElementById("otmVgtVal");if(v)v.textContent=otmSettings.vgt+"%";var s=document.getElementById("otmSmhVal");if(s)s.textContent=otmSettings.smh+"%";var ve=document.getElementById("otmVgtStrike");if(ve&&vp>0)ve.textContent="$"+vp.toFixed(0)+" → $"+suggestedStrike(vp,otmSettings.vgt).toFixed(0);var se=document.getElementById("otmSmhStrike");if(se&&sp>0)se.textContent="$"+sp.toFixed(0)+" → $"+suggestedStrike(sp,otmSettings.smh).toFixed(0);try{renderOtmProbLines()}catch(e){logSwallowed("renderOtmProbLines",e)}}
+function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,6);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
 try{var ep=document.getElementById("otmVgtPlus");if(ep)ep.onclick=function(){adjOtm("VGT",1)};var em=document.getElementById("otmVgtMinus");if(em)em.onclick=function(){adjOtm("VGT",-1)};var sp2=document.getElementById("otmSmhPlus");if(sp2)sp2.onclick=function(){adjOtm("SMH",1)};var sm2=document.getElementById("otmSmhMinus");if(sm2)sm2.onclick=function(){adjOtm("SMH",-1)}}catch(e){logSwallowed("adjOtm",e)}setTimeout(updateOtm,800);
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}

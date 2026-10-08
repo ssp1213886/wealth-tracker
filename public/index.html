@@ -460,12 +460,21 @@
   <div class="otm-list">
     <div class="otm-row">
       <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small></div>
-      <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">7%</span><button type="button" id="otmVgtPlus">+</button></div>
+      <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">6%</span><button type="button" id="otmVgtPlus">+</button></div>
     </div>
     <div class="otm-row">
       <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small><small id="otmSmhProb" class="otm-prob"></small></div>
-      <div class="otm-stepper"><button type="button" id="otmSmhMinus">−</button><span id="otmSmhVal">5%</span><button type="button" id="otmSmhPlus">+</button></div>
+      <div class="otm-stepper"><button type="button" id="otmSmhMinus">−</button><span id="otmSmhVal">6%</span><button type="button" id="otmSmhPlus">+</button></div>
     </div>
+  </div>
+  <div class="otm-note">历史回测最优（2004-2026，含买卖价差）：<b>VGT 6% OTM × 28 天</b> · <b>SMH 6% OTM × 21 天</b>。「天数」指卖出时距到期的天数 —— VGT 只有月度期权，28 天是月度轮转的自然周期；SMH 有周度，可选 21 天。</div>
+</div>
+
+<div class="card collapsible-card collapsed" id="expiryCalCard">
+  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>到期日历</h3></div>
+  <div class="collapsible-body">
+    <div id="expiryCalendar"></div>
+    <div class="prob-note">到期判定：到期日当天美东 16:00 收盘。收盘时实值 ≥ $0.01 即自动行权（无需对手方决定），ETF 期权为实物交割，T+1 划走股份 —— 周五到期 → 周一交割，与「T+1 市价买回」正好衔接。VGT 只有月度到期日，SMH 还有周度。</div>
   </div>
 </div>
 
