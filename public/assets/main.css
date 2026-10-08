@@ -1358,8 +1358,6 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   #bottomBar.bottom-bar{left:0!important;right:0!important;bottom:0!important;height:calc(72px + env(safe-area-inset-bottom,0px))!important;border-top:1px solid var(--rule)!important}
   [data-theme="dark"] #bottomBar.bottom-bar{background:color-mix(in srgb,var(--card-bg) 95%,transparent)}
   .bb-btn:active{transform:scale(.94);background:transparent!important;box-shadow:none!important}
-  /* v361：深色主题的底栏是亮的薄荷配色，激活项要用深色字（原来写 var(--fg) 会白字压亮绿） */
-  .bb-btn.active{color:color-mix(in srgb,var(--accent) 14%,#000)!important}
   .bb-btn.active .bb-icon svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.04))}
   .bb-btn::after{display:none!important}
   .qa-item,.qa-alert-item{transition:transform var(--ios-press) var(--ios-ease),opacity var(--ios-press) var(--ios-ease)}
@@ -1830,16 +1828,15 @@ body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 3%
    ⚠️ 浓度要**看得出颜色**：v358 只混 3.5%，实测肉眼就是"没颜色"，用户直接报上来了。
    现在浅色 9~12%、深色 16~22%（比页面那一层更浓一档，让底栏读起来是"一条带色的 chrome"）。
    --bar-solid 必须与底栏同色：它是中间那个 ＋ 的 5px 描边，用来做"从底栏挖空一个圆"的效果。 */
-/* v361：底栏直接铺**当前配色的主色**（实色）。这几条的选择器特异性正好压过上面那些散的底栏规则
-   （浅色 1,2,1；深色 1,3,1），所以不需要 !important —— 顺手把旧规则的 !important 都还掉了。 */
-body[data-active-tab="holding"] #bottomBar.bottom-bar{background:var(--accent)}
-body[data-active-tab="option"] #bottomBar.bottom-bar{background:var(--accent)}
-body[data-active-tab="console"] #bottomBar.bottom-bar{background:var(--accent)}
-body[data-active-tab="data"] #bottomBar.bottom-bar{background:var(--accent)}
-[data-theme="dark"] body[data-active-tab="holding"] #bottomBar.bottom-bar{background:var(--accent)}
-[data-theme="dark"] body[data-active-tab="option"] #bottomBar.bottom-bar{background:var(--accent)}
-[data-theme="dark"] body[data-active-tab="console"] #bottomBar.bottom-bar{background:var(--accent)}
-[data-theme="dark"] body[data-active-tab="data"] #bottomBar.bottom-bar{background:var(--accent)}
+/* v362：底栏用**配色的浅色档**，并且和「总资产」卡用同一套层次做法
+   （那张卡是 145° 亮→深渐变 + 右上角白色径向高光）—— 之前平铺一色，用户反馈"太深、没层次"。
+   浅色：上 26% → 下 40%（顶亮底深，读起来像被上方打光）；
+   深色：18% → 30%，同样带一层很淡的高光。
+   要更浓/更淡就改这四组百分比。选择器特异性正好压过上面那些散的底栏规则，所以不需要 !important。 */
+body[data-active-tab] #bottomBar.bottom-bar{background:radial-gradient(130% 170% at 84% 0%,rgba(255,255,255,.22),transparent 62%),linear-gradient(180deg,color-mix(in srgb,var(--accent) 26%,var(--bg)),color-mix(in srgb,var(--accent) 40%,var(--bg)))}
+[data-theme="dark"] body[data-active-tab] #bottomBar.bottom-bar{background:radial-gradient(130% 170% at 84% 0%,rgba(255,255,255,.14),transparent 62%),linear-gradient(180deg,color-mix(in srgb,var(--accent) 18%,var(--bg)),color-mix(in srgb,var(--accent) 30%,var(--bg)))}
+body[data-active-tab]{--bar-solid:color-mix(in srgb,var(--accent) 33%,var(--bg))}
+[data-theme="dark"] body[data-active-tab]{--bar-solid:color-mix(in srgb,var(--accent) 24%,var(--bg))}
 body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 12%,var(--bg))}
 body[data-active-tab="option"]{--bar-solid:color-mix(in srgb,var(--accent) 11%,var(--bg))}
 body[data-active-tab="console"]{--bar-solid:color-mix(in srgb,var(--accent) 10%,var(--bg))}
@@ -2944,9 +2941,8 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
    这段放在文件末尾、并且用带 id 的选择器，压过上面那些散落的 !important。 */
 /* 底栏铺了实色之后要处理对比度：浅色主题的 accent 是深色 → 白字；深色主题是亮薄荷 → 深字。
    这一段刻意不写 !important，靠特异性取胜（旧规则里被取代的那些 !important 已经还掉了）。 */
-:root{--bar-fg:rgba(255,255,255,.76);--bar-fg-strong:#fff}
-[data-theme="dark"]{--bar-fg:rgba(0,0,0,.5);--bar-fg-strong:color-mix(in srgb,var(--accent) 14%,#000)}
-body[data-active-tab] #bottomBar.bottom-bar{border-top-color:color-mix(in srgb,var(--accent) 72%,#000)}
+:root{--bar-fg:rgba(0,0,0,.5);--bar-fg-strong:rgba(0,0,0,.85)}
+[data-theme="dark"]{--bar-fg:rgba(255,255,255,.72);--bar-fg-strong:#fff}
 #bottomBar .bb-btn{color:var(--bar-fg)}
 #bottomBar .bb-btn .bb-icon{opacity:.8}
 #bottomBar .bb-btn.active .bb-icon{opacity:1}
