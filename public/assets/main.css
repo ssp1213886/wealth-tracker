@@ -1828,15 +1828,17 @@ body[data-active-tab="data"] .main{background:color-mix(in srgb,var(--accent) 3%
    ⚠️ 浓度要**看得出颜色**：v358 只混 3.5%，实测肉眼就是"没颜色"，用户直接报上来了。
    现在浅色 9~12%、深色 16~22%（比页面那一层更浓一档，让底栏读起来是"一条带色的 chrome"）。
    --bar-solid 必须与底栏同色：它是中间那个 ＋ 的 5px 描边，用来做"从底栏挖空一个圆"的效果。 */
-/* v363：底栏 = 配色的浅色档 + 「总资产」卡那套层次（径向高光 + 亮→深渐变）+ **半透明毛玻璃**。
+/* v364：底栏 = 配色的浅色档 + 「总资产」卡那套层次（径向高光 + 亮→深渐变）+ **半透明毛玻璃**。
    三者叠在一起的理由：
      · 纯毛玻璃（v358 之前）在卡片浅底上几乎看不出效果，用户反馈"没颜色"；
      · 纯实色又太深、太平（v361）；
      · 所以底色保留配色的色调与层次，但不做全不透明 —— 88% 让内容从下面经过时透出一点模糊的流动
        （模糊由上面 .bottom-bar 规则里的 backdrop-filter 提供，这里不用重复写）。
-   要更浓/更淡改下面四组百分比；要更透/更实改那两个 88%。 */
-body[data-active-tab] #bottomBar.bottom-bar{background:radial-gradient(130% 170% at 84% 0%,rgba(255,255,255,.22),transparent 62%),linear-gradient(180deg,color-mix(in srgb,color-mix(in srgb,var(--accent) 26%,var(--bg)) 88%,transparent),color-mix(in srgb,color-mix(in srgb,var(--accent) 40%,var(--bg)) 88%,transparent))}
-[data-theme="dark"] body[data-active-tab] #bottomBar.bottom-bar{background:radial-gradient(130% 170% at 84% 0%,rgba(255,255,255,.14),transparent 62%),linear-gradient(180deg,color-mix(in srgb,color-mix(in srgb,var(--accent) 18%,var(--bg)) 90%,transparent),color-mix(in srgb,color-mix(in srgb,var(--accent) 30%,var(--bg)) 90%,transparent))}
+   ⚠️ 不透明度是按"肉眼看得见毛玻璃"定的：88%（v363）实测只剩 12% 透过率，在卡片浅底上根本看不出，
+      用户直接报"为什么没有毛玻璃效果"。72% 才有那种"内容模糊地从下面穿过去"的观感。
+   要更浓/更淡改下面四组百分比；要更透/更实改那两个 72%。 */
+body[data-active-tab] #bottomBar.bottom-bar{background:radial-gradient(130% 170% at 84% 0%,rgba(255,255,255,.22),transparent 62%),linear-gradient(180deg,color-mix(in srgb,color-mix(in srgb,var(--accent) 26%,var(--bg)) 72%,transparent),color-mix(in srgb,color-mix(in srgb,var(--accent) 40%,var(--bg)) 72%,transparent))}
+[data-theme="dark"] body[data-active-tab] #bottomBar.bottom-bar{background:radial-gradient(130% 170% at 84% 0%,rgba(255,255,255,.14),transparent 62%),linear-gradient(180deg,color-mix(in srgb,color-mix(in srgb,var(--accent) 18%,var(--bg)) 80%,transparent),color-mix(in srgb,color-mix(in srgb,var(--accent) 30%,var(--bg)) 80%,transparent))}
 body[data-active-tab]{--bar-solid:color-mix(in srgb,var(--accent) 33%,var(--bg))}
 [data-theme="dark"] body[data-active-tab]{--bar-solid:color-mix(in srgb,var(--accent) 24%,var(--bg))}
 body[data-active-tab="holding"]{--bar-solid:color-mix(in srgb,var(--accent) 12%,var(--bg))}
