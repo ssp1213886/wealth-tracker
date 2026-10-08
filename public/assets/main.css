@@ -2917,9 +2917,11 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-sum-meta b{font-weight:700}
 .mx-sum-empty{background:transparent;border-style:dashed;color:var(--muted);font-size:12px}
 @media(max-width:800px){
-  /* 六列在手机上放不下 —— 横向滚动，而不是把 td 拆成 grid 单元格 */
-  .mx-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .mx-table thead,.mx-table tbody{display:table;width:100%;min-width:340px}
+  /* 七列在手机上放不下 → 横向滚动交给外层容器，.mx-table 必须保持 display:table。
+     之前把它设成 display:block、再给 thead/tbody 各自 display:table，
+     等于两个独立的表格盒各算一遍列宽，表头和数据列必然错位（实测最大差 40px）。 */
+  #probMatrix{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .mx-table{min-width:340px}
   .mx-table thead th,.mx-table tbody td{padding-left:5px;padding-right:5px}
 }
 .cc-locked{color:var(--muted);font-size:11.5px}
