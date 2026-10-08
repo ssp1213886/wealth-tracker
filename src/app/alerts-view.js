@@ -130,8 +130,19 @@ if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id
 /* 固定节奏提醒（v328）：到期日当天就卖下一档。节奏日历由 index.js 传进来（ccRows），
    这里只负责把"该操作了 / 漏了"翻成人话。没有 ccRows 时（老调用方）整段跳过，行为不变。 */
 var ccRows=ctx.ccRows||[],ccStreaks=ctx.ccStreaks||{},todayMs=Date.parse(marketDate(ctx.now)+'T00:00:00Z');
+/**
+ * v357：卖 CALL 的前提是"有 100 股（1 张）可被行权"。手里不足 1 张、或已被现有 CALL 占满时，
+ * 不该催你去卖 —— 你根本卖不出来。口径与「期权状态」卡的"可卖 N 张"一致：
+ * floor(持股 / 100) − 活跃 CALL 张数。
+ */
+function freeContracts(sym){
+  var sh=(ctx.trades||[]).reduce(function(s,t){return s+(t&&t.symbol===sym?(Number(t.shares)||0):0)},0);
+  var used=activeOpts.reduce(function(s,o){return s+(o&&o.sym===sym&&o.type==='CALL'?(Number(o.contracts)||1):0)},0);
+  return Math.floor(sh/100)-used;
+}
 ccRows.forEach(function(r){
   if(!r||!r.nextExpiry)return;
+  if(freeContracts(r.sym)<1)return;   /* 不够 100 股就不催：没股票可被行权，卖 CALL 没有意义 */
   var left=(Date.parse(r.nextExpiry+'T00:00:00Z')-todayMs)/86400000;
   if(left===0){
     alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',

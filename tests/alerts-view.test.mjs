@@ -76,6 +76,35 @@ test('buildAlerts：已实值且除息落在本轮周期内 → 才升级成"提
   assert.equal(noDiv.type, 'accent');
 });
 
+test('buildAlerts：不够 100 股（或已被现有 CALL 占满）就不催卖 CALL', () => {
+  const due = { ccRows: [{ sym: 'VGT', nextExpiry: '2026-09-29', label: '每月第三个周五' }] };
+  const ccIds = (list) => list.filter((a) => /^cc/.test(a.id)).map((a) => a.id);
+  const hold = (symbol, shares) => ({ symbol, shares, date: '2026-09-02', price: 100 });
+
+  // 只有 60 股 → 连 1 张都凑不出，卖 CALL 没意义
+  assert.deepEqual(ccIds(buildAlerts(ctx({ ...due, trades: [hold('VGT', 60)] }))), [], '不足 100 股不该催');
+
+  // 正好 100 股、没有活跃 CALL → 这一天该卖
+  assert.deepEqual(ccIds(buildAlerts(ctx({ ...due, trades: [hold('VGT', 100)] }))), ['ccdue:VGT'], '够 1 张才催');
+
+  // 100 股已经被一张活跃 CALL 占着 → 不能再卖
+  assert.deepEqual(ccIds(buildAlerts(ctx({
+    ...due,
+    trades: [hold('VGT', 100)],
+    options: [call({ contracts: 1, expiry: '2026-11-20' })],
+  }))), [], '已经被现有 CALL 占满就不催');
+
+  // 250 股、已卖 2 张 → 还能卖 0 张（向下取整）
+  assert.deepEqual(ccIds(buildAlerts(ctx({
+    ...due,
+    trades: [hold('VGT', 250)],
+    options: [call({ contracts: 2, expiry: '2026-11-20' })],
+  }))), [], '250 股只够 2 张，卖满了就不再催');
+
+  // 标的对不上也不催
+  assert.deepEqual(ccIds(buildAlerts(ctx({ ...due, trades: [hold('SMH', 500)] }))), [], '只有 SMH 的股票，别催 VGT');
+});
+
 test('buildAlerts：同一标的的多张 Call 合并计数，用最近到期那张做提示', () => {
   const alerts = buildAlerts(ctx({
     options: [call({ id: 1, expiry: '2026-11-20', contracts: 2 }), call({ id: 2, expiry: '2026-10-16', contracts: 1 })],
