@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=336');
+  assert.equal(manifest.start_url, '/?v=337');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v336/);
+  assert.match(serviceWorker, /wealth-v337/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=336',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=337',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -600,4 +600,36 @@ test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(appMarkup, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
   assert.match(appMarkup, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
   assert.match(appMarkup, /美股非交易时段/);
+});
+
+/**
+ * v336 事故回归：脚本是 `defer` 加载的，执行时 document.readyState 已经是 'interactive'
+ * （不是 'loading'）。当时 initProb 用的写法是「不是 loading 就立刻跑」→ run() 在**模块求值
+ * 过程中**同步执行 → 调用 updateOtm() → 读 otmSettings（声明在 78 行之后）→ TypeError
+ * → 模块从此中断 → 末尾的 bootSplashOut 不执行 → 开屏遮罩永远盖着页面 → **点击没反应**。
+ *
+ * 两道防线都钉住：① 引导块必须等 DOMContentLoaded；② 它依赖的顶层变量必须声明在前面。
+ */
+test('index.js：引导块不得在模块求值中读到未赋值的顶层变量（v336 点击无反应回归）', () => {
+  const lines = indexSource.split('\n');
+  const find = (re) => lines.findIndex((l) => re.test(l));
+  const initProb = find(/^\(function initProb/);
+  const otmSettings = find(/^var otmSettings=/);
+  assert.ok(initProb > 0, '找不到 initProb');
+  assert.ok(otmSettings > 0, '找不到 otmSettings');
+  assert.ok(otmSettings < initProb, 'otmSettings 必须先于 initProb 赋值（initProb 会同步调 updateOtm）');
+
+  // defer 场景下 readyState 是 'interactive'，只有 'complete'（脚本被动态注入）才允许立刻跑
+  const tail = lines.slice(initProb - 1);
+  const endIdx = tail.findIndex((l) => /^\}\)\(\);/.test(l));
+  const block = tail.slice(0, endIdx + 1).join('\n');
+  assert.ok(endIdx > 0, '找不到 initProb 的结尾');
+  assert.match(block, /if\(document\.readyState==='complete'\)run\(\);else document\.addEventListener\('DOMContentLoaded',run\)/,
+    'initProb 必须等 DOMContentLoaded —— 用「不是 loading 就立刻跑」会在 defer 下读到未赋值的变量');
+  assert.doesNotMatch(block, /readyState==='loading'\)\s*\{?\s*document\.addEventListener\('DOMContentLoaded',\s*run\)/,
+    '这种写法在 defer 下会同步执行，不要再回来');
+
+  // updateOtm 自身留了兜底：万一顺序又被人改坏，也不至于让整页死掉
+  assert.match(indexSource, /function updateOtm\(\)\{if\(!otmSettings\)otmSettings=\{vgt:7,smh:6\}/,
+    'updateOtm 要有 otmSettings 兜底，避免再次"读 undefined 直接崩"');
 });

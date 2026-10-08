@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v336';var APP_DATA_VERSION=5;
+var APP_BUILD='v337';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -977,7 +977,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=336',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=337',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1630,6 +1630,29 @@ function anyChain(){return chainFor('VGT')||chainFor('SMH')||null}
 /** CBOE 顶层的官方 30 天 IV（百分数）→ { VGT: 22.485, ... }，只收有效的。 */
 function iv30Map(){var m={};['VGT','SMH'].forEach(function(s){var c=chainFor(s);if(c&&Number(c.iv30)>0)m[s]=Number(c.iv30)});return m}
 var CHAIN_TTL_MS=5*60*1000;
+/* OTM 默认值的两次调整都来自 22 年回测（2004-2026，含买卖价差）：
+   v326 先把 VGT 7% / SMH 5% 统一成 6%；
+   v328 按**固定节奏**（VGT 月度第三个周五、SMH 每 3 周）重跑后又调开 ——
+   月度日历里有 35 天的月份，DTE 被拉到 32 天左右、行权风险上升，所以 VGT 要卖得更远（7%），
+   SMH 是 21 天短周期、行权风险低，留在 6%。
+   老设备的存量设置用一次性标记搬过来 —— 只跑一次，之后用户自己调过的值不会再被覆盖。
+
+   ⚠️ 这段必须放在 initProb 之前：脚本是 defer 加载的，执行时 document.readyState
+   已经是 'interactive'，initProb 里的 run() 会**同步**跑起来并调用 updateOtm()；
+   那时若 otmSettings 还没赋值，updateOtm 里的 `otmSettings.vgt=` 会直接抛 TypeError，
+   整个模块从这里往后全部中断（v336 的真实事故：页面点击无反应）。 */
+var OTM_MIGRATE_KEY='otm76_migrated_v1';
+var otmSettings={vgt:7,smh:6};
+try{
+  var s2=JSON.parse(readRaw("otmSettings"));if(s2)otmSettings=s2;
+  if(!LS.getItem(OTM_MIGRATE_KEY)){
+    otmSettings.vgt=7;otmSettings.smh=6;
+    LS.setItem("otmSettings",JSON.stringify(otmSettings));
+    LS.setItem(OTM_MIGRATE_KEY,'1');
+    markDirty('otmSettings');
+  }
+}catch(e){logSwallowed("otmSettingsInit",e)}
+
 var probTab='VGT';
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
 function otmOf(sym){var v=Number(otmSettings&&(sym==='SMH'?otmSettings.smh:otmSettings.vgt));return v>0?v:(sym==='SMH'?6:7)}
@@ -1776,7 +1799,15 @@ function bindProbControls(){
     document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.tab==='option')refreshChains(false)})});
     setTimeout(function(){refreshChains(false);refreshDividends(false)},1200);
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+  /* ⚠️ 不能用 `readyState==='loading' ? 等 DOMContentLoaded : 立刻跑` 这种写法。
+     脚本是 defer 加载的，执行时 readyState 已经是 'interactive'（不是 'loading'），
+     于是 run() 会在**模块求值过程中**同步跑起来 —— 那时文件后半段的顶层变量
+     （例如 otmSettings）还没赋值，updateOtm 会直接抛 TypeError，
+     整个模块从此中断，第 1795 行往后的所有代码（含「记录期权」按钮绑定）全部失效。
+     v336 的真实事故就是这样：页面点击没反应。
+     改成只在 'complete'（脚本被动态注入、DOM 早已就绪）时才立刻跑，其余一律等
+     DOMContentLoaded —— 那时整份模块已经求值完毕。 */
+  if(document.readyState==='complete')run();else document.addEventListener('DOMContentLoaded',run);
 })();
 
 /* ===== 卖 CALL 的固定节奏 =====
@@ -1840,24 +1871,8 @@ async function refreshDividends(force){
   refreshCcAlerts();
 }
 
-/* OTM 默认值的两次调整都来自 22 年回测（2004-2026，含买卖价差）：
-   v326 先把 VGT 7% / SMH 5% 统一成 6%；
-   v328 按**固定节奏**（VGT 月度第三个周五、SMH 每 3 周）重跑后又调开 ——
-   月度日历里有 35 天的月份，DTE 被拉到 32 天左右、行权风险上升，所以 VGT 要卖得更远（7%），
-   SMH 是 21 天短周期、行权风险低，留在 6%。
-   老设备的存量设置用一次性标记搬过来 —— 只跑一次，之后用户自己调过的值不会再被覆盖。 */
-var OTM_MIGRATE_KEY='otm76_migrated_v1';
-var otmSettings={vgt:7,smh:6};
-try{
-  var s2=JSON.parse(readRaw("otmSettings"));if(s2)otmSettings=s2;
-  if(!LS.getItem(OTM_MIGRATE_KEY)){
-    otmSettings.vgt=7;otmSettings.smh=6;
-    LS.setItem("otmSettings",JSON.stringify(otmSettings));
-    LS.setItem(OTM_MIGRATE_KEY,'1');
-    markDirty('otmSettings');
-  }
-}catch(e){logSwallowed("otmSettingsInit",e)}
-function updateOtm(){otmSettings.vgt=otmPercent(otmSettings.vgt,7);otmSettings.smh=otmPercent(otmSettings.smh,6);renderProbCard();}
+/* 容错：initProb 可能在任何时候同步调用它，这里再兜一次底，保证 otmSettings 一定存在。 */
+function updateOtm(){if(!otmSettings)otmSettings={vgt:7,smh:6};otmSettings.vgt=otmPercent(otmSettings.vgt,7);otmSettings.smh=otmPercent(otmSettings.smh,6);renderProbCard();}
 function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,key==='vgt'?7:6);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
 setTimeout(updateOtm,800);
 
