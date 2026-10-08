@@ -516,6 +516,7 @@ const steps = {
 | v322 | **防腐烂 + 层叠重写的第一手结论**：① 新增常跑总入口 `npm run e2e:all`（主套件 + 全站回归 + 三个专项 + 同步全链路 + 真机模拟，约 6 分钟）并接进 CI；配 `tests/test-inventory.test.mjs` 守卫——场景脚本要么进常跑入口、要么在白名单里写明理由 ② "整表分层"重写实测**不可行**（308 处计算样式变化 + 少 2 个元素），并测得指纹**噪声地板 10–25 处**；工具 `scripts/css/apply-layers.mjs` 改为默认只分析，逐簇重写的操作规程写进"已知未修问题"第 3 条 |
 | v322 | **设置收敛：7 行 → 5 行**（手机端优先）：① 删掉退役的「连接配置」（地址输入框 + "不需要令牌"提示；token 早退役，默认就是当前站点）② 「活动记录」并进「账号」（改密码 / 活动记录 / 本机数据 / 退出登录一页到底）③ 「手动行情」并进「数据与备份」④ 侧栏底部重复的「退出登录」删除 ⑤ 手机端手风琴的配对表同步收敛（`setupInlineQuickSettings` 不再有 price 项）。实测：设置一屏内 5 行、展开「云端同步」也从 ~300px 降到 186px |
 | v323 | **修一个一直存在的选择器溢出**（用户反馈"上传/同步按钮是白色，不够明显"）：手机端 `setupInlineQuickSettings` 会把设置面板搬进 `.sb-quick-menu`（外包一层 `.quick-acc`），而几十条"索引行"样式用的是**后代选择器** `.sb-quick-menu button` —— 于是面板里的按钮也被拍平：实测 `btn-pri` 的背景被算成 `transparent`、`btn-out` 的边框 0px，看着像两个白块。修法：把 22 处只该作用于索引行的选择器限定为**直接子按钮** `.sb-quick-menu > button`（**不新增任何 `!important`**，仍 1510）。修后实测：同步按钮 `rgb(20,122,75)` 绿底白字、上传按钮浅底 + 1px 边框；四组合指纹 **0 处差异**（面板默认折叠，改动只在展开后的面板内） |
+| v324 | **修好加密行情的兜底链**：从 Cloudflare 边缘实测各数据源 —— 币安全球站 **403**（封云厂商 IP）、CoinGecko **429**（限流，原来的兜底等于没有），而 Binance.US / Kraken / Coinbase / Bybit 均 200。于是把加密兜底从"只有 CoinGecko"改成 **Binance.US → Kraken → CoinGecko**（Yahoo 仍是主源），"纯代码补查"那条路径也接上；新增 `parseBinanceUsTickers` / `parseKrakenTickers` / `krakenCodeOf` 三个纯函数 + 5 条单测（含"先 Binance.US、剩的才问 Kraken"的顺序与缓存行为） |
 
 ### 已知未修问题
 
@@ -658,8 +659,11 @@ const steps = {
 1. **SMH 前十大只能季度手工维护** —— VanEck 的页面是 JS 渲染，抓不到；VGT 走 Yahoo 实时抓取。静态榜单在
    `src/lib/holdings-static.js`（带 `asOf` 字段，界面会显示"榜单 2026-06-30"这样的日期）。
 2. **拿不到盘前/盘后价** —— Yahoo 的 chart 接口没有这个字段；要做得另接 Finnhub / Nasdaq 这类带 key 的数据源。
-3. **加密行情走 Yahoo 交易对**（`BTC-USD` / `ETH-USD` / `BNB-USD` / `HYPE32196-USD`），CoinGecko 仅作兜底 ——
-   Cloudflare 出口访问 CoinGecko 会被限流，所以它不能当主力。
+3. **加密行情走 Yahoo 交易对**（`BTC-USD` / `ETH-USD` / `BNB-USD` / `HYPE32196-USD`）；**v324 起**的兜底链是
+   `Yahoo → Binance.US → Kraken → CoinGecko` —— 2026-10-08 从 Cloudflare 边缘实测：**币安全球站 403**（它封云厂商 IP）、
+   **CoinGecko 429**（限流，等于原来的兜底形同虚设），而 **Binance.US 200 / Kraken 200（37ms）/ Coinbase 200 / Bybit 200**。
+   所以把 Binance.US 与 Kraken 插到 CoinGecko 前面。两个解析器（`parseBinanceUsTickers` / `parseKrakenTickers`）是纯函数、有单测；
+   Kraken 的 `XXBTZUSD→BTC`、`XETHZUSD→ETH`、`XLTCZUSD→LTC`、`XXRPZUSD→XRP`、`XXLMZUSD→XLM`、`XDGUSD→DOGE` 由 `krakenCodeOf` 归一。
 4. **`/api/quotes` 单次上限 40 个代码** —— 超出的会被静默丢弃（历史事故：PLTR/TSM/TXN 显示成 `—`）。
    观察列表 + 成分股拼出来的代码数要留意这个上限。
 5. **`GOLD` 在金价上不是"黄金"** —— Yahoo 上的 `GOLD` 是 Gold.com 这只个股；我们的金价用的是 `GC=F`

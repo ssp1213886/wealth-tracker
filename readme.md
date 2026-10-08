@@ -120,7 +120,7 @@ VGT + SMH + BTC ETF（美股代码 `BTC`，非现货 BTC）永久核心仓 + Cov
 | 前端 | 原生 HTML/CSS/JS（无框架）。源码模块化在 `src/app/`，esbuild 打包成单文件产物 `public/assets/app.js` |
 | 后端 | Cloudflare Worker（`src/worker.js` + `src/lib/`） |
 | 存储 | localStorage（带 schema 版本与迁移链），键常量集中在 `src/app/store.js` |
-| 行情 | Yahoo Finance（Worker 代理绕 CORS），失败降级东方财富，支持手动录入并标注来源 |
+| 行情 | 股票：Yahoo Finance（Worker 代理绕 CORS），失败降级东方财富，支持手动录入并标注来源；加密：Yahoo 交易对为主，兜底链 **Binance.US → Kraken → CoinGecko**（v324 实测：币安全球站在 Cloudflare 出口 403、CoinGecko 429） |
 | 同步 | Cloudflare D1（单 token 鉴权 + 版本冲突检测） |
 | 部署 | Cloudflare Workers（静态资源由 `ASSETS` binding 提供） |
 

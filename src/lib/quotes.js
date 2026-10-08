@@ -261,6 +261,118 @@ function cryptoNameOf(sym, quote) {
   return name || sym;
 }
 
+/**
+ * Kraken 的 pair key 归一化成我们用的代码。
+ * Kraken 会给老币加 X/Z 前后缀：XXBTZUSD→BTC、XETHZUSD→ETH、XETCZUSD→ETC，偶尔 XDGUSD→DOGE。
+ */
+export function krakenCodeOf(pairKey) {
+  let s = String(pairKey || '').toUpperCase().replace(/USD$/, '');
+  // Kraken 给"老币"套 X…Z：XXBTZ→XBT、XETHZ→ETH、XETCZ→ETC、XLTCZ→LTC、XXRPZ→XRP、XXLMZ→XLM
+  // （实测 32 个代码里就这 7 个带装饰，其余是 ADAUSD 这种朴素形态）
+  if (s.length > 3 && s.startsWith('X') && s.endsWith('Z')) s = s.slice(1, -1);
+  if (s === 'XBT') return 'BTC';
+  if (s === 'XDG') return 'DOGE';
+  return s;
+}
+
+/** Binance.US 的 24hr ticker → { 代码: 行情 }；只保留我们要的代码，坏 JSON 返回 {}。 */
+export function parseBinanceUsTickers(text, codes) {
+  const wanted = new Set((codes || []).map((c) => String(c).toUpperCase()));
+  let rows;
+  try { rows = JSON.parse(text); } catch { return {}; }
+  if (!Array.isArray(rows)) rows = [rows];
+  const out = {};
+  rows.forEach((row) => {
+    const raw = String((row && row.symbol) || '').toUpperCase();
+    if (!raw.endsWith('USDT')) return;
+    const code = raw.slice(0, -4);
+    if (!wanted.has(code)) return;
+    const price = num(row.lastPrice);
+    if (price === null) return;
+    out[code] = { price: price, prevClose: num(row.prevClosePrice), changePct: num(row.priceChangePercent), source: 'binanceus' };
+  });
+  return out;
+}
+
+/** Kraken 的 Ticker → { 代码: 行情 }；昨收用当日开盘价近似（Kraken 不直接给昨收）。 */
+export function parseKrakenTickers(text, codes) {
+  const wanted = new Set((codes || []).map((c) => String(c).toUpperCase()));
+  let json;
+  try { json = JSON.parse(text); } catch { return {}; }
+  const result = (json && json.result) || {};
+  const out = {};
+  Object.keys(result).forEach((key) => {
+    const code = krakenCodeOf(key);
+    if (!wanted.has(code)) return;
+    const row = result[key] || {};
+    const price = num(Array.isArray(row.c) ? row.c[0] : null);
+    if (price === null) return;
+    const open = num(row.o);
+    out[code] = {
+      price: price,
+      prevClose: open,
+      changePct: (open && open > 0) ? Number((((price - open) / open) * 100).toFixed(3)) : null,
+      source: 'kraken',
+    };
+  });
+  return out;
+}
+
+/**
+ * 加密的**回退链**（v324）：Yahoo 之后、CoinGecko 之前先试这两家。
+ *
+ * 为什么加：Cloudflare 出口实测 —— 币安全球站 403（它封云厂商 IP）、CoinGecko 429（限流），
+ * 而 Binance.US / Kraken / Coinbase / Bybit 都是 200。原来只有 Yahoo → CoinGecko，
+ * 等于 Yahoo 一抽风加密报价就没了。
+ * 顺序：Binance.US（接口形状与币安一致、支持批量、USDT≈USD）→ Kraken（实测 37ms，最快）→ CoinGecko（最后兜底）。
+ */
+async function fetchBinanceUsQuotes(codes) {
+  if (!codes.length) return {};
+  const url = 'https://api.binance.us/api/v3/ticker/24hr?symbols=' + codes.map((c) => c + 'USDT').join(',');
+  const res = await fetchJson(url, 7000);
+  if (!res.ok) return {};
+  return parseBinanceUsTickers(res.text, codes);
+}
+
+async function fetchKrakenQuotes(codes) {
+  if (!codes.length) return {};
+  const url = 'https://api.kraken.com/0/public/Ticker?pair=' + codes.map((c) => c + 'USD').join(',');
+  const res = await fetchJson(url, 7000);
+  if (!res.ok) return {};
+  return parseKrakenTickers(res.text, codes);
+}
+
+const cryptoAltCache = new Map();   // 代码 → { at, quote }：Binance.US / Kraken 的结果单独缓存
+
+export async function fetchCryptoAltQuotes(codes) {
+  const out = {};
+  const missing = [];
+  codes.forEach((code) => {
+    const hit = cryptoAltCache.get(code);
+    if (hit && Date.now() - hit.at < QUOTE_TTL) out[code] = hit.quote;
+    else missing.push(code);
+  });
+  if (missing.length) {
+    let viaBinance = {};
+    let viaKraken = {};
+    // 回退源自己失败绝不影响主源：全部 try 住
+    try { viaBinance = await fetchBinanceUsQuotes(missing); } catch { /* 忽略 */ }
+    const left = missing.filter((code) => !viaBinance[code]);
+    if (left.length) {
+      try { viaKraken = await fetchKrakenQuotes(left); } catch { /* 忽略 */ }
+    }
+    Object.keys(viaBinance).forEach((code) => {
+      out[code] = viaBinance[code];
+      cryptoAltCache.set(code, { at: Date.now(), quote: viaBinance[code] });
+    });
+    Object.keys(viaKraken).forEach((code) => {
+      out[code] = viaKraken[code];
+      cryptoAltCache.set(code, { at: Date.now(), quote: viaKraken[code] });
+    });
+  }
+  return out;
+}
+
 export async function handleQuotes(request, url) {
   if (request.method !== 'GET') return { status: 405, body: { error: 'Method not allowed' } };
   const raw = (url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
@@ -289,7 +401,7 @@ export async function handleQuotes(request, url) {
     invalid.push(sym);
   });
 
-  // 加密先走 Yahoo 交易对，失败的再走 CoinGecko
+  // 加密先走 Yahoo 交易对；失败的走 Binance.US → Kraken（v324），最后才 CoinGecko
   const cryptoPairs = cryptos.map((sym) => [sym, CRYPTO_PAIRS[sym] || null]);
   const [stockPairs, cryptoMap] = await Promise.all([
     Promise.all(stocks.map(async ([sym, lookup]) => [sym, await fetchStockQuote(lookup)])),
@@ -300,11 +412,14 @@ export async function handleQuotes(request, url) {
         const quote = await fetchStockQuote(pair);
         if (quote) viaYahoo[sym] = quote;
       }));
-      const fallbackIds = cryptoPairs.filter(([sym]) => !viaYahoo[sym] && CRYPTO_IDS[sym]).map(([sym]) => CRYPTO_IDS[sym]);
-      const viaGecko = fallbackIds.length ? await fetchCryptoQuotes(fallbackIds) : {};
+      const fallbackCodes = cryptoPairs.filter(([sym]) => !viaYahoo[sym]).map(([sym]) => sym);
+      const viaAlt = fallbackCodes.length ? await fetchCryptoAltQuotes(fallbackCodes) : {};
+      const geckoIds = fallbackCodes.filter((sym) => !viaAlt[sym] && CRYPTO_IDS[sym]).map((sym) => CRYPTO_IDS[sym]);
+      const viaGecko = geckoIds.length ? await fetchCryptoQuotes(geckoIds) : {};
       const out = {};
       cryptoPairs.forEach(([sym]) => {
         if (viaYahoo[sym]) out[sym] = viaYahoo[sym];
+        else if (viaAlt[sym]) out[sym] = viaAlt[sym];
         else if (CRYPTO_IDS[sym] && viaGecko[CRYPTO_IDS[sym]]) out[sym] = viaGecko[CRYPTO_IDS[sym]];
       });
       return out;
@@ -322,8 +437,12 @@ export async function handleQuotes(request, url) {
     else missing.push(sym);
   });
   const retried = await Promise.all(plain.concat(retryLater).map(async (sym) => [sym, await fetchStockQuote(sym + '-USD')]));
+  // 纯代码（用户直接写 XRP / BONK）在 Yahoo 也查不到时，同样享受这层回退
+  const retryCodes = retried.filter(([, quote]) => !quote).map(([sym]) => sym);
+  const viaAltRetry = retryCodes.length ? await fetchCryptoAltQuotes(retryCodes) : {};
   retried.forEach(([sym, quote]) => {
     if (quote) quotes[sym] = asCrypto(sym, quote);
+    else if (viaAltRetry[sym]) quotes[sym] = asCrypto(sym, viaAltRetry[sym]);
     else missing.push(sym);
   });
   cryptos.forEach((sym) => {
