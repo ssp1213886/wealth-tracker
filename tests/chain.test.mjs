@@ -142,7 +142,7 @@ test('medianGapPct：平值附近样本不足 3 个时退回整条阶梯；非�
   assert.equal(medianGapPct([100, 101], 0), 0, '现价缺失时不算');
 });
 
-test('buildChain：每个到期日带上市场真实统计（挂牌数不因裁剪而缩水）', () => {
+test('buildChain：每个到期日带上平值附近的真实间距（从裁剪前的完整阶梯算）', () => {
   const contracts = [];
   // 市场真实挂牌：$40 ~ $200，$1 一档
   for (let k = 40; k <= 200; k += 1) {
@@ -150,11 +150,10 @@ test('buildChain：每个到期日带上市场真实统计（挂牌数不因裁�
   }
   const chain = buildChain(contracts, { sym: 'VGT', spot: 100, now: NOW });
   const e = chain.expiries[0];
-  assert.equal(e.listed, 161, '挂牌数是市场真实的 161 个（$40~$200）');
-  assert.equal(e.lo, 40);
-  assert.equal(e.hi, 200);
   assert.equal(e.gapPct, 1, '平值附近 $1 一档 → 1%');
-  assert.ok(e.calls.length < e.listed, '喂给前端的仍是裁剪版：' + e.calls.length + ' < ' + e.listed);
+  assert.equal(e.listed, undefined, '不再下发"挂牌多少个"——市场侧事实，前端用不上');
+  assert.equal(e.lo, undefined);
+  assert.equal(e.hi, undefined);
   assert.equal(Math.min.apply(null, e.calls.map((c) => c.k)), 90, '裁剪区间是现价 0.9~1.5 倍');
   assert.equal(Math.max.apply(null, e.calls.map((c) => c.k)), 150);
 });

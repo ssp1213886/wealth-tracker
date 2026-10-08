@@ -36,34 +36,36 @@ test('expiryCalendarHtml：空链给空态', () => {
   assert.match(expiryCalendarHtml(null, {}), /prob-empty/);
 });
 
-test('expiryCalendarHtml：一次只渲染一个标的的表（分页由调用方决定），行权价列用市场真实数据', () => {
+test('expiryCalendarHtml：一次只渲染一个标的的表；行权价列只给间距，不给挂牌个数', () => {
   const html = expiryCalendarHtml([
-    { date: '2026-11-20', dte: 43, monthly: true, listed: 151, gapPct: 1.32 },
-    { date: '2026-12-18', dte: 71, monthly: true, listed: 177, gapPct: 0.81 },
-    { date: '2026-10-30', dte: 22, monthly: false, listed: 69, gapPct: 0.45 },
+    { date: '2026-11-20', dte: 43, monthly: true, gapPct: 0.49 },
+    { date: '2026-12-18', dte: 71, monthly: true, gapPct: 0.48 },
+    { date: '2026-10-30', dte: 22, monthly: false, gapPct: 0.4 },
   ], { sym: 'VGT', fixed: '2026-11-20' });
   assert.equal((html.match(/<table/g) || []).length, 1, '一个标的一张表');
   assert.doesNotMatch(html, /<th>标的<\/th>/, '分页后不再需要标的列');
-  assert.match(html, /<th>行权价（市场）<\/th>/);
-  assert.match(html, /151 个 · 间距 1\.32%/, '挂牌数 + 平值附近中位间距');
-  assert.match(html, /69 个 · 间距 0\.45%/);
+  assert.match(html, /<th>行权价间距<\/th>/);
+  assert.match(html, /0\.49%/);
+  assert.match(html, /0\.40%/, '间距保留两位');
+  assert.doesNotMatch(html, /151 个|69 个/, '不再显示挂牌个数');
   assert.match(html, /is-monthly">月度/);
   assert.match(html, /<span class="cal-tag">周度<\/span>/);
   assert.match(html, /★ 按节奏该卖这档/);
+  assert.match(expiryCalendarHtml([{ date: '2026-11-20', dte: 43, monthly: true, gapPct: 0 }], { sym: 'VGT' }), /—/, '算不出间距时给破折号');
 });
 
 test('expiryCalendarHtml：表内按剩余天数升序', () => {
   const html = expiryCalendarHtml([
-    { date: '2026-12-18', dte: 71, monthly: true, listed: 177, gapPct: 0.81 },
-    { date: '2026-10-30', dte: 22, monthly: false, listed: 69, gapPct: 0.45 },
+    { date: '2026-12-18', dte: 71, monthly: true, gapPct: 0.48 },
+    { date: '2026-10-30', dte: 22, monthly: false, gapPct: 0.4 },
   ], { sym: 'SMH' });
   assert.ok(html.indexOf('2026-10-30') < html.indexOf('2026-12-18'), '近的排前面');
 });
 
 test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', () => {
   const html = expiryCalendarHtml([
-    { date: '2026-11-20', dte: 43, monthly: true, listed: 151, gapPct: 1.32 },
-    { date: '2026-12-18', dte: 71, monthly: true, listed: 177, gapPct: 0.81 },
+    { date: '2026-11-20', dte: 43, monthly: true, gapPct: 0.49 },
+    { date: '2026-12-18', dte: 71, monthly: true, gapPct: 0.48 },
   ], { sym: 'VGT', holdings: { 'VGT|2026-11-20': 2 } });
   assert.match(html, /class="cal-mine"/);
   assert.match(html, /2 张/);

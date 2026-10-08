@@ -68,7 +68,7 @@ export function buildChain(contracts, meta) {
   const lo = spot > 0 ? spot * MIN_STRIKE_RATIO : 0;
   const hi = spot > 0 ? spot * MAX_STRIKE_RATIO : Infinity;
   /* 先按"是不是这一天的 CALL、在不在窗口内"过一遍，**不动行权价** ——
-     这份是市场真实挂牌的阶梯，用来算 stats（挂牌数 / 极值 / 平值附近间距）。
+     这份是市场真实挂牌的完整阶梯，只用来算平值附近的间距。
      下面的 byExpiry 才是给前端用的裁剪版（只留现价 0.9~1.5 倍）。 */
   const marketByDate = new Map();
   (Array.isArray(contracts) ? contracts : []).forEach(function (c) {
@@ -101,11 +101,10 @@ export function buildChain(contracts, meta) {
   expiries.forEach(function (e) {
     e.calls.sort(function (a, b) { return a.k - b.k; });
     e.dte = Math.max(0, Math.round((e.ts - now) / 86400));
+    /* 只带间距，不带"挂牌多少个" —— 个数是市场侧事实，前端不用；
+       间距才决定"能不能精确挑到目标 OTM%"。lo/hi（全梯度的极值）同理不发。 */
     const ks = (marketByDate.get(e.date) || []).slice().sort(function (a, b) { return a - b; });
-    e.listed = ks.length;                        // 市场真实挂牌的行权价个数（未裁剪）
-    e.lo = ks.length ? ks[0] : 0;
-    e.hi = ks.length ? ks[ks.length - 1] : 0;
-    e.gapPct = medianGapPct(ks, spot);           // 平值附近相邻行权价的中位间距（% of spot）
+    e.gapPct = medianGapPct(ks, spot);
   });
   // iv30 是 CBOE 顶层的官方 30 天隐含波动率（百分数，例如 22.485 = 22.485%）。
   // 它比从期权链插值算出来的更权威，前端拿来当参照；Yahoo 兜底路径没有这个字段，给 0。

@@ -217,21 +217,21 @@ export function expiryCalendarHtml(entries, ctx) {
      摆在同一张表里既难比对，也没法各自"只看近几档"。 */
   const rows = list.slice().sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
   let html = '<table class="prob-table cal-table"><thead><tr>' +
-    '<th>到期日</th><th>剩余</th><th>类型</th><th>行权价（市场）</th><th>我的持仓</th>' +
+    '<th>到期日</th><th>剩余</th><th>类型</th><th>行权价间距</th><th>我的持仓</th>' +
     '</tr></thead><tbody>';
   rows.forEach(function (e) {
     const mine = holdings[sym + '|' + e.date] || 0;
     const onBeat = fixed === e.date;
     const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
-    /* 挂牌数用**市场真实**的（Worker 在裁剪前统计），不是 app 观察区间内的子集；
-       间距是平值附近相邻行权价的中位值 —— 它决定"能不能精确挑到目标 OTM%"。 */
-    const gap = Number(e.gapPct) > 0 ? ' · 间距 ' + Number(e.gapPct).toFixed(2) + '%' : '';
+    /* 只显示平值附近相邻行权价的中位间距 —— 它决定"能不能精确挑到目标 OTM%"。
+       市场挂牌的**个数**不显示：那是市场侧的事实，不是选行权价需要的输入。 */
+    const gap = Number(e.gapPct) > 0 ? Number(e.gapPct).toFixed(2) + '%' : '—';
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry">' + escapeHtml(e.date) +
         (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
       '<td data-cell="dte">' + e.dte + '天</td>' +
       '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
-      '<td data-cell="strikes">' + Number(e.listed) + ' 个' + gap + '</td>' +
+      '<td data-cell="strikes">' + gap + '</td>' +
       '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +
       '</tr>';
   });
