@@ -86,7 +86,16 @@ export function buildChain(contracts, meta) {
     e.calls.sort(function (a, b) { return a.k - b.k; });
     e.dte = Math.max(0, Math.round((e.ts - now) / 86400));
   });
-  return { sym: sym, spot: spot, source: String(info.source || ''), updated: String(info.updated || ''), expiries: expiries };
+  // iv30 是 CBOE 顶层的官方 30 天隐含波动率（百分数，例如 22.485 = 22.485%）。
+  // 它比从期权链插值算出来的更权威，前端拿来当参照；Yahoo 兜底路径没有这个字段，给 0。
+  return {
+    sym: sym,
+    spot: spot,
+    source: String(info.source || ''),
+    updated: String(info.updated || ''),
+    iv30: num(info.iv30),
+    expiries: expiries,
+  };
 }
 
 /**
@@ -150,6 +159,7 @@ async function fetchFromCboe(sym, now) {
     spot: num(data.close) || num(data.current_price),
     source: 'cboe',
     updated: data.last_trade_time || '',
+    iv30: data.iv30,
     now: now,
   });
 }

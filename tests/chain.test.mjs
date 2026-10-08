@@ -133,3 +133,10 @@ test('buildChain：空输入不会炸', () => {
   assert.deepEqual(buildChain(null, { sym: 'VGT', spot: 100, now: NOW }).expiries, []);
   assert.deepEqual(buildChain(undefined, {}).expiries, []);
 });
+
+test('buildChain：带上 CBOE 的官方 30 天 IV（iv30，百分数），缺失/非法时为 0', () => {
+  assert.equal(buildChain([], { sym: 'VGT', spot: 100, iv30: 22.485, now: NOW }).iv30, 22.485);
+  assert.equal(buildChain([], { sym: 'VGT', spot: 100, now: NOW }).iv30, 0, 'Yahoo 兜底路径没有这个字段');
+  assert.equal(buildChain([], { sym: 'VGT', spot: 100, iv30: -3, now: NOW }).iv30, 0);
+  assert.equal(buildChain([], { sym: 'VGT', spot: 100, iv30: 'abc', now: NOW }).iv30, 0);
+});
