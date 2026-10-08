@@ -459,14 +459,25 @@
   <h3>行权价参考</h3>
   <div class="otm-list">
     <div class="otm-row">
-      <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small></div>
+      <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small></div>
       <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">7%</span><button type="button" id="otmVgtPlus">+</button></div>
     </div>
     <div class="otm-row">
-      <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small></div>
+      <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small><small id="otmSmhProb" class="otm-prob"></small></div>
       <div class="otm-stepper"><button type="button" id="otmSmhMinus">−</button><span id="otmSmhVal">5%</span><button type="button" id="otmSmhPlus">+</button></div>
     </div>
   </div>
+</div>
+
+<div class="card option-card prob-card">
+  <div class="opt-card-head"><h3>被行权概率</h3><small class="prob-src" id="probSrc"></small></div>
+  <div class="prob-controls">
+    <div class="prob-control"><span>目标概率</span><div class="prob-chips" id="probTargetChips"></div></div>
+    <div class="prob-control"><span>目标期限</span><div class="prob-chips" id="probDteChips"></div></div>
+  </div>
+  <div id="probPlan"></div>
+  <div id="probHoldings"></div>
+  <div class="prob-note" id="probNote"></div>
 </div>
 
 <div class="card collapsible-card checklist-card collapsed">

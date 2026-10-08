@@ -2812,3 +2812,44 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* ===== v312 观察列表的刷新图标按钮 ===== */
 /* v313：刷新按钮统一 —— 两个卡头用同一个纯图标按钮（44×44、同图标、同粗细）。不用强制声明：规则写在后面，同权重即可覆盖 .btn 的 padding/display */
 .icon-refresh{width:44px;min-width:44px;padding:0;display:grid;place-items:center}.icon-refresh svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
+
+/* ===== v325 被行权概率：目标概率反解行权价 + 行权价参考的概率联动 ===== */
+.prob-card .prob-src{color:var(--muted);font-size:11.5px;cursor:pointer;text-align:right}
+.prob-controls{display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:12px}
+.prob-control{display:flex;align-items:center;gap:8px;min-width:0}
+.prob-control>span{flex:none;color:var(--muted);font-size:11.5px;font-weight:560;letter-spacing:.01em}
+.prob-chips{display:flex;gap:4px}
+.prob-chip{min-width:40px;height:30px;padding:0 9px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .16s var(--ease-out),color .16s var(--ease-out),border-color .16s var(--ease-out)}
+.prob-chip.is-on{background:var(--accent-l);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent-d)}
+.prob-table{width:100%;border-collapse:collapse;font-size:12px}
+.prob-table thead th{text-align:right;padding:7px 8px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}
+.prob-table thead th:first-child{text-align:left}
+.prob-table tbody td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--rule);font-variant-numeric:tabular-nums;white-space:nowrap}
+.prob-table tbody td:first-child{text-align:left;font-weight:600}
+.prob-table tbody tr:last-child td{border-bottom:0}
+.prob-table tbody tr:nth-child(even){background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.prob-sub{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:1px}
+.prob-section-title{margin:16px 0 2px;color:var(--muted);font-size:11px;font-weight:620;letter-spacing:.02em}
+.prob-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.55}
+.prob-empty{color:var(--muted);font-size:12px;padding:6px 0}
+.otm-prob{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;line-height:1.5}
+@media(max-width:800px){
+  .prob-table thead{display:none}
+  .prob-table tbody tr:not(.is-hidden-row){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 8px;padding:12px 14px;height:auto;border-bottom:1px solid color-mix(in srgb,var(--rule) 42%,transparent)}
+  .prob-table tbody tr:last-child{border-bottom:0}
+  .prob-table tbody tr:nth-child(even){background:transparent}
+  .prob-table tbody td{display:block;border:0;padding:0;text-align:left;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .prob-table tbody td::before{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-bottom:1px}
+  .prob-table tbody td[data-cell="sym"]{grid-area:1/1/2/3;font-size:.9rem;font-weight:670}
+  .prob-table tbody td[data-cell="sym"]::before,.prob-table tbody td[data-cell="strike"]::before{display:none}
+  .prob-table tbody td[data-cell="strike"]{grid-area:1/3/2/5;text-align:right;font-size:.9rem;font-weight:670}
+  .prob-table tbody td[data-cell="otm"]::before{content:'OTM'}
+  .prob-table tbody td[data-cell="expiry"]::before{content:'到期'}
+  .prob-table tbody td[data-cell="iv"]::before{content:'IV'}
+  .prob-table tbody td[data-cell="prob"]::before{content:'被行权概率'}
+  .prob-table tbody td[data-cell="premium"]::before{content:'权利金'}
+  .prob-table tbody td[data-cell="annual"]::before{content:'年化'}
+  .prob-table tbody td[data-cell="dte"]::before{content:'剩余'}
+  .prob-control{width:100%;justify-content:space-between}
+  .prob-chip{min-width:44px;height:34px}
+}
