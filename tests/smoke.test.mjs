@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=345');
+  assert.equal(manifest.start_url, '/?v=346');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v345/);
+  assert.match(serviceWorker, /wealth-v346/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=345',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=346',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -681,4 +681,16 @@ test('CSS：概率矩阵的横向滚动挂在外层容器，表格本身不许�
   assert.match(css, /\.mx-table\{min-width:340px\}/, '窄屏给矩阵一个最小宽度，靠外层滚动');
   assert.doesNotMatch(css, /\.mx-table\{display:block/, '把表格设成 block 会让表头和数据各算一遍列宽');
   assert.doesNotMatch(css, /\.mx-table thead,\.mx-table tbody\{display:table/, 'thead/tbody 不许各自变成表格盒');
+});
+
+/**
+ * 用户的常用区间是 5%~8%（VGT 默认 7%、SMH 默认 6%），3%/10%/15% 那些档平时不看。
+ * 默认列固定 5/6/7/8 四档；调到区间外时换成"离当前值最近的 4 档"，当前档永远在表里。
+ */
+test('index.js：矩阵默认列是 5/6/7/8 四档，且当前 OTM 永远在表里', () => {
+  assert.match(indexSource, /var base=\[5,6,7,8\],c=Number\(cur\)/, '默认列改成常用区间 5~8（每 1% 一档）');
+  assert.match(indexSource, /\.slice\(0,4\)/, '列数固定 4 —— 手机上少拖一点');
+  const fn = indexSource.slice(indexSource.indexOf('function matrixOtms'));
+  const body = fn.slice(0, fn.indexOf('\n}') + 2);
+  assert.match(body, /Math\.abs\(a-c\)-Math\.abs\(b-c\)/, '区间外要按"离当前值最近"挑，而不是硬塞');
 });
