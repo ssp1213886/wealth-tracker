@@ -224,7 +224,7 @@ export function probMatrixHtml(matrix, ctx) {
     let prevStrike = 0;   /* 左边最近一个有挂牌档的列吸到了哪个行权价 */
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry">' + escapeHtml(r.date) +
-        (r.sell ? '<small class="prob-sub mx-sell-tag" title="按你的固定节奏算出来的本期档位（到期日当天卖下一档）">★ 本期</small>' : '') + '</td>' +
+        (r.sell ? '<small class="prob-sub mx-sell-tag" title="按你的固定节奏，下一个到期日当天（本期的到期日）就把它卖出去">★ 该卖</small>' : '') + '</td>' +
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
         const cell = cells[i];
@@ -242,21 +242,10 @@ export function probMatrixHtml(matrix, ctx) {
 }
 
 /**
- * 「本期」结论行：整张卡的主结论不再是"你下次该卖哪一档"（那是纯日历推算），
- * 而是**本期做到哪一步了** —— 以今天为准取本期那一档，再看记录里有没有这张 CALL：
- *   已卖出 → 显示你实际卖的行权价 / 张数 / 收到的权利金
- *   未卖出 → 显示按当前 OTM 算出的目标（可以现在补卖）
- *   今天到期 → 最醒目地提示"该卖下一档了"
- * 末尾补一句下一轮：卖出日＝本期到期日（到期日当天卖下一档）+ 这一轮实际持有多久。
+ * 结论行：第一行直接给答案 —— **该卖哪个到期日**（★ 那一行），以及哪天卖出、还有几天、持有多少天。
+ * 紧接着一个小徽章给本期状态（以今天为准那一档的 CALL 记了没有）：已卖 / 未卖 / 今天该卖。
+ * 下面按当前 OTM 给目标行权价、被行权概率、权利金、年化。
  */
-/** 下一轮提示：卖出日 → 到期日，以及这一轮真正持有多久（VGT 35 天 / SMH 21 天）。 */
-function rollText(roll) {
-  const r = roll || {};
-  if (!r.from || !r.date) return '';
-  return '下一轮 ' + escapeHtml(String(r.from)) + ' 卖出 → ' + escapeHtml(String(r.date)) + ' 到期' +
-    (r.tenor != null ? '（持有 ' + r.tenor + ' 天）' : '');
-}
-
 /** 当前那一列没挂牌时，退到列里最近的一个有数有档的列；都没有返回 -1。 */
 function nearestListedIdx(cells, idx) {
   const list = Array.isArray(cells) ? cells : [];
@@ -281,25 +270,19 @@ export function probSummaryHtml(matrix, ctx) {
   const idx = (Array.isArray(m.otms) ? m.otms : []).indexOf(cur);
   const cell = idx >= 0 ? (row.cells || [])[idx] : null;
   const sold = c.sold || null;
-  const due = !!c.due;                       /* 今天就是本期到期日（＝该卖下一档的那天） */
-  const roll = rollText(c.roll);
-  const badge = sold ? '已卖出 ✓' : (due ? '今天该卖' : '未卖出');
+  const due = !!c.due;                       /* 今天就是卖出日 */
+  const from = String(c.from || '');         /* 卖出日＝本期到期日（到期日当天卖下一档） */
+  const pdate = String(c.periodDate || from);
+  const days = Number(c.daysToSale);
+  const badge = sold ? ('本期 ' + escapeHtml(pdate) + ' 已卖 ✓') : (due ? '今天该卖' : ('本期 ' + escapeHtml(pdate) + ' 未卖'));
   const badgeCls = sold ? 'is-done' : (due ? 'is-due' : 'is-todo');
   const rule = c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '';
-  const head = '<div class="mx-sum-head">本期 <b>' + escapeHtml(row.date) + '</b> · ' +
-    (due ? '今天到期' : '还有 ' + row.dte + ' 天') + rule +
+  const when = due ? '今天' : (Number.isFinite(days) && days > 0 ? '还有 ' + days + ' 天' : '');
+  const head = '<div class="mx-sum-head">该卖 <b>' + escapeHtml(row.date) + '</b> 到期' +
+    (from ? ' · ' + escapeHtml(from) + ' 卖出' + (when ? '（' + when + '）' : '') : '') +
+    (c.tenor != null ? ' · 持有 ' + c.tenor + ' 天' : '') +
     ' <span class="mx-badge ' + badgeCls + '">' + badge + '</span>' +
     (idx < 0 ? ' · ' + cur + '%' : '') + '</div>';
-  /* 已卖出：数字全部来自你的记录，不拿行情去猜 */
-  if (sold) {
-    const n = Number(sold.contracts) || 1;
-    const got = (Number(sold.premium) || 0) * n;
-    return '<div class="mx-sum">' + head +
-      '<div class="mx-sum-main">$' + Number(sold.strike || 0).toFixed(2) + ' <small>×' + n + ' 张</small></div>' +
-      '<div class="mx-sum-meta">收 <b>$' + got.toFixed(2) + '</b>' +
-        (sold.added ? ' · ' + escapeHtml(String(sold.added)) + ' 卖出' : '') +
-        (roll ? ' · ' + roll : '') + '</div></div>';
-  }
   if (!cell || cell.prob == null) {
     /* 当前 OTM 在这一档没挂牌（实测 VGT 10-16 上方只到 $135，7% 就够不到）。
        别让结论行变成死胡同 —— 退到最近一个有数的列，直接告诉你现在能卖哪一档。 */
@@ -308,8 +291,7 @@ export function probSummaryHtml(matrix, ctx) {
       ? ('最近可卖 ' + m.otms[alt] + '% = $' + Number(row.cells[alt].strike).toFixed(2))
       : ('换一档 OTM');
     return '<div class="mx-sum">' + head +
-      '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip +
-        (roll ? ' · ' + roll : '') + '</div></div>';
+      '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip + rule + '</div></div>';
   }
   const drift = (cell.drift || 0) * 100;
   return '<div class="mx-sum">' + head +
@@ -318,7 +300,7 @@ export function probSummaryHtml(matrix, ctx) {
     '<div class="mx-sum-meta">被行权 <b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b>' +
       ' · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
       ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') +
-      (roll ? ' · ' + roll : '') + '</div></div>';
+      rule + '</div></div>';
 }
 
 /** 把「本期」结论行写进 DOM。 */

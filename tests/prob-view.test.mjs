@@ -84,8 +84,8 @@ const MX_ROWS = [
   { date: '2026-12-18', dte: 71, sell: true,
     cells: [cell(0.398, 138, 4.6, 17.9), cell(0.324, 145, 3.4, 15.3), cell(0.256, 152, 2.9, 12.1), cell(0.180, 160, 1.9, 9.4), cell(null, 0, null, null)] },
 ];
-/* 本期＝★ 那一行（12-18）；下一轮＝本期到期日当天要卖的那一档（11-20 卖出…嗯，见下）。 */
-const MX_CTX = { otm: 7, ruleLabel: '每月第三个周五', roll: { from: '2026-11-20', date: '2026-12-18', tenor: 28 } };
+/* ★ 与主行＝该卖的那一档（12-18）；卖出日＝本期到期日 11-20（到期日当天卖下一档）。 */
+const MX_CTX = { otm: 7, ruleLabel: '每月第三个周五', from: '2026-11-20', periodDate: '2026-11-20', daysToSale: 8, tenor: 28 };
 const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS, spot: 129.37 };
 
 test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，只有 ★该卖 一个标记', () => {
@@ -99,7 +99,7 @@ test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，�
   assert.match(html, /7%<\/button><small class="mx-target">\$138\.43<\/small>/, '7% → 129.37×1.07 = $138.43');
   assert.match(html, /15%<\/button><small class="mx-target">\$148\.78<\/small>/);
   assert.match(html, /class="mx-sell-row"/, '本轮该卖的整行要高亮');
-  assert.match(html, /mx-sell-tag" title="[^"]*">★ 本期</, '★ 标的是本期那一档，悬停给解释（底部说明已删，口径挪到悬停里）');
+  assert.match(html, /mx-sell-tag" title="[^"]*">★ 该卖</, '★ 标的是该卖那一档，悬停给解释（底部说明已删，口径挪到悬停里）');
   // 「本轮该处理」和「本轮该卖」本来就是同一轮（到期日当天卖下一档），拆两个标记是多读一层
   assert.doesNotMatch(html, /mx-settle/, '不该再有「本轮该处理」的标记');
   assert.doesNotMatch(html, /该处理/);
@@ -160,39 +160,37 @@ test('probMatrixHtml：相邻两列吸到同一张合约时显示「同上」，
   assert.doesNotMatch(probMatrixHtml(mixed, { otm: 7 }), /mx-ditto/);
 });
 
-test('probSummaryHtml：未卖出 → 给本期目标（行权价/概率/权利金/年化）+ 节奏名 + 下一轮', () => {
+test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 / 还有几天 / 持有多久」', () => {
   const html = probSummaryHtml(MX, MX_CTX);
-  assert.match(html, /本期 <b>2026-12-18<\/b> · 还有 71 天 · 每月第三个周五/, '要写出这一期是按什么节奏算出来的');
-  assert.match(html, /mx-badge is-todo">未卖出</, '没记这张 CALL 就是未卖出');
+  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 · 2026-11-20 卖出（还有 8 天） · 持有 28 天/, '第一行就得是"卖哪一个、哪天卖"的答案');
+  assert.match(html, /mx-badge is-todo">本期 2026-11-20 未卖</, '本期状态收成徽章：没记这张 CALL 就是未卖');
   assert.match(html, /\$152\.00/);
   assert.match(html, /25\.6%/, '被行权概率');
   assert.match(html, /\$2\.90/, '权利金');
   assert.match(html, /12\.1%/, '年化');
+  assert.match(html, /每月第三个周五/, '节奏名要能看出来（VGT 按月 / SMH 每3周）');
   assert.doesNotMatch(html, /轮 1 次/, '「约 N 轮 1 次」已按用户要求去掉');
-  assert.match(html, /下一轮 2026-11-20 卖出 → 2026-12-18 到期（持有 28 天）/, '下一轮＝本期到期日当天卖下一档');
 });
 
-test('probSummaryHtml：已卖出 → 数字全部来自记录（行权价/张数/收到多少钱），不拿行情猜', () => {
+test('probSummaryHtml：本期已卖出 → 徽章变「已卖 ✓」，主行仍是该卖那一档', () => {
   const html = probSummaryHtml(MX, { otm: 7, ruleLabel: '每 3 周的周五',
     sold: { sym: 'SMH', type: 'CALL', strike: 665, contracts: 2, premium: 13.45, added: '2026-10-30' },
-    roll: { from: '2026-12-11', date: '2027-01-01', tenor: 21 } });
-  assert.match(html, /mx-badge is-done">已卖出 ✓</);
-  assert.match(html, /\$665\.00 <small>×2 张<\/small>/);
-  assert.match(html, /收 <b>\$26\.90<\/b>/, '2 张 × $13.45');
-  assert.match(html, /2026-10-30 卖出/, '带上你实际记录的卖出日');
+    from: '2026-11-20', periodDate: '2026-11-20', daysToSale: 8, tenor: 21 });
+  assert.match(html, /mx-badge is-done">本期 2026-11-20 已卖 ✓</);
   assert.match(html, /每 3 周的周五/, 'SMH 的节奏也要能看出来');
-  assert.doesNotMatch(html, /被行权 |年化 /, '已卖出就不用再猜"如果现在卖会怎样"');
+  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期/, '主行讲的始终是"接下来该卖哪一档"');
 });
 
-test('probSummaryHtml：今天就是本期的到期日 → 徽章换成「今天该卖」', () => {
-  const html = probSummaryHtml(MX, { otm: 7, due: true, ruleLabel: '每月第三个周五' });
-  assert.match(html, /本期 <b>2026-12-18<\/b> · 今天到期/, '今天到期就别再写"还有 N 天"');
+test('probSummaryHtml：今天就是卖出日 → 「还有 N 天」换成「今天」，徽章换成「今天该卖」', () => {
+  const html = probSummaryHtml(MX, { otm: 7, due: true, ruleLabel: '每月第三个周五', from: '2026-11-20', periodDate: '2026-11-20' });
+  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 · 2026-11-20 卖出（今天）/, '当天就别再写"还有 N 天"');
   assert.match(html, /mx-badge is-due">今天该卖</);
 });
 
-test('probSummaryHtml：没有下一轮信息时就不写那一句（不编日期）', () => {
+test('probSummaryHtml：拿不到卖出日 / 持有天数时就不写那两段（不编数字）', () => {
   const html = probSummaryHtml(MX, { otm: 7 });
-  assert.doesNotMatch(html, /下一轮/);
+  assert.match(html, /^<div class="mx-sum"><div class="mx-sum-head">该卖 <b>2026-12-18<\/b> 到期 /);
+  assert.doesNotMatch(html, /卖出（/);
   assert.doesNotMatch(html, /持有 \d+ 天/);
 });
 
