@@ -1,9 +1,38 @@
 // 图表数据整形单测（v245 抽出）：纪律月度、年度矩阵、甜甜圈切片、热力色阶
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { disciplineMonths, monthlyPnl, annualMatrix, heatColorFor, donutSlices } from '../src/app/charts.js';
+import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices } from '../src/app/charts.js';
 
 const buy = (date, symbol, shares, price) => ({ date, symbol, shares, price, id: date + symbol });
+
+test('portfolioStateAt：组合快照是"值多少钱"的唯一口径（现金 / 买卖累计 / 持股 / 总资产 / 缺价标记）', () => {
+  const snap = portfolioStateAt({
+    end: '2026-09-30',
+    trades: [
+      { symbol: 'VGT', date: '2026-08-10', shares: 120, price: 100 },   /* 买 120 → 支出 12000 */
+      { symbol: 'VGT', date: '2026-09-10', shares: -20, price: 150 },   /* 卖 20 → 收入 3000 */
+    ],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 20000 },
+      { type: '股息', date: '2026-09-20', amount: 100 },
+      { type: '入金', date: '2026-10-05', amount: 999 },                /* end 之后 → 不计 */
+    ],
+    priceBySymbol: { VGT: 110 },
+  });
+  assert.equal(snap.cash, 20100, '入金 20000 + 股息 100；10 月那笔在 end 之后');
+  assert.equal(snap.buy, 12000);
+  assert.equal(snap.sell, 3000);
+  assert.deepEqual(snap.shares, { VGT: 100 });
+  assert.equal(snap.value, 20100 + 3000 - 12000 + 100 * 110);
+  assert.equal(snap.priced, true);
+  const noPrice = portfolioStateAt({
+    end: '2026-09-30',
+    trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 1, price: 100 }],
+    cashLog: [],
+    priceBySymbol: {},
+  });
+  assert.equal(noPrice.priced, false, '持有中但没价 → priced=false（界面据此显示「—」，不编数字）');
+});
 
 /* ---------------- 月度收益（口径 A：当月整个组合，总资产含现金） ---------------- */
 

@@ -44,6 +44,48 @@ export function disciplineMonths(input) {
 }
 
 /**
+ * 某个时点的组合快照 —— 「组合值多少钱」的**唯一实现**。
+ *
+ *   cash   现金流水累计（只记外部进出：入金 / 出金 / 股息 / 权利金 / 修正）
+ *   buy    累计买入支出     sell  累计卖出所得
+ *   shares { VGT: 100, ... } 当时持股
+ *   value  总资产 = 现金 + 卖出 − 买入 + Σ(持股 × 该标的的价)
+ *   priced 所有"持有中"的标的都拿到了价（false 时界面该显示「—」，不编数字）
+ *
+ * 为什么必须只有这一处：月度收益、年度归因、首页总资产都是它的变体。
+ * 这个项目历史上真出过"两处各算一份、改动只改了一处"的事故（见 portfolio.js 的 cashPctOf 注释）。
+ */
+export function portfolioStateAt(input) {
+  const o = input || {};
+  const end = String(o.end || '');
+  const trades = Array.isArray(o.trades) ? o.trades : [];
+  const cashLog = Array.isArray(o.cashLog) ? o.cashLog : [];
+  const px = o.priceBySymbol || {};
+  let cash = 0; let buy = 0; let sell = 0;
+  cashLog.forEach(function (l) {
+    if (l && l.date && (!end || l.date <= end)) cash += cashSigned(l);
+  });
+  const shares = {};
+  trades.forEach(function (t) {
+    if (!t || !t.date || (end && t.date > end)) return;
+    const n = Number(t.shares) || 0;
+    const a = Math.abs(n) * (Number(t.price) || 0);
+    if (n < 0) sell += a; else buy += a;
+    const s = String(t.symbol);
+    shares[s] = (shares[s] || 0) + n;
+  });
+  let mv = 0; let priced = true;
+  Object.keys(shares).forEach(function (s) {
+    const n = shares[s];
+    if (!n) return;
+    const p = Number(px[s]);
+    if (!(p > 0)) { priced = false; return; }
+    mv += n * p;
+  });
+  return { cash: cash, buy: buy, sell: sell, shares: shares, value: cash + sell - buy + mv, priced: priced };
+}
+
+/**
  * 月度收益（口径 A：当月**整个组合**的收益）—— 不是"当月新投那笔"的收益，也不是累计收益。
  *
  *   收益额 = 月末总资产 − 月初总资产 − 当月净入金
@@ -99,34 +141,12 @@ export function monthlyPnl(input) {
     return t.indexOf('入金') >= 0 || t.indexOf('出金') >= 0 || t.indexOf('修正') >= 0;
   };
 
-  /** 到 end 为止的累计：现金流水 / 买入支出 / 卖出所得，以及当时的持股。 */
-  const cumulative = function (end) {
-    let cash = 0; let buy = 0; let sell = 0;
-    cashLog.forEach(function (l) { if (l && l.date && l.date <= end) cash += cashSigned(l); });
-    const sh = {};
-    trades.forEach(function (t) {
-      if (!t || !t.date || t.date > end) return;
-      const n = Number(t.shares) || 0;
-      const a = Math.abs(n) * (Number(t.price) || 0);
-      if (n < 0) sell += a; else buy += a;
-      const s = String(t.symbol);
-      sh[s] = (sh[s] || 0) + n;
-    });
-    return { cash: cash, buy: buy, sell: sell, sh: sh };
-  };
-
-  /** 某个（月末）时点的总资产。持有中但缺当月行情 → gap=true（这个月就判为算不出来）。 */
+  /** 某个（月末）时点的总资产 —— 资产口径走共享实现，缺行情则 gap=true（这个月判为算不出来）。 */
   const valueAt = function (ym, end) {
-    const c = cumulative(end);
-    let mv = 0; let gap = false;
-    syms.forEach(function (s) {
-      const n = c.sh[s] || 0;
-      if (!n) return;
-      const p = Number((px[s] || {})[ym]);
-      if (!(p > 0)) { gap = true; return; }
-      mv += n * p;
-    });
-    return { value: c.cash + c.sell - c.buy + mv, gap: gap };
+    const prices = {};
+    syms.forEach(function (s) { prices[s] = (px[s] || {})[ym]; });
+    const snap = portfolioStateAt({ trades: trades, cashLog: cashLog, end: end, priceBySymbol: prices });
+    return { value: snap.value, gap: !snap.priced };
   };
 
   months.forEach(function (ym) {
