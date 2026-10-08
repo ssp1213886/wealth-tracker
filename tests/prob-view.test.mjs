@@ -41,7 +41,7 @@ test('expiryCalendarHtml：一次只渲染一个标的的表；行权价列只�
     { date: '2026-11-20', dte: 43, monthly: true, gapPct: 0.49 },
     { date: '2026-12-18', dte: 71, monthly: true, gapPct: 0.48 },
     { date: '2026-10-30', dte: 22, monthly: false, gapPct: 0.4 },
-  ], { sym: 'VGT', fixed: '2026-11-20' });
+  ], { sym: 'VGT' });
   assert.equal((html.match(/<table/g) || []).length, 1, '一个标的一张表');
   assert.doesNotMatch(html, /<th>标的<\/th>/, '分页后不再需要标的列');
   assert.match(html, /<th>行权价间距<\/th>/);
@@ -50,7 +50,8 @@ test('expiryCalendarHtml：一次只渲染一个标的的表；行权价列只�
   assert.doesNotMatch(html, /151 个|69 个/, '不再显示挂牌个数');
   assert.match(html, /is-monthly">月度/);
   assert.match(html, /<span class="cal-tag">周度<\/span>/);
-  assert.match(html, /★ 按节奏该卖这档/);
+  // v352：节奏 ★ 只留在「被行权概率」卡 —— 两张卡各标一次只会让人分不清该看哪张
+  assert.doesNotMatch(html, /按节奏该卖|cal-onbeat/, '到期日历不再标 ★ 节奏档');
   assert.match(expiryCalendarHtml([{ date: '2026-11-20', dte: 43, monthly: true, gapPct: 0 }], { sym: 'VGT' }), /—/, '算不出间距时给破折号');
 });
 
@@ -79,9 +80,9 @@ function cell(prob, strike, premium, annualPct) {
 
 /* 表里只有 ★ 一个标记（「本轮该处理」已去掉）；卖出日由 ctx.sellFrom 传进来。 */
 const MX_ROWS = [
-  { date: '2026-11-20', dte: 43, sell: false,
+  { date: '2026-11-20', dte: 43, sell: false, monthly: true, gapPct: 3.87,
     cells: [cell(0.362, 138, 2.9, 27.4), cell(0.269, 145, 2.0, 18.9), cell(0.188, 152, 1.4, 13.2), cell(0.096, 160, 0.9, 8.5), cell(0.037, 168, 0.5, 4.7)] },
-  { date: '2026-12-18', dte: 71, sell: true,
+  { date: '2026-12-18', dte: 71, sell: true, monthly: true, gapPct: 3.87,
     cells: [cell(0.398, 138, 4.6, 17.9), cell(0.324, 145, 3.4, 15.3), cell(0.256, 152, 2.9, 12.1), cell(0.180, 160, 1.9, 9.4), cell(null, 0, null, null)] },
 ];
 /* ★ 与主行＝该卖的那一档（12-18）；卖出日＝本期到期日 11-20（到期日当天卖下一档）。 */
@@ -126,6 +127,15 @@ test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
   assert.match(probMatrixHtml({ otms: [], rows: [] }, { emptyHint: '没有 14 天以上的档' }), /没有 14 天以上的档/);
   assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, cells: null }] }, {}), /—|prob-empty/);
   assert.doesNotMatch(probMatrixHtml({ otms: [7], rows: MX_ROWS.slice(0, 1) }, {}), /mx-target/, '没有现价就不算目标价，别编一个');
+});
+
+test('probMatrixHtml：行头悬停写清「月度/周度 + 行权价间距」——日历卡的两条信息搬到了用得到的地方', () => {
+  const html = probMatrixHtml(MX, { otm: 7 });
+  assert.match(html, /data-cell="expiry" title="月度到期日（第三个周五） · 相邻行权价间距 3\.87%"/);
+  const weekly = probMatrixHtml({ otms: [7], spot: 625, rows: [
+    { date: '2026-11-13', dte: 36, monthly: false, gapPct: 0, cells: [cell(0.2, 660, 5, 10)] }] }, { otm: 7 });
+  assert.match(weekly, /title="周度到期日"/, '没有间距数据时不硬写数字');
+  assert.doesNotMatch(weekly, /0\.00%/);
 });
 
 test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺挂牌两行都给「—」', () => {

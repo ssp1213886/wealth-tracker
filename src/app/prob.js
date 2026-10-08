@@ -291,7 +291,13 @@ export function probMatrix(chain, opts) {
   const rows = picked.slice(0, maxRows)
     .map(function (e) {
       const cells = otms.map(function (pct) { return matrixCell(e, spot, pct, rate); });
-      return { date: e.date, dte: e.dte, sell: e.date === beat, cells: cells, probs: cells.map(function (c) { return c.prob; }) };
+      /* monthly / gapPct 一起带出去：行头悬停要写"这是不是月度到期日、行权价多粗"，
+         这样不用展开「到期日历」卡也能判断能不能精确挑到目标 OTM。 */
+      return {
+        date: e.date, dte: e.dte, sell: e.date === beat,
+        monthly: isMonthlyExpiry(e.date), gapPct: Number(e.gapPct) || 0,
+        cells: cells, probs: cells.map(function (c) { return c.prob; }),
+      };
     });
   /* spot 一起带出去：列头要用它算「这一档 OTM 对应的价格」＝现价 ×(1+OTM%)。 */
   return { otms: otms, rows: rows, spot: spot };
@@ -299,6 +305,15 @@ export function probMatrix(chain, opts) {
 
 /** 挂牌档偏离目标 OTM 超过这个比例就当"这一档不存在"（阶梯够不到）。 */
 export const STRIKE_TOLERANCE = 0.02;
+
+/** 标准月度到期日＝每月第三个周五（纯日期判断；VGT 只有这种，SMH 还有周度）。 */
+export function isMonthlyExpiry(date) {
+  const s = String(date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  const day = Number(s.slice(8, 10));
+  return d.getUTCDay() === 5 && day >= 15 && day <= 21;
+}
 
 /**
  * 矩阵里的一格：把目标 OTM% 吸附到该到期日**真实挂牌**的那一档，然后用它算概率与权利金。

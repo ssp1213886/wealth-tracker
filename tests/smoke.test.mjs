@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=351');
+  assert.equal(manifest.start_url, '/?v=352');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v351/);
+  assert.match(serviceWorker, /wealth-v352/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=351',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=352',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -723,4 +723,18 @@ test('index.js：本期状态由「今天 + 记录」推出，且卡片上要写
   assert.match(indexSource, /fixed:rollTo/, '★ 要标在「该卖」那一档（结论行主行说的同一档）');
   assert.match(indexSource, /ruleLabel:period\.label/, '节奏名（每月第三个周五 / 每 3 周的周五）要传到卡片上');
   assert.match(indexSource, /sold:ccSold\(probTab,period\.date\)/, '状态要跟着本期的到期日走');
+});
+
+/**
+ * v352：两张卡都在讲"到期日"，用户被绕晕了。分工写到标题上，并各自删掉对方的东西：
+ *   被行权概率 = 决策卡（该卖哪一档，★ 只在这儿）
+ *   到期日历   = 资料卡（市场有哪些到期日：月度/周度、间距、我的持仓），不再标 ★
+ */
+test('期权页：两张卡的分工写在标题上，节奏 ★ 只在「被行权概率」卡', () => {
+  assert.match(html, /<h3>被行权概率<span class="card-sub">该卖哪一档<\/span><\/h3>/, '概率卡要写清它是决策卡');
+  assert.match(html, /<h3>到期日历<span class="card-sub">市场有哪些到期日<\/span><\/h3>/, '日历卡要写清它是资料卡');
+  assert.doesNotMatch(html, /★ = 按固定节奏该卖的档位/, '日历卡里不再重复 ★ 的说明');
+  assert.doesNotMatch(indexSource, /fixed\[sym\]/, '日历卡不再收「节奏那一档」——★ 归概率卡');
+  // indexSource 是剥掉 import 行的版本，所以这里只能钉"在用它"（唯一来源由 audit 的跨模块 import 规则兜底）
+  assert.match(indexSource, /isMonthlyExpiry/, 'isMonthlyExpiry 已抽到 prob.js，矩阵行头与日历卡共用同一份判断');
 });

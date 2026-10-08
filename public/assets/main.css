@@ -2831,6 +2831,8 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .prob-section-title{margin:16px 0 2px;color:var(--muted);font-size:11px;font-weight:620;letter-spacing:.02em}
 .prob-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.55}
 .prob-note.is-refresh{cursor:pointer}
+/* 卡片标题旁的分工小字：一张是决策卡（该卖哪一档）、一张是资料卡（市场有哪些到期日） */
+.card-sub{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:500;color:var(--muted);letter-spacing:0;vertical-align:1px}
 .prob-empty{color:var(--muted);font-size:12px;padding:6px 0}
 .otm-prob{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;line-height:1.5}
 @media(max-width:800px){

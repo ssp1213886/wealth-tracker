@@ -222,8 +222,12 @@ export function probMatrixHtml(matrix, ctx) {
     const cells = Array.isArray(r.cells) ? r.cells : [];
     const cls = r.sell ? 'mx-sell-row' : '';
     let prevStrike = 0;   /* 左边最近一个有挂牌档的列吸到了哪个行权价 */
+    /* 行头悬停：月度/周度 + 相邻行权价间距 —— 「到期日历」卡的两条独有信息挪到这儿，
+       免得切来切去才能判断这一行能不能精确挑到目标 OTM。 */
+    const rowTitle = (r.monthly ? '月度到期日（第三个周五）' : '周度到期日') +
+      (r.gapPct > 0 ? ' · 相邻行权价间距 ' + Number(r.gapPct).toFixed(2) + '%' : '');
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
-      '<td data-cell="expiry">' + escapeHtml(r.date) +
+      '<td data-cell="expiry" title="' + escapeHtml(rowTitle) + '">' + escapeHtml(r.date) +
         (r.sell ? '<small class="prob-sub mx-sell-tag" title="按你的固定节奏，下一个到期日当天（本期的到期日）就把它卖出去">★ 该卖</small>' : '') + '</td>' +
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
@@ -334,7 +338,6 @@ export function expiryCalendarHtml(entries, ctx) {
   const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
   const holdings = c.holdings || {};
   const sym = String(c.sym || '');
-  const fixed = c.fixed || '';   /* 固定节奏该卖的那一档，例如 '2026-10-16' */
   if (!list.length) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
@@ -346,14 +349,13 @@ export function expiryCalendarHtml(entries, ctx) {
     '</tr></thead><tbody>';
   rows.forEach(function (e) {
     const mine = holdings[sym + '|' + e.date] || 0;
-    const onBeat = fixed === e.date;
-    const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
+    /* 这张卡只讲"市场有哪些到期日"，不再标 ★ 节奏档 —— 那个标记归「被行权概率」卡，
+       两张卡各标一次只会让人分不清该看哪张。 */
     /* 只显示平值附近相邻行权价的中位间距 —— 它决定"能不能精确挑到目标 OTM%"。
        市场挂牌的**个数**不显示：那是市场侧的事实，不是选行权价需要的输入。 */
     const gap = Number(e.gapPct) > 0 ? Number(e.gapPct).toFixed(2) + '%' : '—';
-    html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
-      '<td data-cell="expiry">' + escapeHtml(e.date) +
-        (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
+    html += '<tr' + (mine ? ' class="cal-mine"' : '') + '>' +
+      '<td data-cell="expiry">' + escapeHtml(e.date) + '</td>' +
       '<td data-cell="dte">' + e.dte + '天</td>' +
       '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
       '<td data-cell="strikes">' + gap + '</td>' +

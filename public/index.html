@@ -469,7 +469,7 @@
 </div>
 
 <div class="card option-card prob-card">
-  <div class="opt-card-head"><h3>被行权概率</h3><div class="prob-chips" id="probTabs"></div></div>
+  <div class="opt-card-head"><h3>被行权概率<span class="card-sub">该卖哪一档</span></h3><div class="prob-chips" id="probTabs"></div></div>
   <div id="probSummary"></div>
   <div class="prob-controls">
     <div class="prob-control"><span id="probOtmSym">VGT OTM</span>
@@ -481,12 +481,12 @@
 </div>
 
 <div class="card collapsible-card collapsed" id="expiryCalCard">
-  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>到期日历</h3></div>
+  <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>到期日历<span class="card-sub">市场有哪些到期日</span></h3></div>
   <div class="collapsible-body">
     <div class="prob-chips cal-tabs" id="calTabs"></div>
     <div id="expiryCalendar"></div>
     <button type="button" class="btn btn-out btn-sm" id="calToggle">显示全部到期日</button>
-    <div class="prob-note">★ = 按固定节奏该卖的档位。「行权价间距」= 平值附近相邻行权价的真实间距（占现价 %）—— 数字越粗，越难精确挑到目标 OTM%。到期判定：到期日当天美东 16:00 收盘，收盘时实值 ≥ $0.01 即自动行权，ETF 期权为实物交割、T+1 划走股份。被行权概率 = 到期时现价 &gt; 行权价（未含除息日提前行权）。</div>
+    <div class="prob-note">「行权价间距」= 平值附近相邻行权价的真实间距（占现价 %）—— 数字越粗，越难精确挑到目标 OTM%。到期判定：到期日当天美东 16:00 收盘，收盘时实值 ≥ $0.01 即自动行权，ETF 期权为实物交割、T+1 划走股份。被行权概率 = 到期时现价 &gt; 行权价（未含除息日提前行权）；该标的的节奏档 ★ 在「被行权概率」卡里。</div>
   </div>
 </div>
 
