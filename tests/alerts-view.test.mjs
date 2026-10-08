@@ -33,13 +33,47 @@ test('buildAlerts：卖 Call 覆盖情况（虚值 → 蓝色中风险）', () =
   assert.equal(one.action, 'option');
 });
 
-test('buildAlerts：现价逼近行权价（≥98%）→ 红色紧急', () => {
+test('buildAlerts：现价逼近行权价（≥98%，但还没实值）→ 只是说明，不是警报', () => {
   const alerts = buildAlerts(ctx({ options: [call()], prices: { VGT: 128 } }));
   const one = alerts.find((a) => a.id === 'call:VGT');
-  assert.equal(one.type, 'red');
-  assert.equal(one.severity, 'critical');
-  assert.match(one.detail, /当前 \$128\.00/);
-  assert.match(one.detail, /行权价 \$130/);
+  assert.equal(one.type, 'blue', 'v335 起不再是 red/critical');
+  assert.equal(one.severity, 'medium');
+  assert.match(one.detail, /现价 \$128\.00 逼近行权价 \$130/);
+  assert.match(one.detail, /到期前不需要动作/);
+});
+
+test('buildAlerts：到期前已实值 → 说明"不用做"，并告诉你到期会怎样', () => {
+  const alerts = buildAlerts(ctx({ options: [call()], prices: { VGT: 140 } }));
+  const one = alerts.find((a) => a.id === 'call:VGT');
+  assert.equal(one.type, 'accent', '这是计划内状态，不是风险');
+  assert.equal(one.severity, 'medium');
+  assert.match(one.title, /VGT CALL \$130 已实值（现价 \$140\.00）/);
+  assert.match(one.detail, /不主动平仓，等自然到期/);
+  assert.match(one.detail, /次日买回 200 股/);
+});
+
+test('buildAlerts：已实值且除息落在本轮周期内 → 才升级成"提前行权可能"', () => {
+  const withDiv = buildAlerts(ctx({
+    options: [call()], prices: { VGT: 140 },
+    ccRows: [{ sym: 'VGT', nextExpiry: '2026-10-16' }],
+    exDiv: { VGT: '2026-10-12' },
+  })).find((a) => a.id === 'call:VGT');
+  assert.equal(withDiv.type, 'orange');
+  assert.equal(withDiv.severity, 'high');
+  assert.match(withDiv.title, /已实值 · 本轮含除息/);
+  assert.match(withDiv.detail, /除息约 2026-10-12/);
+  assert.match(withDiv.detail, /提前行权可能/);
+
+  // 除息日在下一轮（> 本次到期日）→ 不升级
+  const farDiv = buildAlerts(ctx({
+    options: [call()], prices: { VGT: 140 },
+    ccRows: [{ sym: 'VGT', nextExpiry: '2026-10-16' }],
+    exDiv: { VGT: '2026-12-23' },
+  })).find((a) => a.id === 'call:VGT');
+  assert.equal(farDiv.type, 'accent', '除息还在更远的周期，跟这轮无关');
+  // 没传 exDiv（比如股息接口挂了）→ 不升级
+  const noDiv = buildAlerts(ctx({ options: [call()], prices: { VGT: 140 } })).find((a) => a.id === 'call:VGT');
+  assert.equal(noDiv.type, 'accent');
 });
 
 test('buildAlerts：同一标的的多张 Call 合并计数，用最近到期那张做提示', () => {

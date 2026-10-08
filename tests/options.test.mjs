@@ -81,7 +81,7 @@ test('optionRowStatus：归档/结算/过期的状态文案与"能否结算/行�
   assert.equal(expired.distancePct, null, '过期行不显示距现价');
 });
 
-test('optionRowStatus：虚值 CALL 显示倒计时与正距现价，实值显示"临近行权"', () => {
+test('optionRowStatus：虚值 CALL 显示倒计时与正距现价，实值显示"已实值"', () => {
   const otm = optionRowStatus(opt(), { now: BEFORE_CLOSE, spot: 100 });
   assert.equal(otm.statusKind, 'live');
   assert.equal(otm.statusText, '17d');
@@ -93,7 +93,7 @@ test('optionRowStatus：虚值 CALL 显示倒计时与正距现价，实值显�
   assert.equal(itm.statusKind, 'warn');
   assert.equal(itm.itm, true);
   assert.ok(itm.distancePct < 0, '现价高于行权价 → 负百分比（实值）');
-  assert.ok(itm.statusText.indexOf('临近行权') === 0);
+  assert.ok(itm.statusText.indexOf('已实值') === 0, '实值就叫实值 —— 到期之前实值并不会被行权，不该用"临近行权"这种告警措辞');
 });
 
 test('optionTotals：累计/本月/本年权利金、本月 CALL 张数、活跃数与众数最近到期', () => {

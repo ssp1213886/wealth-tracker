@@ -54,9 +54,28 @@ export function buildAlerts(ctx) {
 var alerts=[],now=marketDate(ctx.now).slice(0,7),opts=ctx.options,activeOpts=opts.filter(function(o){return isActiveOption(o,ctx.now)}),callGroups={};
 activeOpts.filter(function(o){return o.type==='CALL'}).forEach(function(o){if(!callGroups[o.sym])callGroups[o.sym]=[];callGroups[o.sym].push(o)});
 Object.keys(callGroups).sort(function(a,b){var order=['VGT','SMH','BTC'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b)}).forEach(function(sym){
-var calls=callGroups[sym].slice().sort(function(a,b){return String(a.expiry).localeCompare(String(b.expiry))}),contracts=calls.reduce(function(sum,o){return sum+(Number(o.contracts)||1)},0),nearest=calls[0],days=optionExpiryState(nearest.expiry,ctx.now).days,cp=ctx.prices[sym]||0,closest=calls.slice().sort(function(a,b){return Math.abs(cp-a.strike)-Math.abs(cp-b.strike)})[0],type='blue',severity='medium',detail='覆盖 '+contracts*100+' 股 · 最近 '+nearest.expiry.slice(5)+' 到期';
-if(cp>0&&closest&&cp>=closest.strike*0.98){type='red';severity='critical';detail='当前 $'+cp.toFixed(2)+' · 行权价 $'+closest.strike.toFixed(0)+' · 最近 '+closest.expiry.slice(5)}
-alerts.push({id:'call:'+sym,type:type,severity:severity,title:sym+' 已卖 '+contracts+' 张 Call',detail:detail,action:'option'})
+var calls=callGroups[sym].slice().sort(function(a,b){return String(a.expiry).localeCompare(String(b.expiry))}),contracts=calls.reduce(function(sum,o){return sum+(Number(o.contracts)||1)},0),nearest=calls[0],cp=Number(ctx.prices[sym])||0,closest=calls.slice().sort(function(a,b){return Math.abs(cp-a.strike)-Math.abs(cp-b.strike)})[0],type='blue',severity='medium',title=sym+' 已卖 '+contracts+' 张 Call',detail='覆盖 '+contracts*100+' 股 · 最近 '+nearest.expiry.slice(5)+' 到期';
+/* 到期前实值**不需要任何动作**（美式期权提前行权等于白扔时间价值，理性持有人不会干），
+   所以这里只做说明、不做告警。唯一真实风险是"除息日前的提前行权" ——
+   只有除息日落在本轮周期内时才升级。v335 之前是只要到行权价 98% 就报红 critical。 */
+if(cp>0&&closest){
+  var _k=Number(closest.strike)||0,_head=strikeText(_k),_covers=contracts*100,_ex=(ctx.exDiv||{})[sym]||'';
+  if(cp>_k){
+    if(_ex&&_ex<=nearest.expiry){
+      type='orange';severity='high';
+      title=sym+' CALL '+_head+' 已实值 · 本轮含除息';
+      detail='现价 $'+cp.toFixed(2)+' · 除息约 '+_ex+' —— 除息日前有提前行权可能；若发生，T+1 市价买回 '+_covers+' 股';
+    }else{
+      type='accent';severity='medium';
+      title=sym+' CALL '+_head+' 已实值（现价 $'+cp.toFixed(2)+'）';
+      detail='按策略不主动平仓，等自然到期 —— 到期收盘仍实值会被行权，次日买回 '+_covers+' 股';
+    }
+  }else if(cp>=_k*0.98){
+    type='blue';severity='medium';
+    detail='现价 $'+cp.toFixed(2)+' 逼近行权价 '+_head+'（差 '+((_k-cp)/cp*100).toFixed(1)+'%）· 到期前不需要动作';
+  }
+}
+alerts.push({id:'call:'+sym,type:type,severity:severity,title:title,detail:detail,action:'option'})
 });
 var pingMap=ctx.pingMap,todayKey=marketDate(ctx.now);
 /* 到期预告只覆盖"还剩 1~7 天"（st.days===0 跳过）：当天及之后交给下面的 optionActions

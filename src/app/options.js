@@ -42,7 +42,9 @@ export function isActiveOption(o, now) {
 
 /**
  * 期权行需要的全部派生值（原先是散在 renderOpt 里的行内判断）。
- * statusKind: done（已归档/已结算/已过期）| warn（实值临近行权）| live（虚值倒计时）
+ * statusKind: done（已归档/已结算/已过期）| warn（已实值）| live（虚值倒计时）
+ * 注意术语：实值就叫"已实值"，不叫"临近行权" —— 到期之前实值并不会被行权
+ * （美式期权提前行权会白扔时间价值，理性持有人不会干），所以这里不该用告警语气。
  */
 export function optionRowStatus(o, opts) {
   const now = (opts && opts.now) || new Date();
@@ -55,7 +57,7 @@ export function optionRowStatus(o, opts) {
   if (o && o.archived) { statusKind = 'done'; statusText = '已归档'; expired = true; }
   else if (o && o.settled) { statusKind = 'done'; statusText = '已结算'; expired = true; }
   else if (state.expired) { statusKind = 'done'; statusText = '已过期'; }
-  else if (itm) { statusKind = 'warn'; statusText = '临近行权 ' + state.days + 'd'; }
+  else if (itm) { statusKind = 'warn'; statusText = '已实值 ' + state.days + 'd'; }
   const distancePct = (!expired && spot > 0) ? ((o.strike - spot) / spot * 100) : null;
   return {
     days: state.days,
