@@ -185,18 +185,11 @@ function cellTitle(cell) {
 }
 
 /**
- * 「同上」：这一列吸到的行权价和左边最近一个有数的列相同 —— 同一张合约（市场在这段区间
- * 只挂了这一档），不再把同一组数字重复报一遍，否则看着像"卡住了"。
- */
-function dittoHtml(strike) {
-  return '<span class="mx-prob mx-ditto">〃</span><span class="mx-prem">同上 $' + Number(strike).toFixed(2) + '</span>';
-}
-
-/**
  * 概率矩阵。
  *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★）—— 表里只有这一个标记。
  *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
- *  · 每格两行：概率（按风险着色）+ 权利金（灰字）；与左边同一张合约的列显示「同上」。
+ *  · 每格两行：概率（按风险着色）+ 权利金（灰字）。相邻两列吸到同一张合约时**照常各写一遍**
+ *    —— 「同上」这种简称在手机上没有 hover 可解释，看不懂。
  */
 export function probMatrixHtml(matrix, ctx) {
   const c = ctx || {};
@@ -210,8 +203,8 @@ export function probMatrixHtml(matrix, ctx) {
   /* 列头第二行：这一档 OTM 对应的价格＝现价 ×(1+OTM%)，给你一个"距离多少钱"的参照。
      实际下单看的是真实挂牌档（可能差一点），那个写在每格的悬停提示里。 */
   const spot = Number(m.spot) || 0;
-  /* 刻意不加 .prob-table：那套手机端规则会把 td 变成 grid 单元格，而矩阵要的是横向滚动 */
-  let html = '<table class="mx-table"><thead><tr><th>到期日</th><th>剩余</th>' +
+  /* 刻意不加 .prob-table：那套手机端规则是给「到期日历」用的 */
+  let html = '<table class="mx-table"><thead><tr><th>到期日</th>' +
     otms.map(function (o) {
       const tgt = spot > 0 ? '<small class="mx-target">$' + (spot * (1 + Number(o) / 100)).toFixed(2) + '</small>' : '';
       return '<th><button type="button" class="mx-col' + (Number(o) === cur ? ' is-on' : '') +
@@ -221,24 +214,21 @@ export function probMatrixHtml(matrix, ctx) {
     /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
     const cells = Array.isArray(r.cells) ? r.cells : [];
     const cls = r.sell ? 'mx-sell-row' : '';
-    let prevStrike = 0;   /* 左边最近一个有挂牌档的列吸到了哪个行权价 */
     /* 行头悬停：月度/周度 + 相邻行权价间距 —— 「到期日历」卡的两条独有信息挪到这儿，
        免得切来切去才能判断这一行能不能精确挑到目标 OTM。 */
     const rowTitle = (r.monthly ? '月度到期日（第三个周五）' : '周度到期日') +
       (r.gapPct > 0 ? ' · 相邻行权价间距 ' + Number(r.gapPct).toFixed(2) + '%' : '');
+    /* 剩余天数 + ★ 并进到期日格的小字：少一整列，手机上就不用横着拖了 */
+    const sub = r.dte + ' 天' + (r.sell ? ' · ★ 该卖' : '');
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry" title="' + escapeHtml(rowTitle) + '">' + escapeHtml(r.date) +
-        (r.sell ? '<small class="prob-sub mx-sell-tag" title="按你的固定节奏，下一个到期日当天（本期的到期日）就把它卖出去">★ 该卖</small>' : '') + '</td>' +
-      '<td data-cell="dte">' + r.dte + '天</td>' +
+        '<small class="prob-sub' + (r.sell ? ' mx-sell-tag' : '') + '"' +
+          (r.sell ? ' title="按你的固定节奏，下一个到期日当天（本期的到期日）就把它卖出去"' : '') +
+        '>' + sub + '</small></td>' +
       otms.map(function (o, i) {
         const cell = cells[i];
-        const listed = !!(cell && cell.listed && cell.prob != null && Number(cell.strike) > 0);
-        const same = listed && prevStrike === Number(cell.strike);
-        if (listed) prevStrike = Number(cell.strike);
-        const title = same ? ('和左边那一列是同一张合约 · ' + cellTitle(cell)) : cellTitle(cell);
-        return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') + (same ? ' mx-same' : '') +
-          '" title="' + escapeHtml(title) + '">' +
-          (same ? dittoHtml(cell.strike) : matrixCellHtml(cell)) + '</td>';
+        return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
+          '" title="' + escapeHtml(cellTitle(cell)) + '">' + matrixCellHtml(cell) + '</td>';
       }).join('') +
       '</tr>';
   });
@@ -347,7 +337,7 @@ export function expiryCalendarHtml(entries, ctx) {
      摆在同一张表里既难比对，也没法各自"只看近几档"。 */
   const rows = list.slice().sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
   let html = '<table class="prob-table cal-table"><thead><tr>' +
-    '<th>到期日</th><th>剩余</th><th>类型</th><th>行权价间距</th><th>我的持仓</th>' +
+    '<th>到期日</th><th>类型</th><th>行权价间距</th><th>我的持仓</th>' +
     '</tr></thead><tbody>';
   rows.forEach(function (e) {
     const mine = holdings[sym + '|' + e.date] || 0;
@@ -356,9 +346,9 @@ export function expiryCalendarHtml(entries, ctx) {
     /* 只显示平值附近相邻行权价的中位间距 —— 它决定"能不能精确挑到目标 OTM%"。
        市场挂牌的**个数**不显示：那是市场侧的事实，不是选行权价需要的输入。 */
     const gap = Number(e.gapPct) > 0 ? Number(e.gapPct).toFixed(2) + '%' : '—';
+    /* 剩余天数并进到期日格（第二行小字）：4 列在手机上刚好放得下，不用横滑 */
     html += '<tr' + (mine ? ' class="cal-mine"' : '') + '>' +
-      '<td data-cell="expiry">' + escapeHtml(e.date) + '</td>' +
-      '<td data-cell="dte">' + e.dte + '天</td>' +
+      '<td data-cell="expiry">' + escapeHtml(e.date) + '<small class="prob-sub">' + e.dte + ' 天</small></td>' +
       '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
       '<td data-cell="strikes">' + gap + '</td>' +
       '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +

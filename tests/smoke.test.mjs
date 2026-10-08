@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=354');
+  assert.equal(manifest.start_url, '/?v=355');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v354/);
+  assert.match(serviceWorker, /wealth-v355/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=354',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=355',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -678,7 +678,7 @@ test('index.js：清掉残留的「节奏设置」本机缓存（SMH 被算成�
  */
 test('CSS：概率矩阵的横向滚动挂在外层容器，表格本身不许拆成两个表格盒', () => {
   assert.match(css, /#probMatrix\{overflow-x:auto/, '横向滚动要挂在 #probMatrix 上');
-  assert.match(css, /\.mx-table\{min-width:340px\}/, '窄屏给矩阵一个最小宽度，靠外层滚动');
+  assert.doesNotMatch(css, /\.mx-table\{min-width:/, '不要再给矩阵写 min-width —— 它会强制多滚一截，放得下就该不滚');
   assert.doesNotMatch(css, /\.mx-table\{display:block/, '把表格设成 block 会让表头和数据各算一遍列宽');
   assert.doesNotMatch(css, /\.mx-table thead,\.mx-table tbody\{display:table/, 'thead/tbody 不许各自变成表格盒');
 });

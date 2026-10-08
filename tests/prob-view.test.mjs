@@ -48,6 +48,9 @@ test('expiryCalendarHtml：一次只渲染一个标的的表；行权价列只�
   assert.match(html, /0\.49%/);
   assert.match(html, /0\.40%/, '间距保留两位');
   assert.doesNotMatch(html, /151 个|69 个/, '不再显示挂牌个数');
+  // v355：剩余天数并进到期日格 —— 少一列，手机上四列刚好放得下
+  assert.match(html, /data-cell="expiry">2026-11-20<small class="prob-sub">43 天<\/small><\/td>/);
+  assert.doesNotMatch(html, /<th>剩余<\/th>|data-cell="dte"/, '不再有独立的「剩余」列');
   assert.match(html, /is-monthly">月度/);
   assert.match(html, /<span class="cal-tag">周度<\/span>/);
   // v352：节奏 ★ 只留在「被行权概率」卡 —— 两张卡各标一次只会让人分不清该看哪张
@@ -91,7 +94,9 @@ const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS, spot: 129.37 };
 
 test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，只有 ★该卖 一个标记', () => {
   const html = probMatrixHtml(MX, { otm: 7 });
-  assert.match(html, /<th>到期日<\/th><th>剩余<\/th>/);
+  // v355：剩余天数并进到期日格（第二行小字），少一列 —— 手机上才不用横滑
+  assert.match(html, /<thead><tr><th>到期日<\/th><th><button/);
+  assert.match(html, /data-cell="expiry" title="月度到期日[^"]*">2026-11-20<small class="prob-sub">43 天<\/small><\/td>/, '到期日格里带剩余天数');
   assert.match(html, /class="mx-col is-on" data-probotm="7" title="把 OTM 设成 7%">7%<\/button>/, '当前 OTM 那一列的列头按钮要高亮，且点它就能设 OTM');
   assert.equal((html.match(/mx-col/g) || []).length, 5, '五档 OTM 各自一个按钮');
   assert.equal((html.match(/is-on/g) || []).length, 1, '只有当前 OTM 那个列头按钮带 is-on');
@@ -100,7 +105,7 @@ test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，�
   assert.match(html, /7%<\/button><small class="mx-target">\$138\.43<\/small>/, '7% → 129.37×1.07 = $138.43');
   assert.match(html, /15%<\/button><small class="mx-target">\$148\.78<\/small>/);
   assert.match(html, /class="mx-sell-row"/, '本轮该卖的整行要高亮');
-  assert.match(html, /mx-sell-tag" title="[^"]*">★ 该卖</, '★ 标的是该卖那一档，悬停给解释（底部说明已删，口径挪到悬停里）');
+  assert.match(html, /mx-sell-tag" title="[^"]*">71 天 · ★ 该卖</, '★ 并进到期日格的小字，不额外占一行');
   // 「本轮该处理」和「本轮该卖」本来就是同一轮（到期日当天卖下一档），拆两个标记是多读一层
   assert.doesNotMatch(html, /mx-settle/, '不该再有「本轮该处理」的标记');
   assert.doesNotMatch(html, /该处理/);
@@ -150,24 +155,18 @@ test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺�
   assert.match(matrixCellHtml(cell(0.2, 140, 0, 5)), /class="mx-prem">—<\/span>/, '有概率但没权利金时只这一行给「—」');
 });
 
-test('probMatrixHtml：相邻两列吸到同一张合约时显示「同上」，不再重复同一组数字', () => {
+test('probMatrixHtml：相邻两列吸到同一张合约时照常各写一遍（不用「同上」这种简称）', () => {
   /* 实测 VGT 11-20 在 $135 与 $145 之间只挂了 $140 一档：7%/8%/10% 会全落到它。
-     重复报三遍会被读成"卡住了"，所以第二列起显示「同上」。 */
+     以前从第二列起写「同上」，但手机上没有 hover 可解释 —— 改成照常重复数字。 */
   const dup = {
     otms: [7, 8, 10],
     rows: [{ date: '2026-11-20', dte: 43, cells: [cell(0.146, 140, 1.05, 6.9), cell(0.146, 140, 1.05, 6.9), cell(0.146, 140, 1.05, 6.9)] }],
   };
   const html = probMatrixHtml(dup, { otm: 8 });
-  assert.equal((html.match(/14\.6%/g) || []).length, 1, '同一组数字只报一次');
-  assert.equal((html.match(/mx-ditto/g) || []).length, 2, '后两列都是「同上」');
-  assert.equal((html.match(/同上 \$140\.00/g) || []).length, 2, '「同上」要写明是哪张合约');
-  assert.match(html, /和左边那一列是同一张合约/, '悬停要解释清楚');
-  // 同一行里换了一张合约就不该再叫「同上」
-  const mixed = {
-    otms: [7, 10],
-    rows: [{ date: '2026-11-20', dte: 43, cells: [cell(0.146, 140, 1.05, 6.9), cell(0.034, 150, 0.2, 1.3)] }],
-  };
-  assert.doesNotMatch(probMatrixHtml(mixed, { otm: 7 }), /mx-ditto/);
+  assert.equal((html.match(/14\.6%/g) || []).length, 3, '三列都照常写数字');
+  assert.equal((html.match(/mx-prem">\$1\.05/g) || []).length, 3);
+  assert.doesNotMatch(html, /同上|mx-ditto|mx-same/, '不再有「同上」这种简称');
+  assert.match(html, /真实挂牌行权价 \$140\.00/, '悬停里仍然写明实际挂在哪一档');
 });
 
 test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 / 还有几天 / 持有多久」', () => {

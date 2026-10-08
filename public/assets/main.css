@@ -2836,26 +2836,12 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .prob-empty{color:var(--muted);font-size:12px;padding:6px 0}
 .otm-prob{display:block;margin-top:3px;color:var(--muted);font-size:11.5px;line-height:1.5}
 @media(max-width:800px){
-  .prob-table thead{display:none}
-  .prob-table tbody tr:not(.is-hidden-row){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 8px;padding:12px 14px;height:auto;border-bottom:1px solid color-mix(in srgb,var(--rule) 42%,transparent)}
-  .prob-table tbody tr:last-child{border-bottom:0}
-  .prob-table tbody tr:nth-child(even){background:transparent}
-  /* 不要给 td 加 text-overflow:ellipsis —— 各表的列数不同，网格区域一旦对不上，
-     到期日这种长字符串会被截成「2026-10-…」。宁可换行也不要省略号。 */
-  .prob-table tbody td{display:block;border:0;padding:0;text-align:left;min-width:0;overflow-wrap:anywhere}
-  .prob-table tbody td::before{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-bottom:1px}
-
-  /* 到期日历（6 列：标的 / 到期日 / 剩余 / 类型 / 档位 / 我的持仓） */
-  .cal-table tbody td[data-cell="expiry"]{grid-area:1/1/2/3;font-size:.92rem;font-weight:670}
-  .cal-table tbody td[data-cell="expiry"]::before{display:none}
-  .cal-table tbody td[data-cell="dte"]{grid-area:1/3/2/5;text-align:right}
-  .cal-table tbody td[data-cell="kind"]{grid-area:2/1/3/3}
-  .cal-table tbody td[data-cell="mine"]{grid-area:2/3/3/5;text-align:right}
-  .cal-table tbody td[data-cell="strikes"]{grid-area:3/1/4/5}
-  .cal-table tbody td[data-cell="dte"]::before{content:'剩余';text-align:right}
-  .cal-table tbody td[data-cell="kind"]::before{content:'类型'}
-  .cal-table tbody td[data-cell="strikes"]::before{content:'行权价档位'}
-  .cal-table tbody td[data-cell="mine"]::before{content:'我的持仓';text-align:right}
+  /* v355：到期日历不再把每档拆成"日期/剩余/类型/档位/持仓"四五层（那样一屏只放得下 3 档，
+     标签和值还会左右错开）。剩余天数已经并进到期日格，四列在手机上刚好放得下，
+     所以保持真表格（thead 也留着，列名比 ::before 标签更省行高）。 */
+  .prob-table thead th,.prob-table tbody td{padding-left:6px;padding-right:6px}
+  .cal-table tbody td[data-cell="expiry"]{font-size:.92rem;font-weight:670}
+  .cal-table tbody td[data-cell="expiry"] .prob-sub{font-weight:500}
 
   /* 节奏（4 列：标的 / 下次到期日 / 距今 / 连续执行）—— 内容自解释，不加标签 */
   .cc-table tbody td[data-cell="sym"]{grid-area:1/1/2/3;font-size:.9rem;font-weight:670}
@@ -2887,17 +2873,14 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* ===== v336 被行权概率矩阵（周期 × OTM）===== */
 .mx-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .mx-table thead th{text-align:right;padding:7px 6px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}
-.mx-table thead th:first-child,.mx-table thead th:nth-child(2){text-align:left}
+.mx-table thead th:first-child{text-align:left}
 .mx-table tbody td{text-align:right;padding:9px 6px;border-bottom:1px solid var(--rule);white-space:nowrap}
 .mx-table tbody td:first-child{text-align:left;font-weight:620}
-.mx-table tbody td:nth-child(2){text-align:left;color:var(--muted)}
 .mx-table tbody tr:last-child td{border-bottom:0}
 .mx-table td.mx-on{background:color-mix(in srgb,var(--accent) 13%,transparent)}
 /* 每格两行：上行概率（按风险着色）+ 下行权利金（灰字）—— 不用再切视角 */
 .mx-cell .mx-prob{display:block;font-weight:640;font-variant-numeric:tabular-nums}
 .mx-cell .mx-prem{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:1px}
-/* 与左边同一张合约的列：显示「同上」，不再重复同一组数字 */
-.mx-cell .mx-ditto{color:var(--muted);font-weight:560}
 
 /* 列头改成按钮：点一下就把 OTM 设成那一档 */
 .mx-col{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:560;padding:2px 4px;border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums}
@@ -2924,11 +2907,11 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-sum-meta b{font-weight:700}
 .mx-sum-empty{background:transparent;border-style:dashed;color:var(--muted);font-size:12px}
 @media(max-width:800px){
-  /* 七列在手机上放不下 → 横向滚动交给外层容器，.mx-table 必须保持 display:table。
+  /* 手机上放不下就横向滚动，交给外层容器；.mx-table 必须保持 display:table。
      之前把它设成 display:block、再给 thead/tbody 各自 display:table，
-     等于两个独立的表格盒各算一遍列宽，表头和数据列必然错位（实测最大差 40px）。 */
+     等于两个独立的表格盒各算一遍列宽，表头和数据列必然错位（实测最大差 40px）。
+     不写 min-width：表格按内容自己撑开，放得下就不滚 —— 加 min-width 会强制多滚一截。 */
   #probMatrix{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .mx-table{min-width:340px}
   .mx-table thead th,.mx-table tbody td{padding-left:5px;padding-right:5px}
 }
 .cc-locked{color:var(--muted);font-size:11.5px}
