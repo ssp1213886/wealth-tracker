@@ -248,14 +248,17 @@ export function optionProbabilities(chain, options, opts) {
 export const MATRIX_OTMS = [3, 5, 7, 10, 15];
 
 /**
- * 概率矩阵：行 = 未来的到期日，列 = 各 OTM% 下的被行权概率。
+ * 概率矩阵：行 = 未来的到期日，列 = 各 OTM%。每格给【真实挂牌那一档】的
+ * 行权价 / 被行权概率 / 权利金 / 年化。
  *
- * 两个刻意的取舍：
- * ① **用精确的目标行权价**（现价 × (1+OTM%)）算，不吸附到最近挂牌档。
- *    近月到期日的行权价阶梯常被截断（实测 VGT 8 天那档只挂到现价 +4.4%），
- *    一吸附，5% / 7% / 10% / 15% 会全落到同一档、显示同一个数，参考表就废了。
- *    这张表回答的是"如果卖 X% OTM 概率是多少"，用精确价才是它想问的问题。
- * ② **只留剩余 ≥ minDte 的到期日**。太近的档 IV 噪、阶梯也残缺（SMH 1 天那行实测
+ * 三个刻意的取舍：
+ * ① **概率与权利金必须同口径**：都用链里最接近目标 OTM 的**真实挂牌档**算。
+ *    之前概率用精确目标价、权利金用挂牌价会是两个口径（一行里 138.43 的概率配 140 的权利金），
+ *    看着差不多、实际对不上，所以统一到挂牌档。
+ * ② **够不到的档显示 null（界面出「—」），不编数**：近月阶梯常被截断
+ *    （实测 VGT 8 天那档只挂到现价 +4.4%），5%/7%/10%/15% 会全落到同一档。
+ *    与其四列显示同一个数，不如老实说"这档不存在"。偏离目标超过 STRIKE_TOLERANCE 即判为不存在。
+ * ③ **只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺（SMH 1 天那行实测
  *    15% 的概率比 10% 还高），放进表里只会误导。
  */
 export function probMatrix(chain, opts) {
@@ -266,13 +269,17 @@ export function probMatrix(chain, opts) {
   const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
   const spot = Number(chain && chain.spot);
   if (!(spot > 0)) return { otms: otms, rows: [] };
-  const fixed = String(o.fixed || '');
+  const beat = String(o.fixed || '');       /* ★ 本轮该卖的那一档 */
+  const settle = String(o.settle || '');    /* 本轮该处理（结算/行权）的那一档 */
   const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
-  /* ★ 那一档（本轮节奏该卖的）必须始终在表里 —— 它可能离得很近（实测 VGT 节奏档
-     只有 8 天），被 minDte 滤掉的话，最该看的那一行反而没了。 */
+  /* ★ 那一档必须始终在表里 —— 它可能离得很近，被 minDte 滤掉的话最该看的那行反而没了。
+     本轮该处理的那档（通常更近）也一并保住。 */
   const picked = [];
-  const beat = all.filter(function (e) { return e.date === fixed; })[0];
-  if (beat) picked.push(beat);
+  [beat, settle].forEach(function (date) {
+    if (!date) return;
+    const hit = all.filter(function (e) { return e.date === date; })[0];
+    if (hit && picked.indexOf(hit) < 0) picked.push(hit);
+  });
   all.forEach(function (e) {
     if (picked.length >= maxRows) return;
     if (Number(e.dte) < minDte) return;
@@ -282,12 +289,34 @@ export function probMatrix(chain, opts) {
   picked.sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
   const rows = picked.slice(0, maxRows)
     .map(function (e) {
-      const probs = otms.map(function (pct) {
-        const k = spot * (1 + pct / 100);
-        const iv = resolveIv(e, spot, e.dte, k, rate);
-        return probITM({ spot: spot, strike: k, iv: iv, dte: e.dte, rate: rate });
-      });
-      return { date: e.date, dte: e.dte, fixed: e.date === fixed, probs: probs };
+      const cells = otms.map(function (pct) { return matrixCell(e, spot, pct, rate); });
+      return { date: e.date, dte: e.dte, sell: e.date === beat, settle: e.date === settle, cells: cells, probs: cells.map(function (c) { return c.prob; }) };
     });
   return { otms: otms, rows: rows };
+}
+
+/** 挂牌档偏离目标 OTM 超过这个比例就当"这一档不存在"（阶梯够不到）。 */
+export const STRIKE_TOLERANCE = 0.02;
+
+/**
+ * 矩阵里的一格：把目标 OTM% 吸附到该到期日**真实挂牌**的那一档，然后用它算概率与权利金。
+ * 返回 { pct, strike, target, drift, prob, premium, annualPct }；档位不存在时三个数为 null。
+ */
+export function matrixCell(expiry, spot, pct, rate) {
+  const r = Number.isFinite(Number(rate)) ? Number(rate) : DEFAULT_RATE;
+  const target = Number(spot) * (1 + Number(pct) / 100);
+  const trade = nearestCall(sortedCalls(expiry), target);
+  const out = { pct: Number(pct), target: target, strike: 0, drift: null, prob: null, premium: null, annualPct: null, listed: true };
+  if (!trade || !(Number(trade.k) > 0)) { out.listed = false; return out; }
+  const strike = Number(trade.k);
+  out.strike = strike;
+  out.drift = strike / target - 1;
+  if (Math.abs(out.drift) > STRIKE_TOLERANCE) { out.listed = false; return out; }
+  const dte = Number(expiry && expiry.dte) || 0;
+  const iv = resolveIv(expiry, Number(spot), dte, strike, r);
+  out.prob = probITM({ spot: Number(spot), strike: strike, iv: iv, dte: dte, rate: r });
+  const mid = contractMid(trade);          /* 真实挂单价：优先买卖价中值 */
+  out.premium = mid > 0 ? mid : null;
+  out.annualPct = annualizedPremiumPct(out.premium, Number(spot), dte);
+  return out;
 }

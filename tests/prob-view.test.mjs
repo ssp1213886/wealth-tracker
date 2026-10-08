@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   probColor, fmtProb, fmtIv,
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
-  probMatrixHtml, probTabsHtml,
+  probMatrixHtml, probTabsHtml, probViewChipsHtml, matrixCellText, probSummaryHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -72,31 +72,94 @@ test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', ()
   assert.equal((html.match(/cal-mine/g) || []).length, 1, '只有持有那一档高亮');
 });
 
-test('probMatrixHtml：行/列/★/当前列高亮，概率按档位着色', () => {
-  const matrix = {
-    otms: [3, 5, 7, 10, 15],
-    rows: [
-      { date: '2026-11-20', dte: 43, fixed: true, probs: [0.362, 0.269, 0.188, 0.096, 0.037] },
-      { date: '2026-12-18', dte: 71, fixed: false, probs: [0.398, 0.324, 0.256, 0.180, 0.085] },
-    ],
-  };
-  const html = probMatrixHtml(matrix, { otm: 7 });
+/** 造一格：prob=null 表示这一档没有挂牌行权价（阶梯够不到）。 */
+function cell(prob, strike, premium, annualPct) {
+  return { pct: 0, target: 0, strike, drift: 0, prob, premium, annualPct, listed: prob != null };
+}
+
+const MX_ROWS = [
+  { date: '2026-11-20', dte: 43, settle: true, sell: false,
+    cells: [cell(0.362, 138, 2.9, 27.4), cell(0.269, 145, 2.0, 18.9), cell(0.188, 152, 1.4, 13.2), cell(0.096, 160, 0.9, 8.5), cell(0.037, 168, 0.5, 4.7)] },
+  { date: '2026-12-18', dte: 71, sell: true, settle: false,
+    cells: [cell(0.398, 138, 4.6, 17.9), cell(0.324, 145, 3.4, 15.3), cell(0.256, 152, 2.9, 12.1), cell(0.180, 160, 1.9, 9.4), cell(null, 0, null, null)] },
+];
+const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS };
+
+test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，★该卖/该处理两档分别打标', () => {
+  const html = probMatrixHtml(MX, { otm: 7 });
   assert.match(html, /<th>到期日<\/th><th>剩余<\/th>/);
-  assert.match(html, /<th class="mx-on">7%<\/th>/, '当前 OTM 那一列要高亮');
-  assert.equal((html.match(/mx-on/g) || []).length, 3, '表头 1 + 每行 1 = 3');
-  assert.match(html, /2026-11-20<small class="prob-sub">★ 本轮节奏档<\/small>/, '节奏档带星标');
-  assert.match(html, /class="mx-fixed"/);
+  assert.match(html, /class="mx-col is-on" data-probotm="7" title="把 OTM 设成 7%">7%<\/button>/, '当前 OTM 那一列的列头按钮要高亮，且点它就能设 OTM');
+  assert.equal((html.match(/mx-col/g) || []).length, 5, '五档 OTM 各自一个按钮');
+  assert.equal((html.match(/is-on/g) || []).length, 1, '只有当前 OTM 那个列头按钮带 is-on');
+  assert.equal((html.match(/mx-on/g) || []).length, 2, '每行当前 OTM 那一格带 mx-on');
+  assert.match(html, /class="mx-sell-row"/, '本轮该卖的整行要高亮');
+  assert.match(html, /mx-sell-tag">★ 本轮该卖</);
+  assert.match(html, /class="mx-settle-row"/, '本轮该处理的那行也要能看出来');
+  assert.match(html, /mx-settle-tag">本轮该处理</);
   assert.match(html, /36\.2%/);
-  assert.match(html, /8\.5%/);
+  assert.match(html, /9\.6%/);
   assert.match(html, /var\(--red\)/, '>25% 用红');
   assert.match(html, /var\(--accent\)/, '<10% 用绿');
+  assert.match(html, /真实挂牌行权价 \$152\.00/, '悬浮要写清这格实际挂在哪个挂牌行权价上');
+  assert.doesNotMatch(html, /mx-fixed/, 'v339 起改用 mx-sell-row / mx-settle-row');
   assert.doesNotMatch(html, /prob-table/, '矩阵不能用 prob-table（那套手机端规则会把 td 变 grid）');
 });
 
-test('probMatrixHtml：空矩阵给空态；缺 probs 不抛错', () => {
+test('probMatrixHtml：权利金 / 年化视角不按概率着色，缺挂牌那格一律「—」', () => {
+  const prem = probMatrixHtml(MX, { otm: 7, view: 'premium' });
+  assert.match(prem, /\$2\.90/);
+  assert.match(prem, /\$4\.60/);
+  assert.doesNotMatch(prem, /var\(--red\)/, '看权利金时不该出现「高权利金=红」的误导');
+  assert.doesNotMatch(prem, /var\(--accent\)/);
+  assert.match(prem, /—/, '缺挂牌那一格显示破折号');
+  const ann = probMatrixHtml(MX, { otm: 7, view: 'annual' });
+  assert.match(ann, /27\.4%/);
+  assert.match(ann, /17\.9%/);
+  assert.doesNotMatch(ann, /var\(--red\)/);
+});
+
+test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
   assert.match(probMatrixHtml(null, {}), /prob-empty/);
   assert.match(probMatrixHtml({ otms: [], rows: [] }, { emptyHint: '没有 14 天以上的档' }), /没有 14 天以上的档/);
-  assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, probs: null }] }, {}), /—|prob-empty/);
+  assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, cells: null }] }, {}), /—|prob-empty/);
+});
+
+test('matrixCellText：三个视角各取各的值，缺挂牌一律「—」', () => {
+  const c = cell(0.1473, 140, 1.05, 8.91);
+  assert.equal(matrixCellText(c, 'prob'), '14.7%');
+  assert.equal(matrixCellText(c, 'premium'), '$1.05');
+  assert.equal(matrixCellText(c, 'annual'), '8.9%');
+  assert.equal(matrixCellText(c, undefined), '14.7%', '不给视角默认看概率');
+  assert.equal(matrixCellText(cell(null, 0, null, null), 'premium'), '—');
+  assert.equal(matrixCellText(null, 'prob'), '—');
+});
+
+test('probViewChipsHtml：概率 / 权利金 / 年化三视角，只有当前那个 is-on', () => {
+  const html = probViewChipsHtml('premium');
+  assert.match(html, /data-probview="prob">概率</);
+  assert.match(html, /data-probview="annual">年化</);
+  assert.match(html, /class="prob-chip is-on" data-probview="premium">权利金</);
+  assert.equal((html.match(/is-on/g) || []).length, 1);
+  assert.match(probViewChipsHtml('prob'), /class="prob-chip is-on" data-probview="prob">概率</);
+});
+
+test('probSummaryHtml：取 ★该卖 那一行 ∩ 当前 OTM 那一列，一句话给全 行权价/概率/权利金/年化', () => {
+  const html = probSummaryHtml(MX, { otm: 7 });
+  assert.match(html, /本轮该卖 <b>2026-12-18<\/b> · 71 天/);
+  assert.match(html, /\$152\.00/);
+  assert.match(html, /25\.6%/, '被行权概率');
+  assert.match(html, /约 4 轮 1 次/, '1/0.256 ≈ 4 轮');
+  assert.match(html, /\$2\.90/, '权利金');
+  assert.match(html, /12\.1%/, '年化');
+});
+
+test('probSummaryHtml：没有 ★ 档 / 该 OTM 那格没挂牌时给明确提示，不显示半截数字', () => {
+  assert.match(probSummaryHtml(null, { otm: 7 }), /还没有可卖的到期档/);
+  assert.match(probSummaryHtml({ otms: [3, 5, 7, 10, 15], rows: [{ date: 'x', dte: 30, sell: true, cells: [] }] }, { otm: 7 }), /没有挂牌行权价/);
+  const miss = { otms: [3, 5, 7, 10, 15], rows: [{ date: '2026-12-18', dte: 71, sell: true, cells: [cell(0.3, 138, 2, 9), cell(0.2, 145, 1.5, 7), cell(null, 0, null, null), cell(null, 0, null, null), cell(null, 0, null, null)] }] };
+  const html = probSummaryHtml(miss, { otm: 7 });
+  assert.match(html, /没有挂牌行权价/);
+  assert.doesNotMatch(html, /\$0\.00/);
 });
 
 test('probTabsHtml：VGT / SMH 分段，只有当前那个 is-on', () => {

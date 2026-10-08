@@ -7,8 +7,8 @@ import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {optionProbabilities, probMatrix} from './prob.js';
-import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtChainTimeShort, fmtProb} from './prob-view.js';
-import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf} from './cc-schedule.js';
+import {renderProbNote, renderProbUnavailable, renderProbMatrix, renderProbSummary, probTabsHtml, probViewChipsHtml, expiryCalendarHtml, fmtChainTimeShort, fmtProb} from './prob-view.js';
+import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf, dateMs, isoOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v338';var APP_DATA_VERSION=5;
+var APP_BUILD='v339';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -977,7 +977,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=338',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=339',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1653,7 +1653,7 @@ try{
   }
 }catch(e){logSwallowed("otmSettingsInit",e)}
 
-var probTab='VGT';
+var probTab='VGT',probViewMode='prob';
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
 function otmOf(sym){var v=Number(otmSettings&&(sym==='SMH'?otmSettings.smh:otmSettings.vgt));return v>0?v:(sym==='SMH'?6:7)}
 /** 矩阵的 OTM 列：固定五档；当前 OTM 不在其中时插进去、挤掉最远的那档（保持 5 列）。
@@ -1667,12 +1667,13 @@ function renderProbCard(){
   var src=document.getElementById('probSrc');
   var tabs=document.getElementById('probTabs');
   if(tabs)tabs.innerHTML=probTabsHtml(probTab);
+  var vtabs=document.getElementById('probViews');
+  if(vtabs)vtabs.innerHTML=probViewChipsHtml(probViewMode);
   var otm=otmOf(probTab);
-  var lab=document.getElementById('probOtmSym');if(lab)lab.textContent=probTab+' OTM';
-  var val=document.getElementById('probOtmVal');if(val)val.textContent=otm+'%';
   var chain=chainFor(probTab);
   if(!chain){
     if(src)src.textContent=chainStatus.loading?'加载中…':'';
+    renderProbSummary(document,null,{otm:otm});
     renderProbNote(document,{});
     /* 必须先写说明、再写错误提示 —— 顺序反了会被说明文案覆盖掉 */
     if(!chainStatus.loading)renderProbUnavailable(document,chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'稍后会自动重试');
@@ -1683,9 +1684,11 @@ function renderProbCard(){
   if(src){var _lab=chain.source==='cboe'?'CBOE 延迟':(chain.source==='yahoo'?'Yahoo':'');var _t=fmtChainTimeShort(chain.updated,Date.now());src.textContent=_lab+(_t?' · '+_t:'');src.title='点击刷新期权链（CBOE 免费接口为延迟报价，非实时）'}
   var mx=null;
   /* minDte 保持 14：SMH 有每日到期日，门槛放低会把它那堆 7/8/11 天的档全拉进来。
-     VGT 的节奏档只有 8 天，靠 probMatrix 里"★ 档始终包含"来保住。 */
-  try{mx=probMatrix(chain,{fixed:ccNextExpiry(probTab),minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
-  renderProbMatrix(document,mx,{otm:otm,
+     ★ 与本轮该处理的那一档由 probMatrix 强制保留，不受门槛影响。
+     fixed = 本轮该卖（下次卖出日会卖出的那一档）；settle = 本轮该处理（下一个到期日）。 */
+  try{mx=probMatrix(chain,{fixed:ccRollExpiry(probTab),settle:ccNextExpiry(probTab),minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
+  renderProbSummary(document,mx,{otm:otm});
+  renderProbMatrix(document,mx,{otm:otm,view:probViewMode,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链里没有 14 天以上的到期日'});
   renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),iv30:iv30Map()});
   renderExpiryCalendar();
@@ -1735,6 +1738,22 @@ function toggleCalShowAll(){calShowAll=!calShowAll;renderExpiryCalendar();haptic
 function ccNextExpiry(sym){
   try{var r=scheduleRow(sym,ccSchedule,marketDate());return r?r.nextExpiry:''}catch(e){return ''}
 }
+/**
+ * 本轮「该卖」的那一档。
+ *
+ * 固定节奏是"到期日当天卖下一档"，所以下一个到期日（ccNextExpiry）是**该处理**的那一档
+ * （手里已经持有、等着结算/行权），真正要下单的是它**再往后一个**节奏档。
+ * 之前 ★ 标的是 ccNextExpiry，等于把"该处理"标成了"该卖"——最该看的那一行没被标出来。
+ */
+function ccRollExpiry(sym){
+  try{
+    var next=ccNextExpiry(sym);
+    if(!next)return '';
+    var after=isoOf(dateMs(next)+86400000);          // 下一个到期日的次日
+    var r=scheduleRow(sym,ccSchedule,after);
+    return r?r.nextExpiry:'';
+  }catch(e){return ''}
+}
 async function fetchChain(sym){
   try{
     var r=await fetchWithTimeout('/api/chain?sym='+encodeURIComponent(sym));
@@ -1776,11 +1795,29 @@ function bindProbControls(){
     renderProbCard();
     haptic('light');
   });
-  /* OTM 加减：写的是 otmSettings（会同步到云端），同时高亮矩阵里对应的那一列 */
-  var minus=document.getElementById('probOtmMinus');
-  if(minus)minus.onclick=function(){adjOtm(probTab,-1)};
-  var plus=document.getElementById('probOtmPlus');
-  if(plus)plus.onclick=function(){adjOtm(probTab,1)};
+  /* 视角切换：概率 / 权利金 / 年化 —— 只是换显示，不动任何设置 */
+  var views=document.getElementById('probViews');
+  if(views)views.addEventListener('click',function(e){
+    var b=e.target.closest('[data-probview]');if(!b)return;
+    probViewMode=b.dataset.probview||'prob';
+    renderProbCard();
+    haptic('light');
+  });
+  /* 点列头 = 直接把 OTM 设成那一档（替代原来的 +/- 按钮；矩阵本来就有这 5 列） */
+  var mxEl=document.getElementById('probMatrix');
+  if(mxEl)mxEl.addEventListener('click',function(e){
+    var b=e.target.closest('[data-probotm]');if(!b)return;
+    var want=Number(b.dataset.probotm);
+    if(!(want>0))return;
+    var key=probTab==='SMH'?'smh':'vgt',cur=otmOf(probTab);
+    if(want===cur)return;
+    otmSettings[key]=Math.min(20,Math.max(1,want));
+    LS.setItem('otmSettings',JSON.stringify(otmSettings));
+    markDirty('otmSettings');
+    updateOtm();
+    autoPushDebounce();
+    haptic('light');
+  });
   var calBtn=document.getElementById('calToggle');
   if(calBtn)calBtn.addEventListener('click',toggleCalShowAll);
   /* 到期日历按标的切页（VGT / SMH）—— 两个标的的到期日结构完全不同，一张表塞不下 */

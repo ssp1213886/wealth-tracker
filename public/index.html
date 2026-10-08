@@ -469,15 +469,14 @@
 
 <div class="card option-card prob-card">
   <div class="opt-card-head"><h3>被行权概率</h3><div class="prob-chips" id="probTabs"></div></div>
+  <div id="probSummary"></div>
   <div class="prob-controls">
-    <div class="prob-control"><span id="probOtmSym">VGT OTM</span>
-      <div class="prob-chips"><button type="button" class="prob-chip" id="probOtmMinus" aria-label="减少 OTM">−</button><span class="prob-chip is-on" id="probOtmVal">7%</span><button type="button" class="prob-chip" id="probOtmPlus" aria-label="增加 OTM">+</button></div>
-    </div>
+    <div class="prob-control"><span>看什么</span><div class="prob-chips" id="probViews"></div></div>
     <div class="prob-control"><small class="prob-src" id="probSrc"></small></div>
   </div>
   <div id="probMatrix"></div>
   <div class="prob-note" id="probNote"></div>
-  <div class="prob-note">行＝未来到期日（只列剩余 ≥14 天的档；★ 那档即使更近也保留），列＝OTM 百分比。★ 是本轮固定节奏该卖的那一档，高亮列是你当前的 OTM 设置。概率＝到期收盘时现价 &gt; 行权价。</div>
+  <div class="prob-note">行＝未来到期日（只列剩余 ≥14 天；★ 与本轮该处理的那档即使更近也保留），列＝OTM%。<b>点列头可直接把 OTM 设成那一档</b>。★ 是本轮该卖的那档，「本轮该处理」是你手里那张、等着结算/行权的。每格数字取自链里<b>最接近该 OTM 的真实挂牌档</b>（悬停可看具体行权价）；阶梯够不到的档显示「—」。概率＝到期收盘时现价 &gt; 行权价。</div>
 </div>
 
 <div class="card collapsible-card collapsed" id="expiryCalCard">

@@ -159,11 +159,44 @@ export function renderProbUnavailable(doc, hint) {
  * 概率矩阵：行 = 未来到期日，列 = 各 OTM% 下的被行权概率。
  * 当前 OTM 那一列整列高亮；★ 标记本轮节奏该卖的那一档。
  */
+/** 矩阵的三个视角：看概率 / 看能收多少钱 / 看年化。 */
+export const PROB_VIEWS = [{ id: 'prob', label: '概率' }, { id: 'premium', label: '权利金' }, { id: 'annual', label: '年化' }];
+
+export function probViewChipsHtml(current) {
+  return PROB_VIEWS.map(function (v) {
+    return '<button type="button" class="prob-chip' + (v.id === current ? ' is-on' : '') +
+      '" data-probview="' + v.id + '">' + v.label + '</button>';
+  }).join('');
+}
+
+/** 一格该显示什么。这一档没有挂牌行权价（阶梯够不到）时一律「—」，不编数。 */
+export function matrixCellText(cell, view) {
+  if (!cell || cell.prob == null) return '—';
+  if (view === 'premium') return cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—';
+  if (view === 'annual') return cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—';
+  return fmtProb(cell.prob);
+}
+
+/** 单元格的悬浮提示：写出这一格到底挂在哪个真实行权价上。 */
+function cellTitle(cell) {
+  if (!cell || !(cell.strike > 0)) return '这一档没有挂牌行权价（行权价阶梯够不到该 OTM）';
+  const drift = cell.drift == null ? 0 : cell.drift * 100;
+  return '真实挂牌行权价 $' + Number(cell.strike).toFixed(2) +
+    '（比目标 ' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '%）';
+}
+
+/**
+ * 概率矩阵。
+ *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★），settle=true 是本轮该处理（结算/行权）的那一档。
+ *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
+ *  · 数值颜色只在"概率"视角下按风险着色；权利金/年化视角用普通色，免得"高权利金=红"让人误读成危险。
+ */
 export function probMatrixHtml(matrix, ctx) {
   const c = ctx || {};
   const m = matrix || { otms: [], rows: [] };
   const rows = Array.isArray(m.rows) ? m.rows : [];
   const otms = Array.isArray(m.otms) ? m.otms : [];
+  const view = c.view || 'prob';
   if (!rows.length || !otms.length) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
@@ -171,24 +204,62 @@ export function probMatrixHtml(matrix, ctx) {
   /* 刻意不加 .prob-table：那套手机端规则会把 td 变成 grid 单元格，而矩阵要的是横向滚动 */
   let html = '<table class="mx-table"><thead><tr><th>到期日</th><th>剩余</th>' +
     otms.map(function (o) {
-      return '<th' + (Number(o) === cur ? ' class="mx-on"' : '') + '>' + o + '%</th>';
+      return '<th><button type="button" class="mx-col' + (Number(o) === cur ? ' is-on' : '') +
+        '" data-probotm="' + o + '" title="把 OTM 设成 ' + o + '%">' + o + '%</button></th>';
     }).join('') + '</tr></thead><tbody>';
   rows.forEach(function (r) {
-    /* 按 otms 逐列取值，而不是遍历 r.probs —— 万一某行概率缺几列，
-       直接 map r.probs 会少渲染几个 td、整行错位。 */
-    const probs = Array.isArray(r.probs) ? r.probs : [];
-    html += '<tr' + (r.fixed ? ' class="mx-fixed"' : '') + '>' +
+    /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
+    const cells = Array.isArray(r.cells) ? r.cells : [];
+    const cls = (r.sell ? 'mx-sell-row' : '') + (r.settle ? (r.sell ? ' ' : '') + 'mx-settle-row' : '');
+    html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry">' + escapeHtml(r.date) +
-        (r.fixed ? '<small class="prob-sub">★ 本轮节奏档</small>' : '') + '</td>' +
+        (r.sell ? '<small class="prob-sub mx-sell-tag">★ 本轮该卖</small>'
+          : (r.settle ? '<small class="prob-sub mx-settle-tag">本轮该处理</small>' : '')) + '</td>' +
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
-        const p = probs[i];
+        const cell = cells[i];
+        const color = view === 'prob' ? probColor(cell && cell.prob) : 'inherit';
         return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
-          '" style="color:' + probColor(p) + ';font-weight:640">' + fmtProb(p) + '</td>';
+          '" style="color:' + color + ';font-weight:640" title="' + escapeHtml(cellTitle(cell)) + '">' +
+          escapeHtml(matrixCellText(cell, view)) + '</td>';
       }).join('') +
       '</tr>';
   });
   return html + '</tbody></table>';
+}
+
+/**
+ * 「本轮该卖」结论行：把 25 个数字收敛成一句话 —— 行权价 / 被行权概率 / 权利金 / 年化。
+ * 取的是 ★ 那一行 ∩ 当前 OTM 那一列，也就是你这轮真正会下的单。
+ */
+export function probSummaryHtml(matrix, ctx) {
+  const c = ctx || {};
+  const m = matrix || { otms: [], rows: [] };
+  const sell = (Array.isArray(m.rows) ? m.rows : []).filter(function (r) { return r.sell; })[0];
+  if (!sell) return '<div class="mx-sum mx-sum-empty">还没有可卖的到期档</div>';
+  const cur = Number(c.otm);
+  const idx = (Array.isArray(m.otms) ? m.otms : []).indexOf(cur);
+  const cell = idx >= 0 ? (sell.cells || [])[idx] : null;
+  const head = '<div class="mx-sum-head">本轮该卖 <b>' + escapeHtml(sell.date) + '</b> · ' + sell.dte + ' 天' +
+    (idx < 0 ? ' · ' + cur + '%' : '') + '</div>';
+  if (!cell || cell.prob == null) {
+    return '<div class="mx-sum">' + head +
+      '<div class="mx-sum-meta">' + cur + '% OTM 在这一档没有挂牌行权价 —— 换一档 OTM 或看下一行</div></div>';
+  }
+  const drift = (cell.drift || 0) * 100;
+  const every = cell.prob > 0 ? Math.round(1 / cell.prob) : 0;
+  return '<div class="mx-sum">' + head +
+    '<div class="mx-sum-main">$' + Number(cell.strike).toFixed(2) +
+      ' <small>（' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '% OTM）</small></div>' +
+    '<div class="mx-sum-meta">被行权 <b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b>' +
+      '（约 ' + every + ' 轮 1 次） · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
+      ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') + '</div></div>';
+}
+
+/** 把「本轮该卖」写进 DOM。 */
+export function renderProbSummary(doc, matrix, ctx) {
+  const el = doc.getElementById('probSummary');
+  if (el) el.innerHTML = probSummaryHtml(matrix, ctx);
 }
 
 /** 把概率矩阵写进 DOM。 */

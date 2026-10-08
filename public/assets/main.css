@@ -2891,7 +2891,25 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-table tbody td:nth-child(2){text-align:left;color:var(--muted)}
 .mx-table tbody tr:last-child td{border-bottom:0}
 .mx-table tbody tr.mx-fixed td{background:color-mix(in srgb,var(--orange) 11%,transparent)}
-.mx-table td.mx-on,.mx-table th.mx-on{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.mx-table td.mx-on{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+
+/* 列头改成按钮：点一下就把 OTM 设成那一档 */
+.mx-col{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:560;padding:2px 4px;border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums}
+.mx-col.is-on{background:var(--accent-l);color:var(--accent-d);font-weight:700}
+.mx-table tbody tr.mx-sell-row td{background:color-mix(in srgb,var(--orange) 11%,transparent)}
+.mx-table tbody tr.mx-settle-row td{background:color-mix(in srgb,var(--muted) 10%,transparent)}
+.mx-sell-tag{color:var(--orange);font-weight:660}
+.mx-settle-tag{color:var(--muted)}
+
+/* 「本轮该卖」结论行：把 25 个数字收敛成一句 */
+.mx-sum{margin:2px 0 12px;padding:11px 13px;border-radius:var(--radius-inner);background:color-mix(in srgb,var(--orange) 9%,transparent);border:1px solid color-mix(in srgb,var(--orange) 25%,transparent)}
+.mx-sum-head{color:var(--muted);font-size:11.5px;font-weight:560}
+.mx-sum-head b{color:var(--fg)}
+.mx-sum-main{font-size:1.32rem;font-weight:700;font-variant-numeric:tabular-nums;margin:3px 0 2px;letter-spacing:-.01em}
+.mx-sum-main small{font-size:11.5px;font-weight:560;color:var(--muted)}
+.mx-sum-meta{color:var(--muted);font-size:11.5px;line-height:1.55}
+.mx-sum-meta b{font-weight:700}
+.mx-sum-empty{background:transparent;border-style:dashed;color:var(--muted);font-size:12px}
 @media(max-width:800px){
   /* 六列在手机上放不下 —— 横向滚动，而不是把 td 拆成 grid 单元格 */
   .mx-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}

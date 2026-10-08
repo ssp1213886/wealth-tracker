@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import {
   normCdf, normInv, bsCall, bsCallDelta, probITM, impliedVol,
   contractMid, sortedCalls, nearestCall, ivAtStrike, resolveIv, pickExpiry,
-  annualizedPremiumPct, optionProbabilities, probMatrix, MATRIX_OTMS,
+  annualizedPremiumPct, optionProbabilities, probMatrix, matrixCell,
+  MATRIX_OTMS, STRIKE_TOLERANCE,
 } from '../src/app/prob.js';
 
 /** 实测自 CBOE 延迟报价（2026-10-07 收盘）：VGT 现价 129.37、SMH 现价 625.03。 */
@@ -161,39 +162,96 @@ test('sortedCalls / nearestCall：排序与吸附', () => {
 
 // ---------- 概率矩阵（周期 × OTM）----------
 
-test('probMatrix：行=到期日、列=OTM%，且每行概率随 OTM 单调下降', () => {
-  const m = probMatrix(VGT_CHAIN, { fixed: '2026-11-20', minDte: 14, maxRows: 3 });
+/**
+ * 造一条"阶梯齐全"的链：125~160 每 $1 一档，任何 3~15% 的目标 OTM 都吸得住。
+ * 矩阵的取值 / 单调性要用完整阶梯来验；"阶梯被截断"的行为另用 TRUNCATED_CHAIN 单独卡。
+ */
+function denseExpiry(date, dte, iv) {
+  const calls = [];
+  for (let k = 125; k <= 160; k += 1) {
+    const mid = Math.max(0.20, (160 - k) * 0.09 + 0.60);
+    calls.push({ k, b: +(mid - 0.05).toFixed(2), a: +(mid + 0.05).toFixed(2), lp: +mid.toFixed(2), iv, oi: 100, v: 5, d: 0.3 });
+  }
+  return { date: date, ts: 1, dte: dte, calls: calls };
+}
+const DENSE_CHAIN = {
+  sym: 'VGT', spot: 130,
+  expiries: [denseExpiry('2026-11-20', 43, 0.21), denseExpiry('2026-12-18', 71, 0.22)],
+};
+
+/** VGT 实测那种"近月阶梯被截断"的链：现价 +4% 以外没有挂牌档。 */
+const TRUNCATED_CHAIN = {
+  sym: 'VGT', spot: 129.37,
+  expiries: [{ date: '2026-10-16', ts: 1, dte: 20, calls: [
+    { k: 130, b: 2, a: 2.4, lp: 2.2, iv: 0.21, oi: 1, v: 1, d: 0.5 },
+    { k: 135, b: 0.7, a: 1.4, lp: 0.9, iv: 0.213, oi: 1, v: 1, d: 0.2 },
+  ] }],
+};
+
+test('probMatrix：行=到期日、列=OTM%，每格挂在真实挂牌档上且概率随 OTM 递减', () => {
+  const m = probMatrix(DENSE_CHAIN, { fixed: '2026-12-18', minDte: 14, maxRows: 3 });
   assert.deepEqual(m.otms, [3, 5, 7, 10, 15], '默认五档 OTM');
-  assert.deepEqual(m.rows.map((r) => r.date), ['2026-11-20', '2026-12-18'], '8 天那档被 minDte 过滤掉');
-  assert.deepEqual(m.rows[0].probs.length, 5);
+  assert.deepEqual(m.rows.map((r) => r.date), ['2026-11-20', '2026-12-18']);
   m.rows.forEach((r) => {
-    assert.ok(r.probs.every((p) => p != null && p > 0 && p < 1), '概率都在 (0,1)');
-    for (let i = 1; i < r.probs.length; i += 1) {
-      assert.ok(r.probs[i] < r.probs[i - 1], '各列必须严格递减：' + r.probs.join(' > '));
+    assert.equal(r.cells.length, 5, '每行五格');
+    assert.deepEqual(r.probs, r.cells.map((c) => c.prob), 'probs 是 cells 的兼容映射，别让两者脱钩');
+    assert.ok(r.cells.every((c) => c.listed && c.prob != null && c.prob > 0 && c.prob < 1), '完整阶梯上每格都该有挂牌档与概率');
+    for (let i = 1; i < r.cells.length; i += 1) {
+      assert.ok(r.cells[i].prob < r.cells[i - 1].prob, '各列必须严格递减：' + r.cells.map((c) => c.prob).join(' > '));
     }
   });
-  assert.equal(m.rows[0].fixed, true, '★ 标在节奏那一档');
-  assert.equal(m.rows[1].fixed, false);
+  assert.equal(m.rows[1].sell, true, '★ 该卖标在 fixed 那一档');
+  assert.equal(m.rows[0].sell, false);
   // 同一 OTM 下，期限越长概率越高
   for (let i = 0; i < m.otms.length; i += 1) {
-    assert.ok(m.rows[1].probs[i] > m.rows[0].probs[i], '同 OTM 下更长期限概率应更高');
+    assert.ok(m.rows[1].cells[i].prob > m.rows[0].cells[i].prob, '同 OTM 下更长期限概率应更高');
   }
 });
 
-test('probMatrix：用精确目标行权价，不吸附到最近挂牌档', () => {
-  /* VGT 10-16 的挂牌档只到 $135（现价 +4.4%）。若吸附，5%/7%/10%/15% 会全落到 $135
-     显示同一个数；用精确价算才会递减。这里用一个"阶梯被截断"的链来验证。 */
-  const truncated = {
-    sym: 'VGT', spot: 129.37,
-    expiries: [{ date: '2026-10-16', ts: 1, dte: 20, calls: [
-      { k: 130, b: 2, a: 2.4, lp: 2.2, iv: 0.21, oi: 1, v: 1, d: 0.5 },
-      { k: 135, b: 0.7, a: 1.4, lp: 0.9, iv: 0.213, oi: 1, v: 1, d: 0.2 },
-    ] }],
-  };
-  const row = probMatrix(truncated, { minDte: 14 }).rows[0];
-  assert.ok(row.probs[1] > row.probs[2], '5% 的概率必须高于 7%（吸附的话会相等）');
-  assert.ok(row.probs[2] > row.probs[3], '7% 高于 10%');
-  assert.ok(row.probs[3] > row.probs[4], '10% 高于 15%');
+test('probMatrix：★该卖 与「本轮该处理」两档即使低于 minDte 也强制保留并打标', () => {
+  const m = probMatrix(DENSE_CHAIN, { fixed: '2026-12-18', settle: '2026-11-20', minDte: 60, maxRows: 5 });
+  assert.deepEqual(m.rows.map((r) => r.date), ['2026-11-20', '2026-12-18'], '门槛 60 天把两档都滤掉了，但它们在名单里，必须保回来');
+  assert.equal(m.rows[0].settle, true, '更近那档是本轮该处理（结算/行权）');
+  assert.equal(m.rows[0].sell, false);
+  assert.equal(m.rows[1].sell, true, '再往后一档才是本轮该卖');
+  assert.equal(m.rows[1].settle, false);
+});
+
+test('probMatrix：阶梯截断时够不到的那格给 null（界面出「—」），不吸附出重复的数', () => {
+  const row = probMatrix(TRUNCATED_CHAIN, { minDte: 14 }).rows[0];
+  assert.equal(row.cells[0].listed, true, '3% → 吸附到挂牌的 135');
+  assert.equal(row.cells[0].strike, 135);
+  assert.equal(row.cells[1].listed, true, '5% 目标 135.84，离 135 只差 0.6%，仍算命中');
+  assert.equal(row.cells[1].strike, 135);
+  assert.equal(row.cells[2].listed, false, '7% 起偏离 135 超过容差 → 这一档不存在');
+  assert.equal(row.cells[2].prob, null);
+  assert.equal(row.cells[4].premium, null);
+});
+
+/* ---------- 矩阵的一格：吸附到真实挂牌档 ---------- */
+
+test('matrixCell：把目标 OTM 吸附到真实挂牌档，权利金取买卖价中值、年化按剩余天数折算', () => {
+  const exp = VGT_CHAIN.expiries[1];   /* 11-20，挂牌 130/135/140/145 */
+  const c = matrixCell(exp, 129.37, 7, 0.04);
+  assert.equal(c.listed, true);
+  assert.ok(Math.abs(c.target - 129.37 * 1.07) < 1e-9, '目标价 = 现价 ×(1+OTM)');
+  assert.equal(c.strike, 140, '7% 目标 138.43，最近的挂牌档是 140');
+  assert.ok(Math.abs(c.drift - (140 / (129.37 * 1.07) - 1)) < 1e-9);
+  assert.ok(Math.abs(c.premium - 1.05) < 1e-9, '权利金用买卖价中值 (0.70+1.40)/2');
+  assert.ok(Math.abs(c.prob - 0.1463) < 0.002, '这一档链里就有 IV 0.213，概率应对上实测值');
+  assert.ok(Math.abs(c.annualPct - annualizedPremiumPct(1.05, 129.37, 43)) < 1e-9);
+});
+
+test('matrixCell：阶梯够不到目标 OTM（超容差）→ listed=false 且三个数为 null，不编数', () => {
+  const exp = TRUNCATED_CHAIN.expiries[0];
+  const c = matrixCell(exp, 129.37, 15, 0.04);
+  assert.equal(c.listed, false);
+  assert.equal(c.prob, null);
+  assert.equal(c.premium, null);
+  assert.equal(c.annualPct, null);
+  assert.equal(STRIKE_TOLERANCE, 0.02, '容差是 2%');
+  assert.equal(matrixCell(exp, 129.37, 7, 0.04).listed, false, '7% 目标 138.43 离 135 有 2.5%');
+  assert.equal(matrixCell({ dte: 20, calls: [] }, 129.37, 7, 0.04).listed, false, '完全没有挂牌档');
 });
 
 test('probMatrix：现价缺失 / 没到期日 → 空表，不抛错', () => {
