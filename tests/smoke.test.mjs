@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=357');
+  assert.equal(manifest.start_url, '/?v=359');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v357/);
+  assert.match(serviceWorker, /wealth-v359/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=357',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=359',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -642,9 +642,12 @@ test('index.js：引导块不得在模块求值中读到未赋值的顶层变量
  * 删掉哪一个，用户都会再报一次「调不了 OTM」。
  */
 test('期权页：OTM 加减号与「看什么」视角都在，且加减号接回 adjOtm', () => {
-  ['probOtmSym', 'probOtmMinus', 'probOtmVal', 'probOtmPlus', 'probNote'].forEach((id) => {
+  ['probOtmSym', 'probOtmMinus', 'probOtmVal', 'probOtmPlus', 'probSpot', 'probNote'].forEach((id) => {
     assert.match(html, new RegExp('id="' + id + '"'), '缺了 #' + id);
   });
+  // v359：OTM% / 列头目标价 / 格里的实际档位全是相对现价算的，把现价摆在 OTM 旁边当参照
+  assert.match(indexSource, /getElementById\('probSpot'\)/, '要渲染现价');
+  assert.match(indexSource, /现价 \$/, '现价文案要写明是"现价"');
   // 接线：两个按钮都要真的调 adjOtm（少了它按钮就是个点了没反应的 <button>）
   assert.match(indexSource, /getElementById\('probOtmMinus'\)[\s\S]{0,140}adjOtm\(probTab,-1\)/,
     '减号没接回 adjOtm');

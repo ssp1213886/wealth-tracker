@@ -178,10 +178,12 @@ export function matrixCellHtml(cell) {
 /** 单元格的悬浮提示：写出这一格挂在哪个真实行权价上、年化多少。 */
 function cellTitle(cell) {
   if (!cell || !(cell.strike > 0)) return '这一档没有挂牌行权价（行权价阶梯够不到该 OTM）';
-  const drift = cell.drift == null ? 0 : cell.drift * 100;
-  const annual = cell.annualPct != null ? '，年化 ' + Number(cell.annualPct).toFixed(1) + '%' : '';
-  return '真实挂牌行权价 $' + Number(cell.strike).toFixed(2) +
-    '（比目标 ' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '%）' + annual;
+  const parts = ['真实挂牌行权价 $' + Number(cell.strike).toFixed(2)];
+  /* 主行写"距现价多少"（完整的 OTM）；"你设的目标价"放悬停里当参照，两个口径别混在一行 */
+  if (cell.otmPct != null) parts.push('距现价 ' + (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '%');
+  if (cell.pct != null && Number(cell.target) > 0) parts.push('你设的目标 ' + cell.pct + '% = $' + Number(cell.target).toFixed(2));
+  if (cell.annualPct != null) parts.push('年化 ' + Number(cell.annualPct).toFixed(1) + '%');
+  return parts.join(' · ');
 }
 
 /**
@@ -289,10 +291,13 @@ export function probSummaryHtml(matrix, ctx) {
     return '<div class="mx-sum">' + head +
       '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip + rule + '</div></div>';
   }
-  const drift = (cell.drift || 0) * 100;
+  /* 主行给**完整的 OTM**（相对现价）："这张比现价高多少"才是下单时真正要看的东西。
+     相对目标价的那个误差项只留在悬停里。 */
+  const otmTxt = cell.otmPct == null ? ''
+    : '（' + (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '% OTM）';
   return '<div class="mx-sum">' + head +
     '<div class="mx-sum-main">$' + Number(cell.strike).toFixed(2) +
-      ' <small>（' + (drift >= 0 ? '+' : '') + drift.toFixed(1) + '% OTM）</small></div>' +
+      (otmTxt ? ' <small>' + otmTxt + '</small>' : '') + '</div>' +
     '<div class="mx-sum-meta">被行权 <b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b>' +
       ' · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
       ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') +

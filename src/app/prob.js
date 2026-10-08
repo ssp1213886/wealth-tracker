@@ -321,13 +321,17 @@ export function isMonthlyExpiry(date) {
  */
 export function matrixCell(expiry, spot, pct, rate) {
   const r = Number.isFinite(Number(rate)) ? Number(rate) : DEFAULT_RATE;
-  const target = Number(spot) * (1 + Number(pct) / 100);
+  const sp = Number(spot);
+  const target = sp * (1 + Number(pct) / 100);
   const trade = nearestCall(sortedCalls(expiry), target);
-  const out = { pct: Number(pct), target: target, strike: 0, drift: null, prob: null, premium: null, annualPct: null, listed: true };
+  const out = { pct: Number(pct), target: target, strike: 0, drift: null, otmPct: null, prob: null, premium: null, annualPct: null, listed: true };
   if (!trade || !(Number(trade.k) > 0)) { out.listed = false; return out; }
   const strike = Number(trade.k);
   out.strike = strike;
+  /* drift＝实际挂牌档相对"你设的目标价"偏了多少（误差项）；
+     otmPct＝实际挂牌档相对**现价**高多少（＝这张合约真正的 OTM）——界面主行显示的是后者。 */
   out.drift = strike / target - 1;
+  if (sp > 0) out.otmPct = strike / sp - 1;
   if (Math.abs(out.drift) > STRIKE_TOLERANCE) { out.listed = false; return out; }
   const dte = Number(expiry && expiry.dte) || 0;
   const iv = resolveIv(expiry, Number(spot), dte, strike, r);

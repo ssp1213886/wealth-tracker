@@ -238,6 +238,9 @@ test('matrixCell：把目标 OTM 吸附到真实挂牌档，权利金取买卖�
   assert.ok(Math.abs(c.target - 129.37 * 1.07) < 1e-9, '目标价 = 现价 ×(1+OTM)');
   assert.equal(c.strike, 140, '7% 目标 138.43，最近的挂牌档是 140');
   assert.ok(Math.abs(c.drift - (140 / (129.37 * 1.07) - 1)) < 1e-9);
+  // drift＝相对"你设的目标价"的误差项；otmPct＝相对**现价**的完整 OTM（界面主行显示的是后者）
+  assert.ok(Math.abs(c.otmPct - (140 / 129.37 - 1)) < 1e-9, 'otmPct 必须是相对现价算的：+' + ((140 / 129.37 - 1) * 100).toFixed(1) + '%');
+  assert.ok(c.otmPct > c.drift, '140 相对现价高 8.2%，相对目标只高 1.1% —— 两个数不能混');
   assert.ok(Math.abs(c.premium - 1.05) < 1e-9, '权利金用买卖价中值 (0.70+1.40)/2');
   assert.ok(Math.abs(c.prob - 0.1463) < 0.002, '这一档链里就有 IV 0.213，概率应对上实测值');
   assert.ok(Math.abs(c.annualPct - annualizedPremiumPct(1.05, 129.37, 43)) < 1e-9);

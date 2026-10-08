@@ -78,7 +78,8 @@ test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', ()
 
 /** 造一格：prob=null 表示这一档没有挂牌行权价（阶梯够不到）。 */
 function cell(prob, strike, premium, annualPct) {
-  return { pct: 0, target: 0, strike, drift: 0, prob, premium, annualPct, listed: prob != null };
+  /* otmPct＝这一档相对**现价**的 OTM（主行显示的就是它）；drift＝相对你设的目标价的误差项（只进悬停） */
+  return { pct: 7, target: 138.43, strike, drift: 0.011, otmPct: 0.05, prob, premium, annualPct, listed: prob != null };
 }
 
 /* 表里只有 ★ 一个标记（「本轮该处理」已去掉）；卖出日由 ctx.sellFrom 传进来。 */
@@ -114,6 +115,7 @@ test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，�
   assert.match(html, /var\(--red\)/, '>25% 用红');
   assert.match(html, /var\(--accent\)/, '<10% 用绿');
   assert.match(html, /真实挂牌行权价 \$152\.00/, '悬浮要写清这格实际挂在哪个挂牌行权价上');
+  assert.match(html, /距现价 \+5\.0% · 你设的目标 7% = \$138\.43 · 年化/, '悬停里：完整的 OTM + 你设的目标价当参照');
   assert.doesNotMatch(html, /mx-fixed/, 'v339 起改用 mx-sell-row');
   assert.doesNotMatch(html, /prob-table/, '矩阵不能用 prob-table（那套手机端规则会把 td 变 grid）');
 });
@@ -174,6 +176,8 @@ test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 /
   assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 · 2026-11-20 卖出（还有 8 天） · 持有 28 天/, '第一行就得是"卖哪一个、哪天卖"的答案');
   assert.match(html, /mx-badge is-todo">未卖</, '状态徽章挂在「该卖」那一档上：没记这张 CALL 就是未卖');
   assert.match(html, /\$152\.00/);
+  assert.match(html, /\$152\.00 <small>（\+5\.0% OTM）<\/small>/, '主行括号里是**完整的 OTM**（相对现价），不是那个误差项');
+  assert.doesNotMatch(html, /比目标/, '误差项不该再出现在主行');
   assert.match(html, /25\.6%/, '被行权概率');
   assert.match(html, /\$2\.90/, '权利金');
   assert.match(html, /12\.1%/, '年化');
