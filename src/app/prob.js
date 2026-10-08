@@ -260,6 +260,10 @@ export const MATRIX_OTMS = [3, 5, 7, 10, 15];
  *    与其四列显示同一个数，不如老实说"这档不存在"。偏离目标超过 STRIKE_TOLERANCE 即判为不存在。
  * ③ **只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺（SMH 1 天那行实测
  *    15% 的概率比 10% 还高），放进表里只会误导。
+ *
+ * 表里只有**一个**标记：★ 本轮该卖。所谓"本轮该处理"（手里那张等着结算/行权）和
+ * "本轮该卖"本来就是同一轮 —— 到期日当天就把下一档卖出去 —— 拆成两个标记只会让人多读一层，
+ * 所以 settle 那套已经去掉（那些持仓的风险在「持仓与收入」里逐张显示）。
  */
 export function probMatrix(chain, opts) {
   const o = opts || {};
@@ -270,16 +274,13 @@ export function probMatrix(chain, opts) {
   const spot = Number(chain && chain.spot);
   if (!(spot > 0)) return { otms: otms, rows: [], spot: 0 };
   const beat = String(o.fixed || '');       /* ★ 本轮该卖的那一档 */
-  const settle = String(o.settle || '');    /* 本轮该处理（结算/行权）的那一档 */
   const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
-  /* ★ 那一档必须始终在表里 —— 它可能离得很近，被 minDte 滤掉的话最该看的那行反而没了。
-     本轮该处理的那档（通常更近）也一并保住。 */
+  /* ★ 那一档必须始终在表里 —— 它可能离得很近，被 minDte 滤掉的话最该看的那行反而没了。 */
   const picked = [];
-  [beat, settle].forEach(function (date) {
-    if (!date) return;
-    const hit = all.filter(function (e) { return e.date === date; })[0];
-    if (hit && picked.indexOf(hit) < 0) picked.push(hit);
-  });
+  if (beat) {
+    const hit = all.filter(function (e) { return e.date === beat; })[0];
+    if (hit) picked.push(hit);
+  }
   all.forEach(function (e) {
     if (picked.length >= maxRows) return;
     if (Number(e.dte) < minDte) return;
@@ -290,7 +291,7 @@ export function probMatrix(chain, opts) {
   const rows = picked.slice(0, maxRows)
     .map(function (e) {
       const cells = otms.map(function (pct) { return matrixCell(e, spot, pct, rate); });
-      return { date: e.date, dte: e.dte, sell: e.date === beat, settle: e.date === settle, cells: cells, probs: cells.map(function (c) { return c.prob; }) };
+      return { date: e.date, dte: e.dte, sell: e.date === beat, cells: cells, probs: cells.map(function (c) { return c.prob; }) };
     });
   /* spot 一起带出去：列头要用它算「这一档 OTM 对应的价格」＝现价 ×(1+OTM%)。 */
   return { otms: otms, rows: rows, spot: spot };

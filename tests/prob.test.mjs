@@ -209,13 +209,13 @@ test('probMatrix：行=到期日、列=OTM%，每格挂在真实挂牌档上且�
   }
 });
 
-test('probMatrix：★该卖 与「本轮该处理」两档即使低于 minDte 也强制保留并打标', () => {
-  const m = probMatrix(DENSE_CHAIN, { fixed: '2026-12-18', settle: '2026-11-20', minDte: 60, maxRows: 5 });
-  assert.deepEqual(m.rows.map((r) => r.date), ['2026-11-20', '2026-12-18'], '门槛 60 天把两档都滤掉了，但它们在名单里，必须保回来');
-  assert.equal(m.rows[0].settle, true, '更近那档是本轮该处理（结算/行权）');
-  assert.equal(m.rows[0].sell, false);
-  assert.equal(m.rows[1].sell, true, '再往后一档才是本轮该卖');
-  assert.equal(m.rows[1].settle, false);
+test('probMatrix：★该卖那一档即使低于 minDte 也强制保留并打标；表里只有这一个标记', () => {
+  const m = probMatrix(DENSE_CHAIN, { fixed: '2026-12-18', minDte: 60, maxRows: 5 });
+  assert.deepEqual(m.rows.map((r) => r.date), ['2026-12-18'], '门槛 60 天把两档都滤掉了，但 ★ 必须保回来');
+  assert.equal(m.rows[0].sell, true, '★ 该卖');
+  // 「本轮该处理」那套已经去掉：行里不该再有 settle 字段（拆成两个标记只会让人多读一层）
+  assert.ok(m.rows.every((r) => !('settle' in r)), '行对象不该再有 settle');
+  assert.equal(probMatrix(DENSE_CHAIN, { minDte: 14, maxRows: 5 }).rows.length, 2, '不给 ★ 时按门槛正常筛');
 });
 
 test('probMatrix：阶梯截断时够不到的那格给 null（界面出「—」），不吸附出重复的数', () => {

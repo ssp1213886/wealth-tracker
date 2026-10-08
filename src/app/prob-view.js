@@ -123,7 +123,8 @@ export function noteHtml(meta) {
   const parts = [];
   if (m.source) {
     const label = m.source === 'cboe' ? 'CBOE 延迟报价' : (m.source === 'yahoo' ? 'Yahoo 期权链（IV 为反推值）' : m.source);
-    parts.push('数据源：' + escapeHtml(String(label)));
+    /* 不再写「数据源：」前缀 —— 底部只有这一行小字了，能省一个字是一个 */
+    parts.push(escapeHtml(String(label)));
   }
   /* 时间必须走 fmtChainTime：CBOE 给的是无时区标记的美东时间，
      原样显示会让非美东用户误读成本地时间的旧数据。 */
@@ -193,7 +194,7 @@ function dittoHtml(strike) {
 
 /**
  * 概率矩阵。
- *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★），settle=true 是本轮该处理（结算/行权）的那一档。
+ *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★）—— 表里只有这一个标记。
  *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
  *  · 每格两行：概率（按风险着色）+ 权利金（灰字）；与左边同一张合约的列显示「同上」。
  */
@@ -219,12 +220,11 @@ export function probMatrixHtml(matrix, ctx) {
   rows.forEach(function (r) {
     /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
     const cells = Array.isArray(r.cells) ? r.cells : [];
-    const cls = (r.sell ? 'mx-sell-row' : '') + (r.settle ? (r.sell ? ' ' : '') + 'mx-settle-row' : '');
+    const cls = r.sell ? 'mx-sell-row' : '';
     let prevStrike = 0;   /* 左边最近一个有挂牌档的列吸到了哪个行权价 */
     html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
       '<td data-cell="expiry">' + escapeHtml(r.date) +
-        (r.sell ? '<small class="prob-sub mx-sell-tag">★ 本轮该卖</small>'
-          : (r.settle ? '<small class="prob-sub mx-settle-tag">本轮该处理</small>' : '')) + '</td>' +
+        (r.sell ? '<small class="prob-sub mx-sell-tag" title="按固定节奏，这一档到期日当天就把它卖出去">★ 本轮该卖</small>' : '') + '</td>' +
       '<td data-cell="dte">' + r.dte + '天</td>' +
       otms.map(function (o, i) {
         const cell = cells[i];
@@ -264,8 +264,9 @@ export function probSummaryHtml(matrix, ctx) {
   const cell = idx >= 0 ? (sell.cells || [])[idx] : null;
   /* 「还有 N 天」＝从今天到到期日；括号里的「持有 N 天」＝这一轮真正持有多久（卖出日 → 到期日）。
      两者对 3 周节奏的 SMH 差得很远：今天看还有 43 天，但 10-30 卖出、11-20 到期，持有只有 21 天。
-     不写清楚的话，VGT(35 天) 和 SMH(21 天) 两张卡都会顶着一个「43 天」，看着像同一个周期。 */
-  const from = ((Array.isArray(m.rows) ? m.rows : []).filter(function (r) { return r.settle; })[0] || {}).date || '';
+     不写清楚的话，VGT(35 天) 和 SMH(21 天) 两张卡都会顶着一个「43 天」，看着像同一个周期。
+     卖出日由调用方传入（＝下一个到期日，到期日当天卖下一档）—— 表里已经没有"该处理"那一行可取了。 */
+  const from = String(c.sellFrom || '');
   const tenor = from ? dayGap(from, sell.date) : null;
   const held = (from && tenor != null) ? '（' + escapeHtml(from) + ' 卖出 · 持有 ' + tenor + ' 天）' : '';
   const head = '<div class="mx-sum-head">本轮该卖 <b>' + escapeHtml(sell.date) + '</b> · 还有 ' + sell.dte + ' 天' + held +

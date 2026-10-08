@@ -2903,9 +2903,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* 列头第二行：这一档 OTM 对应的价格（现价 ×(1+OTM)），当参照用 */
 .mx-table thead th .mx-target{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:1px}
 .mx-table tbody tr.mx-sell-row td{background:color-mix(in srgb,var(--orange) 11%,transparent)}
-.mx-table tbody tr.mx-settle-row td{background:color-mix(in srgb,var(--muted) 10%,transparent)}
 .mx-sell-tag{color:var(--orange);font-weight:660}
-.mx-settle-tag{color:var(--muted)}
 
 /* 「本轮该卖」结论行：把 25 个数字收敛成一句 */
 .mx-sum{margin:2px 0 12px;padding:11px 13px;border-radius:var(--radius-inner);background:color-mix(in srgb,var(--orange) 9%,transparent);border:1px solid color-mix(in srgb,var(--orange) 25%,transparent)}
