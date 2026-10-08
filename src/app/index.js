@@ -7,7 +7,7 @@ import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike} from './options.js';
 import {planAtOtm, optionProbabilities} from './prob.js';
-import {renderProbNote, renderProbUnavailable, renderOtmProbLine, expiryCalendarHtml, fmtChainTimeShort, fmtProb} from './prob-view.js';
+import {renderProbNote, renderProbUnavailable, renderOtmProbLine, renderOtmExpiryChips, expiryCalendarHtml, fmtChainTimeShort, fmtProb} from './prob-view.js';
 import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf} from './cc-schedule.js';
 import {renderSchedule} from './cc-view.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
@@ -75,7 +75,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v330';var APP_DATA_VERSION=5;
+var APP_BUILD='v331';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -978,7 +978,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=330',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=331',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1653,30 +1653,36 @@ function isMonthlyExpiry(date){
   var day=Number(String(date).slice(8,10));
   return d.getUTCDay()===5&&day>=15&&day<=21;   /* 标准月度 = 每月第三个周五 */
 }
+var calShowAll=false;
 function renderExpiryCalendar(){
   var el=document.getElementById('expiryCalendar');
   if(!el)return;
+  var fixed={};
+  try{ccRows().forEach(function(r){fixed[r.sym]=r.nextExpiry})}catch(e){logSwallowed("ccRows",e)}
   var entries=[];
   ['VGT','SMH'].forEach(function(sym){
     var chain=chainFor(sym);if(!chain)return;
-    (chain.expiries||[]).forEach(function(e){
-      var calls=e.calls||[];if(!calls.length)return;
-      var ks=calls.map(function(c){return Number(c.k)});
-      entries.push({sym:sym,date:e.date,dte:e.dte,monthly:isMonthlyExpiry(e.date),calls:calls.length,
+    var all=(chain.expiries||[]).filter(function(e){return e&&(e.calls||[]).length});
+    /* 默认每个标的只列近 3 档：节奏那一档 + 期间的月度档。
+       SMH 的周度有十几档，全铺出来等于把有用信息淹掉。 */
+    var picked=calShowAll?all:all.filter(function(e){return isMonthlyExpiry(e.date)||e.date===fixed[sym]}).slice(0,3);
+    picked.forEach(function(e){
+      var ks=(e.calls||[]).map(function(c){return Number(c.k)});
+      entries.push({sym:sym,date:e.date,dte:e.dte,monthly:isMonthlyExpiry(e.date),calls:(e.calls||[]).length,
         lo:Math.min.apply(null,ks),hi:Math.max.apply(null,ks)});
     });
   });
-  entries.sort(function(a,b){return a.dte-b.dte||a.sym.localeCompare(b.sym)});
   var holdings={};
   (optionTrades||[]).forEach(function(o){
     if(!o||o.settled||o.archived||!o.expiry)return;
     var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
   });
-  var fixed={};
-  try{ccRows().forEach(function(r){fixed[r.sym]=r.nextExpiry})}catch(e){logSwallowed("ccRows",e)}
   el.innerHTML=expiryCalendarHtml(entries,{holdings:holdings,fixed:fixed,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链加载中…'});
+  var btn=document.getElementById('calToggle');
+  if(btn)btn.textContent=calShowAll?'只看近 3 档':'显示全部到期日';
 }
+function toggleCalShowAll(){calShowAll=!calShowAll;renderExpiryCalendar();haptic('light')}
 /** 「行权价参考」两行的概率联动：调 OTM 百分比时实时看到对应的被行权概率。 */
 /** 该标的按固定节奏的下一次到期日（联动要锁到这一档，而不是让用户手选期限）。 */
 function ccNextExpiry(sym){
@@ -1686,11 +1692,32 @@ function renderOtmProbLines(){
   ['VGT','SMH'].forEach(function(sym){
     var chain=chainFor(sym);
     var otm=sym==='VGT'?otmSettings.vgt:otmSettings.smh;
+    var fixed=ccNextExpiry(sym);
+    var opts=otmExpiryOptions(sym);
+    /* 临时选的档位如果已经不在链里（日期推进/链刷新），自动回到节奏那一档 */
+    var chosen=otmViewExpiry[sym];
+    if(!chosen||!opts.some(function(e){return e.date===chosen}))chosen=fixed;
+    otmViewExpiry[sym]=chosen;
+    renderOtmExpiryChips(document,sym,opts,chosen,fixed);
     if(!chain||!(otm>0)){renderOtmProbLine(document,sym,null);return}
     var plan=null;
-    try{plan=planAtOtm({chain:chain,sym:sym,spot:Number(livePrices&&livePrices[sym])||chain.spot,otmPct:otm,expiry:ccNextExpiry(sym)})}catch(e){logSwallowed("planAtOtm",e)}
+    try{plan=planAtOtm({chain:chain,sym:sym,spot:Number(livePrices&&livePrices[sym])||chain.spot,otmPct:otm,expiry:chosen})}catch(e){logSwallowed("planAtOtm",e)}
     renderOtmProbLine(document,sym,plan);
   });
+}
+/* '' = 跟着固定节奏；否则是临时查看的到期日（只看不改，刷新后回到节奏档） */
+var otmViewExpiry={VGT:'',SMH:''};
+/** 该标的可选的到期档：节奏那一档 + 之后最近的几档月度（最多 4 个）。 */
+function otmExpiryOptions(sym){
+  var ch=chainFor(sym);
+  if(!ch)return [];
+  var all=(ch.expiries||[]).filter(function(e){return e&&e.dte>0});
+  var fixed=ccNextExpiry(sym);
+  var out=all.filter(function(e){return e.date===fixed});
+  all.filter(function(e){return isMonthlyExpiry(e.date)&&e.date!==fixed})
+    .sort(function(a,b){return a.dte-b.dte})
+    .forEach(function(e){if(out.length<4)out.push(e)});
+  return out.sort(function(a,b){return a.dte-b.dte});
 }
 async function fetchChain(sym){
   try{
@@ -1724,6 +1751,21 @@ function bindProbControls(){
      所以在容器上做事件委托，等原处理器跑完再重绘。 */
   var ob=document.getElementById('holdingsBody');
   if(ob)ob.addEventListener('click',function(){setTimeout(function(){renderProbCard();updateOtm()},150)});
+  /* 到期档位切换：只看不改 —— 选一档就重画那一行的概率/权利金，节奏本身不受影响 */
+  ['VGT','SMH'].forEach(function(sym){
+    var el=document.getElementById(sym==='VGT'?'otmVgtExp':'otmSmhExp');
+    if(!el)return;
+    el.addEventListener('click',function(e){
+      var b=e.target.closest('[data-otmexp]');if(!b)return;
+      var parts=String(b.dataset.otmexp).split('|');
+      if(parts[0]!==sym||!parts[1])return;
+      otmViewExpiry[sym]=parts[1];
+      renderOtmProbLines();
+      haptic('light');
+    });
+  });
+  var calBtn=document.getElementById('calToggle');
+  if(calBtn)calBtn.addEventListener('click',toggleCalShowAll);
 }
 (function initProb(){
   var run=function(){
@@ -1783,7 +1825,9 @@ async function fetchDividends(sym){
 /** 节奏卡片 + CC 相关的提醒一起刷新（提醒要读 ccRows，所以绑在一起）。 */
 function renderCcSchedule(){
   try{
-    renderSchedule(document,ccRows(),{
+    var rows=ccRows();
+    renderSchedule(document,rows,{
+      rows:rows,
       rules:{VGT:ccSchedule.VGT.rule,SMH:ccSchedule.SMH.rule},
       streaks:ccStreaks(),
       dividends:ccExDivItems(),

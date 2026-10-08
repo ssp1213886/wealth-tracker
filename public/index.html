@@ -467,11 +467,11 @@
   <div class="opt-card-head"><h3>选行权价</h3><small class="prob-src" id="probSrc"></small></div>
   <div class="otm-list">
     <div class="otm-row">
-      <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small></div>
+      <div class="otm-info"><strong>VGT</strong><small id="otmVgtStrike">建议行权价 --</small><small id="otmVgtProb" class="otm-prob"></small><div class="otm-exp" id="otmVgtExp"></div></div>
       <div class="otm-stepper"><button type="button" id="otmVgtMinus">−</button><span id="otmVgtVal">7%</span><button type="button" id="otmVgtPlus">+</button></div>
     </div>
     <div class="otm-row">
-      <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small><small id="otmSmhProb" class="otm-prob"></small></div>
+      <div class="otm-info"><strong>SMH</strong><small id="otmSmhStrike">建议行权价 --</small><small id="otmSmhProb" class="otm-prob"></small><div class="otm-exp" id="otmSmhExp"></div></div>
       <div class="otm-stepper"><button type="button" id="otmSmhMinus">−</button><span id="otmSmhVal">6%</span><button type="button" id="otmSmhPlus">+</button></div>
     </div>
   </div>
@@ -482,7 +482,8 @@
   <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>到期日历</h3></div>
   <div class="collapsible-body">
     <div id="expiryCalendar"></div>
-    <div class="prob-note">到期判定：到期日当天美东 16:00 收盘。收盘时实值 ≥ $0.01 即自动行权（无需对手方决定），ETF 期权为实物交割，T+1 划走股份 —— 周五到期 → 周一交割，与「T+1 市价买回」正好衔接。VGT 只有月度到期日，SMH 还有周度。</div>
+    <button type="button" class="btn btn-out btn-sm" id="calToggle">显示全部到期日</button>
+    <div class="prob-note">★ = 按固定节奏该卖的档位。到期判定：到期日当天美东 16:00 收盘，收盘时实值 ≥ $0.01 即自动行权（无需对手方决定），ETF 期权为实物交割、T+1 划走股份。被行权概率 = 到期时现价 &gt; 行权价（未含除息日提前行权）。VGT 只有月度到期日，SMH 还有周度。</div>
   </div>
 </div>
 

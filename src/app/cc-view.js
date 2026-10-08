@@ -7,6 +7,8 @@ const WD = '日一二三四五六';
 
 /** 距今文案：0 → 「今天」（高亮提醒该操作了）。 */
 export function dueText(daysToGo) {
+  /* 必须先挡 null/''：Number(null) === 0，会被误判成"今天" */
+  if (daysToGo == null || daysToGo === '') return '—';
   const d = Number(daysToGo);
   if (!Number.isFinite(d)) return '—';
   if (d === 0) return '今天';
@@ -69,18 +71,31 @@ export function rulePickerHtml(sym, current) {
 }
 
 /**
- * 除息日一行。只做提示，不做提前行权概率计算 —— 这两个标的股息都很小，
- * 提前行权只在临到期、且已实值、且时间价值被压薄的窄窗口才可能发生，
- * 算概率的复杂度远大于实际价值。
+ * 除息日一行。**只在除息日落在当前这一轮周期内时才显示** ——
+ * 也就是除息日早于该标的的下次到期日。平时（除息日还在更远的周期）整行不出现，
+ * 免得每个周期都挂着一句跟你这轮无关的提醒。
+ *
+ * 只做提示，不做提前行权概率计算 —— 这两个标的股息都很小（VGT 约 0.11%、SMH 约 0.18%），
+ * 提前行权只在临到期、且已实值、且时间价值被压薄的窄窗口才可能发生。
  */
-export function exDivLineHtml(items) {
-  const list = (Array.isArray(items) ? items : []).filter(function (x) { return x && x.next && x.next.date; });
+export function exDivLineHtml(items, ctx) {
+  const c = ctx || {};
+  const rows = Array.isArray(c.rows) ? c.rows : [];
+  const list = (Array.isArray(items) ? items : [])
+    .filter(function (x) { return x && x.next && x.next.date; })
+    .filter(function (x) {
+      const row = rows.filter(function (r) { return r && r.sym === x.sym; })[0];
+      if (!row || !row.nextExpiry) return false;
+      const div = Date.parse(x.next.date + 'T00:00:00Z');
+      const exp = Date.parse(row.nextExpiry + 'T00:00:00Z');
+      return Number.isFinite(div) && Number.isFinite(exp) && div <= exp;   // 落在本轮周期内
+    });
   if (!list.length) return '';
   const body = list.map(function (x) {
-    return escapeHtml(x.sym) + ' 约 ' + escapeHtml(x.next.date) +
+    return escapeHtml(x.sym) + ' ' + escapeHtml(x.next.date) +
       '（$' + Number(x.next.amount).toFixed(3) + '/股 · ' + escapeHtml(x.next.cadence) + '）';
   }).join(' · ');
-  return '💰 下次除息（按历史规律推算）：' + body +
+  return '💰 本轮周期内含除息：' + body +
     ' —— 若届时股价高于行权价且时间价值被压薄，存在提前行权可能';
 }
 
@@ -97,5 +112,5 @@ export function renderSchedule(doc, rows, ctx) {
     }).join('');
   }
   const div = doc.getElementById('ccExDiv');
-  if (div) div.innerHTML = exDivLineHtml(ctx && ctx.dividends);
+  if (div) div.innerHTML = exDivLineHtml(ctx && ctx.dividends, ctx);
 }

@@ -2,7 +2,7 @@
 // 这段决定了喂给概率计算的原始数据干不干净，所以脏数据必须被挡在外面。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOsiSymbol, buildChain, dedupeMonthly } from '../src/lib/chain.js';
+import { parseOsiSymbol, buildChain } from '../src/lib/chain.js';
 
 /** 2026-10-08 00:00 UTC 的秒级时间戳，作为所有用例的"现在"。 */
 const NOW = Math.floor(Date.UTC(2026, 9, 8) / 1000);
@@ -50,30 +50,13 @@ test('buildChain：只留 CALL、只留半年内、只留现价 0.9~1.5 倍的�
   assert.deepEqual(chain.expiries[0].calls.map((c) => c.k), [140]);
 });
 
-const mk = (date) => ({ date, ts: Math.floor(Date.parse(date + 'T00:00:00Z') / 1000) });
-
-test('dedupeMonthly：每月只留一档，优先第三个周五', () => {
-  // 2026-11 的周五是 6/13/20/27，第三个周五 = 11-20；2026-12 的周五是 4/11/18/25，第三个周五 = 12-18
-  const out = dedupeMonthly([
-    mk('2026-11-06'), mk('2026-11-13'), mk('2026-11-20'), mk('2026-11-27'),
-    mk('2026-12-04'), mk('2026-12-18'),
-  ]);
-  assert.deepEqual(out.map((e) => e.date), ['2026-11-20', '2026-12-18']);
-});
-
-test('dedupeMonthly：当月没有第三个周五时，取最接近 19 号的那档', () => {
-  // 2026-11-10 与 11-24 都不是周五；|10-19|=9 比 |24-19|=5 远，所以该留 11-24
-  assert.deepEqual(dedupeMonthly([mk('2026-11-10'), mk('2026-11-24')]).map((e) => e.date), ['2026-11-24']);
-});
-
 /**
- * 回归用例（v325 实测抓到的真 bug）：SMH 这类 ETF 的期权链里，最近的到期日全是**周度**。
- * 旧实现按"最近 N 个到期日"截断，43 天的月度档被周度挤出列表 —— 反解退到 29 天短周期，
- * 年化权利金率被高估（实测 22.0% vs 正确的 19.8%）。
+ * v331 回归用例：**周度档必须留在链里**。
+ * v326 曾按"每月只留第三个周五"去重，结果 SMH 的固定节奏（每 3 周，落在 10-30 这种非月度日期）
+ * 在链里查不到，选行权价算的是别的到期日。现在只按天数/条数裁剪，不再按月去重。
  */
-test('buildChain：周度链被压成每月一档，月度档不会被挤出', () => {
+test('buildChain：周度档保留在链里（固定节奏会落在非月度日期上）', () => {
   const contracts = [];
-  // 2026-10/11/12 每个周五都挂一张，同一个月度档同时存在于链里
   const fridays = [
     '2026-10-02', '2026-10-09', '2026-10-16', '2026-10-23', '2026-10-30',
     '2026-11-06', '2026-11-13', '2026-11-20', '2026-11-27',
@@ -88,17 +71,18 @@ test('buildChain：周度链被压成每月一档，月度档不会被挤出', (
     });
   });
   const chain = buildChain(contracts, { sym: 'SMH', spot: 129.37, now: NOW });
-  assert.deepEqual(chain.expiries.map((e) => e.date), ['2026-10-16', '2026-11-20', '2026-12-18'],
-    '每个日历月只剩第三个周五那一档');
+  const dates = chain.expiries.map((e) => e.date);
+  assert.deepEqual(dates, fridays.slice(1), '未来的周五一个不少（10-02 已过期）');
+  assert.ok(dates.includes('2026-10-30'), '非月度的周度档也要留着');
   assert.deepEqual(chain.expiries[0].calls.map((c) => c.k), [130, 135, 140], '行权价升序');
   const dtes = chain.expiries.map((e) => e.dte);
   assert.deepEqual(dtes, dtes.slice().sort((a, b) => a - b), '按时间升序');
 });
 
-test('buildChain：跨很多月时最多保留 10 档', () => {
+test('buildChain：超过 24 档时按时间截断', () => {
   const contracts = [];
-  for (let m = 0; m < 6; m += 1) {
-    const dt = new Date(Date.UTC(2026, 9 + m, 16));
+  for (let w = 0; w < 30; w += 1) {
+    const dt = new Date(Date.UTC(2026, 9, 9) + w * 7 * 86400000);
     const date = dt.toISOString().slice(0, 10);
     contracts.push({
       ts: Math.floor(dt.getTime() / 1000), date, cp: 'C',
@@ -106,8 +90,8 @@ test('buildChain：跨很多月时最多保留 10 档', () => {
     });
   }
   const chain = buildChain(contracts, { sym: 'VGT', spot: 129.37, now: NOW });
-  assert.ok(chain.expiries.length <= 10, '实际 ' + chain.expiries.length);
-  assert.ok(chain.expiries.length >= 5, '半年内应有 5 档以上，实际 ' + chain.expiries.length);
+  assert.equal(chain.expiries.length, 24, '200 天内最多保留 24 档');
+  assert.equal(chain.expiries[0].date, '2026-10-09', '最早的在前');
 });
 
 test('buildChain：字段清洗 —— 负/NaN 报价归 0，iv 为 0 时保持 0（让前端反推）', () => {

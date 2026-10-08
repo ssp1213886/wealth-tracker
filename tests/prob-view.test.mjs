@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {
   probColor, fmtProb, fmtIv,
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
+  otmExpiryChipsHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -35,18 +36,30 @@ test('expiryCalendarHtml：空链给空态', () => {
   assert.match(expiryCalendarHtml(null, {}), /prob-empty/);
 });
 
-test('expiryCalendarHtml：月度标「月度」、非月度标「周度」，并列出档位区间', () => {
+test('expiryCalendarHtml：按标的拆成两块表（v331），不再是「标的」一列的大表', () => {
   const html = expiryCalendarHtml([
     { sym: 'VGT', date: '2026-11-20', dte: 43, monthly: true, calls: 35, lo: 100, hi: 190 },
-    { sym: 'SMH', date: '2026-10-09', dte: 1, monthly: false, calls: 75, lo: 530, hi: 760 },
+    { sym: 'SMH', date: '2026-10-30', dte: 22, monthly: false, calls: 69, lo: 530, hi: 760 },
   ], {});
-  assert.match(html, /VGT/);
+  assert.equal((html.match(/<table/g) || []).length, 2, '一个标的一张表');
+  assert.equal((html.match(/cal-section/g) || []).length, 2);
+  assert.match(html, /VGT<\/div>/);
+  assert.match(html, /SMH<\/div>/);
+  assert.doesNotMatch(html, /<th>标的<\/th>/, '拆表后不再需要标的列');
   assert.match(html, /2026-11-20/);
   assert.match(html, /is-monthly">月度/);
-  assert.match(html, /2026-10-09/);
-  assert.match(html, /36 档|35 档/);
-  assert.match(html, /\$100~\$190/);
+  assert.match(html, /2026-10-30/);
   assert.match(html, /周度/);
+  assert.match(html, /69 档/);
+  assert.match(html, /\$530~\$760/);
+});
+
+test('expiryCalendarHtml：每块内部按剩余天数升序', () => {
+  const html = expiryCalendarHtml([
+    { sym: 'SMH', date: '2026-12-18', dte: 71, monthly: true, calls: 40, lo: 530, hi: 760 },
+    { sym: 'SMH', date: '2026-10-30', dte: 22, monthly: false, calls: 69, lo: 530, hi: 760 },
+  ], {});
+  assert.ok(html.indexOf('2026-10-30') < html.indexOf('2026-12-18'), '近的排前面');
 });
 
 test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', () => {
@@ -57,6 +70,22 @@ test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', ()
   assert.match(html, /class="cal-mine"/);
   assert.match(html, /2 张/);
   assert.equal((html.match(/cal-mine/g) || []).length, 1, '只有持有那一档高亮');
+});
+
+test('otmExpiryChipsHtml：节奏那一档带 ★，只有一档时不占位', () => {
+  const opts = [
+    { date: '2026-10-30', dte: 22 },
+    { date: '2026-11-20', dte: 43 },
+    { date: '2026-12-18', dte: 71 },
+  ];
+  const html = otmExpiryChipsHtml('SMH', opts, '2026-11-20', '2026-10-30');
+  assert.match(html, /data-otmexp="SMH\|2026-10-30"/);
+  assert.match(html, /10-30 ★/, '节奏档带星标');
+  assert.match(html, /class="prob-chip is-on" data-otmexp="SMH\|2026-11-20"/, '选中的那档高亮');
+  assert.equal((html.match(/is-on/g) || []).length, 1);
+  assert.equal(otmExpiryChipsHtml('VGT', [{ date: '2026-10-16', dte: 8 }], '2026-10-16', '2026-10-16'), '', '只有一档没有可选性');
+  assert.equal(otmExpiryChipsHtml('VGT', [], '', ''), '');
+  assert.equal(otmExpiryChipsHtml('VGT', null, '', ''), '');
 });
 
 /* ---------------- 行情时间（v327：CBOE 给的是无时区标记的美东时间） ---------------- */
@@ -92,7 +121,7 @@ test('fmtChainTimeShort：右上角的紧凑写法', () => {
   assert.equal(fmtChainTimeShort('bad', Date.now()), '');
 });
 
-test('noteHtml：写清数据源、美东时间与官方 IV30，以及「不含除息日提前行权」这个口径', () => {
+test('noteHtml：只写数据源 / 美东时间 / 官方 IV30（口径说明已挪到「到期日历」卡）', () => {
   const closeMs = parseMarketTime(ET_CLOSE);
   const html = noteHtml({
     source: 'cboe', updated: ET_CLOSE, nowMs: closeMs + 11 * 3600 * 1000,
@@ -101,10 +130,9 @@ test('noteHtml：写清数据源、美东时间与官方 IV30，以及「不含�
   assert.match(html, /CBOE 延迟报价/, '要写明这是延迟报价，不是实时');
   assert.match(html, /上一交易日收盘/);
   assert.match(html, /官方 30 天 IV：VGT 22\.5% · SMH 41\.2%/);
-  assert.match(html, /N\(d2\)/);
-  assert.match(html, /未含除息日提前行权/);
+  assert.doesNotMatch(html, /N\(d2\)/, 'v331 起这句只在「到期日历」卡说一次，不在这里重复');
   assert.match(noteHtml({ source: 'yahoo' }), /反推/);
-  assert.match(noteHtml({}), /N\(d2\)/, '没有数据源时也保留口径说明');
+  assert.equal(noteHtml({}), '', '没有数据源时整行留空');
   assert.doesNotMatch(noteHtml({ source: 'cboe', iv30: { VGT: 0 } }), /官方 30 天 IV/, 'IV 无效时不显示');
 });
 

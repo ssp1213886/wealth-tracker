@@ -117,6 +117,30 @@ export function fmtChainTimeShort(raw, nowMs) {
   return '上一交易日收盘 · ' + age;
 }
 
+/**
+ * 到期档位按钮：一行一个标的，列出"节奏那一档 + 之后最近的 3 个月度"。
+ * 默认选中节奏那一档（带 ★），点别的就临时看那一档 —— 只是查看口径，不改节奏。
+ */
+export function otmExpiryChipsHtml(sym, options, current, fixed) {
+  const list = Array.isArray(options) ? options : [];
+  if (list.length < 2) return '';   /* 只有一档时没有"选择"可言，别占位 */
+  return list.map(function (e) {
+    const on = e.date === current;
+    const star = e.date === fixed ? ' ★' : '';
+    return '<button type="button" class="prob-chip' + (on ? ' is-on' : '') +
+      '" data-otmexp="' + escapeHtml(sym) + '|' + escapeHtml(e.date) + '">' +
+      escapeHtml(String(e.date).slice(5)) + star + '</button>';
+  }).join('');
+}
+
+/** 把到期档位按钮写进对应标的的那一行。 */
+export function renderOtmExpiryChips(doc, sym, options, current, fixed) {
+  const el = doc.getElementById(sym === 'VGT' ? 'otmVgtExp' : 'otmSmhExp');
+  if (!el) return;
+  const html = otmExpiryChipsHtml(sym, options, current, fixed);
+  el.innerHTML = html ? '<div class="prob-chips">' + html + '</div>' : '';
+}
+
 /** 数据源与口径说明。source 为 '' 时按"还没拿到"处理。 */
 export function noteHtml(meta) {
   const m = meta || {};
@@ -136,7 +160,6 @@ export function noteHtml(meta) {
       .map(function (k) { return k + ' ' + fmtIv(Number(iv[k]) / 100); });
     if (ivText.length) parts.push('官方 30 天 IV：' + ivText.join(' · '));
   }
-  parts.push('概率＝到期时现价 &gt; 行权价（N(d2)），未含除息日提前行权');
   return parts.join(' · ');
 }
 
@@ -182,27 +205,38 @@ export function renderOtmProbLine(doc, sym, plan) {
  * 这个差别直接决定"能不能做 21 天的 CC"（见 prob.js 顶部说明），但界面上原本一个字都没有。
  */
 export function expiryCalendarHtml(entries, ctx) {
+  const c = ctx || {};
   const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
-  const holdings = (ctx && ctx.holdings) || {};
-  const fixed = (ctx && ctx.fixed) || {};   /* { VGT:'2026-11-20', SMH:'2026-10-30' } —— 固定节奏该卖的那一档 */
+  const holdings = c.holdings || {};
+  const fixed = c.fixed || {};   /* { VGT:'2026-11-20', SMH:'2026-10-30' } —— 固定节奏该卖的那一档 */
   if (!list.length) {
-    return '<div class="prob-empty">' + escapeHtml((ctx && ctx.emptyHint) || '期权链加载中…') + '</div>';
+    return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
-  let html = '<table class="prob-table cal-table"><thead><tr>' +
-    '<th>标的</th><th>到期日</th><th>剩余</th><th>类型</th><th>行权价档位</th><th>我的持仓</th>' +
-    '</tr></thead><tbody>';
-  list.forEach(function (e) {
-    const mine = holdings[e.sym + '|' + e.date] || 0;
-    const onBeat = fixed[e.sym] === e.date;
-    const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
-    html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
-      '<td data-cell="sym"><strong>' + escapeHtml(e.sym) + '</strong></td>' +
-      '<td data-cell="expiry">' + escapeHtml(e.date) + (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
-      '<td data-cell="dte">' + e.dte + '天</td>' +
-      '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
-      '<td data-cell="strikes">' + e.calls + ' 档 · $' + Number(e.lo).toFixed(0) + '~$' + Number(e.hi).toFixed(0) + '</td>' +
-      '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +
-      '</tr>';
-  });
-  return html + '</tbody></table>';
+  const syms = [];
+  list.forEach(function (e) { if (syms.indexOf(e.sym) < 0) syms.push(e.sym); });
+  /* 按标的拆成两块表 —— 两个标的的到期日结构完全不同（VGT 只有月度、SMH 有周度），
+     混在一张表里既难比对，也没法各自"只看近几档"。 */
+  return syms.map(function (sym) {
+    const rows = list.filter(function (e) { return e.sym === sym; })
+      .sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
+    let html = '<div class="cal-section">' +
+      '<div class="prob-section-title">' + escapeHtml(sym) + '</div>' +
+      '<table class="prob-table cal-table"><thead><tr>' +
+      '<th>到期日</th><th>剩余</th><th>类型</th><th>行权价档位</th><th>我的持仓</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function (e) {
+      const mine = holdings[sym + '|' + e.date] || 0;
+      const onBeat = fixed[sym] === e.date;
+      const cls = (mine ? 'cal-mine' : '') + (onBeat ? (mine ? ' ' : '') + 'cal-onbeat' : '');
+      html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
+        '<td data-cell="expiry">' + escapeHtml(e.date) +
+          (onBeat ? '<small class="prob-sub">★ 按节奏该卖这档</small>' : '') + '</td>' +
+        '<td data-cell="dte">' + e.dte + '天</td>' +
+        '<td data-cell="kind">' + (e.monthly ? '<span class="cal-tag is-monthly">月度</span>' : '<span class="cal-tag">周度</span>') + '</td>' +
+        '<td data-cell="strikes">' + e.calls + ' 档 · $' + Number(e.lo).toFixed(0) + '~$' + Number(e.hi).toFixed(0) + '</td>' +
+        '<td data-cell="mine">' + (mine ? mine + ' 张' : '—') + '</td>' +
+        '</tr>';
+    });
+    return html + '</tbody></table></div>';
+  }).join('');
 }

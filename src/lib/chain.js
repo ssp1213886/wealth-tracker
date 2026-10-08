@@ -12,7 +12,10 @@ import { edgeGetJson, edgePutJson } from './edge-cache.js';
 const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH']);
 const CACHE_TTL_SECONDS = 30 * 60;
 const MAX_DTE = 200;          // 只留半年内的到期日
-const MAX_EXPIRIES = 10;      // 去重后每月一档，10 档已覆盖半年窗口
+// 24 档足够装下 200 天内的全部到期日（SMH 有 16 档、VGT 只有 6 档）。
+// 这里**不能**像 v326 那样"每月只留第三个周五"——SMH 的固定节奏是每 3 周，
+// 落在 10-30 / 12-11 这些非月度日期上，滤掉周度会让节奏档在链里查不到。
+const MAX_EXPIRIES = 24;
 const MIN_STRIKE_RATIO = 0.9;
 const MAX_STRIKE_RATIO = 1.5;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -81,7 +84,9 @@ export function buildChain(contracts, meta) {
       d: round4(c.delta),
     });
   });
-  const expiries = dedupeMonthly(Array.from(byExpiry.values())).slice(0, MAX_EXPIRIES);
+  const expiries = Array.from(byExpiry.values())
+    .sort(function (a, b) { return a.ts - b.ts; })
+    .slice(0, MAX_EXPIRIES);
   expiries.forEach(function (e) {
     e.calls.sort(function (a, b) { return a.k - b.k; });
     e.dte = Math.max(0, Math.round((e.ts - now) / 86400));
@@ -96,30 +101,6 @@ export function buildChain(contracts, meta) {
     iv30: num(info.iv30),
     expiries: expiries,
   };
-}
-
-/**
- * 每个日历月只留一个到期日，优先标准月度（每月第三个周五）。
- *
- * 为什么要做：SMH 这类 ETF 有**周度**期权，最近的十个到期日全是周度，
- * 会把 43 天的月度档直接挤出列表 —— 反解就退到 29 天的短周期，年化权利金被明显高估。
- * 去重后列表稳定成"每月一档"，和 30/45/60 天这个期限选择器才是同一套口径。
- */
-export function dedupeMonthly(expiries) {
-  const byMonth = new Map();
-  (Array.isArray(expiries) ? expiries : []).forEach(function (e) {
-    const date = String((e && e.date) || '');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-    const day = Number(date.slice(8, 10));
-    const isMonthly = new Date(e.ts * 1000).getUTCDay() === 5 && day >= 15 && day <= 21;
-    const score = isMonthly ? 0 : Math.abs(day - 19) + 1;   // 当月没有月度档时，取最接近 19 号的那个
-    const ym = date.slice(0, 7);
-    const cur = byMonth.get(ym);
-    if (!cur || score < cur.score || (score === cur.score && e.ts < cur.exp.ts)) byMonth.set(ym, { exp: e, score: score });
-  });
-  return Array.from(byMonth.values())
-    .map(function (v) { return v.exp; })
-    .sort(function (a, b) { return a.ts - b.ts; });
 }
 
 /** 带超时的 fetch，模式与 lib/price.js 一致。 */
