@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=339');
+  assert.equal(manifest.start_url, '/?v=340');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v339/);
+  assert.match(serviceWorker, /wealth-v340/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=339',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=340',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -632,4 +632,25 @@ test('index.js：引导块不得在模块求值中读到未赋值的顶层变量
   // updateOtm 自身留了兜底：万一顺序又被人改坏，也不至于让整页死掉
   assert.match(indexSource, /function updateOtm\(\)\{if\(!otmSettings\)otmSettings=\{vgt:7,smh:6\}/,
     'updateOtm 要有 otmSettings 兜底，避免再次"读 undefined 直接崩"');
+});
+
+/**
+ * v339 曾在方案里写下「点列头直接设 OTM，去掉 +/- 按钮」，结果只剩下 3/5/7/10/15 五档，
+ * 想设 6%/8% 就没辙了 —— 用户马上报「没有加减号」。两个入口各有各的用处，都留着：
+ *   · 加减号 = 微调（每次 1%，adjOtm 钳到 1~20%）
+ *   · 点列头 = 快速跳到五档预设
+ * 删掉哪一个，用户都会再报一次「调不了 OTM」。
+ */
+test('期权页：OTM 加减号与「看什么」视角都在，且加减号接回 adjOtm', () => {
+  ['probOtmSym', 'probOtmMinus', 'probOtmVal', 'probOtmPlus', 'probViews'].forEach((id) => {
+    assert.match(html, new RegExp('id="' + id + '"'), '缺了 #' + id);
+  });
+  // 接线：两个按钮都要真的调 adjOtm（少了它按钮就是个点了没反应的 <button>）
+  assert.match(indexSource, /getElementById\('probOtmMinus'\)[\s\S]{0,140}adjOtm\(probTab,-1\)/,
+    '减号没接回 adjOtm');
+  assert.match(indexSource, /getElementById\('probOtmPlus'\)[\s\S]{0,140}adjOtm\(probTab,1\)/,
+    '加号没接回 adjOtm');
+  // 切 VGT / SMH 时标签与数值要跟着变，否则 SMH 那页会顶着「VGT OTM」
+  assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,100}probTab\+' OTM'/, 'OTM 标签没跟着标的切');
+  assert.match(indexSource, /getElementById\('probOtmVal'\)[\s\S]{0,100}otm\+'%'/, 'OTM 数值没跟着设置刷新');
 });
