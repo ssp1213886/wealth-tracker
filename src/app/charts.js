@@ -55,7 +55,9 @@ export function disciplineMonths(input) {
  * 资产口径跟 app 里已有的「年度归因」（index.js 的 calcAttribution）**完全一致**：
  *   · 资产 = Σ(持股 × 月末收盘价) + Σ 现金流水的累计 + 卖出所得 − 买入支出
  *     （现金流水只记外部进出：入金/出金/股息/权利金/修正；买卖股票对现金的影响由 trades 自己算）
- *   · 净入金只数「入金 / 出金」—— 股息、权利金、修正是收益或调整，不能当注资
+ *   · 净入金数「入金 / 出金 / 修正」—— 股息、权利金是**收益**，不能当注资；
+ *     「修正」是记账调整（原因不明，多半是补记/改错），按**资本变动**处理，不算收益也不算亏损。
+ *     这一条与「年度归因」「首页累计收益」三处必须一致，否则同一个数在两个地方会差出那一笔。
  *   于是有个可测的好性质：同一年 12 个月的收益额加起来 ≈ 那一年的总收益，两处不会互相打脸。
  *
  * ⚠️ 铁律：**必须减掉当月入金**，否则定投会被当成收益。
@@ -91,10 +93,10 @@ export function monthlyPnl(input) {
     return m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
   };
   const inMonth = function (date, ym) { return typeof date === 'string' && date.slice(0, 7) === ym; };
-  /* 只有"外部进出"算注资；股息 / 权利金 / 修正是收益或调整 */
-  const isExternal = function (l) {
+  /* 算注资的只有这三类：入金 / 出金 / 修正。股息与权利金是收益，不能当注资。 */
+  const isCapital = function (l) {
     const t = String((l && l.type) || '');
-    return t.indexOf('入金') >= 0 || t.indexOf('出金') >= 0;
+    return t.indexOf('入金') >= 0 || t.indexOf('出金') >= 0 || t.indexOf('修正') >= 0;
   };
 
   /** 到 end 为止的累计：现金流水 / 买入支出 / 卖出所得，以及当时的持股。 */
@@ -135,7 +137,7 @@ export function monthlyPnl(input) {
     let netDep = 0;
     let weighted = 0;
     cashLog.forEach(function (l) {
-      if (!l || !isExternal(l) || !inMonth(l.date, ym)) return;
+      if (!l || !isCapital(l) || !inMonth(l.date, ym)) return;
       const amt = cashSigned(l);                                  /* 入金为正、出金为负 */
       netDep += amt;
       const day = Number(String(l.date).slice(8, 10));            /* 当月第几天 */

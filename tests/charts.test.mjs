@@ -87,6 +87,20 @@ test('monthlyPnl：分母 ≤ 0 时只给金额、不给收益率（不编一个
   assert.equal(r.rate, null, '月初没有资产、当月也没有进出 → 收益率没有意义');
 });
 
+test('monthlyPnl：现金修正算资本变动，不算收益（首页累计收益 / 年度归因 / 月收益三处口径一致）', () => {
+  const r = monthlyPnl({
+    months: ['2026-09'],
+    trades: [],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 10000 },
+      { type: '修正', date: '2026-09-10', amount: 500 },   /* 补记 / 改错，不是赚来的钱 */
+    ],
+    priceByMonth: { VGT: { '2026-08': 100, '2026-09': 100 } },
+  })['2026-09'];
+  assert.equal(r.amount, 0, '修正不是收益：账面多了 500，但那是资本变动');
+  assert.equal(r.rate, 0);
+});
+
 test('monthlyPnl：股息算收益、不算注资（跟年度归因同口径）', () => {
   const r = monthlyPnl({
     months: ['2026-09'],

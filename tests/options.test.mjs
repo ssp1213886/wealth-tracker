@@ -5,11 +5,23 @@ import assert from 'node:assert/strict';
 import {
   normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals,
   otmPercent, stepOtmPercent, suggestedStrike, pendingBuybacks, optionActionItems,
+  freeCallContracts,
 } from '../src/app/options.js';
 
 const opt = (over) => Object.assign({
   id: 1, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: '2026-10-16', added: '2026-09-20',
 }, over);
+
+test('freeCallContracts：可卖张数 = floor(持股/100) − 已有活跃 CALL（口径只有这一处）', () => {
+  assert.equal(freeCallContracts(0, 0), 0);
+  assert.equal(freeCallContracts(99, 0), 0, '不足 1 张');
+  assert.equal(freeCallContracts(100, 0), 1);
+  assert.equal(freeCallContracts(100, 1), 0, '已经被一张 CALL 占着');
+  assert.equal(freeCallContracts(250, 2), 0, '250 股只够 2 张');
+  assert.equal(freeCallContracts(350, 1), 2);
+  assert.equal(freeCallContracts(100, 3), -2, '持股被卖掉、CALL 还在 → 可以是负数，clamp 由调用方决定');
+  assert.equal(freeCallContracts(undefined, undefined), 0, '缺值当 0，不抛错');
+});
 // 2026-09-29 10:00 美东（EDT，UTC-4）→ 盘中；同日 17:00 美东 → 收盘后
 const BEFORE_CLOSE = new Date('2026-09-29T14:00:00.000Z');
 const AFTER_CLOSE = new Date('2026-09-29T21:00:00.000Z');

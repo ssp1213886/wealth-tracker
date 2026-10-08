@@ -114,6 +114,19 @@ export function stepOtmPercent(current, delta, fallback) {
   return Math.min(20, Math.max(1, otmPercent(current, fallback) + (Number(delta) || 0)));
 }
 
+/**
+ * 可卖 CALL 张数 = floor(持股 / 100) − 该标的已有的活跃 CALL 张数。
+ *
+ * 为什么必须只有这一处：「期权状态」卡要显示"可卖 N 张CALL"，而「该卖 CALL」提醒要用它当门槛
+ * （不足 1 张就别催你卖）。这两处以前各写了一份公式 —— 同一个数字两种算法，正是最容易悄悄跑偏的地方。
+ * 返回值可能为负（持股被卖掉、CALL 还在），要不要 clamp 由调用方决定（显示时取 max(0,·)）。
+ */
+export function freeCallContracts(holdingShares, activeCallContracts) {
+  const sh = Number(holdingShares) || 0;
+  const used = Number(activeCallContracts) || 0;
+  return Math.floor(sh / 100) - used;
+}
+
 /** 建议行权价 = 现价 × (1 + OTM%)；现价缺失返回 0（界面据此不显示）。 */
 export function suggestedStrike(price, pct) {
   const p = Number(price) || 0;

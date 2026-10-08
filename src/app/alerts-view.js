@@ -4,7 +4,7 @@
 
 import { readRaw, removeKey , LS } from './store.js';
 import { marketDate } from './time.js';
-import { isActiveOption, optionExpiryState, optionActionItems } from './options.js';
+import { isActiveOption, optionExpiryState, optionActionItems, freeCallContracts } from './options.js';
 import { fmtFull, logSwallowed } from './util.js';
 import { emptyStateHTML, renderAlertItem, alertSignature } from './render.js';
 
@@ -138,7 +138,7 @@ var ccRows=ctx.ccRows||[],ccStreaks=ctx.ccStreaks||{},todayMs=Date.parse(marketD
 function freeContracts(sym){
   var sh=(ctx.trades||[]).reduce(function(s,t){return s+(t&&t.symbol===sym?(Number(t.shares)||0):0)},0);
   var used=activeOpts.reduce(function(s,o){return s+(o&&o.sym===sym&&o.type==='CALL'?(Number(o.contracts)||1):0)},0);
-  return Math.floor(sh/100)-used;
+  return freeCallContracts(sh,used);   /* 口径只有一处（options.js），跟「期权状态」卡的"可卖 N 张"共用 */
 }
 ccRows.forEach(function(r){
   if(!r||!r.nextExpiry)return;

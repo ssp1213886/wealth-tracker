@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=367');
+  assert.equal(manifest.start_url, '/?v=368');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v367/);
+  assert.match(serviceWorker, /wealth-v368/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=367',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=368',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -747,6 +747,15 @@ test('期权页：两张卡的分工写在标题上，节奏 ★ 只在「被行
  * —— 假期周会把周五的到期日挪到周四，那天市场上根本没有合约。
  * 所以两个日期（该卖的到期日、卖出日）都必须先吸附到链里真实挂牌的档位上。
  */
+test('可卖 CALL 张数只有一处口径：期权状态卡的"可卖 N 张" 与 卖 CALL 提醒门槛 共用 freeCallContracts', () => {
+  assert.match(indexSource, /freeCallContracts\(vsh,vVGTcalls\)/, '期权状态卡（VGT）要用共享口径');
+  assert.match(indexSource, /freeCallContracts\(ssh,vSMHcalls\)/, '期权状态卡（SMH）要用共享口径');
+  assert.doesNotMatch(indexSource, /Math\.floor\(vsh\/100\)-vVGTcalls/, '不要再自己算一份');
+  const alertsSource = fs.readFileSync('src/app/alerts-view.js', 'utf8');
+  assert.match(alertsSource, /freeCallContracts\(sh,used\)/, '提醒门槛也要用同一个函数');
+  assert.doesNotMatch(alertsSource, /Math\.floor\(sh\/100\)-used/, '不要再自己算一份');
+});
+
 test('index.js：节奏档要先吸附到真实挂牌到期日，链没到时按日历显示、不编「已顺延」', () => {
   assert.match(indexSource, /snapToListed\(period\.date,listed\)/, '卖出日要吸附');
   assert.match(indexSource, /var rollRaw=ccRollExpiry\(probTab\)[\s\S]{0,80}snapToListed\(rollRaw,listed\)/, '该卖的到期日要吸附');
