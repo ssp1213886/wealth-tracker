@@ -2510,9 +2510,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 /* ⑥ 口径说明统一放卡底：标题那 4 字限定语并进卡底口径行（若导致卡底行换行则回退） */
 #tab-holding #exposureSlot .hold-title small{display:none}
 #tab-holding #exposureSlot .watch-meta::before{content:'含穿透估算 · '}
-/* v189：底层资产敞口在仪表盘下移到最后（首屏先给 钱/待办/定投/持仓） */
+/* v189 曾把底层资产敞口下移到最后（首屏先给 钱/待办/定投/持仓）；
+   v365 用户要求上移到「高点回撤」之前 —— 回撤卡是 order:3，这里给同一个序，
+   靠 DOM 顺序（敞口插在回撤之前）排在它前面。桌面的格子排布不动。 */
 @media(max-width:800px){
-#tab-holding #exposureSlot{order:7}
+#tab-holding #exposureSlot{order:3}
 }
 /* ===== v190 策略工具：方案 A 样式 + 可编辑 ===== */
 /* 组头：数量徽标 + 恢复默认 */
