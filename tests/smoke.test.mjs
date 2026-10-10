@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=385');
+  assert.equal(manifest.start_url, '/?v=386');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v385/);
+  assert.match(serviceWorker, /wealth-v386/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=385',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=386',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -675,6 +675,12 @@ test('v384：期权标的三处名单必须一致（OPTION_SYMS / options.js 兜
   assert.doesNotMatch(indexSource, /Promise\.all\(\['VGT','SMH'\]\.map\(fetchChain\)/, '期权链请求不该再写死两只');
   assert.match(indexSource, /IBIT:\{rule:'every3w',anchor:CC_ANCHOR_DEFAULT\}/, 'IBIT 的节奏是 every3w + 锚点 2026-10-30');
   assert.match(indexSource, /var OTM_DEFAULTS=\{vgt:7,smh:6,ibit:10\}/, 'OTM 默认值表要有 IBIT 10%');
+  // v385：观察列表的迷你走势必须跟"同一行的涨跌"同色 —— 原来按"近一月历史首末"另算一套，
+  // SMH 月线向下时就会出现「当天 +1.00% 是绿的、走势图却是红的」
+  assert.match(indexSource, /_dir=chgEl\?\(chgEl\.classList\.contains\('is-up'\)/,
+    '走势图方向要读同一行涨跌元素的 is-up/is-down');
+  assert.doesNotMatch(indexSource, /_hist\[_hist\.length-1\]>_hist\[0\]/,
+    '别再按历史首末算走势图颜色（会和同一行的涨跌打架）');
   // v384：年度归因卡的第三腿也要跟着换（原来写死 capGains.BTC → 渲染出 "BTC 增值 $0.00 NaN%"）
   assert.match(indexSource, /\{label:'IBIT 增值',val:r\.capGains\.IBIT\}/, '归因卡第三腿标签要改成 IBIT');
   assert.doesNotMatch(indexSource, /capGains\.BTC/, '归因卡不该再读 capGains.BTC（那个键已经不存在了）');
