@@ -189,7 +189,9 @@ var CRYPTO_CODES={BTC:1,ETH:1,BNB:1,HYPE:1,SOL:1,XRP:1,DOGE:1,ADA:1,AVAX:1,LINK:
     if(hasHist&&fresh)return;
     if(cd&&cd.source==='manual')return;            /* 手动价不动 */
     var d3=await fetchPrice(sym);
-    if(d3&&d3.source!=='缓存'){cachePrice(sym,d3);liveQuoteData[sym]=Object.assign({},liveQuoteData[sym],d3);if(Number(d3.price)>0)livePrices[sym]=d3.price;fetched=true}
+    /* ⚠️ 只补 history，**绝不碰 livePrices/liveQuoteData** —— 价格只有一个来源（行情总线 v307）：
+       quotes 那条链路已经给了价，这里再写一次就会让「买卖胶囊价 ≠ 观察列表价」（e2e 的行情一致性护栏当场红过）。 */
+    if(d3&&d3.source!=='缓存'){cachePrice(sym,d3);fetched=true}
   }));
   if(el){el.setAttribute('aria-busy','false');el.innerHTML=syms.map(function(sym){    var q=liveQuoteData[sym]||{},price=Number(q.price)||Number(livePrices[sym])||0;    if(!(price>0))return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>';    var prev=Number(q.prevClose);    return pricePill(sym,price,prev>0?price-prev:liveChanges[sym],liveSources[sym]||q.source||'');  }).join('')}
 
