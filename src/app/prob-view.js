@@ -317,8 +317,10 @@ export function renderProbMatrix(doc, matrix, ctx) {
 }
 
 /** 标的切换（VGT / SMH），与到期日历同一种分段控件。 */
-export function probTabsHtml(current) {
-  return ['VGT', 'SMH'].map(function (s) {
+export function probTabsHtml(current, syms) {
+  /* v378：tab 的标的列表由调用方传进来（OPTION_SYMS）—— 这里原来写死 VGT/SMH，
+     于是 IBIT 明明在期权标的白名单里，概率卡却永远看不到它。 */
+  return (Array.isArray(syms) && syms.length ? syms : ['VGT', 'SMH']).map(function (s) {
     return '<button type="button" class="prob-chip' + (s === current ? ' is-on' : '') +
       '" data-probtab="' + s + '">' + s + '</button>';
   }).join('');
