@@ -550,6 +550,7 @@ const steps = {
 | v324 | **修好加密行情的兜底链**：从 Cloudflare 边缘实测各数据源 —— 币安全球站 **403**（封云厂商 IP）、CoinGecko **429**（限流，原来的兜底等于没有），而 Binance.US / Kraken / Coinbase / Bybit 均 200。于是把加密兜底从"只有 CoinGecko"改成 **Binance.US → Kraken → CoinGecko**（Yahoo 仍是主源），"纯代码补查"那条路径也接上；新增 `parseBinanceUsTickers` / `parseKrakenTickers` / `krakenCodeOf` 三个纯函数 + 5 条单测（含"先 Binance.US、剩的才问 Kraken"的顺序与缓存行为） |
 | v325–v372 | 见 `git log`（手机端排布与字号收敛、行情总线去重、负现金三条缝、安全响应头 + 危险操作键盘路径、设置 7 行→5 行、`.sb-quick-menu > button` 选择器溢出、加密行情兜底链、提醒角标口径…） |
 | **v384** | **第三腿从 Grayscale 的 BTC ETF（`BTC`）换成 iShares **IBIT**，并让 IBIT 进入 Covered Call**。⚠️ 之前有一版 v373–v383 做过同样的事，因为**改动清单不完整**（期权录入门禁没放开、`capGains.BTC` 没换、状态卡只有两格…）连续出 bug，最后整体回退成 v372；**v384 是重做版**，把"按功能路径逐段读"的清单补全后才动手。内容：① 换腿（白名单 / 行情表 / `QUOTE_ALIAS` / `WATCH_DEFAULTS` / 品牌图标 / 搜索词表 + 中文别名 / **东财兜底 `EASTMONEY_SECID`**，否则兜底链路对 IBIT 直接失效）② **`OPTION_SYMS` 单点定义** + `chain.js` 白名单 + `normalizeOptions(list, symbols)`（原来是写死的 `sym!=='VGT'&&sym!=='SMH'` → 录 IBIT 会被**静默丢掉**）③ IBIT 节奏 `every3w` + 锚点 `2026-10-30`（与 SMH 同一天操作）、OTM 默认 **10%**（近月 IV≈36%，按 0.7–0.8σ 换算）④ 第三腿的存储键名与元素 id 收敛成 `LEG_STATE_KEY` / `LEG_METRIC_IDS`（原来散落 `state.btc` 与 `dcaBTC`/`mobileDcaBtc*` 这类按符号派生的 id）⑤ 退役符号 `BTCETF` 在 **`normalizeWatchlist`** 这个唯一漏斗里丢弃——**幂等、无状态**，比写一次性迁移稳（手机 schema 已被 v373 写成 3，`steps[3]` 会被静默跳过）⑥ 顺手修 4 个真 bug：`delOpt` 退两次现金、年度归因写死 `capGains.BTC` 渲染出 `NaN%`、`switchTab` 把 `log` 归一成 `data` 导致 `if(tab==='log'){renderAnnualMatrix()}` 是**死代码**（年度复盘卡只在开机渲染一次）、期权胶囊的处理器没分家会顺手清空交易标的 ⑦ 「期权状态」卡 3 列 → 2 列（多出第三腿一格）。测试 497 → 498 |
+| **v385** | **IBIT 徽标改对 + "数据状态色"从主题色里剥离出来**。① **徽标**：v384 沿用了旧的 `BTCETF → bitcoin` 映射，把 IBIT 也指到了比特币矢量标（₿）—— 但仓里其余 54 个标的用的都是**发行方**的标（VGT→Vanguard、SMH→VanEck、SGOV/IWM/TLT→iShares），IBIT 的发行方是 iShares。simple-icons **没有** ishares/blackrock 矢量图（实测 404）、iShares 官网 favicon 只有 16×16（必糊），所以按既有做法用**位图**：`public/assets/logo/IBIT.png`（100×100，取自图标代理用的同一个上游 FMP）＋ `BRAND_LOGO_SYMS.IBIT='png'`，并从 `SYM_TO_BRAND` 摘掉那张错映射。顺手删掉**已无任何引用**的 `public/assets/logo/BTCG.png` 与它的索引（旧第三腿 `BTCETF` 的残留）。② **配色**：`--accent` 会随配色方案变（forest 绿 / ocean 蓝 / warm 橙 / plum 紫 / mono 灰），而它被大量用在**表达数据状态**的地方 —— 实测同一个"上涨"在 5 套方案下分别是绿/蓝/橙/紫/灰，其中 plum 的紫与 VGT 的资产色 `--violet` **完全相同**、warm 的橙与"警告橙"几乎一样。**现在定死一条规则：`--accent` 只做界面 chrome（按钮/选中态/焦点环/装饰），数据状态一律用固定语义色** —— 涨/正收益 `--ok`、跌/负 `--danger`、小回撤等"无信号"用 `--muted`；被行权概率最低档也从 accent 改成 `--ok`（"不容易被行权"确实是好事）。共修 13 处 CSS 规则 + 6 处内联样式（`.pnl-pos`/`.is-up`/`.positive`/`span.pos`/行情胶囊/侧栏涨跌/再平衡"该买"/资金流水"入金"/年度归因/CAGR/回撤条/被行权概率），并让**观察列表迷你走势按涨跌上色**（原来是恒定主题色，不表达方向；未知方向用中性色）。③ **防复发**：`scripts/css-guard.mjs` 新增 `findAccentInSemanticRules()` —— 语义选择器里出现 `var(--accent)` 直接让 `npm run lint` 失败；它上线时立刻又抓出 2 处我漏掉的 `.asset-result .positive`。④ plum 主题色 `#7651a8` → `#8b3fa5`（与 `--violet` 分离）。测试 503 → 506 |
 
 ### 已知未修问题
 
@@ -695,6 +696,17 @@ const steps = {
      IBIT 没有成分股，所以 `['VGT','SMH']` 在这条链路上是**正确**的，别一刀切改成 `ETF_SYMS`。
    - 另外「期权状态」卡的元素 id 是 `LEG_METRIC_IDS`（`VGT:['ov','ocv'] / SMH:['vd','ocs'] / IBIT:['oi','oci']`）：
      对应 HTML 里三个静态格子（`.option-metrics` 是 2 列栅格，4 格正好 2×2）。**加标的时要同时补 HTML 格子与这张表**。
+
+11. **配色的收尾还有两笔小债（v385 有意没做）**，改样式前先知道：
+   - `--red` 与 `--danger` 是**完全相同的两个 hex**（浅色都是 `#c94d45`、深色都是 `#ef776f`），
+     却并存两套名字；`--orange`(`#e9852d`) 与 `--warn`(`#c9761c`) 语义重叠但取值不同。
+     彻底理清要把 `--red/--orange/--blue/--violet` 降级成"资产色/分类色"，语义只留 `--ok/--warn/--danger`
+     —— 是个跨全站的重命名，收益是"以后不用猜该用哪个"，不是现在有问题。
+   - **中性占比/进度条的填充仍用 `--accent`**（敞口卡的 `.exp-bar`、观察列表的 52 周区间条 `.watch-range`、
+     目标进度 `prBar`、首次使用提示条）。这属于**装饰**不是"数据状态"，按 v385 的规则是允许的；
+     但如果你觉得同一屏里"填充色=主题色"和"涨=绿"会分散注意力，可以一起换成中性灰。
+   - 判断标准很简单：**这条颜色描述的是"数据的好坏/方向"吗？** 是 → 必须用固定语义色；
+     只是"界面元素长什么样/在哪" → 可以用 `--accent`。`npm run lint` 会拦前者。
 
 ### 已知限制（能力边界，不是待办）
 

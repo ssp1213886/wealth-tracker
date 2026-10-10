@@ -9,7 +9,7 @@ export function probColor(prob) {
   if (prob == null || !isFinite(prob)) return 'var(--muted)';
   if (prob >= 0.25) return 'var(--red)';
   if (prob >= 0.10) return 'var(--orange)';
-  return 'var(--accent)';
+  return 'var(--ok)';
 }
 
 /** 概率文案：0.1475 → 「14.8%」；null → 「—」。 */

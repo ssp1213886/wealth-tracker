@@ -69,7 +69,7 @@ export function pricePillHTML(sym, price, change, source) {
   let ch = '';
   if (change != null) {
     const sign = change >= 0 ? '+' : '';
-    ch = '<span class="pp-chg" style="color:' + (change >= 0 ? 'var(--accent)' : 'var(--red)') + ';">' + sign + change.toFixed(2) + '</span>';
+    ch = '<span class="pp-chg" style="color:' + (change >= 0 ? 'var(--ok)' : 'var(--red)') + ';">' + sign + change.toFixed(2) + '</span>';
   }
   const sl = source ? '<small style="color:var(--muted);font-size:11.5px;margin-left:3px;">' + source + '</small>' : '';
   return '<span class="price-pill" data-sym="' + sym + '" data-price="' + price.toFixed(2) + '" style="cursor:pointer">' + dot +

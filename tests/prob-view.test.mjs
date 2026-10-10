@@ -14,7 +14,7 @@ import {
 const ET_CLOSE = '2026-10-07T15:59:58';
 
 test('probColor：按 10% / 25% 分级（绿 → 橙 → 红）', () => {
-  assert.equal(probColor(0.05), 'var(--accent)');
+  assert.equal(probColor(0.05), 'var(--ok)', 'v385：低风险用固定语义绿，不再用随配色变的 --accent');
   assert.equal(probColor(0.10), 'var(--orange)', '10% 归橙');
   assert.equal(probColor(0.249), 'var(--orange)');
   assert.equal(probColor(0.25), 'var(--red)', '25% 归红');
@@ -113,7 +113,7 @@ test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，�
   assert.match(html, /36\.2%/);
   assert.match(html, /9\.6%/);
   assert.match(html, /var\(--red\)/, '>25% 用红');
-  assert.match(html, /var\(--accent\)/, '<10% 用绿');
+  assert.match(html, /var\(--ok\)/, '<10% 用语义绿');
   assert.match(html, /真实挂牌行权价 \$152\.00/, '悬浮要写清这格实际挂在哪个挂牌行权价上');
   assert.match(html, /距现价 \+5\.0% · 你设的目标 7% = \$138\.43 · 年化/, '悬停里：完整的 OTM + 你设的目标价当参照');
   assert.doesNotMatch(html, /mx-fixed/, 'v339 起改用 mx-sell-row');
@@ -149,7 +149,7 @@ test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺�
   const hot = matrixCellHtml(cell(0.362, 138, 2.9, 27.4));
   assert.match(hot, /class="mx-prob" style="color:var\(--red\)">36\.2%<\/span>/, '>25% 用红');
   assert.match(hot, /class="mx-prem">\$2\.90<\/span>/);
-  assert.match(matrixCellHtml(cell(0.037, 168, 0.5, 4.7)), /var\(--accent\)/, '<10% 用绿');
+  assert.match(matrixCellHtml(cell(0.037, 168, 0.5, 4.7)), /var\(--ok\)/, '<10% 用语义绿');
   const none = matrixCellHtml(cell(null, 0, null, null));
   assert.match(none, /class="mx-prob" style="color:var\(--muted\)">—<\/span>/);
   assert.match(none, /class="mx-prem">—<\/span>/);

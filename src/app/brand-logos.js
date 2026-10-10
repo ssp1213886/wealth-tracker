@@ -56,7 +56,9 @@ export const BRAND_LOGO_SYMS = {
   'VGT': 'webp',
   'VOO': 'webp',
   'XOM': 'webp',
-  'BTCG': 'png',
+  // v385：第三腿换成 iShares 的 IBIT 之后，BTCG（grayscale.com 的 favicon）就没有代码引用了，删掉。
+  // IBIT 用发行方 iShares 的标（simple-icons 没有 ishares/blackrock，官网 favicon 只有 16×16，所以走位图）。
+  'IBIT': 'png',
   'ADI': 'png',
   'TXN': 'png',
   'HYPE': 'png',

@@ -2,7 +2,10 @@
 // （以前这两条只写在 lint 脚本里，改错了没人拦；抽成模块后可以离线验证。）
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { countImportant, findUnwrappedHover, hoverMediaRanges, checkStyles, IMPORTANT_BUDGET } from '../scripts/css-guard.mjs';
+import {
+  countImportant, findUnwrappedHover, hoverMediaRanges, checkStyles, IMPORTANT_BUDGET,
+  findAccentInSemanticRules,
+} from '../scripts/css-guard.mjs';
 
 const wrap = (inner) => '@media (hover:hover) and (pointer:fine){' + inner + '}';
 
@@ -59,4 +62,29 @@ test('checkStyles: 真实 main.css 必须过守卫（防止有人偷偷加债）
   const r = checkStyles(css, IMPORTANT_BUDGET);
   assert.deepEqual(r.errors, [], 'main.css 不该超出 :hover/!important 守卫');
   assert.ok(r.important <= IMPORTANT_BUDGET);
+});
+
+// v385：涨跌/盈亏这类"数据状态色"不许用随配色方案变的 --accent
+// （否则同一个"上涨"在 warm 下变橙、plum 下变成 VGT 的紫、mono 下变灰）
+test('findAccentInSemanticRules: 抓住"数据状态选择器用了 --accent"', () => {
+  assert.deepEqual(findAccentInSemanticRules('.pnl-pos{color:var(--accent)}'), ['.pnl-pos']);
+  assert.deepEqual(findAccentInSemanticRules('.watch-chg.is-up{color:var(--accent)}'), ['.watch-chg.is-up']);
+  assert.deepEqual(findAccentInSemanticRules('.row-detail.hold-detail .positive{color:var(--accent)}'), ['.row-detail.hold-detail .positive']);
+  assert.deepEqual(findAccentInSemanticRules('@media(min-width:801px){.is-down{color:var(--accent)}}'), ['.is-down']);
+});
+
+test('findAccentInSemanticRules: 语义色、界面 chrome、注释都不算违规', () => {
+  assert.deepEqual(findAccentInSemanticRules('.pnl-pos{color:var(--ok)}'), []);
+  assert.deepEqual(findAccentInSemanticRules('.pnl-neg{color:var(--danger)}'), []);
+  // 界面 chrome（按钮/选中态/焦点环）本来就该用主题色
+  assert.deepEqual(findAccentInSemanticRules('.btn{background:var(--accent)}'), []);
+  assert.deepEqual(findAccentInSemanticRules('.prob-chip.is-on{color:var(--accent-d)}'), []);
+  // 解释性注释里提到 --accent 不算违规
+  assert.deepEqual(findAccentInSemanticRules('.pnl-pos{/* 以前是 var(--accent) */color:var(--ok)}'), []);
+});
+
+test('findAccentInSemanticRules: 真实 main.css 必须是干净的', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync('public/assets/main.css', 'utf8');
+  assert.deepEqual(findAccentInSemanticRules(css), [], '这些"数据状态"规则还在用 --accent');
 });

@@ -26,7 +26,9 @@ const DOMAIN_SYMBOLS = {
   'jpmorganchase.com': ['JPM'],
   'costco.com': ['COST'],
   'lilly.com': ['LLY'],
-  'grayscale.com': ['BTCG'],
+  // v385：第三腿换成 iShares 的 IBIT；iShares/BlackRock 官网 favicon 只有 16×16（必糊），
+  // 所以 IBIT 的位图取自图标代理用的同一个上游（financialmodelingprep.com/image-stock/IBIT.png，100×100）。
+  // 旧的 grayscale.com → BTCG 已经没有任何代码引用，一并去掉。
   'microsoft.com': ['MSFT'],
   'amazon.com': ['AMZN'],
   'adobe.com': ['ADBE'],

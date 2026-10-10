@@ -101,10 +101,10 @@ export function searchCountText(matched, query) {
 }
 
 function cashTypeStyle(type) {
-  const bg = type.indexOf('入金') >= 0 ? 'var(--accent-l)'
+  const bg = type.indexOf('入金') >= 0 ? 'color-mix(in srgb,var(--ok) 13%,transparent)'
     : type.indexOf('权利金') >= 0 ? 'rgba(74,143,212,.12)'
       : type.indexOf('股息') >= 0 ? 'rgba(232,136,12,.12)' : 'rgba(230,53,43,.12)';
-  const color = type.indexOf('入金') >= 0 ? 'var(--accent-d)'
+  const color = type.indexOf('入金') >= 0 ? 'var(--ok)'
     : type.indexOf('权利金') >= 0 ? 'var(--blue)'
       : type.indexOf('股息') >= 0 ? 'var(--orange)' : 'var(--red)';
   return 'background:' + bg + ';color:' + color +

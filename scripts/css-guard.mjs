@@ -72,12 +72,45 @@ export function findUnwrappedHover(css) {
   return bad;
 }
 
+/**
+ * 表达"数据状态"的选择器（涨跌/盈亏/方向/正负）。
+ *
+ * 这些地方的颜色**必须是不随配色方案变的语义色**（`--ok` / `--danger` / `--warn` / `--muted`）。
+ * 用 `--accent` 会出问题：v385 之前 `.pnl-pos`、`.watch-chg.is-up`、回撤卡的最低档全是 `var(--accent)`，
+ * 于是同一个"上涨"信号 —— forest 下是绿、ocean 下是蓝、warm 下是橙（＝警告色）、
+ * **plum 下是紫（与 VGT 的资产色 `--violet` 完全相同）**、mono 下是灰（等于没有信号）。
+ * 实测数据见 maintenance.md 的 v385 条目。
+ */
+// 注意别加"前面必须是非单词字符"的守卫：复合选择器（`.watch-chg.is-up`）里 `.is-up` 前面就是字母 `g`，
+// 加了守卫会把最常见的那种写法漏掉（第一版就踩了这个）。类名前有 `.` 本身就足以避免"匹配到某个长类名的一截"。
+const SEMANTIC_SELECTOR_RE =
+  /\.(?:pnl-(?:pos|neg)|is-(?:up|down)|positive|negative|cash-(?:pos|neg)|ms-(?:pos|neg))\b|span\.(?:pos|neg)\b/;
+
+/** 找出"数据状态选择器里用了 var(--accent*)"的规则；返回选择器列表（空 = 干净）。 */
+export function findAccentInSemanticRules(css) {
+  // 注释先剥掉：这个守卫拦的是真代码，解释性注释里提到 --accent 不算违规
+  // （与 countImportant 刻意统计注释的取向相反，那条是防"用注释绕过预算"）。
+  const src = String(css || '').replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const hits = [];
+  const ruleRe = /([^{}]+)\{([^{}]*)\}/g;
+  let m;
+  while ((m = ruleRe.exec(src)) !== null) {
+    const selector = m[1].trim().replace(/\s+/g, ' ');
+    const body = m[2];
+    if (!body.includes('var(--accent')) continue;
+    if (!SEMANTIC_SELECTOR_RE.test(selector)) continue;
+    hits.push(selector.slice(0, 80));
+  }
+  return hits;
+}
+
 /** 统一的样式检查入口，返回错误信息数组（空数组 = 通过）。 */
 export function checkStyles(css, budget = IMPORTANT_BUDGET) {
   const errors = [];
   const important = countImportant(css);
   const hoverAll = hoverRulePositions(css).length;
   const badHover = findUnwrappedHover(css);
+  const semanticAccent = findAccentInSemanticRules(css);
   if (important > budget) {
     errors.push(
       'public/assets/main.css: !important 数量 ' + important + ' 超过基线 ' + budget +
@@ -92,5 +125,16 @@ export function checkStyles(css, budget = IMPORTANT_BUDGET) {
         badHover.slice(0, 5).join('\n  - '),
     );
   }
-  return { errors, important, hoverAll, hoverWrapped: hoverAll - badHover.length, hoverUnwrapped: badHover.length };
+  if (semanticAccent.length) {
+    errors.push(
+      'public/assets/main.css: 有 ' + semanticAccent.length + ' 条"数据状态"规则用了 var(--accent) —— ' +
+        '它随配色方案变（warm 变橙、plum 变紫且与 VGT 资产色同色、mono 变灰），会误导读数。' +
+        '涨/正收益用 var(--ok)，跌/负用 var(--danger)，需注意用 var(--warn)，无信号用 var(--muted)：\n  - ' +
+        semanticAccent.slice(0, 5).join('\n  - '),
+    );
+  }
+  return {
+    errors, important, hoverAll, hoverWrapped: hoverAll - badHover.length, hoverUnwrapped: badHover.length,
+    semanticAccent,
+  };
 }

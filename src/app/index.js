@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v384';var APP_DATA_VERSION=5;
+var APP_BUILD='v385';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -349,13 +349,13 @@ function updateDonutChart(rows){var canvas=document.getElementById("chartDonut")
   sells.forEach(function(d){totalSell+=Math.abs(d.diff);var dev=(d.curPct-d.tgtPct).toFixed(1);var p=d.price||livePrices[d.sym]||0;var sh=p>0?Math.abs(d.diff)/p:0;h2+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:3px;background:rgba(229,57,53,.1);border-radius:6px;font-size:11.5px;border-left:3px solid var(--red);"><div><strong>'+d.sym+'</strong><span style="font-size:11.5px;color:var(--red);margin-left:4px;">超配 '+dev+'%</span></div><div style="text-align:right;"><span style="color:var(--red);font-weight:540;">↓ 卖 '+fmtFull(Math.abs(d.diff))+(sh>0?' / '+sh.toFixed(2)+'股':'')+'</span><div style="font-size:11.5px;color:var(--muted);">'+d.curPct.toFixed(1)+'% → '+d.tgtPct.toFixed(0)+'%</div></div></div>'});
 
 
-  buys.forEach(function(d){totalBuy+=d.diff;var dev=(d.tgtPct-d.curPct).toFixed(1);var p=d.price||livePrices[d.sym]||0;var sh=p>0?d.diff/p:0;h2+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:3px;background:rgba(22,153,74,.1);border-radius:6px;font-size:11.5px;border-left:3px solid var(--accent);"><div><strong>'+d.sym+'</strong><span style="font-size:11.5px;color:var(--accent);margin-left:4px;">欠配 '+dev+'%</span></div><div style="text-align:right;"><span style="color:var(--accent);font-weight:540;">↑ 买 '+fmtFull(d.diff)+(sh>0?' / '+sh.toFixed(2)+'股':'')+'</span><div style="font-size:11.5px;color:var(--muted);">'+d.curPct.toFixed(1)+'% → '+d.tgtPct.toFixed(0)+'%</div></div></div>'})
+  buys.forEach(function(d){totalBuy+=d.diff;var dev=(d.tgtPct-d.curPct).toFixed(1);var p=d.price||livePrices[d.sym]||0;var sh=p>0?d.diff/p:0;h2+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:3px;background:rgba(22,153,74,.1);border-radius:6px;font-size:11.5px;border-left:3px solid var(--ok);"><div><strong>'+d.sym+'</strong><span style="font-size:11.5px;color:var(--ok);margin-left:4px;">欠配 '+dev+'%</span></div><div style="text-align:right;"><span style="color:var(--ok);font-weight:540;">↑ 买 '+fmtFull(d.diff)+(sh>0?' / '+sh.toFixed(2)+'股':'')+'</span><div style="font-size:11.5px;color:var(--muted);">'+d.curPct.toFixed(1)+'% → '+d.tgtPct.toFixed(0)+'%</div></div></div>'})
 
 
   if(totalBuy>0||totalSell>0)h2+='<div style="border-top:1px solid var(--rule);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);"><span>换仓总额</span><span style="color:var(--fg);font-weight:540;">'+fmtFull(Math.max(totalBuy,totalSell))+'</span></div>';
 
 
-  if(!buys.length&&!sells.length)h2='<div style="text-align:center;padding:12px;color:var(--accent);font-size:12.5px;">✓ 已平衡</div>';
+  if(!buys.length&&!sells.length)h2='<div style="text-align:center;padding:12px;color:var(--ok);font-size:12.5px;">✓ 已平衡</div>';
 
 
   el.innerHTML=h2;
@@ -574,7 +574,7 @@ function renderAnnualMatrix(){
   });
   grid.innerHTML=htm;
 
-  var cc=totalAssets>=0?'var(--accent)':'var(--red)';
+  var cc=totalAssets>=0?'var(--ok)':'var(--red)';
   stats.innerHTML='<div class="annual-stat"><span>总入金</span><strong>'+fmtFull(totalInvested)+'</strong></div><div class="annual-stat"><span>当前总资产</span><strong>'+fmtFull(totalAssets)+'</strong></div><div class="annual-stat"><span>长期 CAGR</span><strong style="color:'+cc+'">'+(cagr*100).toFixed(1)+'%</strong></div><div class="annual-stat"><span>目标差额</span><strong style="color:var(--orange)">'+fmtFull(targetGap)+'</strong></div><div class="annual-note">热力=年度权利金贡献率（CC权利金÷买入总额）颜色越暖权利金贡献越大</div>';
 }
 
@@ -1123,7 +1123,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=384',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=385',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -2624,7 +2624,7 @@ if(typeof window!=='undefined'){
         var priceEl=r.querySelector('.watch-price'),chgEl=r.querySelector('.watch-chg');
         var priceHTML=priceEl?priceEl.outerHTML:'<span class="watch-price">—</span>';
         var chgHTML=chgEl?chgEl.outerHTML:'<span class="watch-chg is-flat">—</span>';
-        var sh=heldSharesFor(sym),p=priceOf(sym),spark=sparklinePath(histOf(sym));
+        var sh=heldSharesFor(sym),p=priceOf(sym),spark=sparklinePath(histOf(sym)),_hist=histOf(sym),_dir=(_hist.length>1&&_hist[_hist.length-1]!==_hist[0])?(_hist[_hist.length-1]>_hist[0]?' is-up':' is-down'):'';
         var nm=cleanName(sym,watchQuotes[sym]);
         var hasName=nm&&nm!==sym;
         var sub=hasName?nm:'';   // 持有/占比在点开的详情里，行内不重复
@@ -2634,7 +2634,7 @@ if(typeof window!=='undefined'){
         r.innerHTML='<span class="watch-sym">'+brandBadgeHTML(sym,{accent:symColor(sym)})
           +'<span class="watch-name">'+escapeHtml(sym)+'</span>'
           +(sub?'<small>'+escapeHtml(sub)+'</small>':'')+'</span>'
-          +'<span class="watch-spark">'+(spark?'<svg viewBox="0 0 58 20" preserveAspectRatio="none" aria-hidden="true"><path d="'+spark+'"/></svg>':'<i class="watch-spark-none"></i>')+'</span>'
+          +'<span class="watch-spark'+_dir+'">'+(spark?'<svg viewBox="0 0 58 20" preserveAspectRatio="none" aria-hidden="true"><path d="'+spark+'"/></svg>':'<i class="watch-spark-none"></i>')+'</span>'
           +priceHTML+chgHTML;
         
       });

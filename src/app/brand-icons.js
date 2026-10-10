@@ -131,7 +131,6 @@ export const SYM_TO_BRAND = {
   "CRCL": "circle",
   "PLTR": "palantir",
   "BTC": "bitcoin",
-  "IBIT": "bitcoin",
   "ETH": "ethereum",
   "BNB": "binance",
   "SOL": "solana",

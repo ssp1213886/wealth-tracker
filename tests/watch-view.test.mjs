@@ -80,7 +80,7 @@ test('pricePillHTML：含代码与价格，真行情才画圆点，涨跌带符�
   assert.match(real, /data-price="125.10"/);
   assert.match(real, /class="live-dot"/);
   assert.match(real, /\+1\.07/);
-  assert.match(real, /var\(--accent\)/);
+  assert.match(real, /var\(--ok\)/, 'v385：涨用固定语义绿');
   const cached = pricePillHTML('SMH', 600, -6.55, '缓存');
   assert.doesNotMatch(cached, /live-dot/);
   assert.match(cached, /var\(--red\)/);

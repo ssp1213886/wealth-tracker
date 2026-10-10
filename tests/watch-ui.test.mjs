@@ -263,7 +263,7 @@ test('updateSidebarPrices：渲染价格行（涨跌配色 / 迷你走势 / 等�
   assert.match(live.innerHTML, /Vanguard 信息科技/);
   assert.match(live.innerHTML, /\$108\.62/);
   assert.match(live.innerHTML, /spr-spark/, '有历史数据要画迷你走势');
-  assert.match(live.innerHTML, /color:var\(--accent\)/, '上涨用强调色');
+  assert.match(live.innerHTML, /color:var\(--ok\)/, 'v385：上涨用固定语义绿（不随配色方案变）');
   assert.match(live.innerHTML, /color:var\(--red\)/, '下跌用红色');
   assert.match(live.innerHTML, /等待报价/, 'IBIT 没数据给等待态');
   assert.equal((live.innerHTML.match(/spr-spark/g) || []).length, 1, '只有 VGT 带历史');
