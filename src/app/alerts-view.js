@@ -90,39 +90,30 @@ var alertIcons={orange:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18
  */
 export function buildAlerts(ctx) {
 var alerts=[],now=marketDate(ctx.now).slice(0,7),opts=ctx.options,activeOpts=opts.filter(function(o){return isActiveOption(o,ctx.now)}),callGroups={};
-/* v371 去冗余：每个标的的"已卖 N 张 Call"汇总条先存在这里，最后只在**该标的没有任何其它提醒**时才补进去。
-   以前它无条件出现，于是"VGT 已卖 1 张 Call"会和"VGT CALL $130 还剩 4 天到期"并排两条说同一件事。 */
-var callSummaries={},symBusy={};
-var markSym=function(sym){if(sym)symBusy[String(sym)]=1};
 activeOpts.filter(function(o){return o.type==='CALL'}).forEach(function(o){if(!callGroups[o.sym])callGroups[o.sym]=[];callGroups[o.sym].push(o)});
 Object.keys(callGroups).sort(function(a,b){var order=['VGT','SMH','BTC'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b)}).forEach(function(sym){
-var calls=callGroups[sym].slice().sort(function(a,b){return String(a.expiry).localeCompare(String(b.expiry))}),contracts=calls.reduce(function(sum,o){return sum+(Number(o.contracts)||1)},0),nearest=calls[0],cp=Number(ctx.prices[sym])||0,closest=calls.slice().sort(function(a,b){return Math.abs(cp-a.strike)-Math.abs(cp-b.strike)})[0],type='blue',severity='medium',title=sym+' 已卖 '+contracts+' 张 Call',detail='覆盖 '+contracts*100+' 股 · 最近 '+nearest.expiry.slice(5)+' 到期';
-/* 到期前实值**不需要任何动作**（美式期权提前行权等于白扔时间价值，理性持有人不会干），
-   所以这里只做说明、不做告警。唯一真实风险是"除息日前的提前行权" ——
-   只有除息日落在本轮周期内时才升级。v335 之前是只要到行权价 98% 就报红 critical。 */
+var calls=callGroups[sym].slice().sort(function(a,b){return String(a.expiry).localeCompare(String(b.expiry))}),contracts=calls.reduce(function(sum,o){return sum+(Number(o.contracts)||1)},0),nearest=calls[0],cp=Number(ctx.prices[sym])||0,closest=calls.slice().sort(function(a,b){return Math.abs(cp-a.strike)-Math.abs(cp-b.strike)})[0];
+/* v372：只有"实值 + 除息日落在本轮周期内"才进待办 —— 那是真风险（除息日前可能被提前行权，
+   要准备 T+1 买回）。其余三种都只是信息，本来就不需要动作，全部移出待办列表：
+     · 已卖 N 张 Call / 覆盖 N 股（在仪表盘 CC 卡与期权页都有）
+     · 已实值（到期前按策略不动手）
+     · 逼近行权价（到期前不需要动作）
+   这同时消掉了 v371 的怪现象：叉掉"还剩 N 天到期"之后，那条汇总信息会顶上来当"新提醒"。 */
 if(cp>0&&closest){
-  var _k=Number(closest.strike)||0,_head=strikeText(_k),_covers=contracts*100,_ex=(ctx.exDiv||{})[sym]||'';
-  if(cp>_k){
-    if(_ex&&_ex<=nearest.expiry){
-      type='orange';severity='high';
-      title=sym+' CALL '+_head+' 已实值 · 本轮含除息';
-      detail='现价 $'+cp.toFixed(2)+' · 除息约 '+_ex+' —— 除息日前有提前行权可能；若发生，T+1 市价买回 '+_covers+' 股';
-    }else{
-      type='accent';severity='medium';
-      title=sym+' CALL '+_head+' 已实值（现价 $'+cp.toFixed(2)+'）';
-      detail='按策略不主动平仓，等自然到期 —— 到期收盘仍实值会被行权，次日买回 '+_covers+' 股';
-    }
-  }else if(cp>=_k*0.98){
-    type='blue';severity='medium';
-    detail='现价 $'+cp.toFixed(2)+' 逼近行权价 '+_head+'（差 '+((_k-cp)/cp*100).toFixed(1)+'%）· 到期前不需要动作';
+  var _k=Number(closest.strike)||0,_ex=(ctx.exDiv||{})[sym]||'';
+  if(cp>_k&&_ex&&_ex<=nearest.expiry){
+    alerts.push({id:'callrisk:'+sym,type:'orange',severity:'high',
+      title:sym+' CALL '+strikeText(_k)+' 已实值 · 本轮含除息',
+      detail:'现价 $'+cp.toFixed(2)+' · 除息约 '+_ex+' —— 除息日前有提前行权可能；若发生，T+1 市价买回 '+(contracts*100)+' 股',
+      action:'option'});
   }
 }
-callSummaries[sym]={id:'call:'+sym,type:type,severity:severity,title:title,detail:detail,action:'option'}
 });
-var pingMap=ctx.pingMap,todayKey=marketDate(ctx.now);
+/* pingMap 缺省给空对象：调用方忘了传也不该整条链路炸（Phase B 的服务端判定也会复用这个函数） */
+var pingMap=ctx.pingMap||{},todayKey=marketDate(ctx.now);
 /* 到期预告只覆盖"还剩 1~7 天"（st.days===0 跳过）：当天及之后交给下面的 optionActions
    （到期判定 + 买回待办），否则同一天会同时冒出来"还剩 0 天到期"和"会被行权"两条。 */
-opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7||st.days===0)return;if(pingMap[o.id]===todayKey)return;var cnt=Number(o.contracts)||1;markSym(o.sym);alerts.push({id:'expiry:'+o.id,type:'orange',severity:'high',title:o.sym+' '+o.type+' '+strikeText(o.strike)+' 还剩 '+st.days+' 天到期',detail:'到期日 '+o.expiry+' · '+cnt+' 张',action:'option',dismiss:'opt-expiry-'+o.id})});
+opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7||st.days===0)return;if(pingMap[o.id]===todayKey)return;var cnt=Number(o.contracts)||1;alerts.push({id:'expiry:'+o.id,type:'orange',severity:'high',title:o.sym+' '+o.type+' '+strikeText(o.strike)+' 还剩 '+st.days+' 天到期',detail:'到期日 '+o.expiry+' · '+cnt+' 张',action:'option',dismiss:'opt-expiry-'+o.id})});
 
 /* ===== 到期判定 + 买回待办（v334）=====
    策略里有明确动作要求、但以前 app 完全不管的两个环节：
@@ -134,7 +125,6 @@ function strikeText(k){var n=Number(k)||0;return '$'+(n===Math.floor(n)?n.toFixe
 function money(spot){return '$'+Number(spot).toFixed(2)}
 var optionActions=[];try{optionActions=optionActionItems(opts,ctx.trades,ctx.prices,ctx.now)||[]}catch(e){logSwallowed("optionActionItems",e)}
 optionActions.forEach(function(a){
-  markSym(a.sym);
   if(a.kind==='buyback'){
     alerts.push({id:'buyback:'+a.id,type:'red',severity:'critical',
       title:'待买回 '+a.shares+' 股 '+a.sym,
@@ -143,10 +133,13 @@ optionActions.forEach(function(a){
     return;
   }
   if(a.kind==='due-today'){
+    /* v372：这条也可以"今天不再提醒"（以前只有"还剩 N 天到期"带 ×，四条期权提醒行为不一致）。
+       注意"会被行权 / 会作废 / 待买回"故意不给 —— 那些是必须处理的。 */
+    if(ctx.pingMap&&ctx.pingMap[a.id]===todayKey)return;
     alerts.push({id:'optdue:'+a.id,type:'accent',severity:'medium',
       title:a.sym+' CALL '+strikeText(a.strike)+' 今天到期',
       detail:'收盘后（美东 16:00）看现价是否高于行权价 —— 高于就会被行权，明天要买回 '+(a.contracts*100)+' 股',
-      action:'option'});
+      action:'option',dismiss:'opt-due-'+a.id});
     return;
   }
   if(a.kind==='decide'){
@@ -186,7 +179,6 @@ function freeContracts(sym){
 ccRows.forEach(function(r){
   if(!r||!r.nextExpiry)return;
   if(freeContracts(r.sym)<1)return;   /* 不够 100 股就不催：没股票可被行权，卖 CALL 没有意义 */
-  markSym(r.sym);
   var left=(Date.parse(r.nextExpiry+'T00:00:00Z')-todayMs)/86400000;
   if(left===0){
     alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',
@@ -201,8 +193,6 @@ ccRows.forEach(function(r){
     if(late>=5){alerts.push({id:'ccmiss:'+r.sym,type:'orange',severity:'medium',title:r.sym+' 本轮 CALL 还没记录',detail:'按节奏 '+s.missed+' 就该卖下一档了 · 已过去 '+Math.round(late)+' 天',action:'option'});}
   }
 });
-/* 汇总条最后补：只补"这个标的一条其它提醒都没有"的那些（VGT/SMH/BTC 稳定顺序） */
-Object.keys(callSummaries).forEach(function(sym){if(symBusy[sym])return;alerts.push(callSummaries[sym])});
 return alerts;
 }
 

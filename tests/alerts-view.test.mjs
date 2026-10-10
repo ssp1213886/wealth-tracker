@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAlerts, normalizeAlerts, loadOptPing, saveOptPing, badgeCountOf, badgeSupported, applyAppBadge } from '../src/app/alerts-view.js';
+import { marketDate } from '../src/app/time.js';
 
 // 美东 2026-09-29 08:00（UTC 12:00）→ 当月 = 2026-09
 const NOW = new Date('2026-09-29T12:00:00Z');
@@ -21,43 +22,28 @@ function ctx(over) {
 const call = (over) => Object.assign({ id: 1, sym: 'VGT', type: 'CALL', strike: 130, contracts: 2, expiry: '2026-10-16' }, over || {});
 const buy = (date, amount) => ({ date, symbol: 'VGT', shares: 1, price: amount, type: 'buy' });
 
-test('buildAlerts：卖 Call 覆盖情况（虚值 → 蓝色中风险）', () => {
+/* v372：待办列表只放"需要动手"的事。下面三种都是纯信息，全部移出列表
+   （覆盖情况在仪表盘 CC 卡与期权页都有；"逼近/已实值"到期前本来就不需要动作）。 */
+test('v372：纯信息不进待办 —— 虚值时的"已卖 N 张 Call"汇总条已移除', () => {
   const alerts = buildAlerts(ctx({ options: [call()], prices: { VGT: 110 } }));
-  const one = alerts.find((a) => a.id === 'call:VGT');
-  assert.ok(one, '应该有 call:VGT 这条');
-  assert.equal(one.type, 'blue');
-  assert.equal(one.severity, 'medium');
-  assert.match(one.title, /VGT 已卖 2 张 Call/);
-  assert.match(one.detail, /覆盖 200 股/);
-  assert.match(one.detail, /最近 10-16 到期/);
-  assert.equal(one.action, 'option');
+  assert.equal(alerts.filter((a) => String(a.id).indexOf('call') === 0).length, 0,
+    '不该再有 call:VGT 这条汇总（v371 之前它还会在叉掉到期提醒后顶上来）');
 });
 
-test('buildAlerts：现价逼近行权价（≥98%，但还没实值）→ 只是说明，不是警报', () => {
-  const alerts = buildAlerts(ctx({ options: [call()], prices: { VGT: 128 } }));
-  const one = alerts.find((a) => a.id === 'call:VGT');
-  assert.equal(one.type, 'blue', 'v335 起不再是 red/critical');
-  assert.equal(one.severity, 'medium');
-  assert.match(one.detail, /现价 \$128\.00 逼近行权价 \$130/);
-  assert.match(one.detail, /到期前不需要动作/);
+test('v372：逼近行权价 / 到期前已实值（无除息）都只是信息，不进待办列表', () => {
+  const near = buildAlerts(ctx({ options: [call()], prices: { VGT: 128 } }));
+  assert.equal(near.filter((a) => String(a.id).indexOf('call') === 0).length, 0, '逼近行权价不需要动作');
+  const itm = buildAlerts(ctx({ options: [call()], prices: { VGT: 140 } }));
+  assert.equal(itm.filter((a) => String(a.id).indexOf('call') === 0).length, 0, '到期前已实值也按策略不动手');
 });
 
-test('buildAlerts：到期前已实值 → 说明"不用做"，并告诉你到期会怎样', () => {
-  const alerts = buildAlerts(ctx({ options: [call()], prices: { VGT: 140 } }));
-  const one = alerts.find((a) => a.id === 'call:VGT');
-  assert.equal(one.type, 'accent', '这是计划内状态，不是风险');
-  assert.equal(one.severity, 'medium');
-  assert.match(one.title, /VGT CALL \$130 已实值（现价 \$140\.00）/);
-  assert.match(one.detail, /不主动平仓，等自然到期/);
-  assert.match(one.detail, /次日买回 200 股/);
-});
-
-test('buildAlerts：已实值且除息落在本轮周期内 → 才升级成"提前行权可能"', () => {
+test('v372：已实值且除息落在本轮周期内 → 保留成风险提醒 callrisk', () => {
   const withDiv = buildAlerts(ctx({
     options: [call()], prices: { VGT: 140 },
     ccRows: [{ sym: 'VGT', nextExpiry: '2026-10-16' }],
     exDiv: { VGT: '2026-10-12' },
-  })).find((a) => a.id === 'call:VGT');
+  })).find((a) => a.id === 'callrisk:VGT');
+  assert.ok(withDiv, '含除息的实值要给风险提醒（这是真要动手的：可能被提前行权）');
   assert.equal(withDiv.type, 'orange');
   assert.equal(withDiv.severity, 'high');
   assert.match(withDiv.title, /已实值 · 本轮含除息/);
@@ -69,11 +55,11 @@ test('buildAlerts：已实值且除息落在本轮周期内 → 才升级成"提
     options: [call()], prices: { VGT: 140 },
     ccRows: [{ sym: 'VGT', nextExpiry: '2026-10-16' }],
     exDiv: { VGT: '2026-12-23' },
-  })).find((a) => a.id === 'call:VGT');
-  assert.equal(farDiv.type, 'accent', '除息还在更远的周期，跟这轮无关');
+  }));
+  assert.equal(farDiv.filter((a) => a.id === 'callrisk:VGT').length, 0, '除息还在更远的周期，跟这轮无关');
   // 没传 exDiv（比如股息接口挂了）→ 不升级
-  const noDiv = buildAlerts(ctx({ options: [call()], prices: { VGT: 140 } })).find((a) => a.id === 'call:VGT');
-  assert.equal(noDiv.type, 'accent');
+  const noDiv = buildAlerts(ctx({ options: [call()], prices: { VGT: 140 } }));
+  assert.equal(noDiv.filter((a) => a.id === 'callrisk:VGT').length, 0);
 });
 
 test('buildAlerts：不够 100 股（或已被现有 CALL 占满）就不催卖 CALL', () => {
@@ -105,14 +91,16 @@ test('buildAlerts：不够 100 股（或已被现有 CALL 占满）就不催卖 
   assert.deepEqual(ccIds(buildAlerts(ctx({ ...due, trades: [hold('SMH', 500)] }))), [], '只有 SMH 的股票，别催 VGT');
 });
 
-test('buildAlerts：同一标的的多张 Call 合并计数，用最近到期那张做提示', () => {
-  const alerts = buildAlerts(ctx({
+test('v372：多张 Call 的合并张数用在"被行权要买回多少股"上', () => {
+  const list = buildAlerts(ctx({
     options: [call({ id: 1, expiry: '2026-11-20', contracts: 2 }), call({ id: 2, expiry: '2026-10-16', contracts: 1 })],
-    prices: { VGT: 100 },
+    prices: { VGT: 140 },
+    ccRows: [{ sym: 'VGT', nextExpiry: '2026-10-16' }],
+    exDiv: { VGT: '2026-10-12' },
   }));
-  const one = alerts.find((a) => a.id === 'call:VGT');
-  assert.match(one.title, /已卖 3 张 Call/);
-  assert.match(one.detail, /最近 10-16 到期/);
+  const risk = list.find((a) => a.id === 'callrisk:VGT');
+  assert.ok(risk, '本轮含除息的实值要给风险提醒');
+  assert.match(risk.detail, /买回 300 股/, '3 张合起来 = 300 股');
 });
 
 test('buildAlerts：到期预告覆盖 1~7 天；到期日当天与之后交给「到期判定」', () => {
@@ -287,17 +275,33 @@ test('v371：角标数必须等于提醒列表条数（v370 曾出现"列表 2 �
   }
 });
 
-test('v371：期权提醒去冗余 —— 同标的有具体提醒时不再重复"已卖 N 张 Call"汇总条', () => {
-  const withExpiry = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-12T14:00:00Z'), options: [call()], prices: { VGT: 124.85 } })));
-  assert.equal(withExpiry.filter((a) => a.id === 'call:VGT').length, 0, '有"还剩 N 天到期"时不该再有汇总条');
-  assert.equal(withExpiry.filter((a) => a.id === 'expiry:1').length, 1);
+test('v372：叉掉"今天不再提醒"之后不许冒出任何新条目（v371 的回归）', () => {
+  const day = new Date('2026-10-12T14:00:00Z');
+  /* 用一笔已投满的定投挡掉 dca 提醒，列表里就只剩期权那一条，便于精确比对 */
+  const base = { now: day, options: [call()], prices: { VGT: 124.85 }, trades: [buy('2026-10-05', 2000)] };
+  const before = normalizeAlerts(buildAlerts(ctx(base)));
+  assert.deepEqual(before.map((a) => a.id), ['expiry:1'], '开头只有"还剩 4 天到期"这一条');
+  const after = normalizeAlerts(buildAlerts(ctx({ ...base, pingMap: { 1: marketDate(day) } })));
+  assert.deepEqual(after.map((a) => a.id), [], '叉掉之后必须是空列表 —— 不能换成"已卖 N 张 Call"顶上来');
+});
 
-  const dueToday = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-16T14:00:00Z'), options: [call()], prices: { VGT: 137 } })));
-  /* 只比期权那几条：dca（本月定投还差）是另一码事，不该被这条断言牵连 */
-  assert.deepEqual(dueToday.map((a) => a.id).filter((id) => !/^dca:/.test(String(id))), ['optdue:1'], '到期日当天：期权相关只留一条');
+test('v372："今天到期"也能"今天不再提醒"；会被行权 / 会作废 / 待买回不给 ×', () => {
+  const day = new Date('2026-10-16T14:00:00Z');
+  const base = { now: day, options: [expCall()], prices: { VGT: 137.2 }, trades: [buy('2026-10-05', 2000)] };
+  const due = buildAlerts(ctx(base)).find((a) => a.id === 'optdue:1');
+  assert.ok(due, '到期日当天要有"今天到期"');
+  assert.equal(due.dismiss, 'opt-due-1', '这条要能"今天不再提醒"（v372 前只有"还剩 N 天到期"有 ×）');
+  const slept = buildAlerts(ctx({ ...base, pingMap: { 1: marketDate(day) } }));
+  assert.equal(slept.filter((a) => a.id === 'optdue:1').length, 0, '今天已忽略 → 不再出现');
 
-  const onlySummary = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-12T14:00:00Z'), options: [call({ expiry: '2026-11-20' })] })));
-  assert.equal(onlySummary.filter((a) => a.id === 'call:VGT').length, 1, '该标的没有其它提醒时，汇总条仍要保留（不然完全看不到覆盖情况）');
+  const decide = buildAlerts(ctx({ now: new Date('2026-10-16T21:00:00Z'), options: [expCall()], prices: { VGT: 137.2 } }))
+    .find((a) => String(a.id).indexOf('optdecide:') === 0);
+  assert.ok(decide);
+  assert.equal(decide.dismiss, undefined, '硬性动作（会被行权 / 会作废）不能一键关掉');
+  const back = buildAlerts(ctx({ now: new Date('2026-10-19T14:00:00Z'), trades: [assign()] }))
+    .find((a) => String(a.id).indexOf('buyback:') === 0);
+  assert.ok(back);
+  assert.equal(back.dismiss, undefined, '待买回不能一键关掉');
 });
 
 test('v371：修掉到期预告里的双美元符（VGT CALL $$130 → VGT CALL $130）', () => {

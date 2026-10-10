@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=371');
+  assert.equal(manifest.start_url, '/?v=372');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v371/);
+  assert.match(serviceWorker, /wealth-v372/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=371',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=372',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -283,7 +283,9 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
 test('mobile portfolio and quick actions prioritize active investing work', () => {
   assert.match(html, /class="sb-portfolio-grid"/);
   assert.match(html, /class="sb-portfolio-insights"/);
-  assert.match(appMarkup, /已卖 '\+contracts\+' 张 Call/);
+  /* v372：待办列表里的"已卖 N 张 Call"信息条已移除（它会让"叉掉今天不再提醒"后冒出替身，
+     而且它本来就不需要动作）。覆盖情况由期权页的节奏徽章承担，见 prob-view.test.mjs 的「已卖 ✓」两条断言。 */
+  assert.doesNotMatch(appMarkup, /已卖 '\+contracts\+' 张 Call/);
   assert.doesNotMatch(appMarkup, /距 Covered Call/);
   assert.doesNotMatch(appMarkup, /onclick="qaDividend\(\)"/);
   assert.doesNotMatch(appMarkup, /function qaDividend\(/);
@@ -848,12 +850,20 @@ test('v371：角标数 = 提醒列表条数（不许再按 severity 过滤 —�
     '手机端铃铛角标必须与主屏角标共用同一个计数函数');
 });
 
-test('v371：期权提醒去冗余 —— "已卖 N 张 Call"汇总条只在没有其它提醒时才补', () => {
-  assert.match(alertsViewSource, /var callSummaries=\{\},symBusy=\{\}/, '汇总条要先收集');
-  assert.match(alertsViewSource, /var markSym=function\(sym\)\{if\(sym\)symBusy\[String\(sym\)\]=1\}/);
-  assert.match(alertsViewSource, /Object\.keys\(callSummaries\)\.forEach\(function\(sym\)\{if\(symBusy\[sym\]\)return;alerts\.push\(callSummaries\[sym\]\)\}\)/,
-    '最后只补"该标的没有其它提醒"的那些');
-  assert.doesNotMatch(alertsViewSource, /alerts\.push\(\{id:'call:'\+sym/, '不能再无条件 push 汇总条');
+test('v372：待办只放要动手的 —— 纯信息汇总条彻底移除，只留"含除息"的风险条', () => {
+  assert.doesNotMatch(alertsViewSource, /callSummaries|symBusy|markSym/,
+    'v371 那套"按需补汇总条"必须删掉：它会让"叉掉今天不再提醒"之后冒出新的条目当替身');
+  assert.doesNotMatch(alertsViewSource, /id:'call:'\+sym/, "不许再有'已卖 N 张 Call'这类信息条");
+  assert.match(alertsViewSource, /id:'callrisk:'\+sym/, '含除息的实值风险条要保留（那是真要动手的）');
+  assert.match(alertsViewSource, /cp>_k&&_ex&&_ex<=nearest\.expiry/, '只有除息落在本轮周期内才算风险');
+});
+
+test('v372：两种"今天不再提醒"的键在点击入口归一成期权 id（opt-expiry- / opt-due-）', () => {
+  assert.match(appSource, /replace\(\/\^opt-\(\?:expiry\|due\)-\/,''\)/,
+    '× 的键要同时认 opt-expiry-<id> 与 opt-due-<id>');
+  assert.match(alertsViewSource, /dismiss:'opt-due-'\+a\.id/, '"今天到期"也要能今天不再提醒');
+  assert.match(alertsViewSource, /ctx\.pingMap&&ctx\.pingMap\[a\.id\]===todayKey/, '"今天到期"要真的尊重已忽略');
+  assert.match(alertsViewSource, /var pingMap=ctx\.pingMap\|\|\{\}/, 'pingMap 缺省给空对象（调用方忘了传也不炸）');
 });
 
 test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
