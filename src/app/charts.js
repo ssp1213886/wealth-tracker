@@ -239,7 +239,9 @@ export function annualMatrix(input) {
       rate: premRate,
       vgt: Math.max(0, endHolds.VGT || 0),
       smh: Math.max(0, endHolds.SMH || 0),
-      btc: Math.max(0, endHolds.BTC || 0),
+    /* 第三列的年末持股：字段名沿用 btc（消费方按 c.btc 读），但取的是**第三只配置标的** ——
+       换腿成 IBIT 之后这里还在读 endHolds.BTC，于是那一列永远显示 0（真机看到的"年末持股 0"）。 */
+    btc: Math.max(0, endHolds[symbols[2]] || 0),
       hasData: dcaTotal > 0,
     });
   }

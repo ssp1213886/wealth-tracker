@@ -176,9 +176,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=379');
+  assert.equal(manifest.start_url, '/?v=380');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v379/);
+  assert.match(serviceWorker, /wealth-v380/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -192,7 +192,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=379',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=380',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -914,4 +914,10 @@ test('v378：概率卡的 tab 由 OPTION_SYMS 生成，视图层不许再写死�
 test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
   assert.doesNotMatch(alertsViewSource, /' \$'\+strikeText/, "标题里不能自己再拼一个 $（那会变成 $$130）");
   assert.match(alertsViewSource, /title:o\.sym\+' '\+o\.type\+' '\+strikeText\(o\.strike\)\+' 还剩 '/, '到期预告要用 strikeText 自带的 $');
+});
+
+/* ===== v379：年度矩阵第三列的年末持股 ===== */
+test('v379：年度矩阵第三列取"第三只配置标的"，不许再写死 endHolds.BTC', () => {
+  assert.match(appSource, /btc: Math\.max\(0, endHolds\[symbols\[2\]\] \|\| 0\)/, '第三列要按配置取');
+  assert.doesNotMatch(appSource, /Math\.max\(0, endHolds\.BTC/, '换腿后不许再读 BTC 的持股（注释里提到历史写法不算）');
 });
