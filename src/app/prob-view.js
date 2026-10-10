@@ -136,7 +136,7 @@ export function noteHtml(meta) {
     const ivText = Object.keys(iv)
       .filter(function (k) { return Number(iv[k]) > 0; })
       .map(function (k) { return k + ' ' + fmtIv(Number(iv[k]) / 100); });
-    if (ivText.length) parts.push('官方 30 天 IV：' + ivText.join(' · '));
+    if (ivText.length) parts.push('<span class="note-iv">官方 30 天 IV：' + ivText.join(' · ') + '</span>');
   }
   return parts.join(' · ');
 }
@@ -268,20 +268,22 @@ export function probSummaryHtml(matrix, ctx) {
   const cell = idx >= 0 ? (row.cells || [])[idx] : null;
   const sold = c.sold || null;
   const due = !!c.due;                       /* 今天就是卖出日 */
-  const from = String(c.from || '');         /* 卖出日＝本期到期日（到期日当天卖下一档） */
+  const from = String(c.from || '');         /* 卖出日：有持仓＝那张到期日；空仓＝今天 */
   const days = Number(c.daysToSale);
-  /* 徽章挂在**该卖那一档**上（不是"本期"）：同一张 CALL 记了没有，只会有一个答案。
-     行首那个日期就是它，所以这里不用再重复一遍日期。 */
   const badge = sold ? '已卖 ✓' : (due ? '今天该卖' : '未卖');
   const badgeCls = sold ? 'is-done' : (due ? 'is-due' : 'is-todo');
-  const rule = c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '';
   const when = due ? '今天' : (Number.isFinite(days) && days > 0 ? '还有 ' + days + ' 天' : '');
+  /* v387：原来这里是 3 行散文（· 分隔 6 个概念），数字没有标签、要逐字读。
+     现在拆成「标题 / 时间线 / 带标签的数值格」—— 值一个不少，但能扫读了。 */
   const head = '<div class="mx-sum-head">该卖 <b>' + escapeHtml(row.date) + '</b> 到期' +
-    (c.shiftNote ? ' <span class="mx-shift">' + escapeHtml(String(c.shiftNote)) + '</span>' : '') +
-    (from ? ' · ' + escapeHtml(from) + ' 卖出' + (when ? '（' + when + '）' : '') : '') +
-    (c.tenor != null ? ' · 持有 ' + c.tenor + ' 天' : '') +
-    ' <span class="mx-badge ' + badgeCls + '">' + badge + '</span>' +
-    (idx < 0 ? ' · ' + cur + '%' : '') + '</div>';
+    (c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '') +
+    (idx < 0 ? ' · ' + cur + '%' : '') +
+    ' <span class="mx-badge ' + badgeCls + '">' + badge + '</span></div>' +
+    '<div class="mx-sum-when">' +
+      (from ? escapeHtml(from) + ' 卖出' + (when ? ' · ' + when : '') : (when ? escapeHtml(when) : '—')) +
+      (c.tenor != null ? ' · 持有 ' + c.tenor + ' 天' : '') +
+      (c.shiftNote ? ' · <span class="mx-shift">' + escapeHtml(String(c.shiftNote)) + '</span>' : '') +
+    '</div>';
   if (!cell || cell.prob == null) {
     /* 当前 OTM 在这一档没挂牌（实测 VGT 10-16 上方只到 $135，7% 就够不到）。
        别让结论行变成死胡同 —— 退到最近一个有数的列，直接告诉你现在能卖哪一档。 */
@@ -290,19 +292,18 @@ export function probSummaryHtml(matrix, ctx) {
       ? ('最近可卖 ' + m.otms[alt] + '% = $' + Number(row.cells[alt].strike).toFixed(2))
       : ('换一档 OTM');
     return '<div class="mx-sum">' + head +
-      '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip + rule + '</div></div>';
+      '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip + '</div></div>';
   }
-  /* 主行给**完整的 OTM**（相对现价）："这张比现价高多少"才是下单时真正要看的东西。
-     相对目标价的那个误差项只留在悬停里。 */
   const otmTxt = cell.otmPct == null ? ''
-    : '（' + (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '% OTM）';
+    : (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '% OTM';
   return '<div class="mx-sum">' + head +
-    '<div class="mx-sum-main">$' + Number(cell.strike).toFixed(2) +
-      (otmTxt ? ' <small>' + otmTxt + '</small>' : '') + '</div>' +
-    '<div class="mx-sum-meta">被行权 <b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b>' +
-      ' · 权利金 ' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') +
-      ' · 年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') +
-      rule + '</div></div>';
+    '<div class="mx-sum-stats">' +
+      '<div class="mx-stat"><span>行权价</span><b>$' + Number(cell.strike).toFixed(2) + '</b>' +
+        (otmTxt ? '<small>' + otmTxt + '</small>' : '') + '</div>' +
+      '<div class="mx-stat"><span>被行权</span><b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b></div>' +
+      '<div class="mx-stat"><span>权利金</span><b>' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') + '</b>' +
+        '<small>年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') + '</small></div>' +
+    '</div></div>';
 }
 
 /** 把「本期」结论行写进 DOM。 */

@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=386');
+  assert.equal(manifest.start_url, '/?v=387');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v386/);
+  assert.match(serviceWorker, /wealth-v387/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=386',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=387',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -852,11 +852,27 @@ test('可卖 CALL 张数只有一处口径：期权状态卡的"可卖 N 张" �
 });
 
 test('index.js：节奏档要先吸附到真实挂牌到期日，链没到时按日历显示、不编「已顺延」', () => {
-  assert.match(indexSource, /snapToListed\(period\.date,listed\)/, '卖出日要吸附');
-  assert.match(indexSource, /var rollRaw=ccRollExpiry\(probTab\)[\s\S]{0,80}snapToListed\(rollRaw,listed\)/, '该卖的到期日要吸附');
+  // v387：卖出日改成「有持仓＝那张的到期日；空仓＝今天」，所以吸附的是 sellBase
+  assert.match(indexSource, /snapToListed\(sellBase,listed\)/, '卖出日要吸附到真实挂牌档');
+  // v387：该卖的到期日改成以「卖出日」为起点推下一档节奏日（卖出日跟实际持仓走）
+  assert.match(indexSource, /isoOf\(dateMs\(sellDay\.date\)\+86400000\)/, '要从卖出日往后推下一档');
+  assert.match(indexSource, /var roll=snapToListed\(rollRaw,listed\)/, '该卖的到期日要吸附到真实挂牌档');
   assert.match(indexSource, /shiftNote:roll\.shifted\?\([^)]*rollRaw/, '顺延提示里的日期要用「该卖」那一档的节奏日，别写成本期');
   assert.match(indexSource, /function listedExpiries\(chain\)/, '要取链里真实挂牌的到期日列表');
   assert.match(indexSource, /shiftNote:roll\.shifted/, '顺延了要写在结论行上，不能悄悄换日期');
+});
+
+/**
+ * v387：卖出日原来取"下一个节奏日"，相位不巧时会指到 3 周后
+ * （实测 2026-10-11 时 SMH/IBIT 显示"10-30 卖出，还有 19 天"——而节奏的本意是
+ * "手上那张到期那天卖下一档"，空仓则随时可卖）。现在改成跟实际持仓走。
+ */
+test('v387：卖出日跟实际持仓走（有 CALL → 它的到期日；空仓 → 今天）', () => {
+  assert.match(indexSource, /o\.sym===probTab&&isActiveOption\(o,new Date\(\)\)/, '只认该标的的活跃 CALL');
+  assert.match(indexSource, /var sellBase=actOpt\.length\?actOpt\[0\]:marketDate\(\)/, '空仓时卖出日＝今天');
+  assert.match(indexSource, /sellDay=actOpt\.length\?snapToListed\(sellBase,listed\):\{date:sellBase,shifted:false\}/,
+    '有持仓时用那张的到期日（吸附到真实挂牌档）');
+  assert.doesNotMatch(indexSource, /var sellDay=snapToListed\(period\.date,listed\)/, '别再拿"下一个节奏日"当卖出日');
 });
 
 /**

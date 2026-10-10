@@ -2830,7 +2830,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .icon-refresh{width:44px;min-width:44px;padding:0;display:grid;place-items:center}.icon-refresh svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
 
 /* ===== v325 被行权概率：目标概率反解行权价 + 行权价参考的概率联动 ===== */
-.prob-controls{display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:12px}
+.prob-controls{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .prob-control{display:flex;align-items:center;gap:8px;min-width:0}
 .prob-control>span{flex:none;color:var(--muted);font-size:11.5px;font-weight:560;letter-spacing:.01em}
 /* 标的现价：跟在 OTM 控件右边，给 OTM%、列头目标价、格里的实际档位当参照 */
@@ -2849,6 +2849,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .prob-section-title{margin:16px 0 2px;color:var(--muted);font-size:11px;font-weight:620;letter-spacing:.02em}
 .prob-note{margin-top:12px;color:var(--muted);font-size:11px;line-height:1.55}
 .prob-note.is-refresh{cursor:pointer}
+.prob-note .note-iv{display:block;margin-top:2px}
 /* 卡片标题旁的分工小字：一张是决策卡（该卖哪一档）、一张是资料卡（市场有哪些到期日） */
 .card-sub{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:500;color:var(--muted);letter-spacing:0;vertical-align:1px}
 .prob-empty{color:var(--muted);font-size:12px;padding:6px 0}
@@ -2868,7 +2869,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .cc-table tbody td[data-cell="streak"]{grid-area:2/3/3/5;text-align:right}
   .cc-table tbody td::before{display:none}
 
-  .prob-control{width:100%;justify-content:space-between}
+  .prob-control{width:auto;justify-content:flex-start}
   .prob-chip{min-width:44px;height:34px}
 }
 
@@ -2905,13 +2906,23 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-col.is-on{background:var(--accent-l);color:var(--accent-d);font-weight:700}
 /* 列头第二行：这一档 OTM 对应的价格（现价 ×(1+OTM)），当参照用 */
 .mx-table thead th .mx-target{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:1px}
-.mx-table tbody tr.mx-sell-row td{background:color-mix(in srgb,var(--orange) 11%,transparent)}
+/* v387：★ 那一行原来是整行浅橙 + 橙色小字，视觉上和"警告"混淆；改成首列左侧 3px 色条，
+   标记还在、噪音小很多（浅橙底留给下面的结论块）。 */
+.mx-table tbody tr.mx-sell-row td:first-child{position:relative}
+.mx-table tbody tr.mx-sell-row td:first-child::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px;background:var(--orange)}
 .mx-sell-tag{color:var(--orange);font-weight:660}
 
 /* 「本轮该卖」结论行：把 25 个数字收敛成一句 */
 .mx-sum{margin:2px 0 12px;padding:11px 13px;border-radius:var(--radius-inner);background:color-mix(in srgb,var(--orange) 9%,transparent);border:1px solid color-mix(in srgb,var(--orange) 25%,transparent)}
 .mx-sum-head{color:var(--muted);font-size:11.5px;font-weight:560}
 .mx-sum-head b{color:var(--fg)}
+/* v387：结论块从"3 行散文"改成「标题 / 时间线 / 带标签的数值格」—— 值一个不少，但能扫读 */
+.mx-sum-when{margin-top:2px;color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums;line-height:1.5}
+.mx-sum-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:9px}
+.mx-stat{display:grid;gap:1px;min-width:0;font-variant-numeric:tabular-nums}
+.mx-stat>span{color:var(--muted);font-size:11px;font-weight:560}
+.mx-stat>b{font-size:.92rem;font-weight:680;color:var(--fg)}
+.mx-stat>small{color:var(--muted);font-size:11px}
 /* 本期状态徽章：已卖出 / 未卖出 / 今天该卖 */
 .mx-badge{display:inline-block;margin-left:5px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:640;vertical-align:1px}
 .mx-badge.is-done{background:color-mix(in srgb,var(--accent) 17%,transparent);color:var(--accent-d)}
@@ -2919,8 +2930,6 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-badge.is-due{background:color-mix(in srgb,var(--red) 17%,transparent);color:var(--red)}
 /* 节奏日没挂牌、已顺延到真实挂牌档时的提示（假期周把周五挪到周四就是这种） */
 .mx-shift{color:var(--orange);font-size:10.5px;font-weight:560}
-.mx-sum-main{font-size:1.32rem;font-weight:700;font-variant-numeric:tabular-nums;margin:3px 0 2px;letter-spacing:-.01em}
-.mx-sum-main small{font-size:11.5px;font-weight:560;color:var(--muted)}
 .mx-sum-meta{color:var(--muted);font-size:11.5px;line-height:1.55}
 .mx-sum-meta b{font-weight:700}
 .mx-sum-empty{background:transparent;border-style:dashed;color:var(--muted);font-size:12px}

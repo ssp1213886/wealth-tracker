@@ -173,10 +173,11 @@ test('probMatrixHtml：相邻两列吸到同一张合约时照常各写一遍（
 
 test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 / 还有几天 / 持有多久」', () => {
   const html = probSummaryHtml(MX, MX_CTX);
-  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 · 2026-11-20 卖出（还有 8 天） · 持有 28 天/, '第一行就得是"卖哪一个、哪天卖"的答案');
+  assert.match(html, /mx-sum-head">该卖 <b>2026-12-18<\/b> 到期 · 每月第三个周五/, '标题行＝该卖哪一档 + 节奏名');
+  assert.match(html, /mx-sum-when">2026-11-20 卖出 · 还有 8 天 · 持有 28 天<\/div>/, '时间线行＝哪天卖出 / 还有几天 / 持有多久');
   assert.match(html, /mx-badge is-todo">未卖</, '状态徽章挂在「该卖」那一档上：没记这张 CALL 就是未卖');
   assert.match(html, /\$152\.00/);
-  assert.match(html, /\$152\.00 <small>（\+5\.0% OTM）<\/small>/, '主行括号里是**完整的 OTM**（相对现价），不是那个误差项');
+  assert.match(html, /<b>\$152\.00<\/b><small>\+5\.0% OTM<\/small>/, '行权价 + 完整的 OTM（相对现价）同格显示');
   assert.doesNotMatch(html, /比目标/, '误差项不该再出现在主行');
   assert.match(html, /25\.6%/, '被行权概率');
   assert.match(html, /\$2\.90/, '权利金');
@@ -196,7 +197,7 @@ test('probSummaryHtml：该卖那一档已卖出 → 徽章变「已卖 ✓」�
 
 test('probSummaryHtml：今天就是卖出日 → 「还有 N 天」换成「今天」，徽章换成「今天该卖」', () => {
   const html = probSummaryHtml(MX, { otm: 7, due: true, ruleLabel: '每月第三个周五', from: '2026-11-20', periodDate: '2026-11-20' });
-  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 · 2026-11-20 卖出（今天）/, '当天就别再写"还有 N 天"');
+  assert.match(html, /mx-sum-when">2026-11-20 卖出 · 今天<\/div>/, '当天就别再写"还有 N 天"');
   assert.match(html, /mx-badge is-due">今天该卖</);
 });
 
@@ -209,7 +210,7 @@ test('probSummaryHtml：拿不到卖出日 / 持有天数时就不写那两段�
 
 test('probSummaryHtml：节奏日没挂牌、已顺延到真实挂牌档时要说出来', () => {
   const html = probSummaryHtml(MX, { ...MX_CTX, shiftNote: '节奏日 2026-11-20 未挂牌' });
-  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期 <span class="mx-shift">节奏日 2026-11-20 未挂牌<\/span>/);
+  assert.match(html, /持有 28 天 · <span class="mx-shift">节奏日 2026-11-20 未挂牌<\/span><\/div>/, '顺延提示跟时间线同一行');
   assert.doesNotMatch(probSummaryHtml(MX, MX_CTX), /mx-shift/, '正常情况不该出现顺延提示');
 });
 

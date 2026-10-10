@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v386';var APP_DATA_VERSION=5;
+var APP_BUILD='v387';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1123,7 +1123,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=386',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=387',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1861,8 +1861,13 @@ function renderProbCard(){
      ★ 那一档由 probMatrix 强制保留，不受门槛影响。 */
   var period=ccPeriod(probTab);
   var listed=listedExpiries(chain);
-  var sellDay=snapToListed(period.date,listed);          /* 卖出日＝本期那一档的到期日 */
-  var rollRaw=ccRollExpiry(probTab);                     /* 纯日历推出来的那一档 */
+  /* v387：卖出日跟**实际持仓**走 —— 手上有 CALL 就是它到期那天（到期当天卖下一档，覆盖无缝），
+     空仓就是今天。不能再用"下一个节奏日"当卖出日：相位不巧时会指到 3 周后
+     （实测今天 10-11，SMH/IBIT 会显示"10-30 卖出，还有 19 天"，明显不合理）。 */
+  var actOpt=(function(){try{return loadOpt().filter(function(o){return o.sym===probTab&&isActiveOption(o,new Date())}).map(function(o){return o.expiry}).filter(Boolean).sort()}catch(e){return[]}})();
+  var sellBase=actOpt.length?actOpt[0]:marketDate();
+  var sellDay=actOpt.length?snapToListed(sellBase,listed):{date:sellBase,shifted:false};
+  var rollRaw=(function(){try{var aft=isoOf(dateMs(sellDay.date)+86400000);var r=scheduleRow(probTab,ccSchedule,aft);return r?r.nextExpiry:''}catch(e){return ''}})();
   var roll=snapToListed(rollRaw,listed);                 /* 吸附到真实挂牌档之后的一档 */
   try{mx=probMatrix(chain,{fixed:roll.date,minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
   /* 状态挂在**该卖那一档**上（不再挂"本期"）：同一个问题只有一个答案 —— 这张 CALL 记了没有。
