@@ -2,7 +2,7 @@
 // 重点是 buildAlerts —— 这里是纯函数，把"@行权价逼近 / 期权临期 / 本月定投差额"三类判定钉住。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildAlerts, normalizeAlerts, loadOptPing, saveOptPing } from '../src/app/alerts-view.js';
+import { buildAlerts, normalizeAlerts, loadOptPing, saveOptPing, badgeCountOf, badgeSupported, applyAppBadge } from '../src/app/alerts-view.js';
 
 // 美东 2026-09-29 08:00（UTC 12:00）→ 当月 = 2026-09
 const NOW = new Date('2026-09-29T12:00:00Z');
@@ -256,4 +256,54 @@ test('buildAlerts：记录了买回之后待办消失', () => {
 test('buildAlerts：没过期的期权不会产生到期判定或买回待办', () => {
   const list = buildAlerts(ctx({ now: EXP_SHUT, options: [expCall({ id: 5, expiry: '2026-12-18' })], prices: { VGT: 137.2 } }));
   assert.equal(list.filter((x) => /^opt(decide|due|unmarked):/.test(String(x.id))).length, 0);
+});
+
+/* ===== v370：主屏角标 ===== */
+
+test('badgeCountOf：只数"需要动手"的提醒（critical / high），medium 及以下不算', () => {
+  const alerts = [
+    { id: 'a', severity: 'critical' },
+    { id: 'b', severity: 'high' },
+    { id: 'c', severity: 'medium' },
+    { id: 'd', severity: 'low' },
+    { id: 'e' },
+    null,
+  ];
+  assert.equal(badgeCountOf(alerts), 2);
+  assert.equal(badgeCountOf([]), 0);
+  assert.equal(badgeCountOf(undefined), 0);
+});
+
+test('badgeCountOf：真实提醒里"会被行权"（到期收盘后仍实值）要进角标', () => {
+  /* 到期日当天、美东收盘（16:00 ET = 20:00Z）之后判定：现价 > 行权价 → 会被行权 → critical */
+  const list = buildAlerts(ctx({
+    now: new Date('2026-10-16T21:00:00.000Z'),
+    options: [call({ id: 7, expiry: '2026-10-16' })],
+    prices: { VGT: 137.2 },
+  }));
+  const decide = list.find((a) => String(a.id).indexOf('optdecide:') === 0);
+  assert.ok(decide, '到期收盘后应该产生"会被行权"判定');
+  assert.equal(decide.severity, 'critical');
+  assert.ok(badgeCountOf(list) >= 1, '角标要能数出这条');
+});
+
+test('applyAppBadge：有数字就设、归零就清、不支持就静默返回 false', () => {
+  const calls = [];
+  const nav = {
+    setAppBadge(n) { calls.push(['set', n]); return Promise.resolve(); },
+    clearAppBadge() { calls.push(['clear']); return Promise.resolve(); },
+  };
+  assert.equal(badgeSupported(nav), true);
+  assert.equal(applyAppBadge(nav, 3), true);
+  assert.equal(applyAppBadge(nav, 0), true);
+  assert.deepEqual(calls, [['set', 3], ['clear']]);
+  assert.equal(badgeSupported({}), false);
+  assert.equal(applyAppBadge({}, 5), false, '不支持的设备不能抛错');
+});
+
+test('applyAppBadge：setAppBadge 的 rejection 必须被收掉（否则会被 unhandledrejection 上报成前端错误）', () => {
+  let caught = false;
+  const nav = { setAppBadge() { return { catch(fn) { caught = true; fn(new Error('not installed')); } }; } };
+  assert.equal(applyAppBadge(nav, 2), true);
+  assert.equal(caught, true, 'rejection 必须被 catch');
 });

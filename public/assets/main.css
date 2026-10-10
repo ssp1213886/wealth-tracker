@@ -1607,7 +1607,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .annual-cell strong{font-size:13.5px;line-height:1.2}
 .section-group-title{margin:16px 0 8px;padding:0 4px;color:var(--muted);font-size:var(--type-body);font-weight:560;letter-spacing:.02em}
 .dashboard-widgets{display:grid;grid-template-columns:1fr;gap:var(--space-2);margin-bottom:var(--space-3)}
-.mobile-attention,.dca-card,.goal-progress-card,.drawdown-card,.holdings-card,.cc-overview{padding:var(--ds-card-padding)!important;margin-bottom:var(--space-2)!important;border-radius:var(--ds-card-radius)!important}
+.mobile-attention,.dca-card,.goal-progress-card,.drawdown-card,.holdings-card,.cc-overview,.equity-card{padding:var(--ds-card-padding)!important;margin-bottom:var(--space-2)!important;border-radius:var(--ds-card-radius)!important}
 .progress-meta{color:var(--muted);font-size:var(--type-body);line-height:1.45;margin-bottom:6px}
 .progress-meta span,.progress-meta strong,.progress-meta #prPct{font-weight:620;color:var(--fg);font-variant-numeric:tabular-nums}
 .progress-meta-final #prGap{color:var(--red);font-weight:620}
@@ -2957,3 +2957,40 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 #bottomBar .bb-btn{color:var(--bar-fg)}
 #bottomBar .bb-btn .bb-icon{opacity:.8}
 #bottomBar .bb-btn.active .bb-icon{opacity:1}
+
+/* ── v370：配色圆点的点击热区 ──
+   圆点视觉尺寸不变（30×30），按钮本体撑到 44×44 满足触摸目标下限 —— 真机脚本 v322 起一直报
+   「5 个偏小」（就是这 5 个 .accent-dot），这次修掉。
+   范围：≤800 手机 + 801–1159 触摸平板（pointer:coarse）。≥1160 桌面仍是 22px（鼠标不需要 44px）。
+   做法：按钮本体透明，可见圆点画在 ::before 上，所以间距从 40px 变 44px（圆边缘间隙 10→14px）。
+   必须带强制声明：≤800 那层已把 width/height/border/box-shadow/gap 写死了，同选择器要靠
+   更高特异性 + 更晚出现才能压住（这也是唯一新增的强制声明处，共 6 条）。 */
+@media(pointer:coarse) and (max-width:1159.98px){
+.accent-dots{gap:0!important}
+.accent-dots .accent-dot{width:44px!important;height:44px!important;border:0!important;background:transparent;box-shadow:none!important;display:grid;place-items:center}
+.accent-dots .accent-dot.active{box-shadow:none!important}
+.accent-dots .accent-dot::before{content:"";width:30px;height:30px;border-radius:50%;background:var(--dot-bg,var(--accent));border:3px solid var(--card-bg);box-shadow:0 0 0 1px var(--rule)}
+.accent-dots .accent-dot.active::before{box-shadow:0 0 0 2px var(--accent)}
+.accent-dots .accent-dot.ad-ocean{--dot-bg:#2563eb}
+.accent-dots .accent-dot.ad-warm{--dot-bg:#d97706}
+.accent-dots .accent-dot.ad-plum{--dot-bg:#7c3aed}
+.accent-dots .accent-dot.ad-mono{--dot-bg:#5b665f}
+.accent-dots .accent-dot.ad-mono::before{box-shadow:0 0 0 1px var(--rule),inset 0 0 0 3px rgba(255,255,255,.5)}
+}
+
+/* ── v370：资产曲线卡（仪表盘）──
+   SVG 用 preserveAspectRatio="none" + vector-effect="non-scaling-stroke"：宽度随便拉伸，线宽不会被拉粗。
+   桌面 ≥801 是 12 栏网格 → 自己占满一行（和 #exposureSlot 同一个做法，自动排到显式行之后）；
+   手机 ≤800 是 flex + order 排序 → order:5（夹在 CC 概览 4 与路线图 6 之间）。 */
+.equity-chart{height:96px;margin:4px 0 10px}
+.equity-chart .eq-svg{display:block;width:100%;height:96px}
+.equity-chart .eq-area{fill:color-mix(in srgb,var(--accent) 12%,transparent);stroke:none}
+.equity-chart .eq-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.equity-chart .eq-invested{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-dasharray:4 4;stroke-linecap:round;opacity:.9}
+.equity-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted)}
+.equity-meta b{color:var(--fg);font-weight:640;font-variant-numeric:tabular-nums}
+.equity-meta b.pnl-pos{color:var(--accent)}
+.equity-meta b.pnl-neg{color:var(--red)}
+@media(min-width:801px){#tab-holding .equity-card{grid-column:1/-1}}
+@media(min-width:1160px){#tab-holding .equity-card{height:200px}}
+@media(max-width:800px){#tab-holding .equity-card{order:5}}

@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=369');
+  assert.equal(manifest.start_url, '/?v=370');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v369/);
+  assert.match(serviceWorker, /wealth-v370/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=369',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=370',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -784,4 +784,50 @@ test('到期日历：默认列「周五档」而不是「月度档」，并永�
   assert.match(indexSource, /picked=picked\.concat\(\[hitStep\]\)/, '节奏档必须并进默认视图，否则 SMH 会跟 VGT 一样');
   assert.doesNotMatch(indexSource, /all\.filter\(function\(e\)\{return isMonthlyExpiry\(e\.date\)\}\)\.slice\(0,3\)/,
     '不要再按"月度档"筛默认视图');
+});
+
+/* ===== v370 的四条源码钉子 ===== */
+
+test('v370：行情自动刷新 —— 定时器与"切回前台"都要刷（不能只刷加密那条链路）', () => {
+  assert.match(indexSource, /setInterval\(autoRefreshQuotes,300000\)/, '定时器必须接 autoRefreshQuotes');
+  assert.doesNotMatch(indexSource, /setInterval\(refreshPrices,/,
+    '不能再让定时器直连 refreshPrices —— 它只对加密标的取数，VGT/SMH 永远不会更新');
+  assert.match(appSource, /function autoRefreshQuotes\(\)\{[^\n]*refreshMarket\(false\)/,
+    'autoRefreshQuotes 必须先走行情总线 refreshMarket（自带 60 秒冷却）');
+  assert.match(indexSource, /visibilitychange',function\(\)\{[^\n]*refreshQuotesIfStale\(\)/,
+    '切回前台要补刷行情');
+  assert.match(appSource, /function refreshQuotesIfStale\(\)\{[^\n]*quotesStale\(watchFetchedAt,Date\.now\(\),QUOTE_STALE_MS\)/,
+    '前台补刷要用 quotesStale 判定（5 分钟门槛），不能每次切页都打请求');
+});
+
+test('v370：配色圆点在触摸端有 44px 热区，可见圆点仍是 30px', () => {
+  assert.match(css, /@media\(pointer:coarse\) and \(max-width:1159\.98px\)\{/,
+    '要有触摸端热区媒体查询（≤800 手机 + 801–1159 触摸平板）');
+  assert.match(css, /\.accent-dots \.accent-dot\{width:44px!important;height:44px!important/,
+    '按钮本体要 ≥44px，真机脚本才不再报"偏小"');
+  assert.match(css, /\.accent-dots \.accent-dot::before\{content:"";width:30px;height:30px/,
+    '可见圆点仍由 ::before 画 30px（视觉尺寸不能变大）');
+});
+
+test('v370：资产曲线卡挂在仪表盘，且复用 range=max 的历史（不新增请求）', () => {
+  assert.match(html, /class="card equity-card" id="equityCard"/, '仪表盘要有这张卡');
+  assert.match(html, /id="equityChart"/);
+  assert.match(html, /id="equityRange"/);
+  assert.match(appSource, /function refreshEquityCurve\(\)\{/);
+  assert.match(appSource,
+    /equitySeries\(\{months:months,trades:trades,cashLog:cashLog,priceByMonth:buildPriceByMonth\(list,ETF_SYMS,months\)\}\)/,
+    '曲线必须走共享的 equitySeries + 同一份月度价格（口径只有一处）');
+  assert.match(appSource, /Promise\.all\(ETF_SYMS\.map\(function\(s\)\{return fetchMaxData\(s\)/,
+    '历史只认 fetchMaxData（请求级缓存，页面开一次只打一次）');
+  assert.match(css, /@media\(max-width:800px\)\{#tab-holding \.equity-card\{order:5\}\}/,
+    '手机端排在 CC 概览(4) 与路线图(6) 之间');
+});
+
+test('v370：到期提醒角标 —— 开关、权限申请、"只数需要动手的提醒"都接好了', () => {
+  assert.match(html, /id="cbAlertBadge"/, '设置页要有角标开关');
+  assert.match(html, /id="alertBadgeNote"/, '开关下面要有说明/兜底文案');
+  assert.match(appSource, /function bindAlertBadgeToggle\(\)\{/);
+  assert.match(appSource, /syncAppBadge\(list\)/, 'refreshCcAlerts 里要写角标');
+  assert.match(appSource, /requestPermission/, '权限要在用户手势里申请');
+  assert.match(appSource, /applyAppBadge\(navigator,/, '写角标走 alerts-view 的 applyAppBadge');
 });

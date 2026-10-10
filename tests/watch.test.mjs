@@ -21,6 +21,7 @@ import {
   resolveHeldSymbol,
   mergeWatchlist,
   splitByHolding,
+  quotesStale,
 } from '../src/app/watch.js';
 
 test('默认观察列表覆盖用户指定的标的（含 BTC ETF 行）', () => {
@@ -245,4 +246,16 @@ test('splitByHolding：可按"持有股数"判定持仓，市值只用于合计�
   assert.deepEqual(groups.held.map((x) => x.sym), ['VGT', 'BTCETF'], '没行情的持仓仍属持仓组');
   assert.deepEqual(groups.watch.map((x) => x.sym), ['IWM']);
   assert.equal(groups.total, 0, '合计按市值算，无行情就是 0');
+});
+
+test('quotesStale：没拉过 / 到点算过期，冷却期内不算（v370 行情自动刷新的判定）', () => {
+  const NOW = 1700000000000;
+  const FIVE_MIN = 5 * 60 * 1000;
+  assert.equal(quotesStale(NOW - FIVE_MIN + 1, NOW, FIVE_MIN), false, '刚拉过 → 不算过期');
+  assert.equal(quotesStale(NOW - FIVE_MIN, NOW, FIVE_MIN), true, '到点（>=）→ 算过期');
+  assert.equal(quotesStale(0, NOW, FIVE_MIN), true, '从来没拉过 → 算过期');
+  assert.equal(quotesStale(undefined, NOW, FIVE_MIN), true, '没有时间戳 → 算过期');
+  assert.equal(quotesStale(NOW - 1000, NOW, 0), true, '阈值非法（0）→ 宁可信其过期');
+  assert.equal(quotesStale(NOW - 1000, NOW, NaN), true, '阈值非法（NaN）→ 宁可信其过期');
+  assert.equal(quotesStale(NOW - 1000, NOW, FIVE_MIN), false, '一分钟前拉过 → 不算过期');
 });

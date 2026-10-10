@@ -317,3 +317,21 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
 }
 
 export { KIND_LABEL };
+
+/**
+ * 行情是否已经"过期"（v370）。
+ *
+ * 用途：决定"切回前台 / 定时器到点"要不要补刷行情。抽成纯函数是为了能钉住判定边界 ——
+ * 以前这段逻辑散在回调里，v307 合并行情总线时定时器只覆盖了加密那条链路，
+ * 结果 VGT/SMH 开着页面也不刷新（见 maintenance.md 的行情总线一节）。
+ *
+ * 规则：没拉过（lastAt 非法/为 0）→ 算过期；maxAgeMs 非法 → 算过期（宁可多拉一次）。
+ */
+export function quotesStale(lastAt, now, maxAgeMs) {
+  const last = Number(lastAt) || 0;
+  const at = Number(now) || 0;
+  const max = Number(maxAgeMs) || 0;
+  if (!(max > 0)) return true;
+  if (!(last > 0)) return true;
+  return at - last >= max;
+}

@@ -1,7 +1,7 @@
 // 图表数据整形单测（v245 抽出）：纪律月度、年度矩阵、甜甜圈切片、热力色阶
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices } from '../src/app/charts.js';
+import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices, equitySeries, equityCurveSvg } from '../src/app/charts.js';
 
 const buy = (date, symbol, shares, price) => ({ date, symbol, shares, price, id: date + symbol });
 
@@ -278,4 +278,83 @@ test('donutSlices：过滤未定价的持仓，pct 合计为 1；两种空态要
   assert.equal(donutSlices([]).reason, 'no-data');
   assert.equal(donutSlices([{ sym: 'VGT', priced: false, value: null }]).reason, 'no-data');
   assert.equal(donutSlices([{ sym: 'VGT', priced: true, value: 0 }]).reason, 'unpriced');
+});
+
+/* ===== v370：资产曲线（月末总资产 + 累计净入金）===== */
+
+/* 8 月末：入金 10,000 → 买 100 股 @$100（现金花光），月末价 $100 → 总资产 10,000 */
+const CURVE_WORLD = {
+  months: ['2026-08', '2026-09'],
+  trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+  cashLog: [
+    { type: '入金', date: '2026-08-05', amount: 10000 },
+    { type: '入金', date: '2026-09-05', amount: 2000 },
+  ],
+  priceByMonth: { VGT: { '2026-08': 100, '2026-09': 101.8 } },
+};
+
+test('equitySeries：月末总资产与 monthlyPnl 的口径一致（含现金），净入金只数入金/出金/修正', () => {
+  const s = equitySeries(CURVE_WORLD);
+  assert.equal(s.points.length, 2);
+  assert.equal(s.points[0].value, 10000, '8 月末：持股 10,000 + 现金 0');
+  assert.equal(s.points[1].value, 12180, '9 月末：持股 10,180 + 现金 2,000');
+  assert.equal(s.points[0].netInvested, 10000);
+  assert.equal(s.points[1].netInvested, 12000, '第二笔入金要累加进去');
+  assert.equal(s.ready, true);
+  assert.equal(s.first.ym, '2026-08');
+  assert.equal(s.last.ym, '2026-09');
+  assert.equal(s.gain, 2180, '整条线的涨幅 = 末值 − 首值');
+  assert.ok(Math.abs(s.gainPct - 0.218) < 1e-12);
+});
+
+test('equitySeries：股息/权利金不算注资（只进总资产，不进净入金）', () => {
+  const s = equitySeries({
+    months: ['2026-08'],
+    trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+    cashLog: [
+      { type: '入金', date: '2026-08-05', amount: 10000 },
+      { type: '股息+', date: '2026-08-20', amount: 50 },
+      { type: '权利金+VGT', date: '2026-08-21', amount: 120 },
+    ],
+    priceByMonth: { VGT: { '2026-08': 100 } },
+  });
+  assert.equal(s.points[0].value, 10170, '股息与权利金是收益，要体现在总资产里');
+  assert.equal(s.netInvested, 10000, '但它们不是注资');
+});
+
+test('equitySeries：缺行情的月份标 gap、不补 0；可画点不足 2 个时 ready=false', () => {
+  const s = equitySeries({
+    months: ['2026-08', '2026-09'],
+    trades: [{ symbol: 'VGT', date: '2026-08-10', shares: 100, price: 100 }],
+    cashLog: [{ type: '入金', date: '2026-08-05', amount: 10000 }],
+    priceByMonth: { VGT: { '2026-08': 100 } },      // 9 月没有价
+  });
+  assert.equal(s.points[1].gap, true, '缺行情 → gap');
+  assert.equal(s.points[1].value, 0, '不编数字：缺价时 value 只能是 0（渲染层断线而不是画个坑）');
+  assert.equal(s.ready, false, '只剩 1 个可画点 → 不画线');
+  assert.equal(equityCurveSvg(s), '', '不 ready 的序列不产出 SVG');
+});
+
+test('equityCurveSvg：两条线（净值实线 + 净入金虚线）与淡填充', () => {
+  const svg = equityCurveSvg(equitySeries(CURVE_WORLD));
+  assert.match(svg, /^<svg class="eq-svg"/);
+  assert.ok(svg.includes('class="eq-area"'), '没有断点时画填充');
+  assert.ok(svg.includes('class="eq-line"'), '净值线');
+  assert.ok(svg.includes('class="eq-invested"'), '净入金参考线');
+  assert.ok(svg.includes('vector-effect="non-scaling-stroke"'), '线宽不能被横向拉伸拉粗');
+  assert.equal((svg.match(/class="eq-line"/g) || []).length, 1);
+});
+
+test('equityCurveSvg：有缺口的月份要断开（多段），且不画填充', () => {
+  const months = ['2026-07', '2026-08', '2026-09', '2026-10'];
+  const svg = equityCurveSvg(equitySeries({
+    months: months,
+    trades: [{ symbol: 'VGT', date: '2026-07-10', shares: 100, price: 100 }],
+    cashLog: [{ type: '入金', date: '2026-07-05', amount: 10000 }],
+    priceByMonth: { VGT: { '2026-07': 100, '2026-10': 110 } },   // 8/9 月缺价
+  }));
+  const line = /class="eq-line" d="([^"]+)"/.exec(svg);
+  assert.ok(line, '应该有净值线');
+  assert.equal((line[1].match(/M/g) || []).length, 2, '缺口两侧各起一段（两个 M）');
+  assert.ok(!svg.includes('class="eq-area"'), '断开时不填色，免得看起来像数据齐的');
 });

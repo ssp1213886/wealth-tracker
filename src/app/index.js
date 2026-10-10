@@ -54,18 +54,18 @@ function symColor(sym){
   if(String(sym)==='BTC')return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
   return getAssetColor(WATCH_HELD_OF[sym]||sym);
 }
-import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing} from './alerts-view.js';
+import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing, badgeCountOf, badgeSupported, applyAppBadge} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, syncFailureText, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices, capCellHTML, updateCapCells} from './watch-ui.js';
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, renderCashTotals} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
-import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices} from './charts.js';
+import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices, equitySeries, equityCurveSvg} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue, csvSkipSummary} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
 import {selectTrades, buildTradeRows, selectCashLogs, buildCashLogRows, cashTotals, dataPageTotals, matchRowText, searchCountText} from './rows.js';
-import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS, WATCH_HELD_OF, resolveHeldSymbol, mergeWatchlist, splitByHolding} from './watch.js';
+import {normalizeWatchlist, toggleWatch, addWatch, removeWatch, moveWatch, toWatchRows, toHoldingRows, collectQuoteSymbols, toExposureRows, WATCH_DEFAULTS, WATCH_HELD_OF, resolveHeldSymbol, mergeWatchlist, splitByHolding, quotesStale} from './watch.js';
 var LSKEY=KEYS.dashboard,PRICE_KEY=KEYS.prices,TRADE_KEY=KEYS.trades,CB_KEY=KEYS.cash,CLOG_KEY=KEYS.cashLog;var cashBalance=0,cashLog=[];
 
 
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v369';var APP_DATA_VERSION=5;
+var APP_BUILD='v370';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',BTC:'BTC'};
 
 
@@ -194,6 +194,14 @@ var CRYPTO_CODES={BTC:1,ETH:1,BNB:1,HYPE:1,SOL:1,XRP:1,DOGE:1,ADA:1,AVAX:1,LINK:
 
 
 
+/* v370：行情自动刷新 —— 定时器与"切回前台"共用这一条路径。
+   以前 setInterval 直接调 refreshPrices，而 refreshPrices 只对加密标的正经取数（VGT/SMH 只是把内存里
+   那份重画一遍），于是**股票价在页面停留期间根本不会更新**（v307 合并行情总线时的遗留）；切回前台也只
+   同步、不刷行情。现在统一走 refreshMarket()（自带 60 秒冷却防连点），收尾仍由 refreshPrices 负责。 */
+var QUOTE_STALE_MS=5*60*1000;
+function autoRefreshQuotes(){return Promise.resolve().then(function(){return refreshMarket(false)}).then(function(){try{return refreshPrices()}catch(e){logSwallowed("autoRefreshQuotes",e)}}).catch(function(e){logSwallowed("autoRefreshQuotes",e)})}
+/* 切回前台：只在这份行情确实"旧了"的时候补一次，避免每次切页都打请求。 */
+function refreshQuotesIfStale(){try{if(!quotesStale(watchFetchedAt,Date.now(),QUOTE_STALE_MS))return;autoRefreshQuotes()}catch(e){logSwallowed("refreshQuotesIfStale",e)}}
 var holdSort={col:'value',asc:false};function sortHoldRows(rows){var c=holdSort.col,a=holdSort.asc;return rows.sort(function(x,y){var vx=c==='sym'?x.sym:c==='value'?x.value||0:c==='pnl'?x.unrealPnL||0:c==='pnlPct'?x.pnlPct||0:0;var vy=c==='sym'?y.sym:c==='value'?y.value||0:c==='pnl'?y.unrealPnL||0:c==='pnlPct'?y.pnlPct||0:0;if(typeof vx==='string')return a?vy.localeCompare(vx):vx.localeCompare(vy);return a?vx-vy:vy-vx})}
 
 /* v306：给 dailyChange 组装行情入参（现价 / 昨收 / 每股涨跌），三处调用共用 */
@@ -298,6 +306,8 @@ function updatePortfolio(){
 
 
   renderPricePills(document,{symbols:ETF_SYMS,prices:livePrices,changes:liveChanges,sources:liveSources});
+  /* v370：仪表盘的资产曲线跟着排一次（内部 JSON 比对 + 300ms 去抖，值没变就是空操作） */
+  queueEquityCurve();
 
 
 
@@ -441,6 +451,59 @@ function refreshMonthlyPnl(){
       if(json===logPnlJson)return;
       logPnlJson=json;logPnl=out;renderLogHeatmap();
     }catch(e){logSwallowed("monthlyPnl",e)}
+  },function(){});
+}
+
+/* ===== v370：资产曲线（仪表盘）=====
+   数据复用「记录页热力图」那套 range=max 日线（fetchMaxData 是请求级缓存，**不新增请求**）；
+   口径复用 charts.js 的 equitySeries —— 与月度收益、年度归因同一份实现，不自己再算一套。 */
+var equityJson='',equityTimer=0;
+/** 从第一笔交易/第一笔流水那个月，一直排到当月（有序月份数组）。 */
+function equityMonths(){
+  var start='';
+  var take=function(date){var ym=String(date||'').slice(0,7);if(!/^\d{4}-\d{2}$/.test(ym))return;if(!start||ym<start)start=ym};
+  trades.forEach(function(t){if(t)take(t.date)});
+  cashLog.forEach(function(l){if(l)take(l.date)});
+  if(!start)return [];
+  var cur=marketDate().slice(0,7);
+  if(start>cur)return [];
+  var out=[],y=Number(start.slice(0,4)),m=Number(start.slice(5,7));
+  for(var guard=0;guard<600;guard+=1){
+    var ym=y+'-'+String(m).padStart(2,'0');
+    out.push(ym);
+    if(ym>=cur)break;
+    m+=1;if(m>12){m=1;y+=1}
+  }
+  return out;
+}
+/* 去抖：updatePortfolio 一次交互里会被调好几次，等它安静下来再算一次。 */
+function queueEquityCurve(){try{clearTimeout(equityTimer)}catch(e){logSwallowed("queueEquityCurve",e)}equityTimer=setTimeout(refreshEquityCurve,300)}
+function renderEquityMeta(series){
+  var el=document.getElementById('equityMeta'),rangeEl=document.getElementById('equityRange');
+  if(rangeEl)rangeEl.textContent=series&&series.first?('月末 · '+series.first.ym+' 起'):'月末总资产';
+  if(!el)return;
+  if(!series||!series.ready){el.innerHTML='';return}
+  var diff=Number(series.gain)||0,cls=diff>=0?'pnl-pos':'pnl-neg',sign=diff>=0?'+':'';
+  var pct=series.gainPct==null?'':'<b class="'+cls+'">'+sign+(series.gainPct*100).toFixed(1)+'%</b>';
+  el.innerHTML='<span>当前 <b>'+fmtFull(series.last.value)+'</b></span>'+
+    '<span>累计净入金 <b>'+fmtFull(series.netInvested)+'</b></span>'+
+    '<span>较首月 <b class="'+cls+'">'+sign+fmtFull(diff)+'</b>'+pct+'</span>';
+}
+function refreshEquityCurve(){
+  var chart=document.getElementById('equityChart');
+  if(!chart)return;
+  var months=equityMonths();
+  if(months.length<2){chart.innerHTML=emptyStateHTML({title:'还画不出曲线',hint:'记录第一笔交易后，这里会按月画出资产曲线'});renderEquityMeta(null);return}
+  Promise.all(ETF_SYMS.map(function(s){return fetchMaxData(s).catch(function(){return null})})).then(function(list){
+    try{
+      var series=equitySeries({months:months,trades:trades,cashLog:cashLog,priceByMonth:buildPriceByMonth(list,ETF_SYMS,months)});
+      var json=JSON.stringify([series.points,series.netInvested,series.ready]);
+      if(json===equityJson)return;
+      equityJson=json;
+      var svg=equityCurveSvg(series);
+      chart.innerHTML=svg||emptyStateHTML({title:'还画不出曲线',hint:'需要至少 2 个月的行情数据'});
+      renderEquityMeta(series);
+    }catch(e){logSwallowed("refreshEquityCurve",e)}
   },function(){});
 }
 
@@ -795,7 +858,7 @@ document.body.addEventListener('click',function(e){var b=e.target.closest('.trad
 
 
 runMigrations(reportError);
-cashBalance=loadCash();cashLog=loadCashLog();function initPortfolio(){initTradeIds();var cached=readPriceCache();for(var sym in cached){livePrices[sym]=cached[sym].price||cached[sym];liveQuoteData[sym]=cached[sym];liveSources[sym]=cached[sym].source==='tencent'?'腾讯':cached[sym].source||'缓存';if(cached[sym].change!=null)liveChanges[sym]=cached[sym].change}updatePortfolio();refreshPrices();setInterval(refreshPrices,300000)}
+cashBalance=loadCash();cashLog=loadCashLog();function initPortfolio(){initTradeIds();var cached=readPriceCache();for(var sym in cached){livePrices[sym]=cached[sym].price||cached[sym];liveQuoteData[sym]=cached[sym];liveSources[sym]=cached[sym].source==='tencent'?'腾讯':cached[sym].source||'缓存';if(cached[sym].change!=null)liveChanges[sym]=cached[sym].change}updatePortfolio();refreshPrices();setInterval(autoRefreshQuotes,300000)}
 
 
 
@@ -996,7 +1059,7 @@ function initAll(){
   });
 
 
-  autoBackup=readRaw('autoBackup')==='1';var cb=document.getElementById('cbAutoBackup');if(cb){cb.checked=autoBackup;cb.addEventListener('change',function(){autoBackup=this.checked;LS.setItem('autoBackup',autoBackup?'1':'0')})}var lbt=readRaw('lastBackupTime');if(lbt){var d2=new Date(parseInt(lbt));document.getElementById('lastBackupTime').textContent='上次备份 '+d2.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+  autoBackup=readRaw('autoBackup')==='1';var cb=document.getElementById('cbAutoBackup');if(cb){cb.checked=autoBackup;cb.addEventListener('change',function(){autoBackup=this.checked;LS.setItem('autoBackup',autoBackup?'1':'0')})}var lbt=readRaw('lastBackupTime');if(lbt){var d2=new Date(parseInt(lbt));document.getElementById('lastBackupTime').textContent='上次备份 '+d2.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}bindAlertBadgeToggle();
 
 
   /* v256：【品牌徽标两版对比】?brand=mono 用单色剪影，默认用品牌原色（见 main.css 的 .sym-badge 一段） */
@@ -1046,7 +1109,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=369',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=370',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1319,7 +1382,7 @@ function flushDirtyOnHide(){try{if(!syncCfg||!syncCfg.url)return;var st=loadSync
 
 /* v316：网络恢复（VPN 重连、切回 WiFi）时自动补一次同步，不用等下一次打开 */
 window.addEventListener('online',function(){try{autoPull();pushPendingSoon(300)}catch(e){logSwallowed("syncOnline",e)}});
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200)}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200);refreshQuotesIfStale();refreshCcAlerts()}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;
 function autoPush(){if(pushInFlight){pushQueued=true;return}var data=buildPushData(true);if(shouldSkipPush(data,SYNC_KEYS))return;pushInFlight=true;var finish=function(){pushInFlight=false;if(pushQueued){pushQueued=false;setTimeout(autoPush,60)}};syncPushImpl(data).then(finish,finish)}/* v312 撤掉"先问版本号再拉全文"的两段式：数据只有 5KB，省下的下载量抵不过多出来的一轮往返（实测慢网络下会把同步拖到 20 秒以上）。现在打开就是一次 GET，和以前一样。 */function autoPull(){if(!syncCfg.url)return;syncFetch('GET').then(function(r){if(!r.data)return;var meta=r.meta||{};var ss=loadSyncState();var conflicts=[],pendingCloud={},pulled=[];var plan=planPullSync({keys:SYNC_KEYS,cloudData:r.data,meta:meta,state:ss,normalizeTs:normalizeSyncTs,hasCloud:hasCloudData,hasLocal:hasLocalData,isEmptyCloud:isEmptyCloudVal,equal:function(key){return syncContentEqual(key,localValOf(key),r.data[key],normalizeState)}});
 var conflicts=plan.conflicts,pendingCloud=plan.pendingCloud,pulled=plan.applies;
 plan.applies.forEach(function(key){applyCloudVal(key,r.data[key])});
@@ -2052,9 +2115,40 @@ async function fetchDividends(sym){
 function refreshCcAlerts(){
   try{
     var nowInstant=new Date();
-    renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),
-      ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap()}));
+    var list=buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),
+      ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap()});
+    renderAlerts(document,list);
+    syncAppBadge(list);
   }catch(e){logSwallowed("refreshCcAlerts",e)}
+}
+
+/* ===== v370：主屏图标角标 =====
+   所有提醒以前只在"打开 App"那一刻可见（sw.js 没有 push、前端也没接任何通知能力）。
+   角标解决"打开了、忘了看铃铛"；"一整天没打开"要靠服务端定时推送，那是另案。
+   开关存本机（按账号分区，和"自动备份"同一个做法），权限在用户手势里申请。 */
+var alertBadgeOn=readRaw('alertBadge')==='1';
+function syncAppBadge(list){try{if(!alertBadgeOn)return;applyAppBadge(navigator,badgeCountOf(list||getCurrentAlerts()))}catch(e){logSwallowed("syncAppBadge",e)}}
+function bindAlertBadgeToggle(){
+  var cb=document.getElementById('cbAlertBadge');if(!cb)return;
+  var note=document.getElementById('alertBadgeNote');
+  var setNote=function(text){if(note)note.textContent=text};
+  var supported=badgeSupported(navigator);
+  /* 不支持的设备（Safari 标签页 / 还没添加到主屏）直接把开关禁掉，别让人点一个假开关 */
+  if(!supported){cb.disabled=true;cb.checked=false;setNote('此设备不支持角标（iPhone 上需先「添加到主屏幕」再打开）');return}
+  cb.checked=!!alertBadgeOn;
+  if(alertBadgeOn)setNote('已开启 · 只有"需要动手"的提醒才显示数字');
+  cb.addEventListener('change',function(){
+    var el=this;
+    if(!el.checked){alertBadgeOn=false;LS.setItem('alertBadge','0');applyAppBadge(navigator,0);setNote('已关闭');return}
+    var settle=function(state){
+      if(state==='granted'){alertBadgeOn=true;LS.setItem('alertBadge','1');setNote('已开启 · 只有"需要动手"的提醒才显示数字');refreshCcAlerts();return}
+      alertBadgeOn=false;LS.setItem('alertBadge','0');el.checked=false;
+      setNote(state==='denied'?'系统没有允许通知，角标显示不了（可在系统设置里重新允许）':'此设备不支持角标（iPhone 上需先「添加到主屏幕」再打开）');
+    };
+    var N=window.Notification;
+    if(!N||typeof N.requestPermission!=='function'){settle('unsupported');return}
+    try{var r=N.requestPermission();if(r&&typeof r.then==='function')r.then(settle,function(){settle('unsupported')});else settle(String(r))}catch(e){settle('unsupported')}
+  });
 }
 async function refreshDividends(force){
   if(!force&&ccDividends.VGT&&ccDividends.SMH){refreshCcAlerts();return}

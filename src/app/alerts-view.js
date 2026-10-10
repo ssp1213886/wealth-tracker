@@ -38,6 +38,33 @@ function optPingKey(){return 'wealth_opt_ping_v1'}
 function loadOptPing(){try{var v=JSON.parse(readRaw(optPingKey())||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
 function saveOptPing(id){try{var m=loadOptPing();m[String(id)]=marketDate();LS.setItem(optPingKey(),JSON.stringify(m))}catch(e){logSwallowed("saveOptPing",e)}}
 
+/* ===== v370：主屏图标角标（App Badge）=====
+   背景：所有提醒以前只在"你打开 App"那一刻可见（sw.js 没有 push，前端也没用任何通知能力）。
+   角标能解决"打开了、忘了看铃铛"，但解决不了"一整天没打开"——那要靠服务端定时推送（另案）。
+   iOS 上角标只对「已添加到主屏幕」的 Web App 生效，且需要通知权限（设置页的开关在用户手势里申请）。 */
+
+/** 需要"动手"的提醒才计数：critical（被行权 / 待买回 / 该结算）与 high（今天该卖下一档 / 7 天内到期 / 实值含除息）。
+    medium（逼近行权价这类"知道就好"）与 low 不进角标 —— 角标是催办，不是通知中心。 */
+export function badgeCountOf(alerts){return (alerts||[]).filter(function(a){return !!a&&(a.severity==='critical'||a.severity==='high')}).length}
+
+/** 这台设备（这个浏览器）有没有角标能力。 */
+export function badgeSupported(nav){try{return !!(nav&&typeof nav.setAppBadge==='function')}catch(e){return false}}
+
+/** 写角标。n>0 设数字，n=0 清除；不支持就当没这回事。
+    ⚠️ setAppBadge 返回 Promise，**必须收掉 rejection** —— 页面上挂着 unhandledrejection 上报，
+    不然"没装到主屏"这种正常情况会被记成前端错误。 */
+export function applyAppBadge(nav,count){
+  try{
+    if(!badgeSupported(nav))return false;
+    var n=Number(count)||0,p;
+    if(n>0)p=nav.setAppBadge(n);
+    else if(typeof nav.clearAppBadge==='function')p=nav.clearAppBadge();
+    else p=nav.setAppBadge(0);
+    if(p&&typeof p.catch==='function')p.catch(function(e){logSwallowed("applyAppBadge",e)});
+    return true;
+  }catch(e){logSwallowed("applyAppBadge",e);return false}
+}
+
 /** 当前这批提醒（面板打开时用它算"已读签名"）。 */
 export function getCurrentAlerts() {
   return currentAlerts;

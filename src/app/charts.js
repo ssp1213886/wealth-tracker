@@ -116,37 +116,57 @@ export function portfolioStateAt(input) {
  *   computed=false（缺行情）→ 界面显示「—」，绝不编数字；
  *   amount 有值但 rate=null（分母 ≤ 0，例如入金发生在当月最后一天）→ 只显示金额。
  */
+/* ── 月末资产口径的共用实现（v370）──
+   monthlyPnl（月度收益）与 equitySeries（资产曲线）必须用**同一套**"谁是注资 / 某个时点组合值多少钱"，
+   所以把这两件事提到模块级共用。历史上这里犯过"同一个数两处算"的错（见 maintenance.md）。 */
+
+/** 'YYYY-MM-DD' ≤ 'YYYY-MM-31' 即"在该月之内"，字符串比较就够，不用建 Date。 */
+function monthEndOf(ym) { return ym + '-31'; }
+
+/** '2026-01' 的上一个月 → '2025-12'（月初资产要用上月末的价）。 */
+function prevMonthOf(ym) {
+  const y = Number(ym.slice(0, 4));
+  const m = Number(ym.slice(5, 7));
+  return m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
+}
+
+function inMonthOf(date, ym) { return typeof date === 'string' && date.slice(0, 7) === ym; }
+
+/** 算注资的只有这三类：入金 / 出金 / 修正。股息与权利金是收益，不能当注资。 */
+function isCapitalEntry(l) {
+  const t = String((l && l.type) || '');
+  return t.indexOf('入金') >= 0 || t.indexOf('出金') >= 0 || t.indexOf('修正') >= 0;
+}
+
+/** 某个（月末）时点的总资产 —— 资产口径走共享实现，缺行情则 gap=true（这个月判为算不出来）。 */
+function valueAtMonthEnd(input) {
+  const o = input || {};
+  const priceByMonth = o.priceByMonth || {};
+  const prices = {};
+  Object.keys(priceByMonth).forEach(function (s) { prices[s] = (priceByMonth[s] || {})[o.ym]; });
+  const snap = portfolioStateAt({ trades: o.trades, cashLog: o.cashLog, end: o.end, priceBySymbol: prices });
+  return { value: snap.value, gap: !snap.priced };
+}
+
 export function monthlyPnl(input) {
   const o = input || {};
   const months = (Array.isArray(o.months) ? o.months : []).map(String).filter(Boolean);
   const trades = Array.isArray(o.trades) ? o.trades : [];
   const cashLog = Array.isArray(o.cashLog) ? o.cashLog : [];
   const px = o.priceByMonth || {};
-  const syms = Object.keys(px);
   const out = {};
   if (!months.length) return out;
 
-  /* 'YYYY-MM-DD' ≤ 'YYYY-MM-31' 即"在该月之内"，字符串比较就够，不用建 Date */
-  const endOf = function (ym) { return ym + '-31'; };
   const daysIn = function (ym) { return new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0).getDate(); };
-  const prevOf = function (ym) {
-    const y = Number(ym.slice(0, 4));
-    const m = Number(ym.slice(5, 7));
-    return m === 1 ? (y - 1) + '-12' : y + '-' + String(m - 1).padStart(2, '0');
-  };
-  const inMonth = function (date, ym) { return typeof date === 'string' && date.slice(0, 7) === ym; };
-  /* 算注资的只有这三类：入金 / 出金 / 修正。股息与权利金是收益，不能当注资。 */
-  const isCapital = function (l) {
-    const t = String((l && l.type) || '');
-    return t.indexOf('入金') >= 0 || t.indexOf('出金') >= 0 || t.indexOf('修正') >= 0;
-  };
-
-  /** 某个（月末）时点的总资产 —— 资产口径走共享实现，缺行情则 gap=true（这个月判为算不出来）。 */
+  /* v370：口径实现提到模块级（monthEndOf / prevMonthOf / inMonthOf / isCapitalEntry / valueAtMonthEnd），
+     资产曲线 equitySeries 与这里共用同一份 —— 免得"同一个数两处算"再犯一次。
+     这里保留同名局部别名，函数体一个字都不用改。 */
+  const endOf = monthEndOf;
+  const prevOf = prevMonthOf;
+  const inMonth = inMonthOf;
+  const isCapital = isCapitalEntry;
   const valueAt = function (ym, end) {
-    const prices = {};
-    syms.forEach(function (s) { prices[s] = (px[s] || {})[ym]; });
-    const snap = portfolioStateAt({ trades: trades, cashLog: cashLog, end: end, priceBySymbol: prices });
-    return { value: snap.value, gap: !snap.priced };
+    return valueAtMonthEnd({ ym: ym, end: end, trades: trades, cashLog: cashLog, priceByMonth: px });
   };
 
   months.forEach(function (ym) {
@@ -271,4 +291,106 @@ export function donutSlices(rows) {
     total: total,
     reason: 'ok',
   };
+}
+
+/**
+ * 资产曲线（v370）：把"每月月末的总资产"连成一条线，再叠一条"累计净入金"参考线。
+ *
+ *   口径与 monthlyPnl **完全一致**（共用 valueAtMonthEnd / isCapitalEntry）：
+ *     总资产 = Σ(持股 × 该月末收盘价) + 现金流水的累计 + 卖出所得 − 买入支出
+ *     净入金只数入金 / 出金 / 修正三类（股息与权利金是收益，不是注资）
+ *   gap=true 的月份**不补 0** —— 由渲染层断开线段（宁可断，不可编）。
+ *   ready=false 表示可画的点不足 2 个，界面显示空态。
+ */
+export function equitySeries(input) {
+  const o = input || {};
+  const months = (Array.isArray(o.months) ? o.months : []).map(String).filter(Boolean);
+  const trades = Array.isArray(o.trades) ? o.trades : [];
+  const cashLog = Array.isArray(o.cashLog) ? o.cashLog : [];
+  const priceByMonth = o.priceByMonth || {};
+  const points = [];
+  let netInvested = 0;
+
+  months.forEach(function (ym) {
+    /* 净入金是按月累加的：只把"这个月发生的注资"加上去，所以要求 months 是有序月份 */
+    cashLog.forEach(function (l) {
+      if (!l || !isCapitalEntry(l) || !inMonthOf(l.date, ym)) return;
+      netInvested += cashSigned(l);
+    });
+    const snap = valueAtMonthEnd({ ym: ym, end: monthEndOf(ym), trades: trades, cashLog: cashLog, priceByMonth: priceByMonth });
+    points.push({ ym: ym, value: Number(snap.value) || 0, gap: !!snap.gap, netInvested: netInvested });
+  });
+
+  const usable = points.filter(function (p) { return !p.gap; });
+  let peak = null;
+  let trough = null;
+  usable.forEach(function (p) {
+    if (!peak || p.value > peak.value) peak = p;
+    if (!trough || p.value < trough.value) trough = p;
+  });
+  const first = usable.length ? usable[0] : null;
+  const last = usable.length ? usable[usable.length - 1] : null;
+  const gain = first && last ? last.value - first.value : null;
+  return {
+    points: points,
+    first: first,
+    last: last,
+    peak: peak,
+    trough: trough,
+    months: months.length,
+    netInvested: netInvested,
+    gain: gain,
+    gainPct: first && last && first.value > 0 ? (last.value - first.value) / first.value : null,
+    ready: usable.length >= 2,
+  };
+}
+
+/**
+ * 资产曲线的 SVG（纯字符串，可离线单测）。
+ *   两条线：净值（实线 + 淡填充）、累计净入金（虚线）。gap 处**断开**（多个 M 段）。
+ *   用 preserveAspectRatio="none" + vector-effect="non-scaling-stroke" 适配任意宽度而不拉粗线宽；
+ *   因此这里**不画文字、不画圆点**（非等比缩放会把它们压扁）—— 标签交给 HTML 层。
+ */
+export function equityCurveSvg(series) {
+  const pts = (series && Array.isArray(series.points)) ? series.points : [];
+  if (pts.length < 2) return '';
+  const usable = pts.filter(function (p) { return !p.gap; });
+  if (usable.length < 2) return '';
+  const VW = 300;
+  const VH = 96;
+  const PAD = 4;
+  let min = Infinity;
+  let max = -Infinity;
+  usable.forEach(function (p) {
+    const v = Number(p.value) || 0;
+    const iv = Number(p.netInvested) || 0;
+    if (v < min) min = v;
+    if (v > max) max = v;
+    if (iv < min) min = iv;
+    if (iv > max) max = iv;
+  });
+  if (!isFinite(min) || !isFinite(max)) return '';
+  const span = max - min > 0 ? max - min : 1;
+  const xAt = function (i) { return pts.length <= 1 ? VW / 2 : PAD + (i / (pts.length - 1)) * (VW - PAD * 2); };
+  const yAt = function (v) { return VH - PAD - ((Number(v) || 0) - min) / span * (VH - PAD * 2); };
+  let line = '';
+  let invested = '';
+  let pen = false;
+  pts.forEach(function (p, i) {
+    if (p.gap) { pen = false; return; }
+    const cmd = pen ? 'L' : 'M';
+    line += cmd + xAt(i).toFixed(2) + ' ' + yAt(p.value).toFixed(2) + ' ';
+    invested += cmd + xAt(i).toFixed(2) + ' ' + yAt(p.netInvested).toFixed(2) + ' ';
+    pen = true;
+  });
+  /* 填充只在"一条不断线"时画：断了以后连首尾会把缺口也填上，反而像数据齐的 */
+  const hasGap = pts.some(function (p) { return p.gap; });
+  const area = hasGap ? '' : '<path class="eq-area" d="' + line +
+    'L' + xAt(pts.length - 1).toFixed(2) + ' ' + (VH - PAD) +
+    ' L' + xAt(0).toFixed(2) + ' ' + (VH - PAD) + ' Z"/>';
+  return '<svg class="eq-svg" viewBox="0 0 ' + VW + ' ' + VH + '" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+    area +
+    '<path class="eq-invested" d="' + invested.trim() + '" vector-effect="non-scaling-stroke"/>' +
+    '<path class="eq-line" d="' + line.trim() + '" vector-effect="non-scaling-stroke"/>' +
+    '</svg>';
 }
