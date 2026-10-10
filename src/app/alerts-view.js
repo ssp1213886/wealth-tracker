@@ -23,7 +23,8 @@ function markAlertsSeen(sig){alertSeenSig=String(sig||'');try{removeKey('wealth_
 /** 手机端铃铛角标：有未读提醒才显示数字，critical 会额外加红。 */
 function updateBellBadge(list){
 var bell=document.querySelector('.ms-bell');if(!bell)return;
-var items=list||[],count=items.length,sig=alertSignature(items),unseen=count>0&&sig!==loadAlertSeen();
+/* count 与主屏角标**共用同一个定义**（badgeCountOf）—— 这两个数字永远不许不一样 */
+var items=list||[],count=badgeCountOf(items),sig=alertSignature(items),unseen=count>0&&sig!==loadAlertSeen();
 var critical=items.some(function(a){return a&&a.severity==='critical'});
 bell.classList.toggle('has-alerts',unseen);
 bell.classList.toggle('has-critical',unseen&&critical);
@@ -43,9 +44,19 @@ function saveOptPing(id){try{var m=loadOptPing();m[String(id)]=marketDate();LS.s
    角标能解决"打开了、忘了看铃铛"，但解决不了"一整天没打开"——那要靠服务端定时推送（另案）。
    iOS 上角标只对「已添加到主屏幕」的 Web App 生效，且需要通知权限（设置页的开关在用户手势里申请）。 */
 
-/** 需要"动手"的提醒才计数：critical（被行权 / 待买回 / 该结算）与 high（今天该卖下一档 / 7 天内到期 / 实值含除息）。
-    medium（逼近行权价这类"知道就好"）与 low 不进角标 —— 角标是催办，不是通知中心。 */
-export function badgeCountOf(alerts){return (alerts||[]).filter(function(a){return !!a&&(a.severity==='critical'||a.severity==='high')}).length}
+/**
+ * 角标数字 = **列表里的条目数**（v371 修正）。
+ *
+ * 为什么改：v370 是"只数 critical/high"，结果是"期权页列表 2 条、主屏角标 1 个"这种自相矛盾，
+ * 而且 severity 这套分级本来是给**列表排序/配色**用的，拿去当"要不要催办"的判据直接错位 ——
+ * 纯预告 `expiry:`（还剩 N 天，那天才动手）是 high 会进角标，
+ * 真要动手的 `optdue:`（今天到期）/ `optdecide:`（会作废，要去点结算）/ `ccsoon:`（明天该卖）
+ * 却都是 medium，一个都不进（实测场景：列表 2 条 / 角标 0）。
+ *
+ * 现在的口径：**列表几条，铃铛与主屏角标就是几**（两处共用这一个函数，永远一致）；
+ * "哪条更急"交给列表的风险优先排序与铃铛的 has-critical 红点，不再用它去过滤数字。
+ */
+export function badgeCountOf(alerts){return (alerts||[]).filter(Boolean).length}
 
 /** 这台设备（这个浏览器）有没有角标能力。 */
 export function badgeSupported(nav){try{return !!(nav&&typeof nav.setAppBadge==='function')}catch(e){return false}}
@@ -79,6 +90,10 @@ var alertIcons={orange:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18
  */
 export function buildAlerts(ctx) {
 var alerts=[],now=marketDate(ctx.now).slice(0,7),opts=ctx.options,activeOpts=opts.filter(function(o){return isActiveOption(o,ctx.now)}),callGroups={};
+/* v371 去冗余：每个标的的"已卖 N 张 Call"汇总条先存在这里，最后只在**该标的没有任何其它提醒**时才补进去。
+   以前它无条件出现，于是"VGT 已卖 1 张 Call"会和"VGT CALL $130 还剩 4 天到期"并排两条说同一件事。 */
+var callSummaries={},symBusy={};
+var markSym=function(sym){if(sym)symBusy[String(sym)]=1};
 activeOpts.filter(function(o){return o.type==='CALL'}).forEach(function(o){if(!callGroups[o.sym])callGroups[o.sym]=[];callGroups[o.sym].push(o)});
 Object.keys(callGroups).sort(function(a,b){var order=['VGT','SMH','BTC'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b)}).forEach(function(sym){
 var calls=callGroups[sym].slice().sort(function(a,b){return String(a.expiry).localeCompare(String(b.expiry))}),contracts=calls.reduce(function(sum,o){return sum+(Number(o.contracts)||1)},0),nearest=calls[0],cp=Number(ctx.prices[sym])||0,closest=calls.slice().sort(function(a,b){return Math.abs(cp-a.strike)-Math.abs(cp-b.strike)})[0],type='blue',severity='medium',title=sym+' 已卖 '+contracts+' 张 Call',detail='覆盖 '+contracts*100+' 股 · 最近 '+nearest.expiry.slice(5)+' 到期';
@@ -102,12 +117,12 @@ if(cp>0&&closest){
     detail='现价 $'+cp.toFixed(2)+' 逼近行权价 '+_head+'（差 '+((_k-cp)/cp*100).toFixed(1)+'%）· 到期前不需要动作';
   }
 }
-alerts.push({id:'call:'+sym,type:type,severity:severity,title:title,detail:detail,action:'option'})
+callSummaries[sym]={id:'call:'+sym,type:type,severity:severity,title:title,detail:detail,action:'option'}
 });
 var pingMap=ctx.pingMap,todayKey=marketDate(ctx.now);
 /* 到期预告只覆盖"还剩 1~7 天"（st.days===0 跳过）：当天及之后交给下面的 optionActions
    （到期判定 + 买回待办），否则同一天会同时冒出来"还剩 0 天到期"和"会被行权"两条。 */
-opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7||st.days===0)return;if(pingMap[o.id]===todayKey)return;var cnt=Number(o.contracts)||1;alerts.push({id:'expiry:'+o.id,type:'orange',severity:'high',title:o.sym+' '+o.type+' $'+strikeText(o.strike)+' 还剩 '+st.days+' 天到期',detail:'到期日 '+o.expiry+' · '+cnt+' 张',action:'option',dismiss:'opt-expiry-'+o.id})});
+opts.forEach(function(o){if(o.settled||o.archived||!o.expiry)return;var st=optionExpiryState(o.expiry,ctx.now);if(st.days>7||st.days===0)return;if(pingMap[o.id]===todayKey)return;var cnt=Number(o.contracts)||1;markSym(o.sym);alerts.push({id:'expiry:'+o.id,type:'orange',severity:'high',title:o.sym+' '+o.type+' '+strikeText(o.strike)+' 还剩 '+st.days+' 天到期',detail:'到期日 '+o.expiry+' · '+cnt+' 张',action:'option',dismiss:'opt-expiry-'+o.id})});
 
 /* ===== 到期判定 + 买回待办（v334）=====
    策略里有明确动作要求、但以前 app 完全不管的两个环节：
@@ -119,6 +134,7 @@ function strikeText(k){var n=Number(k)||0;return '$'+(n===Math.floor(n)?n.toFixe
 function money(spot){return '$'+Number(spot).toFixed(2)}
 var optionActions=[];try{optionActions=optionActionItems(opts,ctx.trades,ctx.prices,ctx.now)||[]}catch(e){logSwallowed("optionActionItems",e)}
 optionActions.forEach(function(a){
+  markSym(a.sym);
   if(a.kind==='buyback'){
     alerts.push({id:'buyback:'+a.id,type:'red',severity:'critical',
       title:'待买回 '+a.shares+' 股 '+a.sym,
@@ -170,6 +186,7 @@ function freeContracts(sym){
 ccRows.forEach(function(r){
   if(!r||!r.nextExpiry)return;
   if(freeContracts(r.sym)<1)return;   /* 不够 100 股就不催：没股票可被行权，卖 CALL 没有意义 */
+  markSym(r.sym);
   var left=(Date.parse(r.nextExpiry+'T00:00:00Z')-todayMs)/86400000;
   if(left===0){
     alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',
@@ -184,6 +201,8 @@ ccRows.forEach(function(r){
     if(late>=5){alerts.push({id:'ccmiss:'+r.sym,type:'orange',severity:'medium',title:r.sym+' 本轮 CALL 还没记录',detail:'按节奏 '+s.missed+' 就该卖下一档了 · 已过去 '+Math.round(late)+' 天',action:'option'});}
   }
 });
+/* 汇总条最后补：只补"这个标的一条其它提醒都没有"的那些（VGT/SMH/BTC 稳定顺序） */
+Object.keys(callSummaries).forEach(function(sym){if(symBusy[sym])return;alerts.push(callSummaries[sym])});
 return alerts;
 }
 

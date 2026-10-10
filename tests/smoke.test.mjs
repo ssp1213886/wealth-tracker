@@ -171,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=370');
+  assert.equal(manifest.start_url, '/?v=371');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v370/);
+  assert.match(serviceWorker, /wealth-v371/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=370',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=371',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -830,4 +830,33 @@ test('v370：到期提醒角标 —— 开关、权限申请、"只数需要动�
   assert.match(appSource, /syncAppBadge\(list\)/, 'refreshCcAlerts 里要写角标');
   assert.match(appSource, /requestPermission/, '权限要在用户手势里申请');
   assert.match(appSource, /applyAppBadge\(navigator,/, '写角标走 alerts-view 的 applyAppBadge');
+});
+
+/* ===== v371：角标口径修正 + 期权提醒去冗余 ===== */
+
+test('v371：角标数 = 提醒列表条数（不许再按 severity 过滤 —— v370 就是这么错的）', () => {
+  /* 注意：alertsViewSource 里的 `export ` 前缀已经被剥掉了（见文件头的拼装方式） */
+  assert.match(alertsViewSource, /function badgeCountOf\(alerts\)\{return \(alerts\|\|\[\]\)\.filter\(Boolean\)\.length\}/,
+    'badgeCountOf 必须直接数条目');
+  /* 只切函数体来断言（不能整文件匹配：updateBellBadge 里本来就有 severity==='critical'，
+     那是给铃铛加红点用的，跟角标计数无关） */
+  const badgeStart = alertsViewSource.indexOf('function badgeCountOf(alerts){');
+  const badgeBody = alertsViewSource.slice(badgeStart, alertsViewSource.indexOf('}', badgeStart) + 1);
+  assert.doesNotMatch(badgeBody, /severity/,
+    'badgeCountOf 里不许出现 severity：它是排序/配色用的，不是催办判据（v370 就是这么错的）');
+  assert.match(alertsViewSource, /var items=list\|\|\[\],count=badgeCountOf\(items\)/,
+    '手机端铃铛角标必须与主屏角标共用同一个计数函数');
+});
+
+test('v371：期权提醒去冗余 —— "已卖 N 张 Call"汇总条只在没有其它提醒时才补', () => {
+  assert.match(alertsViewSource, /var callSummaries=\{\},symBusy=\{\}/, '汇总条要先收集');
+  assert.match(alertsViewSource, /var markSym=function\(sym\)\{if\(sym\)symBusy\[String\(sym\)\]=1\}/);
+  assert.match(alertsViewSource, /Object\.keys\(callSummaries\)\.forEach\(function\(sym\)\{if\(symBusy\[sym\]\)return;alerts\.push\(callSummaries\[sym\]\)\}\)/,
+    '最后只补"该标的没有其它提醒"的那些');
+  assert.doesNotMatch(alertsViewSource, /alerts\.push\(\{id:'call:'\+sym/, '不能再无条件 push 汇总条');
+});
+
+test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
+  assert.doesNotMatch(alertsViewSource, /' \$'\+strikeText/, "标题里不能自己再拼一个 $（那会变成 $$130）");
+  assert.match(alertsViewSource, /title:o\.sym\+' '\+o\.type\+' '\+strikeText\(o\.strike\)\+' 还剩 '/, '到期预告要用 strikeText 自带的 $');
 });

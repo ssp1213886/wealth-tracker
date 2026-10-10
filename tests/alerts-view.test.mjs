@@ -260,18 +260,52 @@ test('buildAlerts：没过期的期权不会产生到期判定或买回待办', 
 
 /* ===== v370：主屏角标 ===== */
 
-test('badgeCountOf：只数"需要动手"的提醒（critical / high），medium 及以下不算', () => {
+test('badgeCountOf：口径 = 列表条目数（铃铛与主屏角标共用同一个数，不再按 severity 过滤）', () => {
   const alerts = [
     { id: 'a', severity: 'critical' },
     { id: 'b', severity: 'high' },
     { id: 'c', severity: 'medium' },
     { id: 'd', severity: 'low' },
     { id: 'e' },
-    null,
   ];
-  assert.equal(badgeCountOf(alerts), 2);
+  assert.equal(badgeCountOf(alerts), 5, '列表里有几条，角标就是几 —— medium/low 也算');
+  assert.equal(badgeCountOf([{ severity: 'medium' }, null]), 1, 'null 槽位不算条目');
   assert.equal(badgeCountOf([]), 0);
   assert.equal(badgeCountOf(undefined), 0);
+});
+
+test('v371：角标数必须等于提醒列表条数（v370 曾出现"列表 2 条 / 角标 0 个"）', () => {
+  const cases = [
+    { now: new Date('2026-10-12T14:00:00Z'), options: [call()], prices: { VGT: 124.85 } },  // 还剩 4 天到期
+    { now: new Date('2026-10-16T14:00:00Z'), options: [call()], prices: { VGT: 137 } },     // 到期日当天
+    { now: new Date('2026-10-16T21:00:00Z'), options: [call()], prices: { VGT: 120 } },     // 收盘后"会作废"（曾漏进角标）
+  ];
+  for (const over of cases) {
+    const list = normalizeAlerts(buildAlerts(ctx(over)));
+    assert.ok(list.length >= 1, '这几个场景都该有提醒');
+    assert.equal(badgeCountOf(list), list.length, '列表 ' + list.length + ' 条 → 角标也必须 ' + list.length);
+  }
+});
+
+test('v371：期权提醒去冗余 —— 同标的有具体提醒时不再重复"已卖 N 张 Call"汇总条', () => {
+  const withExpiry = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-12T14:00:00Z'), options: [call()], prices: { VGT: 124.85 } })));
+  assert.equal(withExpiry.filter((a) => a.id === 'call:VGT').length, 0, '有"还剩 N 天到期"时不该再有汇总条');
+  assert.equal(withExpiry.filter((a) => a.id === 'expiry:1').length, 1);
+
+  const dueToday = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-16T14:00:00Z'), options: [call()], prices: { VGT: 137 } })));
+  /* 只比期权那几条：dca（本月定投还差）是另一码事，不该被这条断言牵连 */
+  assert.deepEqual(dueToday.map((a) => a.id).filter((id) => !/^dca:/.test(String(id))), ['optdue:1'], '到期日当天：期权相关只留一条');
+
+  const onlySummary = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-12T14:00:00Z'), options: [call({ expiry: '2026-11-20' })] })));
+  assert.equal(onlySummary.filter((a) => a.id === 'call:VGT').length, 1, '该标的没有其它提醒时，汇总条仍要保留（不然完全看不到覆盖情况）');
+});
+
+test('v371：修掉到期预告里的双美元符（VGT CALL $$130 → VGT CALL $130）', () => {
+  const list = normalizeAlerts(buildAlerts(ctx({ now: new Date('2026-10-12T14:00:00Z'), options: [call()], prices: { VGT: 124.85 } })));
+  const item = list.find((a) => a.id === 'expiry:1');
+  assert.ok(item, '应该有到期预告');
+  assert.ok(!item.title.includes('$$'), '不能再出现双美元符：' + item.title);
+  assert.match(item.title, /VGT CALL \$130 还剩 4 天到期/);
 });
 
 test('badgeCountOf：真实提醒里"会被行权"（到期收盘后仍实值）要进角标', () => {
