@@ -4,11 +4,11 @@
 // （代码完全相等放行 → 代码前缀/名称子串，并过滤杠杆反向 ETF 噪音），去重后取前 N 条。
 
 const LIST=[
-  ['VGT','Vanguard Information Tech ETF','先锋信息科技'],['SMH','VanEck Semiconductor ETF','半导体'],['BTC','Bitcoin','比特币'],['ETH','Ethereum','以太坊'],['BNB','Binance Coin','币安币'],['HYPE','Hyperliquid',''],['SOL','Solana','索拉纳'],
+  ['VGT','Vanguard Information Tech ETF','先锋信息科技'],['SMH','VanEck Semiconductor ETF','半导体'],['BTCETF','Grayscale Bitcoin Mini Trust','比特币ETF'],['BTC','Bitcoin','比特币'],['ETH','Ethereum','以太坊'],['BNB','Binance Coin','币安币'],['HYPE','Hyperliquid',''],['SOL','Solana','索拉纳'],
   ['VOO','Vanguard S&P 500 ETF','标普500'],['QQQM','Invesco Nasdaq 100 ETF','纳斯达克100'],['QQQ','Invesco QQQ Trust','纳指ETF'],['SPY','SPDR S&P 500 ETF','标普500ETF'],['DIA','SPDR Dow Jones Industrial','道指'],['IWM','iShares Russell 2000 ETF',''],['SCHD','Schwab US Dividend Equity',''],
   ['GOLD','Gold','黄金'],['GLD','SPDR Gold Shares','黄金ETF'],['SLV','iShares Silver Trust','白银'],['TLT','iShares 20+ Year Treasury','长债'],['SGOV','iShares 0-3 Month Treasury','短债'],['ARKK','ARK Innovation ETF',''],['SOXX','iShares Semiconductor ETF','半导体ETF'],['XLK','Technology Select Sector SPDR',''],
   ['NVDA','NVIDIA Corp','英伟达'],['AAPL','Apple Inc','苹果'],['MSFT','Microsoft Corp','微软'],['GOOGL','Alphabet Inc','谷歌'],['AMZN','Amazon.com Inc','亚马逊'],['META','Meta Platforms Inc','脸书'],['TSLA','Tesla Inc','特斯拉'],['AVGO','Broadcom Inc','博通'],['TSM','Taiwan Semiconductor','台积电'],['AMD','Advanced Micro Devices','超威'],['MU','Micron Technology','美光'],['INTC','Intel Corp','英特尔'],['ASML','ASML Holding','阿斯麦'],['SMCI','Super Micro Computer',''],['PLTR','Palantir Technologies',''],['CRCL','Circle Internet Group',''],['MSTR','MicroStrategy Inc','微策略'],['COIN','Coinbase Global',''],['NFLX','Netflix Inc','奈飞'],['DIS','Walt Disney Co','迪士尼'],['ORCL','Oracle Corp','甲骨文'],['ADBE','Adobe Inc',''],['UBER','Uber Technologies',''],['BABA','Alibaba Group','阿里'],['PDD','PDD Holdings','拼多多'],['JD','JD.com','京东'],['V','Visa Inc',''],['MA','Mastercard Inc',''],['JPM','JPMorgan Chase','摩根大通'],['WMT','Walmart Inc','沃尔玛'],['COST','Costco Wholesale','好市多'],
-  ['IBIT','iShares Bitcoin Trust','比特币ETF'],['FBTC','Fidelity Wise Origin Bitcoin',''],['ETHA','iShares Ethereum Trust',''],['DOGE','Dogecoin','狗狗币'],['XRP','XRP','瑞波'],['ADA','Cardano','艾达币'],['AVAX','Avalanche',''],['LINK','Chainlink','']
+  ['IBIT','iShares Bitcoin Trust',''],['FBTC','Fidelity Wise Origin Bitcoin',''],['ETHA','iShares Ethereum Trust',''],['DOGE','Dogecoin','狗狗币'],['XRP','XRP','瑞波'],['ADA','Cardano','艾达币'],['AVAX','Avalanche',''],['LINK','Chainlink','']
 ];
 /* 补充表（v216）：常见大票与 ETF，带中文别名 */
 const LIST2=[

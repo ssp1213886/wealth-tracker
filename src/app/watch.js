@@ -6,7 +6,7 @@ export const WATCH_DEFAULTS = [
   { sym: 'VGT', kind: 'stock' },
   { sym: 'SMH', kind: 'stock' },
   { sym: 'BTC', kind: 'crypto' },
-  { sym: 'IBIT', kind: 'stock' },
+  { sym: 'BTCETF', kind: 'stock' },
   { sym: 'VOO', kind: 'stock' },
   { sym: 'GOLD', kind: 'gold' },
   { sym: 'QQQM', kind: 'stock' },
@@ -39,7 +39,7 @@ export function labelOf(sym) {
   const kind = kindOf(upper);
   if (kind === 'gold') return '金价';
   if (upper === 'BTC') return 'BTC 现货';
-  if (upper === 'BTCETF') return 'IBIT';
+  if (upper === 'BTCETF') return 'BTC ETF';
   return upper;
 }
 
@@ -179,10 +179,10 @@ export function toHoldingRows(holdings, quotes) {
 /* ---------------- 观察列表的"状态机"：归属映射 / 云端并集 / 持仓-关注分组 ---------------- */
 
 /**
- * 行情与持仓的归属映射：v373 起第三腿是 IBIT（它自己就是持仓代码）。
- * BTCETF 只剩过渡别名（还没迁移的老观察列表行）→ 指到 IBIT；BTC 那行是加密现货（空串 = 不属于你的持仓）。
+ * 行情与持仓的归属映射：观察列表里的 BTCETF 行，行情/成本实际记在 BTC 名下；
+ * 而 BTC 行是加密现货（值空串 = 不属于你的持仓）。其它标的按自身代码。
  */
-export const WATCH_HELD_OF = { BTCETF: 'IBIT', BTC: '' };
+export const WATCH_HELD_OF = { BTCETF: 'BTC', BTC: '' };
 
 /** 某个观察标的对应的"底层代码"；返回 '' 表示它只是行情关注项，不算持仓。 */
 export function resolveHeldSymbol(sym, heldOf) {
@@ -248,7 +248,7 @@ export function collectQuoteSymbols(list, holdingsBySymbol) {
 
 // 底层资产敞口：把两张榜单里同一标的的敞口相加（如 NVDA 同时在 VGT 与 SMH 里）。
 // - 不重复计算：ETF 自身不作为一行，只出现"成分股 + 其余成分股"
-// - extras 用于"单一底层资产"（如 IBIT → 比特币 100%），与穿透行混排并按金额倒序
+// - extras 用于"单一底层资产"（如 BTC ETF → 比特币 100%），与穿透行混排并按金额倒序
 // - etfRest 给出每支 ETF 未被榜单覆盖的部分，保证合计能对上分母
 export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras = []) {
   const map = new Map();

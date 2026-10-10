@@ -201,8 +201,8 @@ test('renderHoldings：ETF 前十大 + 底层资产敞口（含分母说明）',
       SMH: { symbol: 'SMH', source: 'static', asOf: '2026-06-30', list: [{ sym: 'NVDA', name: 'NVIDIA', weight: 19.5 }] },
     },
     watchQuotes: { NVDA: { price: 186.4, changePct: 0.4, currency: 'USD' }, AAPL: { price: 231, changePct: -0.2, currency: 'USD' } },
-  trades: [{ symbol: 'VGT', shares: 8.62 }, { symbol: 'SMH', shares: 1.02 }, { symbol: 'IBIT', shares: 13.62 }],
-  livePrices: { VGT: 108.62, SMH: 402.1, IBIT: 46.75 },
+    trades: [{ symbol: 'VGT', shares: 8.62 }, { symbol: 'SMH', shares: 1.02 }, { symbol: 'BTC', shares: 13.62 }],
+    livePrices: { VGT: 108.62, SMH: 402.1, BTC: 29.38 },
   }));
   const vgt = makeEl();
   const smh = makeEl();

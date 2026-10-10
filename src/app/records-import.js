@@ -1,23 +1,10 @@
 // 记录/交易域的纯逻辑：本地数据的规整（导入/云端/备份都走这里）+ Schwab CSV 解析。
 // 不碰 DOM、不写存储；CSV 解析只返回待插入的行，id 与写入由调用方处理，因此可以离线单测。
-import { cleanText, convertLegacyBtcTrade } from './util.js';
+import { cleanText } from './util.js';
 import { normalizeDateValue } from './time.js';
 
-/**
- * 允许的交易标的。index.js 的 ETF_SYMS 也引用这里，避免两处维护。
- *
- * v373：第三腿从 Grayscale 的 BTC ETF（代码 BTC）换成 iShares 的 IBIT。
- * ⚠️ **BTC 故意留在名单里**（界面上不再提供它）：它是"兼容历史"用的 ——
- * 万一有台还没更新的设备把旧的 BTC 记录推回云端，这一端拉到后宁可让它可见，
- * 也不能让 normalizeTrades 把它静默丢掉（那才是真的丢数据）。
- * 迁移（store.js 的 v2→v3）会把本机历史里的 BTC 改成 IBIT，正常情况下名单里的 BTC 一直是空跑。
- */
-export const TRADE_SYMBOLS = ['VGT', 'SMH', 'IBIT'];
-
-/* v373：历史的第三腿是 Grayscale 的 BTC ETF（代码 BTC），底层换成 IBIT 之后，
-   任何写着 BTC 的来源（旧本地数据 / 旧设备推回来的云端数据 / 券商 CSV）都要按 IBIT 记账 ——
-   而且**要换算股数**（1 股 ≠ 1 股）。换算的唯一实现在 util.js 的 convertLegacyBtcTrade()，
-   normalizeTrades 与 parseSchwabCSV（还有 store.js 的迁移）都调它，不给第二个实现。 */
+/** 允许的交易标的（核心仓三只）。index.js 的 ETF_SYMS 也引用这里，避免两处维护。 */
+export const TRADE_SYMBOLS = ['VGT', 'SMH', 'BTC'];
 
 /**
  * 规整交易记录：标的必须在允许名单内、日期合法、股数非 0、价格 > 0，否则整条丢弃。
@@ -28,14 +15,10 @@ export function normalizeTrades(list, symbols) {
   if (!Array.isArray(list)) return [];
   const used = {};
   return list.map(function (t, i) {
-    /* v373：历史第三腿是 Grayscale 的 BTC ETF（代码 BTC）—— 底层已换成 IBIT。
-       这里把 BTC 归一成 IBIT，**并按比例换算股数/价格**（1 股 ≠ 1 股，不换算市值会凭空变；
-       换算的唯一实现在 util.js，与数据迁移共用）。这同时也是"旧设备推回云端"的安全网。 */
-    const row = convertLegacyBtcTrade(t);
-    const sym = cleanText(row && row.symbol, 12).toUpperCase();
-    const date = normalizeDateValue(row && row.date);
-    const shares = Number(row && row.shares);
-    const price = Number(row && row.price);
+    const sym = cleanText(t && t.symbol, 12).toUpperCase();
+    const date = normalizeDateValue(t && t.date);
+    const shares = Number(t && t.shares);
+    const price = Number(t && t.price);
     if (!allowed.includes(sym) || !date || !isFinite(shares) || shares === 0 || !isFinite(price) || price <= 0) return null;
     let id = Number(t.id);
     if (!isFinite(id) || used[id]) id = Date.now() + i + Math.random();
@@ -131,20 +114,17 @@ export function parseSchwabCSV(text, opts) {
       continue;
     }
     const date = normalizeDateValue(row[colMap.date]);
+    const sym = cleanText(row[colMap.sym], 12).toUpperCase();
     const qty = Math.abs(parseMoneyValue(row[colMap.qty]));
     const price = parseMoneyValue(row[colMap.price]);
     const action = colMap.action >= 0 ? cleanText(row[colMap.action], 80).toLowerCase() : '';
     if (!date) { skipped.badDate += 1; continue; }
+    if (!symbols.includes(sym)) { skipped.symbol += 1; continue; }
     if (qty <= 0) { skipped.qty += 1; continue; }
     if (price <= 0) { skipped.price += 1; continue; }
     const isSell = action.indexOf('sell') >= 0 || action.indexOf('sold') >= 0 || action.indexOf('卖') >= 0;
-    /* v373：BTC（旧 Mini Trust 导出）在这里就换算成 IBIT 的股数/价格 —— 与迁移、归一化同一套规则 */
-    const conv = convertLegacyBtcTrade({ symbol: cleanText(row[colMap.sym], 12).toUpperCase(), shares: isSell ? -qty : qty, price: price });
-    const sym = cleanText(conv.symbol, 12).toUpperCase();
-    const shares = Number(conv.shares);
-    const priceConv = Number(conv.price);
-    if (!symbols.includes(sym)) { skipped.symbol += 1; continue; }
-    const fingerprint = [date, sym, shares, priceConv].join('|');
+    const shares = isSell ? -qty : qty;
+    const fingerprint = [date, sym, shares, price].join('|');
     if (seen[fingerprint]) { skipped.dup += 1; continue; }
     seen[fingerprint] = true;
     rows.push({
@@ -152,7 +132,7 @@ export function parseSchwabCSV(text, opts) {
       date: date,
       time: now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
       shares: shares,
-      price: priceConv,
+      price: price,
       type: isSell ? 'sell' : 'buy',
     });
   }

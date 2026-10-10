@@ -162,10 +162,6 @@ git worktree remove ../_wt-old
 > **v372 复核**（待办列表只放"要动手的" + "今天到期"也能今天不再提醒）：`npm test` **491 项全绿** ·
 > `!important 1505/1511` · `npm run audit` 四项 0 · `npm run e2e` **7/7** · `npm run e2e:all` **7/7** ·
 > 真浏览器探针 8/8（点 × 后整条消失、不冒替身条目、两种 × 都生效）。
->
-> **v373 复核**（第三腿 Grayscale BTC ETF → iShares IBIT，含按比例换算股数的数据迁移）：
-> `npm test` **496 项全绿**（新增迁移专项 4 条：换算公式 / 迁移结果 / 幂等 / 脏标记取一次就清）·
-> `!important 1505/1511` · `npm run audit` 四项 0 · `npm run e2e` **7/7** · `npm run e2e:all` **7/7**。
 
 ### 常跑入口：`npm run e2e:all`（v322）
 
@@ -375,31 +371,17 @@ npx wrangler d1 execute wealth-db --remote --command "SELECT id, version, messag
 
 ### 数据结构变更怎么加
 
-`store.js` 里有 `DATA_SCHEMA` 与 `runMigrations()`，迁移链按版本号索引（**当前 `DATA_SCHEMA = 3`**）：
+`store.js` 里有 `DATA_SCHEMA` 与 `runMigrations()`，迁移链按版本号索引（**当前 `DATA_SCHEMA = 2`**）：
 
 ```js
-export const DATA_SCHEMA = 3;
+export const DATA_SCHEMA = 2;
 const steps = {
-  1: () => removeKey(KEYS.alertSeen),                    // 到达 v2 时的那一步
-  3: () => migrateBtcToIbit(),                           // 到达 v3：第三腿 BTC ETF → IBIT（含股数换算）
-  // 4: () => { /* 下一次结构变更：把 DATA_SCHEMA 改成 4，并在这里写"到达 v4"的那一步 */ },
+  1: () => removeKey(KEYS.alertSeen),   // v1 → v2
+  // 2: () => { /* v2 → v3：改字段名 / 补默认值，同时把 DATA_SCHEMA 改成 3 */ },
 };
 ```
 
 启动时会自动补齐，失败会通过上报接口记录而不是中断启动。
-
-> ⚠️ **v373 的三个坑（都踩过、都有单测兜住）**
-> 1. **键是"到达版本 N"的那一步，不是"从 N 出发"**：循环是 `for (v = from + 1; v <= DATA_SCHEMA; v++)`，
->    所以 `from = 2` 的设备只会跑 `steps[3]`。v373 第一版把迁移写成 `steps[2]` → **整段迁移被静默跳过**，
->    而且 `runMigrations` 的 `try/catch` 会把"没报错的空跑"一起藏住 —— 最后是**单测**（断言数据真的改了）抓到的。
->    **写迁移的第一件事：写一条"跑完之后数据必须变成什么样"的单测，别只看有没有抛错。**
-> 2. **换 ETF 载体 ≠ 只改代码**：两个基金 1 股 ≠ 1 股。只把 `symbol` 从 BTC 改成 IBIT，会让这条腿的市值凭空 **+28.5%**
->    （实测 2026-10-09 收盘：Mini Trust $36.39 / IBIT $46.7454）。正确做法是**股数 × r、每股价格 ÷ r**
->    （r = 36.39 / 46.7454），这样每笔的"股数 × 价格"（成本）与市值都不变。换算只留**一份实现**
->    （`util.js / convertLegacyBtcTrade`），数据迁移、`normalizeTrades`、CSV 导入三处共用。
-> 3. **观察列表里有两行容易混**：「BTC ETF」（旧符号 `BTCETF`，是持仓那条 ETF）与「BTC」（加密现货，只看行情）。
->    迁移只该改前者 —— v373 第一版用通用改名函数把两行都改了，单测当场指出。
->    另外 `prices` 缓存里那份 `BTC` 是 Mini Trust 的价，**不能改名留给 IBIT**（价不是一回事），直接删掉让下次重新取。
 
 ### 备份与恢复
 

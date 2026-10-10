@@ -63,7 +63,7 @@ const context = vm.createContext({
   HOME_TIME_ZONE: 'Asia/Shanghai',
   MARKET_TIME_ZONE: 'America/New_York',
   ETF_SYMS: ['VGT', 'SMH', 'BTC'],
-  TRADE_SYMBOLS: ['VGT', 'SMH', 'IBIT'],
+  TRADE_SYMBOLS: ['VGT', 'SMH', 'BTC'],
   trades: [],
   tradeIdCounter: 1,
 });
@@ -81,7 +81,6 @@ for (const name of [
   'cleanText',
   'escapeHtml',
   'normalizeDateValue',
-  'convertLegacyBtcTrade',
   'normalizeTrades',
   'normalizeOptions',
   'parseCSVRow',
@@ -121,18 +120,14 @@ test('US market dates do not roll over at Beijing midnight', () => {
   assert.equal(context.marketDate(new Date('2026-08-01T00:30:00+08:00')).slice(0, 7), '2026-07');
 });
 
-test('trade normalization：IBIT 是交易标的；历史 BTC 按别名归一成 IBIT；现货 BTC-USD 仍被剔除', () => {
+test('trade normalization accepts BTC ETF ticker and rejects spot symbols', () => {
   const rows = context.normalizeTrades([
     { id: 1, symbol: 'btc', date: '2026-07-18', shares: 10, price: 28.38 },
-    { id: 2, symbol: 'ibit', date: '2026-07-19', shares: 3, price: 46.75 },
-    { id: 3, symbol: 'BTC-USD', date: '2026-07-18', shares: 1, price: 118000 },
+    { id: 2, symbol: 'BTC-USD', date: '2026-07-18', shares: 1, price: 118000 },
   ]);
-  assert.equal(rows.length, 2);
-  assert.equal(rows[0].symbol, 'IBIT', '历史的 btc → IBIT');
-  assert.ok(Math.abs(rows[0].shares - 10 * 0.778456) < 1e-6, '股数按比例换算');
-  assert.ok(Math.abs(rows[0].shares * rows[0].price - 10 * 28.38) < 1e-3, '成本不变');
-  assert.equal(rows[1].symbol, 'IBIT');
-  assert.equal(rows[1].shares, 3, '本来就是 IBIT 的行不能被二次换算');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].symbol, 'BTC');
+  assert.equal(rows[0].price, 28.38);
 });
 
 test('option IDs cannot inject markup or inline handlers', () => {
@@ -153,11 +148,11 @@ test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', (
     '07/18/2026,Buy,BTC,10,"$28.38"',
   ].join('\n');
   // v244：解析已抽到 records-import.js（纯函数，返回待插入的行；id 与写入留给 index.js 的包装层）
-  const parsed = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'IBIT'], existingTrades: [] });
-  assert.equal(parsed.imported, 2, '重复行与非法代码（BTC-USD 现货）应被剔除');
+  const parsed = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'BTC'], existingTrades: [] });
+  assert.equal(parsed.imported, 2, '重复行与非白名单代码应被剔除');
   assert.equal(parsed.rows.length, 2);
-  assert.equal(parsed.rows[0].symbol, 'IBIT', 'CSV 里的 BTC（旧 Mini Trust 导出）→ 按别名记成 IBIT');
-  assert.ok(Math.abs(parsed.rows[0].shares - 10 * 0.778456) < 1e-6, 'Buy 记正股数（BTC → IBIT 按比例换算）');
+  assert.equal(parsed.rows[0].symbol, 'BTC');
+  assert.equal(parsed.rows[0].shares, 10, 'Buy 记正股数');
   assert.equal(parsed.rows[1].symbol, 'VGT');
   assert.equal(parsed.rows[1].shares, -1, 'Sell 记负股数');
   assert.ok(parsed.rows.every((r) => r.id === undefined), '纯函数不分配 id');
@@ -176,9 +171,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=382');
+  assert.equal(manifest.start_url, '/?v=372');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v382/);
+  assert.match(serviceWorker, /wealth-v372/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -192,7 +187,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=382',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=372',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -871,68 +866,7 @@ test('v372：两种"今天不再提醒"的键在点击入口归一成期权 id�
   assert.match(alertsViewSource, /var pingMap=ctx\.pingMap\|\|\{\}/, 'pingMap 缺省给空对象（调用方忘了传也不炸）');
 });
 
-/* ===== v375：这一轮修的四条 bug 的源码钉子 ===== */
-test('v375：曲线补 history / 归因逐标的 / 删期权连带删流水 / 矩阵卡用缓存价', () => {
-  assert.match(appSource, /hasHist&&fresh/, 'refreshPrices 要给核心标的补 history（否则侧边栏没有曲线）');
-  assert.doesNotMatch(appSource, /'BTC 增值'/, '归因的行不许再写死 BTC（换腿后会 NaN）');
-  assert.match(appSource, /planOptionDelete\(o,cashLog\)/, 'delOpt 必须走 planOptionDelete');
-  assert.doesNotMatch(appSource, /type:"权利金退回-"/, '不许再新写"权利金退回"条（会导致删两次退两次现金）');
-  assert.match(appSource, /oid:optObj\.id/, '记录期权时要给权利金流水打上 oid');
-  assert.match(appSource, /prices:pricesForStats\(\)/, '年度复盘卡要用"缓存价打底、实时价覆盖"');
-  assert.match(appSource, /renderAnnualMatrix\(\)\}catch/, '行情到位后要重算年度复盘卡');
-});
-
-/* ===== v376：IBIT 进期权的护栏（"标的集合一致"）===== */
-test('v376：期权标的只在一处定义（OPTION_SYMS），弹层/页面/链白名单都跟着它', () => {
-  assert.match(appSource, /var OPTION_SYMS=\['VGT','SMH','IBIT'\]/, 'OPTION_SYMS 必须包含 IBIT');
-  assert.doesNotMatch(appSource, /\['VGT','SMH'\]\.map\(fetchChain\)/, '链刷新不许再写死 VGT/SMH');
-  assert.doesNotMatch(appSource, /\['VGT','SMH'\]\.forEach\(function\(s\)\{m\[s\]=complianceStreak/, '合规连续不许再写死');
-  assert.match(html, /data-option-asset="IBIT"/, '期权录入弹层必须能选 IBIT');
-  assert.match(html, /<option value="IBIT">IBIT<\/option>/, '隐藏的 osym 也要有 IBIT');
-  assert.match(appSource, /IBIT:\{rule:'every3w',anchor:CC_ANCHOR_DEFAULT\}/, 'IBIT 的节奏 = 每 3 周 + 与 SMH 同锚点');
-});
-
-/* ===== v382：标的下拉本身要含 IBIT（不是"文件里存在这串文字"）=====
-   v376 我漏了这条，#osym 没有 IBIT 选项 → 设置 asset.value='IBIT' 会被浏览器置空 →
-   胶囊永远不高亮；而当时我的"验证"查的是"全文件里有没有 <option value=\"IBIT\">"，
-   被交易表单 #tfAsset 命中 → 假阳性放过了两个版本。 */
-test('v382：#osym（期权标的）与 #tfAsset（交易标的）各自都必须含 IBIT 选项', () => {
-  const grab = (id) => {
-    const re = new RegExp('<select[^>]*id="' + id + '"[^>]*>([\\s\\S]*?)</select>');
-    const m = re.exec(html);
-    assert.ok(m, '找不到 #' + id);
-    return m[1];
-  };
-  assert.match(grab('osym'), /<option value="IBIT">IBIT<\/option>/, '#osym 里必须有 IBIT（否则选不中 → 胶囊不高亮）');
-  assert.match(grab('tfAsset'), /<option value="IBIT">IBIT<\/option>/, '#tfAsset 里必须有 IBIT');
-});
-
-/* ===== v377：合计口径不许漏标的（同族问题的护栏）===== */
-test('v377：敞口卡的"分母 = 持仓市值合计"必须包含所有持仓标的', () => {
-  assert.doesNotMatch(appSource, /\['VGT','SMH'\]\.forEach\(function\(s\)\{var n=heldShares/,
-    '敞口卡分母不许再写死 VGT/SMH（会漏掉第三腿 → 占比 >100%）');
-  assert.match(appSource, /ETF_SYMS\.forEach\(function\(s\)\{var n=heldShares\(s\);if\(n>0\)total\+=n\*priceOf\(s\)\}\)/,
-    '合计要走 ETF_SYMS');
-  assert.doesNotMatch(appSource,
-    /ETF_SYMS\.forEach\(function\(s\)\{var n=heldShares\(s\);if\(n>0\)total\+=n\*priceOf\(s\)\}\);\s*\n\s*if\(heldShares\('IBIT'\)/,
-    '同一笔市值不许既走 ETF_SYMS 又单独加一遍 —— v377 就是这么把 IBIT 算成两遍的（占比全体偏小）');
-});
-
-/* ===== v378：视图层不许写死标的名（概率卡的 tab 就是这么漏掉 IBIT 的）===== */
-test('v378：概率卡的 tab 由 OPTION_SYMS 生成，视图层不许再写死标的名', () => {
-  const pvSrc = fs.readFileSync('src/app/prob-view.js', 'utf8');
-  assert.doesNotMatch(pvSrc, /return \['VGT', 'SMH'\]\.map/, 'prob-view.js 里不许再"直接返回写死的 VGT/SMH 列表"（兜底可以，但不能是唯一来源）');
-  assert.match(pvSrc, /export function probTabsHtml\(current, syms\)/, 'probTabsHtml 要接受标的列表');
-  assert.match(appSource, /probTabsHtml\(probTab,OPTION_SYMS\)/, 'renderProbCard 要把 OPTION_SYMS 传进去');
-});
-
 test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
   assert.doesNotMatch(alertsViewSource, /' \$'\+strikeText/, "标题里不能自己再拼一个 $（那会变成 $$130）");
   assert.match(alertsViewSource, /title:o\.sym\+' '\+o\.type\+' '\+strikeText\(o\.strike\)\+' 还剩 '/, '到期预告要用 strikeText 自带的 $');
-});
-
-/* ===== v379：年度矩阵第三列的年末持股 ===== */
-test('v379：年度矩阵第三列取"第三只配置标的"，不许再写死 endHolds.BTC', () => {
-  assert.match(appSource, /btc: Math\.max\(0, endHolds\[symbols\[2\]\] \|\| 0\)/, '第三列要按配置取');
-  assert.doesNotMatch(appSource, /Math\.max\(0, endHolds\.BTC/, '换腿后不许再读 BTC 的持股（注释里提到历史写法不算）');
 });

@@ -5,41 +5,6 @@ import { cleanText, dateOrdinal } from './util.js';
 import { MARKET_TIME_ZONE, zonedDateParts, marketDate, normalizeDateValue } from './time.js';
 
 /** 校验并规整期权记录：标的只认 VGT/SMH，类型只认 CALL/PUT，行权价>0、权利金≥0、到期日必须合法。 */
-
-/**
- * 删期权时的现金处理（v375 修）——
- * 以前 delOpt 是**新写一条「权利金退回-X」**，于是原来那条「权利金+X」还在，
- * 用户再删那条流水就会**再退一次现金**（真机实测：删期权 -120、再删流水又 -120）。
- * 正确口径：连带删掉它产生的那条权利金流水，且现金只动这一次、金额与删掉的行等额。
- * 优先按记录时打上的 oid 精确匹配；老数据没有 oid 时退化成"同标的 + 金额相同"的最近一条。
- */
-export function planOptionDelete(opt, cashLog) {
-  const list = Array.isArray(cashLog) ? cashLog : [];
-  const o = opt || {};
-  const premiumTotal = (Number(o.premium) || 0) * (Number(o.contracts) || 1);
-  const sym = String(o.sym || '').toUpperCase();
-  const isPremiumRow = function (l) {
-    const ty = String((l && l.type) || '');
-    return ty.indexOf('权利金') >= 0 && ty.indexOf('退回') < 0;
-  };
-  let hit = null;
-  if (o.id != null) {
-    const byId = list.filter(function (l) { return l && Number(l.oid) === Number(o.id) && isPremiumRow(l); });
-    if (byId.length) hit = byId[byId.length - 1];
-  }
-  if (!hit && premiumTotal > 0) {
-    const byAmount = list.filter(function (l) {
-      return isPremiumRow(l) && String((l && l.type) || '').toUpperCase().indexOf(sym) >= 0 &&
-        Math.abs((Number(l && l.amount) || 0) - premiumTotal) < 0.01;
-    });
-    if (byAmount.length) hit = byAmount[byAmount.length - 1];
-  }
-  if (!hit) return { kept: list.slice(), removed: [], cashDelta: 0, matched: false };
-  /* 权利金流水恒为正数收入 → 删掉它就是把现金减回去（与「删流水」那条路径同一口径） */
-  const cashDelta = -(Number(hit.amount) || 0);
-  return { kept: list.filter(function (l) { return l !== hit; }), removed: [hit], cashDelta: cashDelta, matched: true };
-}
-
 export function normalizeOptions(list) {
   if (!Array.isArray(list)) return [];
   return list.map(function (o, i) {
