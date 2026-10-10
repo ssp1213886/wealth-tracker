@@ -2,6 +2,7 @@
 // 只负责"把算好的数字写进 DOM"（HTML 构造部分是纯函数，可以直接单测），计算全在 prob.js。
 import { fmtFull } from './util.js';
 import { emptyStateHTML, escapeHtml } from './render.js';
+import { DEFAULT_OPTION_SYMBOLS } from './options.js';
 
 /** 概率的颜色分级：越容易被行权越红。 */
 export function probColor(prob) {
@@ -316,9 +317,14 @@ export function renderProbMatrix(doc, matrix, ctx) {
   if (el) el.innerHTML = probMatrixHtml(matrix, ctx);
 }
 
-/** 标的切换（VGT / SMH），与到期日历同一种分段控件。 */
-export function probTabsHtml(current) {
-  return ['VGT', 'SMH'].map(function (s) {
+/**
+ * 标的切换（VGT / SMH / IBIT），与到期日历同一种分段控件。
+ * 标的列表由调用方传入（index.js 传 OPTION_SYMS）—— 视图层不再写死标的名，
+ * 否则加了新标的会出现"概率卡看不到那一档"（v378 踩过）。
+ */
+export function probTabsHtml(current, symbols) {
+  const list = (Array.isArray(symbols) && symbols.length) ? symbols : DEFAULT_OPTION_SYMBOLS;
+  return list.map(function (s) {
     return '<button type="button" class="prob-chip' + (s === current ? ' is-on' : '') +
       '" data-probtab="' + s + '">' + s + '</button>';
   }).join('');

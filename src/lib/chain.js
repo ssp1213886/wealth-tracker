@@ -9,7 +9,8 @@
 // 所以兜底路径把 iv 留成 0，由前端用成交价反推，绝不让脏 IV 流进概率计算。
 import { edgeGetJson, edgePutJson } from './edge-cache.js';
 
-const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH']);
+// IBIT 在 CBOE 有链（实测近月 IV≈36%，与 SMH 同量级），所以卖 CALL 的标的里有它
+const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'IBIT']);
 const CACHE_TTL_SECONDS = 30 * 60;
 const MAX_DTE = 200;          // 只留半年内的到期日
 // 24 档足够装下 200 天内的全部到期日（SMH 有 16 档、VGT 只有 6 档）。

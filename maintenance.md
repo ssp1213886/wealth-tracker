@@ -548,6 +548,8 @@ const steps = {
 | v322 | **设置收敛：7 行 → 5 行**（手机端优先）：① 删掉退役的「连接配置」（地址输入框 + "不需要令牌"提示；token 早退役，默认就是当前站点）② 「活动记录」并进「账号」（改密码 / 活动记录 / 本机数据 / 退出登录一页到底）③ 「手动行情」并进「数据与备份」④ 侧栏底部重复的「退出登录」删除 ⑤ 手机端手风琴的配对表同步收敛（`setupInlineQuickSettings` 不再有 price 项）。实测：设置一屏内 5 行、展开「云端同步」也从 ~300px 降到 186px |
 | v323 | **修一个一直存在的选择器溢出**（用户反馈"上传/同步按钮是白色，不够明显"）：手机端 `setupInlineQuickSettings` 会把设置面板搬进 `.sb-quick-menu`（外包一层 `.quick-acc`），而几十条"索引行"样式用的是**后代选择器** `.sb-quick-menu button` —— 于是面板里的按钮也被拍平：实测 `btn-pri` 的背景被算成 `transparent`、`btn-out` 的边框 0px，看着像两个白块。修法：把 22 处只该作用于索引行的选择器限定为**直接子按钮** `.sb-quick-menu > button`（**不新增任何 `!important`**，仍 1510）。修后实测：同步按钮 `rgb(20,122,75)` 绿底白字、上传按钮浅底 + 1px 边框；四组合指纹 **0 处差异**（面板默认折叠，改动只在展开后的面板内） |
 | v324 | **修好加密行情的兜底链**：从 Cloudflare 边缘实测各数据源 —— 币安全球站 **403**（封云厂商 IP）、CoinGecko **429**（限流，原来的兜底等于没有），而 Binance.US / Kraken / Coinbase / Bybit 均 200。于是把加密兜底从"只有 CoinGecko"改成 **Binance.US → Kraken → CoinGecko**（Yahoo 仍是主源），"纯代码补查"那条路径也接上；新增 `parseBinanceUsTickers` / `parseKrakenTickers` / `krakenCodeOf` 三个纯函数 + 5 条单测（含"先 Binance.US、剩的才问 Kraken"的顺序与缓存行为） |
+| v325–v372 | 见 `git log`（手机端排布与字号收敛、行情总线去重、负现金三条缝、安全响应头 + 危险操作键盘路径、设置 7 行→5 行、`.sb-quick-menu > button` 选择器溢出、加密行情兜底链、提醒角标口径…） |
+| **v384** | **第三腿从 Grayscale 的 BTC ETF（`BTC`）换成 iShares **IBIT**，并让 IBIT 进入 Covered Call**。⚠️ 之前有一版 v373–v383 做过同样的事，因为**改动清单不完整**（期权录入门禁没放开、`capGains.BTC` 没换、状态卡只有两格…）连续出 bug，最后整体回退成 v372；**v384 是重做版**，把"按功能路径逐段读"的清单补全后才动手。内容：① 换腿（白名单 / 行情表 / `QUOTE_ALIAS` / `WATCH_DEFAULTS` / 品牌图标 / 搜索词表 + 中文别名 / **东财兜底 `EASTMONEY_SECID`**，否则兜底链路对 IBIT 直接失效）② **`OPTION_SYMS` 单点定义** + `chain.js` 白名单 + `normalizeOptions(list, symbols)`（原来是写死的 `sym!=='VGT'&&sym!=='SMH'` → 录 IBIT 会被**静默丢掉**）③ IBIT 节奏 `every3w` + 锚点 `2026-10-30`（与 SMH 同一天操作）、OTM 默认 **10%**（近月 IV≈36%，按 0.7–0.8σ 换算）④ 第三腿的存储键名与元素 id 收敛成 `LEG_STATE_KEY` / `LEG_METRIC_IDS`（原来散落 `state.btc` 与 `dcaBTC`/`mobileDcaBtc*` 这类按符号派生的 id）⑤ 退役符号 `BTCETF` 在 **`normalizeWatchlist`** 这个唯一漏斗里丢弃——**幂等、无状态**，比写一次性迁移稳（手机 schema 已被 v373 写成 3，`steps[3]` 会被静默跳过）⑥ 顺手修 4 个真 bug：`delOpt` 退两次现金、年度归因写死 `capGains.BTC` 渲染出 `NaN%`、`switchTab` 把 `log` 归一成 `data` 导致 `if(tab==='log'){renderAnnualMatrix()}` 是**死代码**（年度复盘卡只在开机渲染一次）、期权胶囊的处理器没分家会顺手清空交易标的 ⑦ 「期权状态」卡 3 列 → 2 列（多出第三腿一格）。测试 497 → 498 |
 
 ### 已知未修问题
 
@@ -684,6 +686,15 @@ const steps = {
 > - ~~`forceUploadLocal()` 没有调用点~~ → 实际已接到设置的"强制上传"按钮上
 > - ~~观察列表改动不会推送~~、~~操作日志单条删除点不动~~、~~手机端记录页搜索过滤失效~~、~~备份漏观察列表~~ → 均已修复并有 e2e 覆盖
 > - ~~JS 引用的死 id / 死代码（sbDonut、pillYear、holdMeta）~~ → 已清理，`npm run audit` 会持续守
+
+10. **期权/股息链路里还剩两处"按标的写死"的边界（v384 有意保留）**，别当成 bug、但加标的前必须读：
+   - `src/lib/dividends.js` 的白名单仍是 `['VGT','SMH']`，`src/app/index.js` 的 `fetchDividends` 也只拉这两只 ——
+     因为 IBIT 是比特币信托、**没有除息日**，拉它只会白拿一个 400。`ccDividends` 里查不到 IBIT 时 `ccExDivItems` 会直接跳过。
+     ⚠️ 将来若加入**有股息**的期权标的，必须同时放开 worker 白名单与这里的循环，否则"除息落在本轮周期内"的提醒会漏。
+   - 持仓穿透（`/api/holdings`、`holdingsData`、敞口卡的"VGT/SMH 其余成分股"）只对 VGT/SMH 有意义 ——
+     IBIT 没有成分股，所以 `['VGT','SMH']` 在这条链路上是**正确**的，别一刀切改成 `ETF_SYMS`。
+   - 另外「期权状态」卡的元素 id 是 `LEG_METRIC_IDS`（`VGT:['ov','ocv'] / SMH:['vd','ocs'] / IBIT:['oi','oci']`）：
+     对应 HTML 里三个静态格子（`.option-metrics` 是 2 列栅格，4 格正好 2×2）。**加标的时要同时补 HTML 格子与这张表**。
 
 ### 已知限制（能力边界，不是待办）
 

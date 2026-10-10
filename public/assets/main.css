@@ -1623,7 +1623,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .option-discipline strong{color:var(--accent)}
 .option-status-card h3{margin:0 0 10px;font-size:var(--ds-title-size);font-weight:650}
 .option-status-card #optStatus{color:var(--muted);font-size:var(--type-body)}
-.option-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.option-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .option-metric{display:grid;min-width:0;border:1px solid var(--rule);border-radius:14px;background:var(--surface)}
 .option-metric span{color:var(--muted);font-size:var(--type-caption)}
 .option-metric strong{font-size:.92rem;font-weight:680;color:var(--fg);font-variant-numeric:tabular-nums}

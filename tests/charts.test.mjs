@@ -210,10 +210,10 @@ test('annualMatrix：按"第一笔买入/入金"起算，逐年给出权利金�
     ],
     optionTrades: [{ added: '2026-04-01', premium: 120, contracts: 1 }],
     cashLog: [{ date: '2025-02-01', type: '入金', amount: 5000 }, { date: '2026-05-01', type: '出金', amount: 1000 }],
-    prices: { VGT: 130, SMH: 600, BTC: 0 },
+    prices: { VGT: 130, SMH: 600, IBIT: 0 },
     netCash: 2000,
     targetGoal: 2500000,
-    symbols: ['VGT', 'SMH', 'BTC'],
+    symbols: ['VGT', 'SMH', 'IBIT'],
     now,
   });
   assert.equal(out.empty, false);
@@ -227,6 +227,8 @@ test('annualMatrix：按"第一笔买入/入金"起算，逐年给出权利金�
   assert.ok(Math.abs(out.cells[1].rate - 7.5) < 1e-9, '权利金贡献率 = 120/1600');
   assert.equal(out.cells[1].vgt, 15, '年末持股是累计值');
   assert.equal(out.cells[1].smh, 2);
+  assert.equal(out.cells[1].ibit, 0, 'v384：第三腿字段由 btc 改名成 ibit（界面读 c.ibit）');
+  assert.ok(!('btc' in out.cells[1]), '旧的 btc 字段不该再存在');
   assert.equal(out.totalInvested, 5000, '只统计入金');
   assert.equal(out.activeYears, 2);
   assert.equal(out.totalMktV, 15 * 130 + 2 * 600);
@@ -269,7 +271,7 @@ test('donutSlices：过滤未定价的持仓，pct 合计为 1；两种空态要
   const ok = donutSlices([
     { sym: 'VGT', priced: true, value: 3000 },
     { sym: 'SMH', priced: true, value: 1000 },
-    { sym: 'BTC', priced: false, value: null },
+    { sym: 'IBIT', priced: false, value: null },
   ]);
   assert.equal(ok.reason, 'ok');
   assert.equal(ok.total, 4000);

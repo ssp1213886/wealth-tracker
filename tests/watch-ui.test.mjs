@@ -201,8 +201,8 @@ test('renderHoldings：ETF 前十大 + 底层资产敞口（含分母说明）',
       SMH: { symbol: 'SMH', source: 'static', asOf: '2026-06-30', list: [{ sym: 'NVDA', name: 'NVIDIA', weight: 19.5 }] },
     },
     watchQuotes: { NVDA: { price: 186.4, changePct: 0.4, currency: 'USD' }, AAPL: { price: 231, changePct: -0.2, currency: 'USD' } },
-    trades: [{ symbol: 'VGT', shares: 8.62 }, { symbol: 'SMH', shares: 1.02 }, { symbol: 'BTC', shares: 13.62 }],
-    livePrices: { VGT: 108.62, SMH: 402.1, BTC: 29.38 },
+    trades: [{ symbol: 'VGT', shares: 8.62 }, { symbol: 'SMH', shares: 1.02 }, { symbol: 'IBIT', shares: 13.62 }],
+    livePrices: { VGT: 108.62, SMH: 402.1, IBIT: 29.38 },
   }));
   const vgt = makeEl();
   const smh = makeEl();
@@ -245,7 +245,7 @@ function withStorage(store, fn) {
 
 test('updateSidebarPrices：渲染价格行（涨跌配色 / 迷你走势 / 等待报价）', () => {
   configureWatchUI(host({
-    ETF_SYMS: ['VGT', 'SMH', 'BTC'],
+    ETF_SYMS: ['VGT', 'SMH', 'IBIT'],
     liveQuoteData: {
       VGT: { price: 108.62, change: 1.2, history: [100, 102, 101, 106, 108] },
       SMH: { price: 402.1, change: -3.5 },
@@ -265,7 +265,7 @@ test('updateSidebarPrices：渲染价格行（涨跌配色 / 迷你走势 / 等�
   assert.match(live.innerHTML, /spr-spark/, '有历史数据要画迷你走势');
   assert.match(live.innerHTML, /color:var\(--accent\)/, '上涨用强调色');
   assert.match(live.innerHTML, /color:var\(--red\)/, '下跌用红色');
-  assert.match(live.innerHTML, /等待报价/, 'BTC 没数据给等待态');
+  assert.match(live.innerHTML, /等待报价/, 'IBIT 没数据给等待态');
   assert.equal((live.innerHTML.match(/spr-spark/g) || []).length, 1, '只有 VGT 带历史');
 });
 

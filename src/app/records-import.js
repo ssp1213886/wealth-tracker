@@ -4,7 +4,7 @@ import { cleanText } from './util.js';
 import { normalizeDateValue } from './time.js';
 
 /** 允许的交易标的（核心仓三只）。index.js 的 ETF_SYMS 也引用这里，避免两处维护。 */
-export const TRADE_SYMBOLS = ['VGT', 'SMH', 'BTC'];
+export const TRADE_SYMBOLS = ['VGT', 'SMH', 'IBIT'];
 
 /**
  * 规整交易记录：标的必须在允许名单内、日期合法、股数非 0、价格 > 0，否则整条丢弃。

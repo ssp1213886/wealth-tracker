@@ -6,7 +6,7 @@ export const WATCH_DEFAULTS = [
   { sym: 'VGT', kind: 'stock' },
   { sym: 'SMH', kind: 'stock' },
   { sym: 'BTC', kind: 'crypto' },
-  { sym: 'BTCETF', kind: 'stock' },
+  { sym: 'IBIT', kind: 'stock' },
   { sym: 'VOO', kind: 'stock' },
   { sym: 'GOLD', kind: 'gold' },
   { sym: 'QQQM', kind: 'stock' },
@@ -27,6 +27,16 @@ const KIND_LABEL = { crypto: '现货', gold: '金价', stock: '' };
 // 允许数字开头（如加密的 1INCH / 1INCH-USD）
 const SYM_RE = /^[A-Z0-9][A-Z0-9.\-]{0,9}$/;
 
+/**
+ * v384：退役的观察标的。BTCETF 是 Grayscale Bitcoin Mini Trust 的老展示码，
+ * 第三腿换成 iShares 的 IBIT 之后它已经没有任何行情来源，留着只会变成一行"等待报价"的死行。
+ *
+ * 为什么放在 normalizeWatchlist 里而不是写一次性迁移：这一层是观察列表的**唯一漏斗**
+ * （load / 云端并集 / 增删改都过它），所以在这里丢弃是幂等的、无状态的，
+ * 也不用担心"设备 schema 号已经走过一次迁移、新迁移被跳过"这类坑。
+ */
+const RETIRED_SYMBOLS = new Set(['BTCETF']);
+
 export function kindOf(sym) {
   const upper = String(sym || '').toUpperCase();
   if (upper === 'GOLD') return 'gold';
@@ -39,7 +49,7 @@ export function labelOf(sym) {
   const kind = kindOf(upper);
   if (kind === 'gold') return '金价';
   if (upper === 'BTC') return 'BTC 现货';
-  if (upper === 'BTCETF') return 'BTC ETF';
+  if (upper === 'IBIT') return 'IBIT';
   return upper;
 }
 
@@ -54,7 +64,7 @@ export function normalizeWatchlist(raw, defaults = WATCH_DEFAULTS) {
   const bySym = new Map();
   const push = (sym, enabled, order) => {
     const upper = String(sym || '').toUpperCase();
-    if (!SYM_RE.test(upper) || bySym.has(upper)) return;
+    if (!SYM_RE.test(upper) || RETIRED_SYMBOLS.has(upper) || bySym.has(upper)) return;
     bySym.set(upper, { sym: upper, kind: kindOf(upper), enabled: enabled !== false, order: Number(order) || 0 });
   };
   (Array.isArray(raw) ? raw : []).forEach((item, index) => {
@@ -73,7 +83,7 @@ export function toggleWatch(list, sym) {
 
 export function addWatch(list, sym) {
   const upper = String(sym || '').trim().toUpperCase();
-  if (!SYM_RE.test(upper)) return null;
+  if (!SYM_RE.test(upper) || RETIRED_SYMBOLS.has(upper)) return null;
   const current = normalizeWatchlist(list);
   if (current.some((item) => item.sym === upper)) return current;
   return [...current, { sym: upper, kind: kindOf(upper), enabled: true, order: current.length }];
@@ -179,10 +189,10 @@ export function toHoldingRows(holdings, quotes) {
 /* ---------------- 观察列表的"状态机"：归属映射 / 云端并集 / 持仓-关注分组 ---------------- */
 
 /**
- * 行情与持仓的归属映射：观察列表里的 BTCETF 行，行情/成本实际记在 BTC 名下；
+ * 行情与持仓的归属映射：IBIT 行本身就是第三腿持仓（按自身代码即可，无需映射）；
  * 而 BTC 行是加密现货（值空串 = 不属于你的持仓）。其它标的按自身代码。
  */
-export const WATCH_HELD_OF = { BTCETF: 'BTC', BTC: '' };
+export const WATCH_HELD_OF = { BTC: '' };
 
 /** 某个观察标的对应的"底层代码"；返回 '' 表示它只是行情关注项，不算持仓。 */
 export function resolveHeldSymbol(sym, heldOf) {

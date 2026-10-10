@@ -4,8 +4,18 @@
 import { cleanText, dateOrdinal } from './util.js';
 import { MARKET_TIME_ZONE, zonedDateParts, marketDate, normalizeDateValue } from './time.js';
 
-/** 校验并规整期权记录：标的只认 VGT/SMH，类型只认 CALL/PUT，行权价>0、权利金≥0、到期日必须合法。 */
-export function normalizeOptions(list) {
+/** 期权标的兜底名单；调用方（index.js）会传 OPTION_SYMS，两者必须一致（有单测钉住）。 */
+export const DEFAULT_OPTION_SYMBOLS = ['VGT', 'SMH', 'IBIT'];
+
+/**
+ * 校验并规整期权记录：标的必须在 allowed 名单内，类型只认 CALL/PUT，行权价>0、权利金≥0、到期日必须合法。
+ *
+ * ⚠️ allowed 由调用方传入（index.js 传 OPTION_SYMS）—— 这是"哪些标的能卖 CALL"的唯一真源。
+ * 别在这里再写死标的名：v384 之前这里硬编码了两只标的的白名单，
+ * 结果录了 IBIT 会被**静默丢掉**（表现是"记了但持仓里不显示"）。
+ */
+export function normalizeOptions(list, symbols) {
+  const allowed = (Array.isArray(symbols) && symbols.length) ? symbols : DEFAULT_OPTION_SYMBOLS;
   if (!Array.isArray(list)) return [];
   return list.map(function (o, i) {
     const sym = cleanText(o && o.sym, 12).toUpperCase();
@@ -16,10 +26,42 @@ export function normalizeOptions(list) {
     const expiry = normalizeDateValue(o && o.expiry);
     const added = normalizeDateValue(o && o.added) || marketDate();
     let id = Number(o && o.id);
-    if ((sym !== 'VGT' && sym !== 'SMH') || (type !== 'CALL' && type !== 'PUT') || !expiry || !isFinite(strike) || strike <= 0 || !isFinite(premium) || premium < 0) return null;
+    if (!allowed.includes(sym) || (type !== 'CALL' && type !== 'PUT') || !expiry || !isFinite(strike) || strike <= 0 || !isFinite(premium) || premium < 0) return null;
     if (!isFinite(id)) id = Date.now() + i + Math.random();
     return { id: id, sym: sym, type: type, strike: strike, premium: premium, contracts: contracts, expiry: expiry, added: added, settled: !!(o && o.settled), archived: !!(o && o.archived) };
   }).filter(Boolean);
+}
+
+/**
+ * 删期权时的现金处理（v384 修）——
+ * 老写法是**再写一条「权利金退回-X」**，而原来那条「权利金+X」还留在流水里：
+ * 用户随后删掉那条孤儿流水 → 又退一次现金（一次删除实际退了两倍）。
+ * 正确口径：**连带删掉它产生的那条权利金流水**，现金只动这一次、金额与删掉的那行等额。
+ *
+ * 匹配口径：同标的 + 金额相同（精度 0.01）的最后一条权利金收入行；
+ * 找不到就一分钱都不动 —— 宁可不动，也不能凭空退钱。
+ */
+export function planOptionDelete(opt, cashLog) {
+  const list = Array.isArray(cashLog) ? cashLog : [];
+  const o = opt || {};
+  const premiumTotal = (Number(o.premium) || 0) * (Number(o.contracts) || 1);
+  const sym = String(o.sym || '').toUpperCase();
+  const isPremiumRow = function (l) {
+    const ty = String((l && l.type) || '');
+    return ty.indexOf('权利金') >= 0 && ty.indexOf('退回') < 0;
+  };
+  let hit = null;
+  if (premiumTotal > 0) {
+    const byAmount = list.filter(function (l) {
+      return isPremiumRow(l) && String((l && l.type) || '').toUpperCase().indexOf(sym) >= 0 &&
+        Math.abs((Number(l && l.amount) || 0) - premiumTotal) < 0.01;
+    });
+    if (byAmount.length) hit = byAmount[byAmount.length - 1];
+  }
+  if (!hit) return { kept: list.slice(), removed: [], cashDelta: 0, matched: false };
+  /* 权利金流水恒为正数收入 → 删掉它就是把现金减回去（与「删流水」那条路径同一口径） */
+  const cashDelta = -(Number(hit.amount) || 0);
+  return { kept: list.filter(function (l) { return l !== hit; }), removed: [hit], cashDelta: cashDelta, matched: true };
 }
 
 /**

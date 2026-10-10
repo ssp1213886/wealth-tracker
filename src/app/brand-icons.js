@@ -115,7 +115,7 @@ export const BRAND_ICONS = {
   }
 };
 
-/** 股票/基金代码 → 品牌键（同品牌共用，例如 BTC 与 BTCETF 都用比特币标） */
+/** 股票/基金代码 → 品牌键（同品牌共用，例如 BTC 与 IBIT 都用比特币标） */
 export const SYM_TO_BRAND = {
   "NVDA": "nvidia",
   "AAPL": "apple",
@@ -131,7 +131,7 @@ export const SYM_TO_BRAND = {
   "CRCL": "circle",
   "PLTR": "palantir",
   "BTC": "bitcoin",
-  "BTCETF": "bitcoin",
+  "IBIT": "bitcoin",
   "ETH": "ethereum",
   "BNB": "binance",
   "SOL": "solana",

@@ -159,8 +159,6 @@ export const GOLD_QUOTE = 'GC=F';
 export const QUOTE_ALIAS = {
   GOLD: 'GC=F',
   SKHYV: '000660.KS',
-  // BTCETF：用户观察列表里的"BTC ETF"行；Yahoo 上这只 ETF 的代码就是 BTC（Grayscale Bitcoin Mini Trust）
-  BTCETF: 'BTC',
 };
 
 const stockCache = new Map();

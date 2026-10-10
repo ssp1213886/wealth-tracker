@@ -7,7 +7,8 @@ import { buildBackupPayload, cleanBackupPrices, planBackupImport, ACCENT_CHOICES
 
 const CTX = {
   appDataVersion: 5,
-  etfSymbols: ['VGT', 'SMH', 'BTC'],
+  etfSymbols: ['VGT', 'SMH', 'IBIT'],
+  optionSymbols: ['VGT', 'SMH', 'IBIT'],
   current: {
     trades: [{ id: 9, symbol: 'VGT' }],
     cashLog: [{ id: 8, type: '入金' }],
@@ -100,9 +101,14 @@ test('planBackupImport：notes 当成操作日志、exit 两种键名都认', ()
   assert.equal(planBackupImport({ version: 5 }, CTX).has.exit, false);
 });
 
-test('planBackupImport：OTM 裁剪到 1~20，缺省 7 / 6（v328 起：VGT 7%、SMH 6%）', () => {
-  assert.deepEqual(planBackupImport({ version: 5, otmSettings: { vgt: 99, smh: 0 } }, CTX).otm, { vgt: 20, smh: 6 });
-  assert.deepEqual(planBackupImport({ version: 5, otmSettings: {} }, CTX).otm, { vgt: 7, smh: 6 });
+test('planBackupImport：OTM 裁剪到 1~20，缺省 VGT 7% / SMH 6% / IBIT 10%（v384）', () => {
+  assert.deepEqual(planBackupImport({ version: 5, otmSettings: { vgt: 99, smh: 0 } }, CTX).otm, { vgt: 20, smh: 6, ibit: 10 });
+  assert.deepEqual(planBackupImport({ version: 5, otmSettings: {} }, CTX).otm, { vgt: 7, smh: 6, ibit: 10 });
+  assert.deepEqual(
+    planBackupImport({ version: 5, otmSettings: { vgt: 5, smh: 5, ibit: 12 } }, CTX).otm,
+    { vgt: 5, smh: 5, ibit: 12 },
+    'IBIT 的 OTM 要能真实带进来（不是永远回落 10）',
+  );
   assert.equal(planBackupImport({ version: 5, otmSettings: 'nope' }, CTX).otm, null);
   assert.equal(planBackupImport({ version: 5 }, CTX).has.otmSettings, false);
 });
@@ -119,9 +125,9 @@ test('cleanBackupPrices：只留白名单标的、丢掉非法价', () => {
   const clean = cleanBackupPrices({
     VGT: 108.62,
     SMH: { price: 402.1, change: 1.5, source: 'yahoo' },
-    BTC: { price: 0 },
+    IBIT: { price: 0 },
     XXX: 12,
-  }, ['VGT', 'SMH', 'BTC']);
+  }, ['VGT', 'SMH', 'IBIT']);
   assert.deepEqual(Object.keys(clean), ['VGT', 'SMH']);
   assert.equal(clean.VGT.price, 108.62);
   assert.equal(clean.VGT.source, 'import', '纯数字要补成标准结构');

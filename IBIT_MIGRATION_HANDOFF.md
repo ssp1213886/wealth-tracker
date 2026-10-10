@@ -1,100 +1,98 @@
-# 交接：把第三腿从 Grayscale BTC ETF（代码 `BTC`）换成 iShares IBIT
+# 记录：第三腿 BTC → IBIT（v384 已完成）
 
-> 写给下一个 agent。**先读完本文再动代码**；本文里的"坑"都是已经踩过、并造成过回退的。
+> 状态：**已完成并上线（v384）**。本文从"交给下一个 agent 的交接"改成**完成记录**，
+> 保留踩过的坑与完整改动清单 —— 因为**上一版 v373–v383 就是照一份不完整的清单做、连续出 bug 后整体回退的**。
 
-## 0. 当前仓库状态（重要）
+## 0. 结论
 
-- `main` = **v372**：`git checkout 67cfc2a -- .` 之后与 v372 **逐字节一致**，**代码里没有任何 IBIT 元素**。
-- 第三腿在代码里是 `BTC`（= Grayscale Bitcoin Mini Trust 的美股代码），白名单 `['VGT','SMH','BTC']`。
-- 备份分支（改动都在，随时可捡）：
-  - `codex/ibit-attempt` —— v373–v383 全套：`1e351ea` 是"换腿 + 数据迁移"的实现，
-    `tests/ibit-migration.test.mjs`、`tests/options-delete.test.mjs` 是当时的测试。
-  - `codex/v374-core-config` —— 更早那版"标的做成可配置"（用户否掉了，别照抄）。
+第三腿从 Grayscale 的 `BTC`（Bitcoin Mini Trust）换成 iShares 的 **`IBIT`**，
+并让 **IBIT 进入 Covered Call**（与 SMH 同节奏）。改动落在 `main` 的 v384。
 
-## 1. ⚠️ 第一步必须先处理数据（否则会丢持仓）
+**关键教训**：这类"把某个标的换成另一个标的"的改动，**写死的字面量扫描是不可靠的** ——
+真正有效的方法是**按功能路径逐段读**：录入 → 保存 → 同步 → 渲染 → 提醒 → 备份/恢复。
+下面第 2 节的清单是审计过的版本，每一处都对应一个"不改就会在真机上出错"的具体表现。
 
-v373 的数据迁移**已经把云端和手机上的历史 `BTC` 记录换算成了 `IBIT`**（股数 ×0.778456、价格 ÷0.778456，
-系数 = 36.39 / 46.7454 = Mini Trust 与 IBIT 在 2026-10-09 收盘价之比）。**回退代码不会回退数据**，
-而 v372 的 `normalizeTrades` 会把 `IBIT` 当"非白名单标的"**静默丢弃** → 第三腿持仓/成本会消失并被推上云。
+## 1. 上一版（v373–v383）为什么翻车
 
-两条路，选一条（**先让用户导出一次 JSON 备份**）：
+| 现象 | 根因 |
+| --- | --- |
+| 录了 IBIT CALL，**持仓里不显示** | `options.js` 的标的门禁是写死的 `sym !== 'VGT' && sym !== 'SMH'`，IBIT 被**静默丢掉**。当时的交接文档写的是"已改成 `allowed.includes(sym)`"，**实际没改** |
+| 年度归因卡出现 `BTC 增值 $0.00 NaN%` | `renderAttribution` 写死读 `r.capGains.BTC`，而 `capGains` 是按 `ETF_SYMS` 生成的（只有 `IBIT`），取到 `undefined` |
+| 点 IBIT 胶囊不高亮 | `#osym` 里没有 `<option value="IBIT">` → `select.value = 'IBIT'` 被浏览器置空 → 比对失败 |
+| 看着"改了没生效" | 版本号复用了**已经部署过**的号，手机上残留同号缓存 |
+| 年度复盘卡数字永远不对 | `switchTab` 开头就把 `'log'` 归一成 `'data'`，后面 `if(tab==='log'){renderAnnualMatrix()}` 是**死代码** → 卡片只在开机渲染一次（这个是早就存在的 bug，与 IBIT 无关，v384 顺手修了） |
 
-1. **数据回滚成 BTC**（如果这次只是想先把仓库清干净）：
-   `shares ÷ 0.778456`、`price × 0.778456`（保持每笔"股数×价格"即成本不变）；
-   本机备份键 `wealth_pre_ibit_migration_v1` 里存着**迁移前的原值**（`store.js` 迁移写的，不同步），
-   优先用它还原。云端要一起看：`npx wrangler d1 execute wealth-db --remote --command "SELECT key, updated_at FROM data"`。
-2. **直接完成换腿**（推荐，用户的目标就是这个）：照 `codex/ibit-attempt` 的 `1e351ea` 重做一遍，
-   数据从 IBIT 状态继续走，不用来回换算。
+## 2. 完整改动清单（v384 实际做的，按功能路径）
 
-## 2. 要做的事（按顺序，每步先给用户看方案）
-
-### 2.1 换腿（白名单 / 标签 / 映射）
+### 2.1 标的白名单与行情源
 
 | 位置 | 改法 |
-|---|---|
-| `src/app/records-import.js` | `TRADE_SYMBOLS = ['VGT','SMH','IBIT']`；**BTC 走别名 + 换算**（见 `1e351ea`），别直接删它——否则旧设备推回来的 BTC 会被丢 |
-| `src/app/index.js` | `PRICE_SYMBOLS`、`ETF_NAMES`（`ETF_NAMES` 实际 0 处消费，可删） |
-| `src/lib/price.js` | `ALLOWED_SYMBOLS` 加 IBIT（可顺手去掉 BTC → 老客户端会回落到腾讯兜底） |
-| `src/app/watch.js` | `WATCH_DEFAULTS` 的 `BTCETF` 行 → `IBIT`；`WATCH_HELD_OF` 里 `BTCETF:'IBIT'`；`labelOf('BTCETF') → 'IBIT'` |
-| `src/app/watch-ui.js` | 敞口 extras：**行标写"比特币"**（这一层是底层资产），载体写备注 `IBIT（iShares Bitcoin Trust）· 1:1 跟踪比特币`；徽标映射到 `BTC` |
-| `src/lib/quotes.js` | `QUOTE_ALIAS` 的 `BTCETF` → `'IBIT'` |
-| `src/app/brand-icons.js` | 加 `"IBIT": "bitcoin"` |
-| `src/app/symbols.js` | 删 `BTCETF` 那行、把 IBIT 的中文别名补全（名单条数断言在 `tests/symbols.test.mjs`） |
-| 文档 | `INVESTMENT_STRATEGY.md` / `readme.md` 的策略描述 |
+| --- | --- |
+| `src/app/records-import.js` | `TRADE_SYMBOLS = ['VGT','SMH','IBIT']`（`normalizeTrades` 的第二参就是它） |
+| `src/app/index.js` | `PRICE_SYMBOLS`、`ETF_NAMES`/`ETF_SYMS` |
+| `src/lib/price.js` | `ALLOWED_SYMBOLS` 加 IBIT；**`EASTMONEY_SECID` 加 `IBIT: '107.IBIT'`** —— 不加这条，东方财富那条兜底链路对 IBIT 直接失效 |
+| `src/lib/quotes.js` | 删掉 `QUOTE_ALIAS.BTCETF`（老别名退役） |
+| `src/app/watch.js` | `WATCH_DEFAULTS`、`WATCH_HELD_OF = { BTC: '' }`、`labelOf` |
+| `src/app/brand-icons.js` | `IBIT → bitcoin` |
+| `src/app/symbols.js` | 删 `BTCETF` 词条、给 IBIT 补中文别名「比特币ETF」（同步 `tests/symbols.test.mjs` 的 62→61） |
+| `src/app/index.js` 的 **v195 启动 IIFE** | 它会在"列表里有现货 BTC 但没有 BTCETF 行"时**自动补一行并推云** —— 必须一起换成 IBIT，否则每次开 App 都把老行塞回来 |
 
-### 2.2 数据迁移（`src/app/store.js`）
+### 2.2 第三腿的"口径"与"界面位置"
 
-- `steps[N]` 是"**到达**版本 N 时执行的那一步"（`from=2` 只会跑 `steps[3]`）。我第一次写成 `steps[2]`，
-  整段迁移被静默跳过，而 `try/catch` 把空跑一起藏住 → **必须写一条"跑完之后数据必须变成什么样"的单测**。
-- 迁移内容：trades 的 `symbol` BTC→IBIT **并按 r 换算股数/价格**；watchlist 的 `BTCETF`→`IBIT`
-  （**加密现货那行 `BTC` 不动**）；`prices` 里的 `BTC` 键**删掉**（Mini Trust 的价 ≠ IBIT 的价）；
-  迁移前把原值存本机备份键；改完记"动了哪些键"交给 `initAll` 标脏推云。
-- ⚠️ 标脏/推云**不能写在模块顶层**：那里 `syncCfg`/`SYNC_STATE_KEY` 还没初始化（实测 `syncCfg.url` 为空），
-  要放到 `initAll` 后半段，用 `pushKeysForce`（"强制上传"那条路径）推。
+**这一类是最容易漏的**，共同特征：符号没写在一起，而是散在 `state.btc` / 元素 id / 三元表达式里。
 
-### 2.3 如果要给 IBIT 开 Covered Call
+| 位置 | 不改会怎样 |
+| --- | --- |
+| `LEG_STATE_KEY = {VGT:'vgt',SMH:'smh',IBIT:'btc'}` + `legTargets()` | 原来每处都写 `{VGT:state.vgt,SMH:state.smh,BTC:state.btc}`，键名对不上就取不到目标配比 |
+| 敞口卡 `curV/curS/curB` | 原来 `if(s==='BTC')curB=v`，IBIT 时第三腿恒为 0、占比 >100% |
+| 年度矩阵的每股数（`c.btc` → `c.ibit`） | 不改的话 `undefined.toFixed()` 直接抛 |
+| `LEG_METRIC_IDS` + `public/index.html` 的三格 | 「期权状态」卡原来只有 VGT/SMH 两格，第三腿没地方显示 |
+| 定投卡的标签与 id（`dcaIBIT` / `mobileDcaIbitAmt` / `mobileDcaIbitPct` / `sbIbitPct`） | JS 是按 `'dca' + 符号` 派生的，id 不改就永远更新不到 |
+| 交易历史的标的筛选下拉、目标配比图例、`og:description` | 页面上直接写着 BTC |
+| `src/app/alerts-view.js` 的排序表、`charts.js` 的默认标的表 | 兜底顺序里少一只 |
 
-- **标的白名单只在一处定义**：`OPTION_SYMS = ['VGT','SMH','IBIT']`，页面 tab / 到期日历 / 概率矩阵 /
-  提醒 / 录入弹层 / Worker 链白名单全部跟着它。
-- `src/lib/chain.js` 的 `ALLOWED_SYMBOLS` 加 IBIT（CBOE 有链：实测 3048 张合约、29 个到期日档）。
-- `src/app/options.js / normalizeOptions` 的**标的门禁**：原来是 `sym !== 'VGT' && sym !== 'SMH'`
-  → 录入 IBIT 会被**静默丢掉**（表现是"记了但持仓里不显示"）。改成 `normalizeOptions(list, symbols)`
-  + `allowed.includes(sym)`，调用点传 `OPTION_SYMS`。
-- `src/app/prob-view.js / probTabsHtml(current)` 里也写死了 `['VGT','SMH']` → 被行权概率卡看不到 IBIT。
-- `public/index.html`：**`#osym` 与 `#tfAsset` 是两个 select，各自都要有 IBIT**（我漏了 `#osym`，
-  于是 `asset.value='IBIT'` 被浏览器置空 → 胶囊点了不高亮）。`#divSym`（股息标的）保持 VGT/SMH 即可。
-- 节奏与 OTM：IBIT = **every3w + 锚点 2026-10-30**（与 SMH 同一天操作）；OTM 默认 **10%**
-  （实测 IBIT 近月 IV ≈36%，SMH ≈32%，按"0.7–0.8σ"对齐）。
+### 2.3 IBIT 进 Covered Call
 
-## 3. 必须避免的坑（都是踩过的，按代价排序）
+| 位置 | 改法 |
+| --- | --- |
+| `src/app/index.js` | **`var OPTION_SYMS=['VGT','SMH','IBIT']` 单点定义**；页面 tab / 到期日历 / 概率矩阵 / 节奏 / 提醒 全部改为跟着它（约 18 处 `['VGT','SMH']` 字面量） |
+| `src/lib/chain.js` | `ALLOWED_SYMBOLS` 加 IBIT（服务端链白名单，CBOE 有链：实测约 29 档到期日） |
+| `src/app/options.js` | `normalizeOptions(list, symbols)`，门禁改 `allowed.includes(sym)`；导出 `DEFAULT_OPTION_SYMBOLS` 作兜底 |
+| `src/app/prob-view.js` | `probTabsHtml(current, symbols)` —— 视图层不许再写死标的名 |
+| `public/index.html` | **`#osym` 与 `#tfAsset` 两个 select 都要加 IBIT**，另加一颗 `data-option-asset="IBIT"` 胶囊 |
+| 节奏与 OTM | IBIT = `every3w` + 锚点 `2026-10-30`（与 SMH 同一天操作）；OTM 默认 **10%**（近月 IV≈36%，按 0.7–0.8σ 换算） |
+| `src/app/backup.js` | 备份导入的 `otmSettings` 要认 `ibit` 键 |
 
-1. **改超长行不要用 `node -e`**：PowerShell 会吃掉 `\"`、`$'`、多行模板 —— 一律写**临时脚本文件**跑完即删。
-2. **钉子/断言要锚定具体元素**：`assert.match(html, /<option value="IBIT">/)` 会被交易表单满足（假阳性，
-   放过了两个版本）；要按 id 抓出那个 `<select>` 再断言内部。
-3. **`doesNotMatch` 要排除注释与兜底串**：我三次被自己写的解释性注释打中（注释里提到旧写法）。
-4. **改某处"口径/合计"前先贴上下文 + 查消费方**，并给"改动前后数值等价"的断言：我曾把
-   `['VGT','SMH'].forEach(...)` + 一行显式加 IBIT（**本来就对**）改成 `ETF_SYMS.forEach(...)`，
-   却没删那行显式加 → **IBIT 被算两遍**。
-5. **`refreshPrices` 补 history 时不许写 `livePrices`**：价格只有一个来源（quotes 独占），
-   否则 `flows-marketcap` 的行情一致性护栏会红。
-6. **"写死的字面量"扫描查不出这类问题**：`sym !== 'VGT' && sym !== 'SMH'` 没有数组字面量；
-   真正有效的做法是**按功能路径**（录入→保存→渲染→提醒）逐段读。
-7. 动同步/启动链路：`npm run e2e` 不是可选项（单测测不出来）。
-8. SW 是**内容比对**：`sw.js` 内容变了才会更新；回退版本号靠这一点生效（这次 v372 回退已验证）。
+### 2.4 退役符号的清理
 
-## 4. 被这次回退一起撤掉、但**与 IBIT 无关的真 bug**（建议先补回来）
+`BTCETF` 在 **`normalizeWatchlist`** 里被丢弃（`RETIRED_SYMBOLS`），`addWatch` 也拒绝它。
+**为什么不写一次性迁移**：`normalizeWatchlist` 是观察列表的**唯一漏斗**（加载 / 云端并集 / 增删改都过它），
+在这里丢弃是**幂等且无状态**的；而写 `steps[N]` 迁移会踩另一个坑 —— 手机跑过 v373，`wealth_schema_v1` 已经是 **3**，
+再写一个 `steps[3]` 会被 `runMigrations` 的 `from >= DATA_SCHEMA` 直接**静默跳过**。
 
-**删期权 + 删对应权利金流水 → 现金退两次**：`delOpt` 当时是**新写一条「权利金退回-X」**，
-原来那条「权利金+X」还在 → 再删它就又退一次。正确口径（对齐 `index.js:111` 那条不变量
-"`cashBalance` 恒等于 Σ 现金流水"）：**连带删掉那条权利金流水**，现金只动这一次。
-实现与单测在 `codex/ibit-attempt`：`options.js / planOptionDelete` + `tests/options-delete.test.mjs`
-（含"删第二次不许再动现金"）。
+## 3. 顺手修掉的 4 个真 bug（与换腿无关，但都在同一片代码里）
 
-## 5. 验收清单
+1. **删期权退两次现金** —— `delOpt` 原来是"再写一条 `权利金退回-X`"，而原来那条 `权利金+X` 还留着；
+   用户跟着删掉那条孤儿流水就退第二次。改成 `planOptionDelete`：**连带删掉那条权利金流水**，现金只动这一次。
+2. **年度归因的 `capGains.BTC`** → 改成 `capGains.IBIT`，并给占比加 `isFinite` 防护。
+3. **`switchTab` 里 `if(tab==='log')` 是死代码**（开头已把 `log` 归一成 `data`）→ 年度复盘卡只在开机渲染一次。
+4. **期权胶囊的处理器没分家** —— `querySelectorAll('.asset-chip')` 把期权那组也扫进来，
+   点期权胶囊会顺手把 `#tfAsset` 设成 `undefined`。加了作用域。
 
-- `npm test` / `npm run lint` / `npm run audit` / `npm run e2e` / `npm run e2e:all` 全绿
-- iPhone 13 描述符（`node scripts/e2e/driver-engine.mjs --device "iPhone 13" --file <探针>`）走查：
-  侧栏曲线 3 条 · 期权页有 IBIT tab · 点 IBIT 胶囊**高亮** · 录一张 IBIT CALL 后**持仓里出现** ·
-  年度复盘卡"当前总资产 = 持仓市值 + 现金" · 敞口卡第三腿显示**比特币** · 无 `NaN/undefined` 文本 · 无 console 报错
-- 线上核对：`manifest` 的 `start_url`、`sw.js` 第一行版本号
-- 每步先给用户方案与"改动前后数值等价"的说明，**推送前汇报**
+## 4. 验证方式（可复用）
+
+- 单测 / lint / audit / `npm run e2e` / `npm run e2e:all`（7 阶段）
+- 真机走查脚本：`tmp/v384-walkthrough-scenario.mjs`（iPhone 13 描述符，跑法见 `tmp/diag-syncbar-run.mjs` 头部注释），
+  逐项断言：胶囊高亮 / 录 IBIT CALL 后持仓出现 / 概率卡与日历都有 IBIT tab / 敞口卡第三腿=比特币 /
+  **年度复盘卡的「当前总资产 = 持仓市值 + 现金」精确相等** / 全页无 `NaN`、`undefined` / 无真实网络错误
+- 调试 Chrome 截图：`tmp/v384-cdp-check.mjs`（输出到 `C:/Users/topeasejs/ChromeDebug/v384-*.png`）
+- 排查 `NaN` 用：`tmp/v384-nan-probe.mjs`（把含 `NaN` 的最小元素与上下文打出来）
+
+## 5. 仍然有意保留的"按标的写死"
+
+- `src/lib/dividends.js` 白名单与 `fetchDividends` 只拉 **VGT/SMH**：IBIT 是比特币信托、**没有除息日**，
+  拉它只会白拿一个 400。将来加**有股息**的期权标的时必须同时放开这两处。
+- 持仓穿透（`/api/holdings`、敞口卡的"其余成分股"）只对 VGT/SMH 有意义 —— IBIT 没有成分股，
+  这里的 `['VGT','SMH']` 是**正确的**，别一刀切改成 `ETF_SYMS`。
+
+细节与后续维护要求见 [maintenance.md](./maintenance.md) 的「已知未修问题」第 10 条。

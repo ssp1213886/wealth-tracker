@@ -3,7 +3,7 @@
 // v252 从 index.js 抽出：这条是数据安全路径，抽出来后"导错版本、导坏字段"都能离线测。
 
 import { normalizeTrades, normalizeCashLogs, normalizeActivities } from './records-import.js';
-import { normalizeOptions } from './options.js';
+import { normalizeOptions, DEFAULT_OPTION_SYMBOLS } from './options.js';
 import { normalizeWatchlist } from './watch.js';
 
 /** 导入时接受的主题/配色白名单（其它值一律忽略，避免脏数据写进 localStorage）。 */
@@ -74,7 +74,9 @@ export function planBackupImport(data, ctx) {
   const next = {
     trades: 'trades' in data ? normalizeTrades(data.trades, cfg.etfSymbols) : cur.trades,
     cashLog: 'cashLog' in data ? normalizeCashLogs(data.cashLog) : cur.cashLog,
-    optionTrades: 'optionTrades' in data ? normalizeOptions(data.optionTrades) : normalizeOptions(cur.optionTradesRaw),
+    optionTrades: 'optionTrades' in data
+      ? normalizeOptions(data.optionTrades, cfg.optionSymbols || DEFAULT_OPTION_SYMBOLS)
+      : normalizeOptions(cur.optionTradesRaw, cfg.optionSymbols || DEFAULT_OPTION_SYMBOLS),
     activities: hasNotes ? normalizeActivities(data.activities || data.notes) : normalizeActivities(cur.activitiesRaw),
     watchlist: 'watchlist' in data ? normalizeWatchlist(data.watchlist) : normalizeWatchlist(cur.watchlist),
   };
@@ -104,6 +106,8 @@ export function planBackupImport(data, ctx) {
     otm: hasOtm ? {
       vgt: Math.max(1, Math.min(20, Number(data.otmSettings.vgt) || 7)),
       smh: Math.max(1, Math.min(20, Number(data.otmSettings.smh) || 6)),
+      // v384：IBIT 进期权后，OTM 默认 10%（近月 IV≈36%，按 0.7–0.8σ 对齐）
+      ibit: Math.max(1, Math.min(20, Number(data.otmSettings.ibit) || 10)),
     } : null,
     exitValue: exitValue,
     prices: cleanBackupPrices(data.prices, cfg.etfSymbols),

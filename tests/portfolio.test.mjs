@@ -125,8 +125,8 @@ test('summaryRows：复用成本结转（部分卖出后的均价与浮盈），
     trade({ id: 3, date: '2026-02-01', shares: -5, price: 150 }),
     trade({ id: 4, symbol: 'SMH', date: '2026-01-03', shares: 2, price: 500 }),
   ];
-  const rows = summaryRows(trades, { VGT: 130, SMH: 600 }, ['VGT', 'SMH', 'BTC']);
-  assert.equal(rows.length, 2, '没持仓的 BTC 不出现');
+  const rows = summaryRows(trades, { VGT: 130, SMH: 600 }, ['VGT', 'SMH', 'IBIT']);
+  assert.equal(rows.length, 2, '没持仓的 IBIT 不出现');
   const vgt = rows[0];
   assert.equal(vgt.sym, 'VGT');
   assert.equal(vgt.shares, 15);

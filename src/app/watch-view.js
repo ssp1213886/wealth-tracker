@@ -28,7 +28,7 @@ export function quotePrice(quote, livePrice, cached) {
   return Number((quote && quote.price) || livePrice || (cached && cached.price) || 0) || 0;
 }
 
-/** 本地行情缓存按"归属代码"取（BTCETF 的行情记在 BTC 名下） */
+/** 本地行情缓存按"归属代码"取（IBIT 的行情记在 IBIT 名下） */
 export function historyOf(cache, key) {
   if (!key) return [];
   const c = (cache || {})[key];

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals,
   otmPercent, stepOtmPercent, suggestedStrike, pendingBuybacks, optionActionItems,
-  freeCallContracts,
+  freeCallContracts, DEFAULT_OPTION_SYMBOLS, planOptionDelete,
 } from '../src/app/options.js';
 
 const opt = (over) => Object.assign({
@@ -50,6 +50,58 @@ test('normalizeOptions：非法记录被剔除（标的不对/类型不对/行�
   ];
   assert.deepEqual(normalizeOptions(bad), []);
   assert.deepEqual(normalizeOptions('not-an-array'), []);
+});
+
+test('normalizeOptions：IBIT 能录进来，且标的门禁跟着 symbols 参数走（v384 回归护栏）', () => {
+  // v384 之前这里是写死的 `sym !== 'VGT' && sym !== 'SMH'` → 录 IBIT 会被静默丢掉
+  // （表现是"记了但持仓里不显示"）。门禁必须是"跟着名单走"，不是写死两只。
+  const list = normalizeOptions([opt({ sym: 'ibit' })], ['VGT', 'SMH', 'IBIT']);
+  assert.equal(list.length, 1, 'IBIT 必须能通过');
+  assert.equal(list[0].sym, 'IBIT');
+  assert.deepEqual(DEFAULT_OPTION_SYMBOLS, ['VGT', 'SMH', 'IBIT'], '兜底名单要含 IBIT（backup.js 走这条）');
+  assert.deepEqual(normalizeOptions([opt({ sym: 'IBIT' })]).map((o) => o.sym), ['IBIT'],
+    '不传名单时用兜底名单，IBIT 同样要过');
+  assert.deepEqual(normalizeOptions([opt({ sym: 'IBIT' })], ['VGT', 'SMH']), [],
+    '传进来的名单里没有它，就该被剔除');
+  assert.deepEqual(normalizeOptions([opt({ sym: 'QQQ' })], ['VGT', 'SMH', 'IBIT', 'QQQ']).map((o) => o.sym), ['QQQ'],
+    '名单是可配置的，不是写死三只');
+});
+
+test('planOptionDelete：删期权连带撤掉那条权利金流水，现金只退一次（v384 修"删两次退两次"）', () => {
+  const cashLog = [
+    { id: 1, date: '2026-09-01', type: '入金', amount: 5000 },
+    { id: 2, date: '2026-09-20', type: '权利金+VGT', amount: 120 },
+    { id: 3, date: '2026-09-25', type: '股息+VGT', amount: 8 },
+  ];
+  const plan = planOptionDelete(opt({ sym: 'VGT', premium: 120, contracts: 1 }), cashLog);
+  assert.equal(plan.matched, true);
+  assert.deepEqual(plan.removed.map((x) => x.id), [2], '要撤掉的是那条权利金收入行');
+  assert.deepEqual(plan.kept.map((x) => x.id), [1, 3]);
+  assert.equal(plan.cashDelta, -120, '现金只减这一次，金额等于那条流水');
+  // "删第二次"：期权已从列表拿掉，再算一次也没有可撤的流水 → 一分钱都不许动
+  const again = planOptionDelete(opt({ sym: 'VGT', premium: 120, contracts: 1 }), plan.kept);
+  assert.equal(again.matched, false);
+  assert.equal(again.cashDelta, 0, '第二次必须一分钱都不动');
+});
+
+test('planOptionDelete：找不到对应流水就绝不动现金，也不碰别人的流水', () => {
+  const cashLog = [{ id: 1, date: '2026-09-20', type: '权利金+SMH', amount: 300 }];
+  const miss = planOptionDelete(opt({ sym: 'VGT', premium: 120, contracts: 1 }), cashLog);
+  assert.equal(miss.matched, false);
+  assert.equal(miss.cashDelta, 0);
+  assert.deepEqual(miss.kept.map((x) => x.id), [1], '别的标的的流水不许动');
+  assert.equal(planOptionDelete(opt({ premium: 0 }), cashLog).matched, false, '权利金为 0 不动流水');
+  assert.equal(planOptionDelete(opt({}), null).matched, false, '空输入安全返回');
+});
+
+test('planOptionDelete：多张按 premium×contracts 匹配，且只吃收入行、不碰"退回"行', () => {
+  const cashLog = [
+    { id: 1, date: '2026-09-20', type: '权利金+VGT', amount: 240 },      // 2 张 × $120
+    { id: 2, date: '2026-09-21', type: '权利金退回-VGT', amount: 240 },  // 历史遗留的退回行，不许再吃
+  ];
+  const plan = planOptionDelete(opt({ sym: 'VGT', premium: 120, contracts: 2 }), cashLog);
+  assert.deepEqual(plan.removed.map((x) => x.id), [1]);
+  assert.equal(plan.cashDelta, -240);
 });
 
 test('normalizeOptions：张数至少 1，added 缺失时补美东当天', () => {

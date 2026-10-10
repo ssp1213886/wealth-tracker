@@ -3,8 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { searchSymbols, SEARCH_LIST_COUNT, SEARCH_INDEX_COUNT, JUNK } from '../src/app/symbols.js';
 
-test('名单规模：别名表 62 条、内置指数名单 167 条（S&P100 ∪ 纳斯达克100）', () => {
-  assert.equal(SEARCH_LIST_COUNT, 62);
+test('名单规模：别名表 61 条、内置指数名单 167 条（S&P100 ∪ 纳斯达克100）', () => {
+  assert.equal(SEARCH_LIST_COUNT, 61);
   assert.equal(SEARCH_INDEX_COUNT, 167);
 });
 

@@ -20,6 +20,7 @@ test('normalizeTrades：合法记录通过，日期归一化，方向与 tag 正
 test('normalizeTrades：非白名单标的/坏日期/零股数/非正价格一律剔除', () => {
   const rows = normalizeTrades([
     { id: 1, symbol: 'BTC-USD', date: '2026-07-18', shares: 1, price: 100 },   // 现货不是 ETF 代码
+    { id: 7, symbol: 'BTC', date: '2026-07-18', shares: 1, price: 100 },       // v384：BTC 现货代码不再是核心仓标的
     { id: 2, symbol: 'VGT', date: '2026-13-40', shares: 1, price: 100 },       // 坏日期
     { id: 3, symbol: 'VGT', date: '2026-07-18', shares: 0, price: 100 },       // 零股数
     { id: 4, symbol: 'VGT', date: '2026-07-18', shares: 1, price: 0 },         // 价格 0
@@ -29,14 +30,14 @@ test('normalizeTrades：非白名单标的/坏日期/零股数/非正价格一�
   assert.deepEqual(rows, []);
   assert.deepEqual(normalizeTrades('not-an-array'), []);
   assert.equal(normalizeTrades([{ symbol: 'VGT', date: '2026-07-18', shares: 1, price: 1 }]).length, 1, '不传白名单时用默认三只');
-  assert.deepEqual(TRADE_SYMBOLS, ['VGT', 'SMH', 'BTC']);
+  assert.deepEqual(TRADE_SYMBOLS, ['VGT', 'SMH', 'IBIT']);
 });
 
 test('normalizeTrades：id 缺失或重复时自动补一个唯一值', () => {
   const rows = normalizeTrades([
     { id: 7, symbol: 'VGT', date: '2026-07-18', shares: 1, price: 100 },
     { id: 7, symbol: 'SMH', date: '2026-07-18', shares: 1, price: 100 },
-    { symbol: 'BTC', date: '2026-07-18', shares: 1, price: 100 },
+    { symbol: 'IBIT', date: '2026-07-18', shares: 1, price: 100 },
   ]);
   const ids = rows.map((r) => r.id);
   assert.equal(new Set(ids).size, 3, '三行 id 必须互不相同');
@@ -78,14 +79,14 @@ test('parseCSVRow / parseMoneyValue：引号、逗号、货币符号', () => {
 test('parseSchwabCSV：英文表头 + 买/卖 + 去重 + 白名单过滤', () => {
   const csv = [
     'Date,Action,Symbol,Quantity,Price',
-    '07/18/2026,Buy,BTC,10,"$28.38"',
+    '07/18/2026,Buy,IBIT,10,"$28.38"',
     '07/18/2026,Sell,VGT,1,"$113.10"',
     '07/18/2026,Buy,SPY,1,"$500.00"',      // 不在白名单 → 跳过
-    '07/18/2026,Buy,BTC,10,"$28.38"',      // 与上一行重复 → 跳过
+    '07/18/2026,Buy,IBIT,10,"$28.38"',     // 与上一行重复 → 跳过
   ].join('\n');
   const out = parseSchwabCSV(csv, { symbols: TRADE_SYMBOLS, existingTrades: [], now: new Date('2026-09-29T02:00:00Z') });
   assert.equal(out.imported, 2);
-  assert.equal(out.rows[0].symbol, 'BTC');
+  assert.equal(out.rows[0].symbol, 'IBIT');
   assert.equal(out.rows[0].shares, 10);
   assert.equal(out.rows[1].symbol, 'VGT');
   assert.equal(out.rows[1].shares, -1, 'Sell 记负股数');
@@ -93,13 +94,13 @@ test('parseSchwabCSV：英文表头 + 买/卖 + 去重 + 白名单过滤', () =>
 });
 
 test('parseSchwabCSV：中文表头识别；缺表头时报错；与已有交易去重', () => {
-  const cn = ['日期,方向,代码,数量,成交价', '2026/7/18,买入,BTC,10,28.38'].join('\n');
+  const cn = ['日期,方向,代码,数量,成交价', '2026/7/18,买入,IBIT,10,28.38'].join('\n');
   const out = parseSchwabCSV(cn);
   assert.equal(out.imported, 1);
-  assert.equal(out.rows[0].symbol, 'BTC');
+  assert.equal(out.rows[0].symbol, 'IBIT');
   assert.equal(out.rows[0].shares, 10);
   assert.throws(() => parseSchwabCSV('foo,bar\n1,2'), /未找到 Date、Symbol、Quantity、Price 列/);
-  const dup = parseSchwabCSV(cn, { existingTrades: [{ date: '2026-07-18', symbol: 'BTC', shares: 10, price: 28.38 }] });
+  const dup = parseSchwabCSV(cn, { existingTrades: [{ date: '2026-07-18', symbol: 'IBIT', shares: 10, price: 28.38 }] });
   assert.equal(dup.imported, 0, '与已有交易重复时不重复导入');
 });
 
@@ -107,11 +108,11 @@ test('parseSchwabCSV：中文表头识别；缺表头时报错；与已有交易
 test('parseSchwabCSV：跳过原因分类统计（标的不支持 / 价格无效 / 重复）', () => {
   const csv = [
     'Date,Action,Symbol,Quantity,Price',
-    '07/18/2026,Buy,BTC,10,"$28.38"',   // 正常
+    '07/18/2026,Buy,IBIT,10,"$28.38"',  // 正常
     '07/18/2026,Buy,SPY,1,"$500.00"',   // 不在白名单
     '07/18/2026,Buy,VGT,1,"$0.00"',     // 价格无效
     '07/18/2026,Buy,VGT,1,"$0"',        // 价格无效（零价）
-    '07/18/2026,Buy,BTC,10,"$28.38"',   // 与第 1 行重复
+    '07/18/2026,Buy,IBIT,10,"$28.38"',  // 与第 1 行重复
   ].join('\n');
   const out = parseSchwabCSV(csv, { symbols: TRADE_SYMBOLS, existingTrades: [] });
   assert.equal(out.imported, 1);

@@ -24,17 +24,17 @@ import {
   quotesStale,
 } from '../src/app/watch.js';
 
-test('默认观察列表覆盖用户指定的标的（含 BTC ETF 行）', () => {
+test('默认观察列表覆盖用户指定的标的（含 IBIT 行）', () => {
   const syms = WATCH_DEFAULTS.map((item) => item.sym);
-  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'BTCETF', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
+  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'IBIT', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
   assert.equal(kindOf('GOLD'), 'gold');
   assert.equal(kindOf('ETH'), 'crypto');
   assert.equal(kindOf('NVDA'), 'stock');
-  // BTCETF：用户观察列表里的「BTC ETF」行；行情代码由 worker 的 QUOTE_ALIAS 映射到 Yahoo 的 BTC
-  assert.equal(kindOf('BTCETF'), 'stock', 'BTC ETF 不算加密现货');
+  // IBIT：第三腿持仓（iShares Bitcoin Trust）；与加密现货 BTC 是两个不同的标的
+  assert.equal(kindOf('IBIT'), 'stock', 'IBIT 不算加密现货');
   assert.equal(labelOf('GOLD'), '金价');
   assert.equal(labelOf('BTC'), 'BTC 现货');
-  assert.equal(labelOf('BTCETF'), 'BTC ETF');
+  assert.equal(labelOf('IBIT'), 'IBIT');
   assert.equal(quoteSymbolOf('GOLD'), 'GOLD');
 });
 
@@ -183,10 +183,26 @@ test('toExposureRows：单一底层资产（比特币）计入、其余成分股
   assert.ok(Math.abs(shareSum - 100) < 0.3, '占比合计应为 100%，实际 ' + shareSum);
 });
 
-test('resolveHeldSymbol：BTCETF 归到 BTC，BTC 现货不算持仓，其它按自身', () => {
-  assert.deepEqual(WATCH_HELD_OF, { BTCETF: 'BTC', BTC: '' });
-  assert.equal(resolveHeldSymbol('BTCETF'), 'BTC');
-  assert.equal(resolveHeldSymbol('btcetf'), 'BTC', '大小写不敏感');
+test('v384：退役的 BTCETF 行会被丢掉（旧设备 / 云端并集 / 手动添加都拦得住）', () => {
+  const stored = normalizeWatchlist([
+    { sym: 'VGT', order: 0 }, { sym: 'BTCETF', order: 1 }, { sym: 'IBIT', order: 2 },
+  ]);
+  // 只关心"老行被丢掉"本身，不把排序当契约（排序另有既有测试覆盖）
+  assert.deepEqual(stored.map((x) => x.sym).slice().sort(), ['IBIT', 'VGT'], '存储里的老行要被丢掉');
+  const merged = mergeWatchlist(
+    [{ sym: 'VGT', order: 0 }],
+    [{ sym: 'btcetf', order: 1 }, { sym: 'IBIT', order: 2 }],
+  );
+  assert.deepEqual(merged.map((x) => x.sym).slice().sort(), ['IBIT', 'VGT'],
+    '云端并集里的老行也要被丢掉（否则每次同步都会复活）');
+  assert.equal(addWatch([{ sym: 'VGT' }], 'BTCETF'), null, '手动也加不回来');
+  assert.equal(addWatch([{ sym: 'VGT' }], 'IBIT').length, 2, 'IBIT 当然可以加');
+});
+
+test('resolveHeldSymbol：IBIT 按自身计入持仓，BTC 现货不算持仓，其它按自身', () => {
+  assert.deepEqual(WATCH_HELD_OF, { BTC: '' });
+  assert.equal(resolveHeldSymbol('IBIT'), 'IBIT', 'IBIT 就是第三腿持仓本身');
+  assert.equal(resolveHeldSymbol('ibit'), 'IBIT', '大小写不敏感');
   assert.equal(resolveHeldSymbol('BTC'), '', '现货 BTC 不参与持仓');
   assert.equal(resolveHeldSymbol('NVDA'), 'NVDA');
   assert.equal(resolveHeldSymbol(''), '');
@@ -235,15 +251,15 @@ test('splitByHolding：现价拿不到（0）时落到关注组，脏数据不�
 
 test('splitByHolding：可按"持有股数"判定持仓，市值只用于合计（v237 回归的护栏）', () => {
   // 有持仓但拿不到现价 → 市值 0，也必须留在"持仓"组（线上就是这么用的）
-  const items = [{ sym: 'VGT' }, { sym: 'BTCETF' }, { sym: 'IWM' }];
-  const shares = { VGT: 8.62, BTCETF: 13.62, IWM: 0 };
-  const price = { VGT: 0, BTCETF: 0, IWM: 100 };   // 前两只没行情
+  const items = [{ sym: 'VGT' }, { sym: 'IBIT' }, { sym: 'IWM' }];
+  const shares = { VGT: 8.62, IBIT: 13.62, IWM: 0 };
+  const price = { VGT: 0, IBIT: 0, IWM: 100 };   // 前两只没行情
   const groups = splitByHolding(
     items,
     (it) => shares[it.sym] * (price[it.sym] || 0),
     (it) => shares[it.sym] > 0,
   );
-  assert.deepEqual(groups.held.map((x) => x.sym), ['VGT', 'BTCETF'], '没行情的持仓仍属持仓组');
+  assert.deepEqual(groups.held.map((x) => x.sym), ['VGT', 'IBIT'], '没行情的持仓仍属持仓组');
   assert.deepEqual(groups.watch.map((x) => x.sym), ['IWM']);
   assert.equal(groups.total, 0, '合计按市值算，无行情就是 0');
 });

@@ -8,6 +8,9 @@ const APP = 'src/app/index.js';
 const TESTS = 'tests/smoke.test.mjs';
 
 const dry = process.argv.includes('--dry');
+// 可选：指定目标版本号（npm run bump -- 384）。不传就是 +1。
+// 用途：跳过曾经部署过的版本号，避免手机上残留同号缓存导致"看不到新版"。
+const targetArg = process.argv.slice(2).find((a) => /^\d+$/.test(a));
 const read = (f) => fs.readFileSync(f, 'utf8');
 const write = (f, s) => {
   if (!dry) fs.writeFileSync(f, s, 'utf8');
@@ -22,11 +25,15 @@ const sw = read(SW);
 const found = sw.match(/wealth-v(\d+)/);
 if (!found) throw new Error('sw.js 里找不到 wealth-vN 版本号');
 const cur = Number(found[1]);
-const next = cur + 1;
+const next = targetArg ? Number(targetArg) : cur + 1;
+if (next <= cur) throw new Error(`目标版本 v${next} 必须大于当前 v${cur}`);
 
 const manifest = JSON.parse(read(MANIFEST));
 const curManifestVer = String(manifest.version);
-const nextManifestVer = String((Math.round(Number(curManifestVer) * 10) + 1) / 10);
+// manifest.version 每跳一版 +0.1；跳多版时要按步数加，否则会和 start_url 对不上。
+const nextManifestVer = String(
+  Math.round((Number(curManifestVer) + (next - cur) * 0.1) * 10) / 10,
+);
 
 const changed = [];
 

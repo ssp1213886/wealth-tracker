@@ -38,7 +38,7 @@
 
 
 
-<meta property="og:description" content="VGT + SMH + BTC ETF 组合追踪，实时价格">
+<meta property="og:description" content="VGT + SMH + IBIT 组合追踪，实时价格">
 
 
 
@@ -143,7 +143,7 @@
 
 
 
-  <div class="sb-section sb-allocation"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></i>目标配比</h3><div class="sb-allocation-body"><div class="sb-mini-donut"><span>目标</span></div><div class="sb-mini-legend"><span><i class="vgt"></i>VGT <b id="sbVgtPct">50%</b></span><span><i class="smh"></i>SMH <b id="sbSmhPct">30%</b></span><span><i class="btc"></i>BTC ETF <b id="sbBtcPct">20%</b></span></div></div></div>
+  <div class="sb-section sb-allocation"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg></i>目标配比</h3><div class="sb-allocation-body"><div class="sb-mini-donut"><span>目标</span></div><div class="sb-mini-legend"><span><i class="vgt"></i>VGT <b id="sbVgtPct">50%</b></span><span><i class="smh"></i>SMH <b id="sbSmhPct">30%</b></span><span><i class="btc"></i>IBIT <b id="sbIbitPct">20%</b></span></div></div></div>
   <div class="sb-section sb-market" style="padding:10px 14px;"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg></i>市场行情 <span id="sbMarketTime">实时</span></h3><div id="sbLivePrices" style="font-size:11.5px;color:var(--muted);line-height:1.8;">加载中...</div><div style="text-align:right;font-size:11.5px;color:var(--muted);margin-top:6px;" id="sbPriceMeta"></div></div>
   <div class="sb-section sb-sync-summary">
     <div class="sb-sync-head"><h3><i class="sb-h3-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4-3 7.6-7 9.5-4-1.9-7-5.5-7-9.5V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg></i>数据健康</h3><span class="sb-sync-actions"><button type="button" id="syncRetryBtn" class="sync-retry">重试</button><button type="button" id="syncForceUpload" class="sync-retry">强制上传</button><strong id="sbSyncState">本地保存</strong></span></div>
@@ -311,7 +311,7 @@
 
 
 
-    <div class="card dca-card"><div class="mobile-dca"><div class="dca-heading"><h3>本月定投</h3><small id="dcaBaseAmt">每月计划</small></div><div class="mobile-dca-value"><span><strong id="mobileDcaInvested">$0</strong> / <span id="mobileDcaTarget">$2,000</span></span><b>完成率 <em id="mobileDcaPct">0%</em></b></div><div class="mobile-dca-track"><i id="mobileDcaProgress"></i></div><div class="mobile-dca-pills"><div class="vgt"><i></i><span>VGT</span><small id="mobileDcaVgtAmt">$1,000</small><strong id="mobileDcaVgtPct">50%</strong></div><div class="smh"><i></i><span>SMH</span><small id="mobileDcaSmhAmt">$600</small><strong id="mobileDcaSmhPct">30%</strong></div><div class="btc" title="BTC ETF"><i></i><span>BTC</span><small id="mobileDcaBtcAmt">$400</small><strong id="mobileDcaBtcPct">20%</strong></div></div><input id="dcaOverride" class="dca-override" type="number" aria-label="本月定投临时金额" placeholder="$2,000" min="0" step="100"><div class="desktop-dca-data" aria-hidden="true"><span id="dcaVGT">$1,000</span><span id="dcaSMH">$600</span><span id="dcaBTC">$400</span><span id="dcaStatus">检测中...</span></div></div></div>
+    <div class="card dca-card"><div class="mobile-dca"><div class="dca-heading"><h3>本月定投</h3><small id="dcaBaseAmt">每月计划</small></div><div class="mobile-dca-value"><span><strong id="mobileDcaInvested">$0</strong> / <span id="mobileDcaTarget">$2,000</span></span><b>完成率 <em id="mobileDcaPct">0%</em></b></div><div class="mobile-dca-track"><i id="mobileDcaProgress"></i></div><div class="mobile-dca-pills"><div class="vgt"><i></i><span>VGT</span><small id="mobileDcaVgtAmt">$1,000</small><strong id="mobileDcaVgtPct">50%</strong></div><div class="smh"><i></i><span>SMH</span><small id="mobileDcaSmhAmt">$600</small><strong id="mobileDcaSmhPct">30%</strong></div><div class="btc" title="IBIT（iShares Bitcoin Trust）"><i></i><span>IBIT</span><small id="mobileDcaIbitAmt">$400</small><strong id="mobileDcaIbitPct">20%</strong></div></div><input id="dcaOverride" class="dca-override" type="number" aria-label="本月定投临时金额" placeholder="$2,000" min="0" step="100"><div class="desktop-dca-data" aria-hidden="true"><span id="dcaVGT">$1,000</span><span id="dcaSMH">$600</span><span id="dcaIBIT">$400</span><span id="dcaStatus">检测中...</span></div></div></div>
 
 
 
@@ -456,6 +456,7 @@
   <div class="option-metrics">
     <div class="option-metric"><span>VGT 持仓</span><strong id="ov">--</strong><small id="ocv">--</small></div>
     <div class="option-metric"><span>SMH 持仓</span><strong id="vd">--</strong><small id="ocs">--</small></div>
+    <div class="option-metric"><span>IBIT 持仓</span><strong id="oi">--</strong><small id="oci">--</small></div>
     <div class="option-metric"><span>可复投</span><strong class="pnl-pos" id="ore">$0</strong><small>本月权利金</small></div>
   </div>
   <div class="option-discipline"><strong>执行纪律</strong>：切勿主动平仓，被行权不必慌，T+1 市价买回，踏空代价远高于追高成本</div>
@@ -507,7 +508,7 @@
 
 
 
-  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>交易历史</h3></div><div class="header-tools"><select id="tradeFilterSym"><option value="">全部</option><option>VGT</option><option>SMH</option><option>BTC</option></select><button class="btn btn-out btn-sm destructive" id="btnClearTrades">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>交易历史</h3></div><div class="header-tools"><select id="tradeFilterSym"><option value="">全部</option><option>VGT</option><option>SMH</option><option>IBIT</option></select><button class="btn btn-out btn-sm destructive" id="btnClearTrades">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
 
 
 
@@ -615,7 +616,7 @@
     <form class="trade-form console-form" onsubmit="return false">
       <div class="trade-native-controls">
         <select id="tfType" class="native-control" aria-label="交易类型"><option value="buy">买入</option><option value="sell">卖出</option></select>
-        <select id="tfAsset" class="native-control" aria-label="交易标的"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="BTC">BTC ETF</option></select>
+        <select id="tfAsset" class="native-control" aria-label="交易标的"><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="IBIT">IBIT</option></select>
       </div>
       <div class="segmented-control trade-type-segment" role="tablist" aria-label="交易类型">
         <button type="button" class="segment active" data-trade-type="buy" role="tab" aria-selected="true">买入</button>
@@ -624,7 +625,7 @@
       <div class="asset-chips" role="group" aria-label="交易标的">
         <button type="button" class="asset-chip active" data-asset="VGT">VGT</button>
         <button type="button" class="asset-chip" data-asset="SMH">SMH</button>
-        <button type="button" class="asset-chip" data-asset="BTC">BTC ETF</button>
+        <button type="button" class="asset-chip" data-asset="IBIT">IBIT</button>
       </div>
       <div class="field-grid">
         <div class="tf-group tf-group-date"><label for="tfDate">日期</label><input type="date" id="tfDate" aria-label="交易日期"></div>
@@ -666,9 +667,10 @@
       <div class="asset-chips option-asset-chips" role="group" aria-label="期权标的">
         <button type="button" class="asset-chip active" data-option-asset="VGT">VGT</button>
         <button type="button" class="asset-chip" data-option-asset="SMH">SMH</button>
+        <button type="button" class="asset-chip" data-option-asset="IBIT">IBIT</button>
       </div>
       <select id="otype" class="native-control" aria-label="期权类型" hidden><option value="CALL" selected>CALL</option><option value="PUT">PUT</option></select>
-      <select id="osym" class="native-control" aria-label="期权标的" hidden><option value="VGT">VGT</option><option value="SMH">SMH</option></select>
+      <select id="osym" class="native-control" aria-label="期权标的" hidden><option value="VGT">VGT</option><option value="SMH">SMH</option><option value="IBIT">IBIT</option></select>
       <div class="field-grid option-field-grid">
         <div class="tf-group"><label for="ostrike">行权价 $</label><input id="ostrike" type="number" inputmode="decimal" step="0.5" min="0" placeholder="600"></div>
         <div class="tf-group"><label for="opremium">每张权利金 $</label><input id="opremium" type="number" inputmode="decimal" step="0.01" min="0" placeholder="150"></div>
