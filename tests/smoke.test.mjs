@@ -176,9 +176,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=378');
+  assert.equal(manifest.start_url, '/?v=379');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v378/);
+  assert.match(serviceWorker, /wealth-v379/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -192,7 +192,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=378',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=379',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -898,6 +898,9 @@ test('v377：敞口卡的"分母 = 持仓市值合计"必须包含所有持仓�
     '敞口卡分母不许再写死 VGT/SMH（会漏掉第三腿 → 占比 >100%）');
   assert.match(appSource, /ETF_SYMS\.forEach\(function\(s\)\{var n=heldShares\(s\);if\(n>0\)total\+=n\*priceOf\(s\)\}\)/,
     '合计要走 ETF_SYMS');
+  assert.doesNotMatch(appSource,
+    /ETF_SYMS\.forEach\(function\(s\)\{var n=heldShares\(s\);if\(n>0\)total\+=n\*priceOf\(s\)\}\);\s*\n\s*if\(heldShares\('IBIT'\)/,
+    '同一笔市值不许既走 ETF_SYMS 又单独加一遍 —— v377 就是这么把 IBIT 算成两遍的（占比全体偏小）');
 });
 
 /* ===== v378：视图层不许写死标的名（概率卡的 tab 就是这么漏掉 IBIT 的）===== */
