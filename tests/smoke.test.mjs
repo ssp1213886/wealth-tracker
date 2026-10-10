@@ -176,9 +176,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=373');
+  assert.equal(manifest.start_url, '/?v=375');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v373/);
+  assert.match(serviceWorker, /wealth-v375/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -192,7 +192,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=373',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=375',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -869,6 +869,17 @@ test('v372：两种"今天不再提醒"的键在点击入口归一成期权 id�
   assert.match(alertsViewSource, /dismiss:'opt-due-'\+a\.id/, '"今天到期"也要能今天不再提醒');
   assert.match(alertsViewSource, /ctx\.pingMap&&ctx\.pingMap\[a\.id\]===todayKey/, '"今天到期"要真的尊重已忽略');
   assert.match(alertsViewSource, /var pingMap=ctx\.pingMap\|\|\{\}/, 'pingMap 缺省给空对象（调用方忘了传也不炸）');
+});
+
+/* ===== v375：这一轮修的四条 bug 的源码钉子 ===== */
+test('v375：曲线补 history / 归因逐标的 / 删期权连带删流水 / 矩阵卡用缓存价', () => {
+  assert.match(appSource, /hasHist&&fresh/, 'refreshPrices 要给核心标的补 history（否则侧边栏没有曲线）');
+  assert.doesNotMatch(appSource, /'BTC 增值'/, '归因的行不许再写死 BTC（换腿后会 NaN）');
+  assert.match(appSource, /planOptionDelete\(o,cashLog\)/, 'delOpt 必须走 planOptionDelete');
+  assert.doesNotMatch(appSource, /type:"权利金退回-"/, '不许再新写"权利金退回"条（会导致删两次退两次现金）');
+  assert.match(appSource, /oid:optObj\.id/, '记录期权时要给权利金流水打上 oid');
+  assert.match(appSource, /prices:pricesForStats\(\)/, '年度复盘卡要用"缓存价打底、实时价覆盖"');
+  assert.match(appSource, /renderAnnualMatrix\(\)\}catch/, '行情到位后要重算年度复盘卡');
 });
 
 test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
