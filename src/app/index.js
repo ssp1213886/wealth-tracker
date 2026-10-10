@@ -8,7 +8,7 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike, freeCallContracts, planOptionDelete} from './options.js';
 import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
 import {renderProbNote, renderProbUnavailable, renderProbMatrix, renderProbSummary, probTabsHtml, expiryCalendarHtml, fmtProb} from './prob-view.js';
-import {scheduleRow, complianceStreak, estimateNextExDiv, CC_RULES, weekdayOf, dateMs, isoOf, daysBetween, snapToListed} from './cc-schedule.js';
+import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf, dateMs, isoOf, daysBetween, snapToListed} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v387';var APP_DATA_VERSION=5;
+var APP_BUILD='v388';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1123,7 +1123,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=387',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=388',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1862,18 +1862,42 @@ function renderProbCard(){
   var period=ccPeriod(probTab);
   var listed=listedExpiries(chain);
   /* v387：卖出日跟**实际持仓**走 —— 手上有 CALL 就是它到期那天（到期当天卖下一档，覆盖无缝），
-     空仓就是今天。不能再用"下一个节奏日"当卖出日：相位不巧时会指到 3 周后
-     （实测今天 10-11，SMH/IBIT 会显示"10-30 卖出，还有 19 天"，明显不合理）。 */
+     空仓就是今天。不能再用"下一个节奏日"当卖出日：相位不巧时会指到 3 周后。 */
   var actOpt=(function(){try{return loadOpt().filter(function(o){return o.sym===probTab&&isActiveOption(o,new Date())}).map(function(o){return o.expiry}).filter(Boolean).sort()}catch(e){return[]}})();
   var sellBase=actOpt.length?actOpt[0]:marketDate();
   var sellDay=actOpt.length?snapToListed(sellBase,listed):{date:sellBase,shifted:false};
-  var rollRaw=(function(){try{var aft=isoOf(dateMs(sellDay.date)+86400000);var r=scheduleRow(probTab,ccSchedule,aft);return r?r.nextExpiry:''}catch(e){return ''}})();
-  var roll=snapToListed(rollRaw,listed);                 /* 吸附到真实挂牌档之后的一档 */
+  /* 目标到期日 = 「卖出日之后 30~45 天」的那张合约（用户指定）。
+     优先级：窗口内的**月度第三个周五**（保持节奏）→ 窗口内真实挂牌的任何一档
+     → 链还没到 / 窗口里一档都没有时，退回"最接近窗口中心(37.5 天)的日历月度档"再吸附。 */
+  var WIN_MIN=30,WIN_MAX=45,WIN_MID=37.5;
+  var sellMs=dateMs(sellDay.date);
+  var dteFromSell=function(d){return Math.round((dateMs(d)-sellMs)/86400000)};
+  var winPick='';
+  try{
+    var inWin=listed.filter(function(d){return dteFromSell(d)>=WIN_MIN&&dteFromSell(d)<=WIN_MAX});
+    if(inWin.length){
+      var mons=inWin.filter(function(d){return isMonthlyExpiry(d)});
+      var pool=mons.length?mons:inWin;
+      pool.sort(function(a,b){return Math.abs(dteFromSell(a)-WIN_MID)-Math.abs(dteFromSell(b)-WIN_MID)});
+      winPick=pool[0];
+    }
+  }catch(e){logSwallowed("pickCcTarget",e)}
+  var rollRaw=winPick||(function(){
+    try{
+      var want=sellMs+WIN_MID*86400000,cands=[];
+      [0,-1,1].forEach(function(k){var r=scheduleRow(probTab,ccSchedule,isoOf(want+k*28*86400000));if(r&&r.nextExpiry&&cands.indexOf(r.nextExpiry)<0)cands.push(r.nextExpiry)});
+      cands.sort(function(a,b){return Math.abs(dateMs(a)-want)-Math.abs(dateMs(b)-want)});
+      return cands[0]||'';
+    }catch(e){return ''}
+  })();
+  var roll=winPick?{date:winPick,shifted:false}:snapToListed(rollRaw,listed);
+  /* 卡片上的节奏名要跟实际选中的那一档一致：只有选到月度档才写"每月第三个周五" */
+  var ruleLabel=(winPick&&!isMonthlyExpiry(winPick))?('窗口内挂牌档（'+dteFromSell(winPick)+' 天）'):period.label;
   try{mx=probMatrix(chain,{fixed:roll.date,minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
   /* 状态挂在**该卖那一档**上（不再挂"本期"）：同一个问题只有一个答案 —— 这张 CALL 记了没有。
      锚点只管相位，所以空仓时"下一档"就是离今天最近的那个节奏日，卖出日自然落在今天或眼前。 */
   var toSale=sellDay.date?daysBetween(marketDate(),sellDay.date):period.days;
-  renderProbSummary(document,mx,{otm:otm,ruleLabel:period.label,
+  renderProbSummary(document,mx,{otm:otm,ruleLabel:ruleLabel,
     from:sellDay.date,daysToSale:toSale,due:toSale===0,
     tenor:(sellDay.date&&roll.date)?daysBetween(sellDay.date,roll.date):null,
     shiftNote:roll.shifted?('节奏日 '+rollRaw+' 未挂牌'):'',
@@ -1931,7 +1955,7 @@ function ccNextExpiry(sym){
   try{var r=scheduleRow(sym,ccSchedule,marketDate());return r?r.nextExpiry:''}catch(e){return ''}
 }
 /**
- * 本期：今天之后最近的节奏到期日。VGT＝每月第三个周五，SMH＝每 3 周的周五（锚点 2026-10-30）。
+ * 本期：今天之后最近的节奏到期日。三条腿统一＝每月第三个周五（v388）。
  * label 是节奏的人话名字（卡片上要显出来，否则看不出 VGT 按月、SMH 按 3 周）。
  */
 function ccPeriod(sym){
@@ -2071,41 +2095,20 @@ function bindProbControls(){
   if(document.readyState==='complete')run();else document.addEventListener('DOMContentLoaded',run);
 })();
 
-/* ===== 卖 CALL 的固定节奏 =====
+/* ===== 卖 CALL 的节奏（v388：三条腿统一到月度）=====
    15-20 年的系统化策略里，日历本身就是纪律的一部分（和月度 DCA、年度再平衡同源）。
-   只支持两种能精确算出来的规则：
-     VGT 每月第三个周五（它只有月度期权，没得选）
-     SMH 每 3 周的周五（有周期权；回测显示 21 天是区间最优）
-   卖出时点固定为**到期日当天**（旧档到期 = 新档开仓同一天，没有空档期）。
-   注意锚点：历史回测里换锚点能差 ±1.5pt，但那是路径运气、事前无法优化，所以只提供"可改"。*/
+   **三条腿统一到「每月第三个周五」**：全市场都有月度期权，不用再靠"每 3 周"去凑档位，
+   三条腿也就在同一天操作。卖出时点固定为**到期日当天**（旧档到期 = 新档开仓同一天，没有空档期）。
+   目标到期日取"最接近 卖出日＋28 天"的那个月度档（见 renderProbCard）。
+   ⚠️ 老设备的本机存储里可能还留着 v328–v335 那个「节奏设置」写下的值（例如把 SMH 设成每 3 周）。
+   这里**不再从存储读节奏**（那段已删）—— 节奏只由下面这个常量决定，存储改不了它；
+   另外再用一个新版本的标记清一次残留。 */
 var CC_KEY='ccSchedule';
-var CC_ANCHOR_DEFAULT='2026-10-30';   /* 让 SMH 的 11-20 正好与 VGT 的月度到期日重合 */
-/* IBIT 与 SMH 同节奏（每 3 周、同一个锚点）—— 同一天操作，不额外多占一个操作日。 */
-var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT},IBIT:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT}};
-/* v343 一次性清掉残留的「节奏设置」：
-   v336 已按用户要求删掉那个设置入口（saveCcSchedule 只剩定义、没人调），但老设备的本机存储里
-   可能还留着当时点过的值 —— 例如把 SMH 设成「月度」，卡片就会把 SMH 算成 10-16 该处理、
-   11-20 该卖、持有 35 天（正确值是 10-30 → 11-20 = 21 天），连「该处理」那档也会标错。
-   这里只清一次本机偏好（不碰任何投资数据），之后回落到代码里的固定策略：
-   VGT 月度第三个周五 / SMH 每 3 周（锚点 2026-10-30）。 */
-var CC_RESET_KEY='cc_schedule_reset_v1';
+var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'monthly3'},IBIT:{rule:'monthly3'}};
+var CC_RESET_KEY='cc_schedule_reset_v2';   /* v388：再清一次，保险起见 */
 try{
   if(!LS.getItem(CC_RESET_KEY)){LS.removeItem(CC_KEY);LS.setItem(CC_RESET_KEY,'1')}
 }catch(e){logSwallowed("ccScheduleReset",e)}
-(function loadCcSchedule(){
-  try{
-    var raw=JSON.parse(readRaw(CC_KEY)||'null');
-    if(raw&&typeof raw==='object'){
-      OPTION_SYMS.forEach(function(s){
-        var c=raw[s];if(!c||typeof c!=='object')return;
-        if(CC_RULES.indexOf(c.rule)>=0)ccSchedule[s].rule=c.rule;
-        if(c.anchor&&weekdayOf(c.anchor)===5)ccSchedule[s].anchor=c.anchor;
-      });
-    }
-  }catch(e){logSwallowed("loadCcSchedule",e)}
-})();
-/** 只写本地：属于本机偏好，没进 SYNC_FIELDS（所以刻意不调 markDirty，免得留下永远推不走的脏标记）。 */
-function saveCcSchedule(){LS.setItem(CC_KEY,JSON.stringify(ccSchedule))}
 var ccDividends={};
 /** 节奏每行的 nextExpiry 是**卖出日**；target 才是"卖出哪一档到期"（新模型下这两个日期是分开的）。
     提醒文案要说清"哪天卖出 → 哪一档到期"，不能把卖出日说成到期日。 */

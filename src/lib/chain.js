@@ -14,8 +14,8 @@ const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'IBIT']);
 const CACHE_TTL_SECONDS = 30 * 60;
 const MAX_DTE = 200;          // 只留半年内的到期日
 // 24 档足够装下 200 天内的全部到期日（SMH 有 16 档、VGT 只有 6 档）。
-// 这里**不能**像 v326 那样"每月只留第三个周五"——SMH 的固定节奏是每 3 周，
-// 落在 10-30 / 12-11 这些非月度日期上，滤掉周度会让节奏档在链里查不到。
+// 这里**不能**像 v326 那样"每月只留第三个周五"：节奏虽然统一成月度（v388），但链里仍保留周度档 ——
+// 用户可能想自己挑近一点的到期日，"该卖哪一档"的处方已经去掉，不该在数据层替他筛掉。
 const MAX_EXPIRIES = 24;
 const MIN_STRIKE_RATIO = 0.9;
 const MAX_STRIKE_RATIO = 1.5;

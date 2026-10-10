@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=387');
+  assert.equal(manifest.start_url, '/?v=388');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v387/);
+  assert.match(serviceWorker, /wealth-v388/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=387',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=388',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -673,7 +673,10 @@ test('v384：期权标的三处名单必须一致（OPTION_SYMS / options.js 兜
   assert.doesNotMatch(indexSource, /calTab!=='VGT'&&calTab!=='SMH'/, '到期日历的标的白名单该走 OPTION_SYMS');
   assert.match(indexSource, /Promise\.all\(OPTION_SYMS\.map\(fetchChain\)\)/, '期权链请求要按 OPTION_SYMS 发');
   assert.doesNotMatch(indexSource, /Promise\.all\(\['VGT','SMH'\]\.map\(fetchChain\)/, '期权链请求不该再写死两只');
-  assert.match(indexSource, /IBIT:\{rule:'every3w',anchor:CC_ANCHOR_DEFAULT\}/, 'IBIT 的节奏是 every3w + 锚点 2026-10-30');
+  // v388：三条腿统一到月度（原来 VGT 月度 / SMH+IBIT 每 3 周）
+  assert.match(indexSource, /var ccSchedule=\{VGT:\{rule:'monthly3'\},SMH:\{rule:'monthly3'\},IBIT:\{rule:'monthly3'\}\}/,
+    '三条腿的节奏都应该是 monthly3');
+  assert.doesNotMatch(indexSource, /every3w'\}/, '代码里不该再配置 every3w');
   assert.match(indexSource, /var OTM_DEFAULTS=\{vgt:7,smh:6,ibit:10\}/, 'OTM 默认值表要有 IBIT 10%');
   // v385：观察列表的迷你走势必须跟"同一行的涨跌"同色 —— 原来按"近一月历史首末"另算一套，
   // SMH 月线向下时就会出现「当天 +1.00% 是绿的、走势图却是红的」
@@ -750,13 +753,14 @@ test('期权页：OTM 加减号与「看什么」视角都在，且加减号接�
  * （正确值是 10-30 → 11-20 = 21 天）。v343 起一次性清掉它，回落到代码里的固定策略。
  */
 test('index.js：清掉残留的「节奏设置」本机缓存（SMH 被算成月度 35 天的根因）', () => {
-  const reset = indexSource.indexOf("CC_RESET_KEY='cc_schedule_reset_v1'");
-  const load = indexSource.indexOf('(function loadCcSchedule');
+  // v388：节奏不再从存储读 —— 老设备存过的 every3w 也改不动它；另外用新版标记再清一次残留。
+  const reset = indexSource.indexOf("CC_RESET_KEY='cc_schedule_reset_v2'");
   assert.ok(reset > 0, '找不到一次性清理块');
-  assert.ok(load > reset, '清理必须发生在 loadCcSchedule 读存储之前，否则又被旧值覆盖回来');
   assert.match(indexSource, /LS\.removeItem\(CC_KEY\)/, '要真的把残留删掉，只写标记没用');
+  assert.doesNotMatch(indexSource, /ccSchedule\[s\]\.rule=c\.rule/, '不许再从存储覆盖节奏（否则老设备的 every3w 会改回来）');
+  assert.doesNotMatch(indexSource, /function loadCcSchedule|function saveCcSchedule/, '这两个函数已经不需要了');
   // 只清本机偏好，不许顺手把投资数据一起干掉
-  assert.doesNotMatch(indexSource.slice(reset, load), /removeItem\('(trades|cashLog|state|optionTrades)'\)/,
+  assert.doesNotMatch(indexSource.slice(reset, reset + 300), /removeItem\('(trades|cashLog|state|optionTrades)'\)/,
     '清理块只能碰 ccSchedule');
 });
 
@@ -810,7 +814,7 @@ test('index.js：本期状态由「今天 + 记录」推出，且卡片上要写
   assert.match(indexSource, /o\.sym===sym&&o\.type==='CALL'&&o\.expiry===expiry&&!o\.archived/,
     '"已卖出"只能按记录判（同标的、同到期日的 CALL、未归档）');
   assert.match(indexSource, /fixed:roll\.date/, '★ 要标在「该卖」那一档（结论行主行说的同一档）');
-  assert.match(indexSource, /ruleLabel:period\.label/, '节奏名（每月第三个周五 / 每 3 周的周五）要传到卡片上');
+  assert.match(indexSource, /ruleLabel:ruleLabel,/, '节奏名要跟着实际选中的那一档走');
   assert.match(indexSource, /sold:ccSold\(probTab,roll\.date\)/, '状态挂在「该卖」那一档上（吸附后的挂牌日）');
 });
 
@@ -855,8 +859,15 @@ test('index.js：节奏档要先吸附到真实挂牌到期日，链没到时按
   // v387：卖出日改成「有持仓＝那张的到期日；空仓＝今天」，所以吸附的是 sellBase
   assert.match(indexSource, /snapToListed\(sellBase,listed\)/, '卖出日要吸附到真实挂牌档');
   // v387：该卖的到期日改成以「卖出日」为起点推下一档节奏日（卖出日跟实际持仓走）
-  assert.match(indexSource, /isoOf\(dateMs\(sellDay\.date\)\+86400000\)/, '要从卖出日往后推下一档');
-  assert.match(indexSource, /var roll=snapToListed\(rollRaw,listed\)/, '该卖的到期日要吸附到真实挂牌档');
+  // v387b：目标到期日要**对齐策略**（取最接近 卖出日＋周期 的节奏日，而不是之后第一个）
+  // v388b：目标到期日改成「卖出日之后 30~45 天」的真实挂牌档（月度档优先）
+  assert.match(indexSource, /var WIN_MIN=30,WIN_MAX=45,WIN_MID=37\.5;/, '窗口常量 30~45 天');
+  assert.match(indexSource, /inWin=listed\.filter\(function\(d\)\{return dteFromSell\(d\)>=WIN_MIN&&dteFromSell\(d\)<=WIN_MAX\}\)/,
+    '要从真实挂牌档里筛窗口');
+  assert.match(indexSource, /var mons=inWin\.filter\(function\(d\)\{return isMonthlyExpiry\(d\)\}\)/, '窗口内优先月度第三个周五');
+  assert.match(indexSource, /Math\.abs\(dateMs\(a\)-want\)-Math\.abs\(dateMs\(b\)-want\)/, '取最接近「卖出日＋周期」的那个节奏日');
+  assert.match(indexSource, /var roll=winPick\?\{date:winPick,shifted:false\}:snapToListed\(rollRaw,listed\)/,
+    'v388b：窗口内选到挂牌档就用它，否则退回日历档再吸附');
   assert.match(indexSource, /shiftNote:roll\.shifted\?\([^)]*rollRaw/, '顺延提示里的日期要用「该卖」那一档的节奏日，别写成本期');
   assert.match(indexSource, /function listedExpiries\(chain\)/, '要取链里真实挂牌的到期日列表');
   assert.match(indexSource, /shiftNote:roll\.shifted/, '顺延了要写在结论行上，不能悄悄换日期');
