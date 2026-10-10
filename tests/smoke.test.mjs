@@ -176,9 +176,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=381');
+  assert.equal(manifest.start_url, '/?v=382');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v381/);
+  assert.match(serviceWorker, /wealth-v382/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -192,7 +192,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=381',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=382',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -890,6 +890,21 @@ test('v376：期权标的只在一处定义（OPTION_SYMS），弹层/页面/链
   assert.match(html, /data-option-asset="IBIT"/, '期权录入弹层必须能选 IBIT');
   assert.match(html, /<option value="IBIT">IBIT<\/option>/, '隐藏的 osym 也要有 IBIT');
   assert.match(appSource, /IBIT:\{rule:'every3w',anchor:CC_ANCHOR_DEFAULT\}/, 'IBIT 的节奏 = 每 3 周 + 与 SMH 同锚点');
+});
+
+/* ===== v382：标的下拉本身要含 IBIT（不是"文件里存在这串文字"）=====
+   v376 我漏了这条，#osym 没有 IBIT 选项 → 设置 asset.value='IBIT' 会被浏览器置空 →
+   胶囊永远不高亮；而当时我的"验证"查的是"全文件里有没有 <option value=\"IBIT\">"，
+   被交易表单 #tfAsset 命中 → 假阳性放过了两个版本。 */
+test('v382：#osym（期权标的）与 #tfAsset（交易标的）各自都必须含 IBIT 选项', () => {
+  const grab = (id) => {
+    const re = new RegExp('<select[^>]*id="' + id + '"[^>]*>([\\s\\S]*?)</select>');
+    const m = re.exec(html);
+    assert.ok(m, '找不到 #' + id);
+    return m[1];
+  };
+  assert.match(grab('osym'), /<option value="IBIT">IBIT<\/option>/, '#osym 里必须有 IBIT（否则选不中 → 胶囊不高亮）');
+  assert.match(grab('tfAsset'), /<option value="IBIT">IBIT<\/option>/, '#tfAsset 里必须有 IBIT');
 });
 
 /* ===== v377：合计口径不许漏标的（同族问题的护栏）===== */
