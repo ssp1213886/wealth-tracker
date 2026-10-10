@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v375';var APP_DATA_VERSION=5;
+var APP_BUILD='v376';var APP_DATA_VERSION=5;
 /* v373：第三腿换成 IBIT（BTC 保留映射：历史/未迁移的数据还要能查到价） */
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
@@ -120,6 +120,9 @@ function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+
 
 
 var ETF_NAMES={VGT:'VGT',SMH:'SMH',IBIT:'IBIT',SGOV:'SGOV'},ETF_SYMS=TRADE_SYMBOLS,ALL_SYMS=TRADE_SYMBOLS;
+/* v376：参与 Covered Call 的标的只在这一个地方定义 —— 页面 tab、到期日历、概率矩阵、提醒、
+   录入弹层、Worker 链白名单都跟着它走（上一轮就是因为"录入能选、页面不认"才出问题）。 */
+var OPTION_SYMS=['VGT','SMH','IBIT'];
 
 
 
@@ -1148,7 +1151,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=375',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=376',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1562,7 +1565,7 @@ optionTrades=loadOpt();var nowInstant=new Date();
    现在只在这里算一次，按 option.id 映射；期权链没到就整列不显示。 */
 var optProbById={};
 try{
-  ['VGT','SMH'].forEach(function(sym){
+  OPTION_SYMS.forEach(function(sym){
     var ch=chainFor(sym);if(!ch)return;
     optionProbabilities(ch,optionTrades,{chains:optionChains}).forEach(function(r){if(r.prob!=null)optProbById[r.id]=r.prob});
   });
@@ -1812,9 +1815,9 @@ try{var ay=document.getElementById('attrYear');if(ay){ay.addEventListener('chang
 var optionChains={};
 var chainStatus={loading:false,loadedAt:0,error:''};
 function chainFor(sym){var c=optionChains[sym];return c&&Number(c.spot)>0?c:null}
-function anyChain(){return chainFor('VGT')||chainFor('SMH')||null}
+function anyChain(){for(var i=0;i<OPTION_SYMS.length;i+=1){var c=chainFor(OPTION_SYMS[i]);if(c)return c}return null}
 /** CBOE 顶层的官方 30 天 IV（百分数）→ { VGT: 22.485, ... }，只收有效的。 */
-function iv30Map(){var m={};['VGT','SMH'].forEach(function(s){var c=chainFor(s);if(c&&Number(c.iv30)>0)m[s]=Number(c.iv30)});return m}
+function iv30Map(){var m={};OPTION_SYMS.forEach(function(s){var c=chainFor(s);if(c&&Number(c.iv30)>0)m[s]=Number(c.iv30)});return m}
 var CHAIN_TTL_MS=5*60*1000;
 /* OTM 默认值的两次调整都来自 22 年回测（2004-2026，含买卖价差）：
    v326 先把 VGT 7% / SMH 5% 统一成 6%；
@@ -1839,9 +1842,10 @@ try{
   }
 }catch(e){logSwallowed("otmSettingsInit",e)}
 
-var probTab='VGT';
+var probTab=OPTION_SYMS[0];
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
-function otmOf(sym){var v=Number(otmSettings&&(sym==='SMH'?otmSettings.smh:otmSettings.vgt));return v>0?v:(sym==='SMH'?6:7)}
+/* v376：IBIT 的 OTM 默认 10%（按实测 IV 36% 对齐 SMH 的风险水平），仍可 ± 调 */
+function otmOf(sym){var v=Number(otmSettings&&(sym==='VGT'?otmSettings.vgt:sym==='SMH'?otmSettings.smh:otmSettings.ibit));return v>0?v:(sym==='IBIT'?10:(sym==='SMH'?6:7))}
 /** 矩阵的 OTM 列：默认只看常用的 5%~8%（每 1% 一档，4 列）。
     当前 OTM 被调到区间外时，换成"离当前值最近的 4 档" —— 列数固定 4，
     永远围着你的设置（否则调到 12% 时当前那列会没地方放，也就没法高亮）。 */
@@ -1908,7 +1912,7 @@ var calShowAll=false,calTab='VGT';
 function renderExpiryCalendar(){
   var el=document.getElementById('expiryCalendar');
   if(!el)return;
-  if(calTab!=='VGT'&&calTab!=='SMH')calTab='VGT';
+  if(OPTION_SYMS.indexOf(calTab)<0)calTab=OPTION_SYMS[0];
   var sym=calTab;
   var entries=[];
   var chain=chainFor(sym);
@@ -1935,7 +1939,7 @@ function renderExpiryCalendar(){
     var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
   });
   var tabs=document.getElementById('calTabs');
-  if(tabs)tabs.innerHTML=['VGT','SMH'].map(function(s){
+  if(tabs)tabs.innerHTML=OPTION_SYMS.map(function(s){
     return '<button type="button" class="prob-chip'+(s===calTab?' is-on':'')+'" data-caltab="'+s+'">'+s+'</button>';
   }).join('');
   el.innerHTML=expiryCalendarHtml(entries,{sym:sym,holdings:holdings,
@@ -2010,9 +2014,9 @@ async function refreshChains(force){
   if(!force&&Date.now()-chainStatus.loadedAt<CHAIN_TTL_MS&&anyChain())return;
   chainStatus.loading=true;
   if(!anyChain())renderProbCard();          /* 首屏先出"加载中" */
-  var results=await Promise.all(['VGT','SMH'].map(fetchChain));
+  var results=await Promise.all(OPTION_SYMS.map(fetchChain));
   var errs=[];
-  ['VGT','SMH'].forEach(function(sym,i){if(results[i].ok)optionChains[sym]=results[i].chain;else errs.push(sym+': '+results[i].error)});
+  OPTION_SYMS.forEach(function(sym,i){if(results[i].ok)optionChains[sym]=results[i].chain;else errs.push(sym+': '+results[i].error)});
   chainStatus.loading=false;
   chainStatus.error=errs.join(' | ');
   if(!errs.length)chainStatus.loadedAt=Date.now();
@@ -2098,7 +2102,7 @@ function bindProbControls(){
    注意锚点：历史回测里换锚点能差 ±1.5pt，但那是路径运气、事前无法优化，所以只提供"可改"。*/
 var CC_KEY='ccSchedule';
 var CC_ANCHOR_DEFAULT='2026-10-30';   /* 让 SMH 的 11-20 正好与 VGT 的月度到期日重合 */
-var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT}};
+var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT},IBIT:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT}};
 /* v343 一次性清掉残留的「节奏设置」：
    v336 已按用户要求删掉那个设置入口（saveCcSchedule 只剩定义、没人调），但老设备的本机存储里
    可能还留着当时点过的值 —— 例如把 SMH 设成「月度」，卡片就会把 SMH 算成 10-16 该处理、
@@ -2113,7 +2117,7 @@ try{
   try{
     var raw=JSON.parse(readRaw(CC_KEY)||'null');
     if(raw&&typeof raw==='object'){
-      ['VGT','SMH'].forEach(function(s){
+      OPTION_SYMS.forEach(function(s){
         var c=raw[s];if(!c||typeof c!=='object')return;
         if(CC_RULES.indexOf(c.rule)>=0)ccSchedule[s].rule=c.rule;
         if(c.anchor&&weekdayOf(c.anchor)===5)ccSchedule[s].anchor=c.anchor;
@@ -2127,17 +2131,17 @@ var ccDividends={};
 /** 节奏每行的 nextExpiry 是**卖出日**；target 才是"卖出哪一档到期"（新模型下这两个日期是分开的）。
     提醒文案要说清"哪天卖出 → 哪一档到期"，不能把卖出日说成到期日。 */
 function ccRows(){
-  return ['VGT','SMH'].map(function(s){
+  return OPTION_SYMS.map(function(s){
     var r=scheduleRow(s,ccSchedule,marketDate());
     if(!r)return null;
     r.target=ccRollExpiry(s);
     return r;
   }).filter(Boolean);
 }
-function ccStreaks(){var m={};['VGT','SMH'].forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccSchedule,marketDate())});return m}
+function ccStreaks(){var m={};OPTION_SYMS.forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccSchedule,marketDate())});return m}
 function ccExDivItems(){
   var out=[];
-  ['VGT','SMH'].forEach(function(s){
+  OPTION_SYMS.forEach(function(s){
     var list=ccDividends[s];if(!list||!list.length)return;
     var next=null;try{next=estimateNextExDiv(list,marketDate())}catch(e){logSwallowed("estimateNextExDiv",e)}
     if(next)out.push({sym:s,next:next});
@@ -2195,14 +2199,14 @@ function bindAlertBadgeToggle(){
 }
 async function refreshDividends(force){
   if(!force&&ccDividends.VGT&&ccDividends.SMH){refreshCcAlerts();return}
-  var res=await Promise.all(['VGT','SMH'].map(fetchDividends));
-  ['VGT','SMH'].forEach(function(s,i){if(res[i])ccDividends[s]=res[i]});
+  var res=await Promise.all(OPTION_SYMS.map(fetchDividends));
+  OPTION_SYMS.forEach(function(s,i){if(res[i])ccDividends[s]=res[i]});
   refreshCcAlerts();
 }
 
 /* 容错：initProb 可能在任何时候同步调用它，这里再兜一次底，保证 otmSettings 一定存在。 */
 function updateOtm(){if(!otmSettings)otmSettings={vgt:7,smh:6};otmSettings.vgt=otmPercent(otmSettings.vgt,7);otmSettings.smh=otmPercent(otmSettings.smh,6);renderProbCard();}
-function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,key==='vgt'?7:6);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
+function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":sym==="SMH"?"smh":"ibit";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,key==='vgt'?7:key==='smh'?6:10);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
 setTimeout(updateOtm,800);
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
@@ -2694,7 +2698,7 @@ if(typeof window!=='undefined'){
     var pnlPct=(pnl!==null&&h.cost>0)?pnl/h.cost*100:null;
     var direct=sh>0;
     var indirect=0,srcs=[];
-    ['VGT','SMH'].forEach(function(etf){
+    OPTION_SYMS.forEach(function(etf){
       var esh=heldShares(etf),ep=priceOf(etf);
       if(!(esh>0&&ep>0))return;
       var list=(holdingsData[etf]&&holdingsData[etf].list)||[];

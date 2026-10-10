@@ -176,9 +176,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=375');
+  assert.equal(manifest.start_url, '/?v=376');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v375/);
+  assert.match(serviceWorker, /wealth-v376/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -192,7 +192,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=375',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=376',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -880,6 +880,16 @@ test('v375：曲线补 history / 归因逐标的 / 删期权连带删流水 / �
   assert.match(appSource, /oid:optObj\.id/, '记录期权时要给权利金流水打上 oid');
   assert.match(appSource, /prices:pricesForStats\(\)/, '年度复盘卡要用"缓存价打底、实时价覆盖"');
   assert.match(appSource, /renderAnnualMatrix\(\)\}catch/, '行情到位后要重算年度复盘卡');
+});
+
+/* ===== v376：IBIT 进期权的护栏（"标的集合一致"）===== */
+test('v376：期权标的只在一处定义（OPTION_SYMS），弹层/页面/链白名单都跟着它', () => {
+  assert.match(appSource, /var OPTION_SYMS=\['VGT','SMH','IBIT'\]/, 'OPTION_SYMS 必须包含 IBIT');
+  assert.doesNotMatch(appSource, /\['VGT','SMH'\]\.map\(fetchChain\)/, '链刷新不许再写死 VGT/SMH');
+  assert.doesNotMatch(appSource, /\['VGT','SMH'\]\.forEach\(function\(s\)\{m\[s\]=complianceStreak/, '合规连续不许再写死');
+  assert.match(html, /data-option-asset="IBIT"/, '期权录入弹层必须能选 IBIT');
+  assert.match(html, /<option value="IBIT">IBIT<\/option>/, '隐藏的 osym 也要有 IBIT');
+  assert.match(appSource, /IBIT:\{rule:'every3w',anchor:CC_ANCHOR_DEFAULT\}/, 'IBIT 的节奏 = 每 3 周 + 与 SMH 同锚点');
 });
 
 test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
