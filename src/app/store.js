@@ -1,7 +1,6 @@
 // 本地存储基础设施：key 常量、统一读写（带容错）、数据版本迁移。
 // 只做"存取"这一件事，不掺业务副作用（同步、备份、刷新 UI 仍由 index.js 负责）。
 import { convertLegacyBtcTrade } from './util.js';
-import { normalizeCore } from './core-config.js';
 
 
 /* ===== 多用户：本地存储按账号分区 =====
@@ -140,20 +139,6 @@ function dropBtcPriceKey(raw) {
   return JSON.stringify(next);
 }
 
-/** v3 → v4：state.core 从旧的 vgt/smh/btc + otmSettings 生成（比例/OTM 一律继承，不重置）。 */
-function migrateCoreConfig() {
-  const raw = readRaw(KEYS.dashboard);
-  if (!raw) return [];
-  let state;
-  try { state = JSON.parse(raw); } catch (e) { return []; }
-  if (!state || typeof state !== 'object') return [];
-  let otm = {};
-  try { const parsed = JSON.parse(readRaw('otmSettings') || '{}'); if (parsed && typeof parsed === 'object') otm = parsed; } catch (e) { /* 忽略 */ }
-  const next = Object.assign({}, state, { core: normalizeCore(state.core, { vgt: state.vgt, smh: state.smh, btc: state.btc, otm: otm }) });
-  writeRaw(KEYS.dashboard, JSON.stringify(next));
-  return [KEYS.dashboard];
-}
-
 function migrateBtcToIbit() {
   const jobs = [
     /* 交易要**换算股数** → 用 util.js 的 convertLegacyBtcTrade；options/watchlist 只改代码 */
@@ -239,7 +224,7 @@ export function writeJSON(key, value) {
   }
 }
 
-export const DATA_SCHEMA = 4;
+export const DATA_SCHEMA = 3;
 
 // 迁移链：每次数据结构变化时，往 steps 里加一个新版本号对应的函数即可。
 // onError 用于把迁移异常交给上层上报（store 本身不依赖具体的日志实现）。
@@ -254,9 +239,6 @@ export function runMigrations(onError) {
        ⚠️ 键是"**到达**版本 N 时执行的那一步"（`from=2` 循环只跑 steps[3]），不是"从 N 出发"——
        v373 第一版把这段写成 steps[2]，结果整段迁移被静默跳过（try/catch 把 no-op 藏住了，是单测抓出来的）。 */
     3: () => migrateBtcToIbit(),
-    /* v3 → v4（v374）：核心仓改成配置驱动 —— 把旧的 state.vgt/smh/btc 比例与 otmSettings 收进 state.core。
-       之后「哪几只标的、各占多少、哪几只卖 CALL、节奏/OTM」都在设置里可改，代码不再写死。 */
-    4: () => migrateCoreConfig(),
   };
 
   for (let v = from + 1; v <= DATA_SCHEMA; v += 1) {

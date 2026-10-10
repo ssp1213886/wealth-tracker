@@ -11,35 +11,9 @@
 const DAY = 86400000;
 
 /** 支持的节奏与中文名。 */
-export const CC_RULES = ['monthly3', 'every3w', 'everyNw'];
-/* v374：周期数可配（默认 3 周）—— every3w 保留兼容，everyNw 看 cfg.weeks */
-export const RULE_LABELS = { monthly3: '每月第三个周五', every3w: '每 3 周的周五', everyNw: '每 N 周的周五' };
-export const RULE_SHORT = { monthly3: '月度', every3w: '每3周', everyNw: '每N周' };
-
-export function weeksOf(sym, cfg) {
-  const c = (cfg && cfg[sym]) || {};
-  const w = Math.round(Number(c.weeks));
-  return Number.isFinite(w) && w >= 1 && w <= 6 ? w : 3;
-}
-
-export function ruleLabel(sym, cfg) {
-  const rule = ruleFor(sym, cfg);
-  if (rule === 'everyNw') return '每 ' + weeksOf(sym, cfg) + ' 周的周五';
-  return RULE_LABELS[rule] || rule;
-}
-
-/** 每 N 周的周五（N=3 时与 nextEvery3W 等价）。 */
-export function nextEveryNw(anchor, weeks, fromDate) {
-  const w = Math.round(Number(weeks));
-  if (!(w >= 1 && w <= 6)) return null;
-  if (w === 3) return nextEvery3W(anchor, fromDate);
-  const a = dateMs(anchor);
-  const fr = dateMs(fromDate);
-  if (!Number.isFinite(a) || !Number.isFinite(fr) || weekdayOf(anchor) !== 5) return null;
-  const step = w * 7 * DAY;
-  const k = Math.ceil((fr - a) / step);
-  return isoOf(a + k * step);
-}
+export const CC_RULES = ['monthly3', 'every3w'];
+export const RULE_LABELS = { monthly3: '每月第三个周五', every3w: '每 3 周的周五' };
+export const RULE_SHORT = { monthly3: '月度', every3w: '每3周' };
 
 /** 'YYYY-MM-DD' → UTC 毫秒；非法返回 NaN。 */
 export function dateMs(value) {
@@ -184,13 +158,13 @@ export function ruleFor(sym, cfg) {
 export function scheduleRow(sym, cfg, fromDate) {
   const c = (cfg && cfg[sym]) || {};
   const rule = ruleFor(sym, cfg);
-  const nextExpiry = (rule === 'every3w' || rule === 'everyNw') ? nextEveryNw(c.anchor, rule === 'every3w' ? 3 : weeksOf(sym, cfg), fromDate) : nextMonthly3(fromDate);
+  const nextExpiry = rule === 'every3w' ? nextEvery3W(c.anchor, fromDate) : nextMonthly3(fromDate);
   if (!nextExpiry) return null;
   const daysToGo = daysBetween(fromDate, nextExpiry);
   return {
     sym: sym,
     rule: rule,
-    label: ruleLabel(sym, cfg),
+    label: RULE_LABELS[rule],
     short: RULE_SHORT[rule],
     anchor: c.anchor || '',
     nextExpiry: nextExpiry,

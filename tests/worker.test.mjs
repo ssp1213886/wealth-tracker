@@ -48,19 +48,13 @@ test('returns CORS preflight headers', async () => {
   assert.equal(response.headers.get('Access-Control-Max-Age'), '86400');
 });
 
-test('rejects malformed price symbols and wrong methods（v374：标的可配置 → 白名单改成格式校验）', async () => {
+test('rejects unsupported price symbols and methods', async () => {
   const testEnv = env(createFakeDb());
   // /api/* 现在都要登录，这两个用例考的是参数校验，所以要带上凭证
   const cookie = await loginCookie(testEnv);
   assert.ok(cookie, '登录应拿到会话 cookie');
   const auth = { Cookie: cookie };
-  /* 非法格式还是要 400（防注入/乱打） */
-  assert.equal((await worker.fetch(request('/api/price?symbol=' + encodeURIComponent('../etc'), { headers: auth }), testEnv)).status, 400);
-  assert.equal((await worker.fetch(request('/api/price?symbol=' + encodeURIComponent('a b'), { headers: auth }), testEnv)).status, 400);
-  assert.equal((await worker.fetch(request('/api/price?symbol=' + encodeURIComponent('1ABC'), { headers: auth }), testEnv)).status, 400);
-  /* 合法代码要放行（取不到行情是 502，不是 400）—— 标的名现在由「投资参数」配置，不能只认 3 个写死的代码 */
-  assert.notEqual((await worker.fetch(request('/api/price?symbol=IBIT', { headers: auth }), testEnv)).status, 400);
-  assert.notEqual((await worker.fetch(request('/api/price?symbol=XLK', { headers: auth }), testEnv)).status, 400);
+  assert.equal((await worker.fetch(request('/api/price?symbol=BAD', { headers: auth }), testEnv)).status, 400);
   assert.equal((await worker.fetch(request('/api/price?symbol=VGT', { method: 'POST', headers: auth }), testEnv)).status, 405);
 });
 
