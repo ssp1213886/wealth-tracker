@@ -13,6 +13,7 @@ import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSumma
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
 import {brandBadgeHTML} from './brand-mark.js';
+import {normalizeCore, validateCore, coreSymbols, optionSymbols, targetOf, assetOf, otmOf as otmOfCore, optScheduleOf, entryOf, CORE_DEFAULTS, MAX_CORE_SYMS, MAX_OPTION_SYMS, nextFridays, isFriday, OPT_RULES, draftFromCore, coreFromDraft} from './core-config.js';
 
 /** 标的的"代表色"：持仓标的用资产色，其它（比如加密现货）用中性色。
     原先只写在观察列表那个 IIFE 里，搜索结果行够不着 —— 提到顶层共用。 */
@@ -74,9 +75,23 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v373';var APP_DATA_VERSION=5;
+var APP_BUILD='v374';var APP_DATA_VERSION=5;
 /* v373：第三腿换成 IBIT（BTC 保留映射：历史/未迁移的数据还要能查到价） */
-var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
+/* ===== v374：核心仓改成配置驱动 =====
+   代码里不再写死任何标的：ETF_SYMS（交易/持仓/定投）、OPTION_SYMS（期权页/链/概率/日历）
+   以及 PRICE_SYMBOLS 全从 state.core 派生。改配置后调 syncCore() 重算（见 applyCore）。 */
+var coreCfg=normalizeCore(null);
+var ETF_SYMS=[];
+var OPTION_SYMS=[];
+var PRICE_SYMBOLS={};
+function syncCore(){
+  coreCfg=normalizeCore(coreCfg);
+  ETF_SYMS=coreSymbols(coreCfg);
+  OPTION_SYMS=optionSymbols(coreCfg);
+  PRICE_SYMBOLS={};
+  ETF_SYMS.forEach(function(s){PRICE_SYMBOLS[s]=s});
+}
+syncCore();
 
 
 function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
@@ -119,7 +134,8 @@ function animateVal(el,to){if(!el)return;var from=parseFloat(el.dataset.v||"0")|
 function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+'%'}
 
 
-var ETF_NAMES={VGT:'VGT',SMH:'SMH',IBIT:'IBIT',SGOV:'SGOV'},ETF_SYMS=TRADE_SYMBOLS,ALL_SYMS=TRADE_SYMBOLS;
+var ETF_NAMES={VGT:'VGT',SMH:'SMH',IBIT:'IBIT',SGOV:'SGOV'};
+var ALL_SYMS=TRADE_SYMBOLS;   /* 兼容旧引用；真正生效的白名单是配置派生的 ETF_SYMS（见 syncCore） */
 
 
 
@@ -179,7 +195,7 @@ function pricePill(sym,price,change,source){return pricePillHTML(sym,price,chang
 var CRYPTO_CODES={BTC:1,ETH:1,BNB:1,HYPE:1,SOL:1,XRP:1,DOGE:1,ADA:1,AVAX:1,LINK:1,LTC:1,DOT:1,TRX:1,XLM:1,TON:1,BCH:1,ETC:1,UNI:1,ATOM:1,NEAR:1,APT:1,ARB:1,OP:1,FIL:1,HBAR:1,ICP:1,ALGO:1,VET:1,AAVE:1,INJ:1,SEI:1,TIA:1,TAO:1,KAS:1,GRT:1,SAND:1,MANA:1,CRV:1,MKR:1,LDO:1,ENS:1,WLD:1,ENA:1,ONDO:1,JUP:1,BONK:1,WIF:1,PYTH:1,POL:1,RUNE:1,SHIB:1,PEPE:1,CRO:1,ZEC:1,XMR:1,EOS:1,FLOW:1,CHZ:1,GALA:1,IMX:1,AXS:1,THETA:1,RENDER:1};function isFreshQuote(sym,maxAge){var q=liveQuoteData[sym];if(!q||!(Number(q.price)>0))return false;var t=Number(q.time)||Number(q.asOf)||0;return !!t&&(Date.now()-t)<maxAge}function mirrorQuoteIntoLive(sym,q){try{if(!q)return;var price=Number(q.price);if(!(price>0))return;if(CRYPTO_CODES[String(sym||'').toUpperCase()])return;var prev=Number(q.prevClose);livePrices[sym]=price;liveQuoteData[sym]=Object.assign({},liveQuoteData[sym],{price:price,prevClose:prev,change:prev>0?price-prev:null,source:q.source||"yahoo",time:Number(q.asOf)||Date.now()});if(prev>0)liveChanges[sym]=price-prev;liveSources[sym]=q.source==='tencent'?'腾讯':q.source==='yahoo'?'Yahoo':(q.source||'Yahoo');}catch(e){logSwallowed("mirrorQuoteIntoLive",e)}}async function refreshPrices(){
 
 
-  var el=document.getElementById("hmPricesCompact");  var syms=['VGT','SMH','IBIT','SGOV'];  var fetched=false;  await Promise.all(syms.map(async function(sym){    var manual=readPriceCache()[sym];    if(manual&&manual.source==='manual'&&Number(manual.price)>0){livePrices[sym]=Number(manual.price);liveSources[sym]='手动';return}    if(CRYPTO_CODES[sym]&&!isFreshQuote(sym,5*60*1000)){      var d=await fetchPrice(sym);      if(d&&d.source!=='缓存'&&Number(d.price)>0){        var oldP=(readPriceCache()[sym]||{}).price;        livePrices[sym]=d.price;liveQuoteData[sym]=d;liveSources[sym]=d.source==='tencent'?'腾讯':d.source==='yahoo'?'Yahoo':d.source;        if(d.change!=null&&d.change!==0)liveChanges[sym]=d.change;else if(oldP&&oldP!==d.price)liveChanges[sym]=d.price-oldP;        cachePrice(sym,d);fetched=true;      }    }  }));  if(!syms.some(function(s){var q=liveQuoteData[s];return q&&Number(q.price)>0})&&!fetched){    if(el){el.setAttribute('aria-busy','true');el.innerHTML='<div class="ds-skeleton" aria-hidden="true"><i></i><i></i><i></i></div>'}    return;  }  if(el){el.setAttribute('aria-busy','false');el.innerHTML=syms.map(function(sym){    var q=liveQuoteData[sym]||{},price=Number(q.price)||Number(livePrices[sym])||0;    if(!(price>0))return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>';    var prev=Number(q.prevClose);    return pricePill(sym,price,prev>0?price-prev:liveChanges[sym],liveSources[sym]||q.source||'');  }).join('')}
+  var el=document.getElementById("hmPricesCompact");  var syms=ETF_SYMS.concat(['SGOV']);  var fetched=false;  await Promise.all(syms.map(async function(sym){    var manual=readPriceCache()[sym];    if(manual&&manual.source==='manual'&&Number(manual.price)>0){livePrices[sym]=Number(manual.price);liveSources[sym]='手动';return}    if(CRYPTO_CODES[sym]&&!isFreshQuote(sym,5*60*1000)){      var d=await fetchPrice(sym);      if(d&&d.source!=='缓存'&&Number(d.price)>0){        var oldP=(readPriceCache()[sym]||{}).price;        livePrices[sym]=d.price;liveQuoteData[sym]=d;liveSources[sym]=d.source==='tencent'?'腾讯':d.source==='yahoo'?'Yahoo':d.source;        if(d.change!=null&&d.change!==0)liveChanges[sym]=d.change;else if(oldP&&oldP!==d.price)liveChanges[sym]=d.price-oldP;        cachePrice(sym,d);fetched=true;      }    }  }));  if(!syms.some(function(s){var q=liveQuoteData[s];return q&&Number(q.price)>0})&&!fetched){    if(el){el.setAttribute('aria-busy','true');el.innerHTML='<div class="ds-skeleton" aria-hidden="true"><i></i><i></i><i></i></div>'}    return;  }  if(el){el.setAttribute('aria-busy','false');el.innerHTML=syms.map(function(sym){    var q=liveQuoteData[sym]||{},price=Number(q.price)||Number(livePrices[sym])||0;    if(!(price>0))return '<span class="price-pill" data-sym="'+sym+'" style="cursor:pointer"><span class="pp-sym">'+sym+'</span><span style="color:var(--orange)">--</span></span>';    var prev=Number(q.prevClose);    return pricePill(sym,price,prev>0?price-prev:liveChanges[sym],liveSources[sym]||q.source||'');  }).join('')}
 
 
   updatePortfolio();updateSidebar();updateSidebarPrices();renderHoldings();
@@ -362,7 +378,7 @@ function updateDonutChart(rows){var canvas=document.getElementById("chartDonut")
 /* ===== 数据持久化 ===== */
 
 
-function normalizeState(s){if(!s)s={};return{monthlyDCA:s.monthlyDCA!==undefined?s.monthlyDCA:2000,dcaOverride:s.dcaOverride||{month:'',amount:0},roadmapStart:s.roadmapStart||'2025-01',roadmapAge:s.roadmapAge!==undefined?s.roadmapAge:27,sgovTarget:s.sgovTarget!==undefined?s.sgovTarget:0,targetGoal:s.targetGoal!==undefined?s.targetGoal:2500000,vgt:s.vgt!==undefined?s.vgt:0.50,smh:s.smh!==undefined?s.smh:0.30,btc:s.btc!==undefined?s.btc:0.20,plan:(s.plan&&typeof s.plan==='object')?s.plan:null}}
+function normalizeState(s){if(!s)s={};return{core:normalizeCore(s.core,{vgt:s.vgt,smh:s.smh,btc:s.btc}),monthlyDCA:s.monthlyDCA!==undefined?s.monthlyDCA:2000,dcaOverride:s.dcaOverride||{month:'',amount:0},roadmapStart:s.roadmapStart||'2025-01',roadmapAge:s.roadmapAge!==undefined?s.roadmapAge:27,sgovTarget:s.sgovTarget!==undefined?s.sgovTarget:0,targetGoal:s.targetGoal!==undefined?s.targetGoal:2500000,vgt:s.vgt!==undefined?s.vgt:0.50,smh:s.smh!==undefined?s.smh:0.30,btc:s.btc!==undefined?s.btc:0.20,plan:(s.plan&&typeof s.plan==='object')?s.plan:null}}
 function loadState(){try{var s=readRaw(LSKEY);if(s)return normalizeState(JSON.parse(s))}catch(e){logSwallowed("loadState",e)}return{monthlyDCA:2000,dcaOverride:{month:'',amount:0},roadmapStart:'2025-01',roadmapAge:27,sgovTarget:0,vgt:0.50,smh:0.30,btc:0.20}}
 
 
@@ -584,7 +600,7 @@ function updateTradeList(){var body=document.getElementById('tradeBody');if(!bod
 
 
 function updatePnlSummary(){var el=document.getElementById('pnlSummary');if(!el)return;
-  var rows=summaryRows(trades,livePrices,['VGT','SMH','BTC','IBIT']);
+  var rows=summaryRows(trades,livePrices,ETF_SYMS);
   var total=rows.reduce(function(s,r){return s+r.value},0);el.innerHTML=rows.map(function(r){var color=getAssetColor(r.sym),width=total>0?r.value/total*100:0;return '<button class="asset-row" onclick="switchTab(\'data\')"><span class="asset-identity"><i style="background:'+color+'"></i><span><strong>'+r.sym+'</strong><small>'+r.shares.toFixed(2)+' 股</small></span></span><span class="asset-allocation"><i style="width:'+width.toFixed(1)+'%;background:'+color+'"></i></span><span class="asset-result"><strong>'+fmtFull(r.value)+'</strong><small class="'+(r.pct>=0?'positive':'negative')+'">'+(r.pct>=0?'+':'')+r.pct.toFixed(2)+'%</small></span><b>›</b></button>'}).join('')||'<div class="asset-empty">暂无持仓，在操作台录入第一笔交易</div>';var ars=el.querySelectorAll('.asset-row');rows.forEach(function(r,i){var b=ars[i];if(!b)return;var share=total>0?r.value/total*100:0;var tgt=(r.sym==='VGT'?state.vgt:r.sym==='SMH'?state.smh:state.btc)*100;var dev=share-tgt;b.setAttribute('data-share',share.toFixed(1));b.setAttribute('data-tgt','目标 '+tgt.toFixed(0)+'%');b.setAttribute('data-dev','偏离 '+(dev>=0?'+':'')+dev.toFixed(1)+'%');b.style.setProperty('--tgt',Math.max(0,Math.min(100,tgt)).toFixed(1)+'%')})}
 
 
@@ -606,10 +622,13 @@ function updateDashboardWidgets(){
   var curV=0,curS=0,curB=0;
 
 
-  ETF_SYMS.forEach(function(s){var sh=Math.max(0,holdings[s]||0),v=sh*(livePrices[s]||0);if(s==='VGT')curV=v;if(s==='SMH')curS=v;if(s==='BTC'||s==='IBIT')curB=v;totalV+=v});
-
-
-  var target={VGT:state.vgt,SMH:state.smh,BTC:state.btc,IBIT:state.btc},hasHoldings=totalV>0;
+  /* v374：可配置之后不再有“VGT/SMH/BTC 三个固定格子” —— 按**底层资产**聚合：
+     同一资产下的多只标的（比如同时持有 BTC ETF 与 IBIT）加在一起，再去比该资产的目标比例。 */
+  var curByAsset={},targetByAsset={};
+  ETF_SYMS.forEach(function(s){var sh=Math.max(0,holdings[s]||0),v=sh*(livePrices[s]||0);totalV+=v;var a=assetOf(coreCfg,s);curByAsset[a]=(curByAsset[a]||0)+v;targetByAsset[a]=(targetByAsset[a]||0)+targetOf(coreCfg,s)});
+  var curV=curByAsset[assetOf(coreCfg,'VGT')]||0,curS=curByAsset[assetOf(coreCfg,'SMH')]||0,curB=0;
+  Object.keys(curByAsset).forEach(function(a){if(a!==assetOf(coreCfg,'VGT')&&a!==assetOf(coreCfg,'SMH'))curB+=curByAsset[a]});
+  var target=targetByAsset,hasHoldings=totalV>0;
 
 
   if(!hasHoldings){var rl0=document.getElementById('roadLabel');if(rl0)rl0.textContent='--';return}
@@ -823,7 +842,7 @@ function importBackupData(data){
   if(has.cashLog){cashLog=next.cashLog;LS.setItem(CLOG_KEY,JSON.stringify(cashLog));markDirty('cashLog')}
   if(has.activities){LS.setItem(ACTIVITY_KEY,JSON.stringify(next.activities));markDirty('activities')}
   if(has.optionTrades){optionTrades=next.optionTrades;LS.setItem('wealth_options_v2',JSON.stringify(optionTrades));markDirty('optionTrades')}
-  if(plan.otm){otmSettings=plan.otm;LS.setItem('otmSettings',JSON.stringify(otmSettings));markDirty('otmSettings')}
+  if(plan.otm){Object.keys(plan.otm).forEach(function(s){var sym=String(s).toUpperCase();if(ETF_SYMS.indexOf(sym)>=0)setOtm(sym,plan.otm[s])})}
   if(plan.exitValue!==undefined){LS.setItem('exit_portfolio',cleanText(plan.exitValue,120));markDirty('exit_portfolio')}
   if(has.watchlist){watchList=next.watchlist;LS.setItem(WATCH_KEY,JSON.stringify(watchList));markDirty('watchlist');try{renderWatch();renderWatchManage()}catch(e){logSwallowed("importBackupData",e)}}
   if(has.prices)LS.setItem(PRICE_KEY,JSON.stringify(plan.prices));
@@ -1031,6 +1050,71 @@ var _ptrEl=document.getElementById("pullHint");if(_ptrEl)_ptrEl.style.display="n
 
 
 
+/* ===== v374：核心仓编辑器（设置 → 投资参数）=====
+   代码里不再写死标的 —— 这里编辑 state.core，保存后 syncCore() 重算 ETF_SYMS / OPTION_SYMS，
+   再把首页/期权页/侧边栏都重渲一遍。校验不过就不保存（比例合计、代码格式、期权上限、锚点必须周五）。 */
+var coreDraft=[];
+function coreEsc(v){return escapeHtml(String(v==null?'':v))}
+function coreStatus(msg,cls){var el=document.getElementById('coreStatus');if(el){el.textContent=msg||'';el.className='settings-meta'+(cls?' '+cls:'')}}
+function coreDraftSet(i,field,value){if(!coreDraft[i])return;coreDraft[i][field]=value}
+function renderCoreEditor(){
+  var box=document.getElementById('coreList');if(!box)return;
+  if(!coreDraft.length)coreDraft=draftFromCore(coreCfg);
+  var anchors=nextFridays(marketDate(),8);
+  box.innerHTML=coreDraft.map(function(r,i){
+    var extra='';
+    if(r.on){
+      extra='<div class="core-extra">'+
+        '<label class="settings-field"><span>节奏</span><select class="settings-input core-rule" data-i="'+i+'">'+
+          OPT_RULES.map(function(ru){return '<option value="'+ru+'"'+(r.rule===ru?' selected':'')+'>'+(ru==='monthly3'?'每月第三个周五':'每 N 周的周五')+'</option>'}).join('')+'</select></label>'+
+        '<label class="settings-field"><span>周数</span><input class="settings-input core-weeks" data-i="'+i+'" type="number" min="1" max="6" value="'+(r.weeks||3)+'"></label>'+
+        '<label class="settings-field"><span>锚点（周五）</span><select class="settings-input core-anchor" data-i="'+i+'">'+
+          (anchors.indexOf(r.anchor)<0?('<option value="'+coreEsc(r.anchor)+'" selected>'+coreEsc(r.anchor||'—')+'</option>'):'')+
+          anchors.map(function(d){return '<option value="'+d+'"'+(r.anchor===d?' selected':'')+'>'+d+'</option>'}).join('')+'</select></label>'+
+        '<label class="settings-field"><span>OTM %</span><input class="settings-input core-otm" data-i="'+i+'" type="number" min="1" max="30" step="0.5" value="'+(r.otm||7)+'"></label>'+
+        '<label class="settings-field"><span>底层资产</span><input class="settings-input core-asset" data-i="'+i+'" maxlength="12" placeholder="默认=代码" value="'+coreEsc(r.asset)+'"></label>'+
+        '</div>';
+    }
+    return '<div class="core-row" data-i="'+i+'"><div class="core-main">'+
+      '<input class="settings-input core-sym" data-i="'+i+'" maxlength="10" placeholder="代码" value="'+coreEsc(r.sym)+'" aria-label="标的代码">'+
+      '<input class="settings-input core-target" data-i="'+i+'" type="number" min="0" max="100" step="1" value="'+coreEsc(r.target)+'" aria-label="目标比例%">'+
+      '<span class="core-pct">%</span>'+
+      '<label class="toggle-wrap"><input type="checkbox" class="core-opt" data-i="'+i+'"'+(r.on?' checked':'')+'><span class="toggle-sw"></span>卖CALL</label>'+
+      '<button class="settings-action core-del" type="button" data-i="'+i+'">删除</button>'+
+    '</div>'+extra+'</div>';
+  }).join('');
+}
+function saveCoreEditor(){
+  var next=normalizeCore(coreFromDraft(coreDraft));
+  var v=validateCore(next);
+  if(!v.ok){coreStatus('保存失败：'+v.errors.join('；'),'is-err');return}
+  state.core=next;syncCore();saveState();markDirty('state');autoPushDebounce();
+  coreDraft=draftFromCore(next);renderCoreEditor();
+  try{updatePortfolio();renderOpt();updateOtm();renderProbCard();renderWatch();renderHoldings();renderCashLog();updateDca?updateDca():0;updateSidebar()}catch(e){logSwallowed("applyCore",e)}
+  coreStatus(v.warnings.length?('已保存（'+v.warnings.join('；')+'）'):('已保存 · 生效标的：'+ETF_SYMS.join(' / ')),'');
+  if(typeof showToast==='function')showToast('核心仓已更新：'+ETF_SYMS.join(' / '));
+}
+function bindCoreEditor(){
+  var box=document.getElementById('coreList');if(!box)return;
+  renderCoreEditor();
+  box.addEventListener('input',function(e){var t=e.target;var i=Number(t.getAttribute&&t.getAttribute('data-i'));if(!isFinite(i))return;var cls=t.className||'';
+    if(cls.indexOf('core-sym')>=0)coreDraftSet(i,'sym',String(t.value||'').toUpperCase());
+    else if(cls.indexOf('core-target')>=0)coreDraftSet(i,'target',t.value);
+    else if(cls.indexOf('core-weeks')>=0)coreDraftSet(i,'weeks',t.value);
+    else if(cls.indexOf('core-otm')>=0)coreDraftSet(i,'otm',t.value);
+    else if(cls.indexOf('core-asset')>=0)coreDraftSet(i,'asset',t.value);
+  });
+  box.addEventListener('change',function(e){var t=e.target;var i=Number(t.getAttribute&&t.getAttribute('data-i'));if(!isFinite(i))return;var cls=t.className||'';
+    if(cls.indexOf('core-opt')>=0){coreDraftSet(i,'on',!!t.checked);renderCoreEditor()}
+    else if(cls.indexOf('core-rule')>=0){if(t.value==='everyNw'&&!coreDraft[i].anchor){var f=nextFridays(marketDate(),4);coreDraftSet(i,'anchor',f[2]||f[0]||'')}coreDraftSet(i,'rule',t.value);renderCoreEditor()}
+    else if(cls.indexOf('core-anchor')>=0){coreDraftSet(i,'anchor',t.value);renderCoreEditor()}
+  });
+  box.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.core-del');if(!b)return;var i=Number(b.getAttribute('data-i'));coreDraft.splice(i,1);renderCoreEditor()});
+  var add=document.getElementById('coreAdd');if(add)add.addEventListener('click',function(){var f=nextFridays(marketDate(),4);coreDraft.push({sym:'',target:0,asset:'',on:false,rule:'monthly3',weeks:3,anchor:f[2]||'',otm:7});renderCoreEditor();coreStatus('填写代码与比例后点保存','')});
+  var reset=document.getElementById('coreReset');if(reset)reset.addEventListener('click',function(){coreDraft=draftFromCore(CORE_DEFAULTS);renderCoreEditor();coreStatus('已恢复默认（还没保存）','')});
+  var save=document.getElementById('coreSave');if(save)save.addEventListener('click',saveCoreEditor);
+}
+
 function initAll(){
 
   var initialTradeDate=document.getElementById('tfDate');if(initialTradeDate&&!initialTradeDate.value)initialTradeDate.value=marketDate();initConsoleEntryControls();
@@ -1066,7 +1150,7 @@ function initAll(){
   });
 
 
-  autoBackup=readRaw('autoBackup')==='1';var cb=document.getElementById('cbAutoBackup');if(cb){cb.checked=autoBackup;cb.addEventListener('change',function(){autoBackup=this.checked;LS.setItem('autoBackup',autoBackup?'1':'0')})}var lbt=readRaw('lastBackupTime');if(lbt){var d2=new Date(parseInt(lbt));document.getElementById('lastBackupTime').textContent='上次备份 '+d2.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}bindAlertBadgeToggle();
+  autoBackup=readRaw('autoBackup')==='1';var cb=document.getElementById('cbAutoBackup');if(cb){cb.checked=autoBackup;cb.addEventListener('change',function(){autoBackup=this.checked;LS.setItem('autoBackup',autoBackup?'1':'0')})}var lbt=readRaw('lastBackupTime');if(lbt){var d2=new Date(parseInt(lbt));document.getElementById('lastBackupTime').textContent='上次备份 '+d2.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}bindAlertBadgeToggle();bindCoreEditor();
 
 
   /* v256：【品牌徽标两版对比】?brand=mono 用单色剪影，默认用品牌原色（见 main.css 的 .sym-badge 一段） */
@@ -1074,7 +1158,7 @@ function initAll(){
   try{loadAccent();loadTheme();
 
 
-  state=loadState();trades=loadTrades();initTradeIds();
+  state=loadState();syncCore();trades=loadTrades();initTradeIds();
 
 
   var dcaInput=document.getElementById('monthlyDCAInput');if(dcaInput){dcaInput.value=state.monthlyDCA||2000;dcaInput.addEventListener('change',function(){var v=parseInt(dcaInput.value)||0;v=Math.max(0,Math.min(50000,v));dcaInput.value=v;state.monthlyDCA=v;saveState();updateDCA()})}var dcaOv=document.getElementById('dcaOverride');if(dcaOv){if(state.dcaOverride){var ym2=marketDate().slice(0,7);if(state.dcaOverride.month===ym2&&state.dcaOverride.amount>0)dcaOv.value=state.dcaOverride.amount}dcaOv.addEventListener('input',function(){var v=parseInt(dcaOv.value)||0;if(v<=0){state.dcaOverride={month:'',amount:0};dcaOv.value=''}else{state.dcaOverride={month:marketDate().slice(0,7),amount:v}}saveState();updateDCA()})}
@@ -1126,7 +1210,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=373',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=374',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1238,7 +1322,7 @@ function applyCloudVal(key,val){
   if(key==='trades'){trades=normalizeTrades(val);saveTradesNoPush()}
   else if(key==='cashBalance'){if(typeof val!=='number'||isNaN(val))val=0;cashBalance=val;saveCashNoPush()}
   else if(key==='cashLog'){cashLog=normalizeCashLogs(val);saveCashLogNoPush()}
-  else if(key==='state'){state=normalizeState(val);saveStateNoPush()}
+  else if(key==='state'){state=normalizeState(val);syncCore();saveStateNoPush()}
   else if(key==='activities'){LS.setItem(ACTIVITY_KEY,JSON.stringify(normalizeActivities(val)))}
   else if(key==='optionTrades'){optionTrades=normalizeOptions(val);LS.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
   else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:7,smh:6};LS.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
@@ -1540,7 +1624,7 @@ optionTrades=loadOpt();var nowInstant=new Date();
    现在只在这里算一次，按 option.id 映射；期权链没到就整列不显示。 */
 var optProbById={};
 try{
-  ['VGT','SMH'].forEach(function(sym){
+  OPTION_SYMS.forEach(function(sym){
     var ch=chainFor(sym);if(!ch)return;
     optionProbabilities(ch,optionTrades,{chains:optionChains}).forEach(function(r){if(r.prob!=null)optProbById[r.id]=r.prob});
   });
@@ -1786,9 +1870,9 @@ try{var ay=document.getElementById('attrYear');if(ay){ay.addEventListener('chang
 var optionChains={};
 var chainStatus={loading:false,loadedAt:0,error:''};
 function chainFor(sym){var c=optionChains[sym];return c&&Number(c.spot)>0?c:null}
-function anyChain(){return chainFor('VGT')||chainFor('SMH')||null}
+function anyChain(){for(var i=0;i<OPTION_SYMS.length;i+=1){var c=chainFor(OPTION_SYMS[i]);if(c)return c}return null}
 /** CBOE 顶层的官方 30 天 IV（百分数）→ { VGT: 22.485, ... }，只收有效的。 */
-function iv30Map(){var m={};['VGT','SMH'].forEach(function(s){var c=chainFor(s);if(c&&Number(c.iv30)>0)m[s]=Number(c.iv30)});return m}
+function iv30Map(){var m={};OPTION_SYMS.forEach(function(s){var c=chainFor(s);if(c&&Number(c.iv30)>0)m[s]=Number(c.iv30)});return m}
 var CHAIN_TTL_MS=5*60*1000;
 /* OTM 默认值的两次调整都来自 22 年回测（2004-2026，含买卖价差）：
    v326 先把 VGT 7% / SMH 5% 统一成 6%；
@@ -1813,9 +1897,9 @@ try{
   }
 }catch(e){logSwallowed("otmSettingsInit",e)}
 
-var probTab='VGT';
+var probTab=OPTION_SYMS[0]||'';
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
-function otmOf(sym){var v=Number(otmSettings&&(sym==='SMH'?otmSettings.smh:otmSettings.vgt));return v>0?v:(sym==='SMH'?6:7)}
+function otmOf(sym){return otmOfCore(coreCfg,sym,sym==='SMH'?6:7)}
 /** 矩阵的 OTM 列：默认只看常用的 5%~8%（每 1% 一档，4 列）。
     当前 OTM 被调到区间外时，换成"离当前值最近的 4 档" —— 列数固定 4，
     永远围着你的设置（否则调到 12% 时当前那列会没地方放，也就没法高亮）。 */
@@ -1878,11 +1962,11 @@ function renderProbCard(){
 /** 到期日历：只讲"市场有哪些到期日"（月度/周度、剩余天数、行权价间距、自己有没有持仓）。
     节奏 ★ 归「被行权概率」卡 —— 两张卡各标一次只会让人分不清该看哪张。
     isMonthlyExpiry 已抽到 prob.js（概率矩阵的行头悬停也要用它）。 */
-var calShowAll=false,calTab='VGT';
+var calShowAll=false,calTab=OPTION_SYMS[0]||'';
 function renderExpiryCalendar(){
   var el=document.getElementById('expiryCalendar');
   if(!el)return;
-  if(calTab!=='VGT'&&calTab!=='SMH')calTab='VGT';
+  if(OPTION_SYMS.indexOf(calTab)<0)calTab=OPTION_SYMS[0]||'';
   var sym=calTab;
   var entries=[];
   var chain=chainFor(sym);
@@ -1909,7 +1993,7 @@ function renderExpiryCalendar(){
     var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
   });
   var tabs=document.getElementById('calTabs');
-  if(tabs)tabs.innerHTML=['VGT','SMH'].map(function(s){
+  if(tabs)tabs.innerHTML=OPTION_SYMS.map(function(s){
     return '<button type="button" class="prob-chip'+(s===calTab?' is-on':'')+'" data-caltab="'+s+'">'+s+'</button>';
   }).join('');
   el.innerHTML=expiryCalendarHtml(entries,{sym:sym,holdings:holdings,
@@ -1920,7 +2004,7 @@ function renderExpiryCalendar(){
 function toggleCalShowAll(){calShowAll=!calShowAll;renderExpiryCalendar();haptic('light')}
 /** 该标的按固定节奏的下一次到期日（概率矩阵与到期日历要标 ★ 的那一档）。 */
 function ccNextExpiry(sym){
-  try{var r=scheduleRow(sym,ccSchedule,marketDate());return r?r.nextExpiry:''}catch(e){return ''}
+  try{var r=scheduleRow(sym,ccCfgMap(),marketDate());return r?r.nextExpiry:''}catch(e){return ''}
 }
 /**
  * 本期：今天之后最近的节奏到期日。VGT＝每月第三个周五，SMH＝每 3 周的周五（锚点 2026-10-30）。
@@ -1929,7 +2013,7 @@ function ccNextExpiry(sym){
 function ccPeriod(sym){
   var empty={date:'',days:null,label:'',due:false};
   try{
-    var r=scheduleRow(sym,ccSchedule,marketDate());
+    var r=scheduleRow(sym,ccCfgMap(),marketDate());
     return r?{date:r.nextExpiry,days:r.daysToGo,label:r.label||'',due:!!r.isDue}:empty;
   }catch(e){return empty}
 }
@@ -1966,7 +2050,7 @@ function ccRollExpiry(sym){
     var next=ccNextExpiry(sym);
     if(!next)return '';
     var after=isoOf(dateMs(next)+86400000);          // 下一个到期日的次日
-    var r=scheduleRow(sym,ccSchedule,after);
+    var r=scheduleRow(sym,ccCfgMap(),after);
     return r?r.nextExpiry:'';
   }catch(e){return ''}
 }
@@ -1984,9 +2068,9 @@ async function refreshChains(force){
   if(!force&&Date.now()-chainStatus.loadedAt<CHAIN_TTL_MS&&anyChain())return;
   chainStatus.loading=true;
   if(!anyChain())renderProbCard();          /* 首屏先出"加载中" */
-  var results=await Promise.all(['VGT','SMH'].map(fetchChain));
+  var results=await Promise.all(OPTION_SYMS.map(fetchChain));
   var errs=[];
-  ['VGT','SMH'].forEach(function(sym,i){if(results[i].ok)optionChains[sym]=results[i].chain;else errs.push(sym+': '+results[i].error)});
+  OPTION_SYMS.forEach(function(sym,i){if(results[i]&&results[i].ok)optionChains[sym]=results[i].chain;else errs.push(sym+': '+((results[i]&&results[i].error)||'—'))});
   chainStatus.loading=false;
   chainStatus.error=errs.join(' | ');
   if(!errs.length)chainStatus.loadedAt=Date.now();
@@ -2070,9 +2154,10 @@ function bindProbControls(){
      SMH 每 3 周的周五（有周期权；回测显示 21 天是区间最优）
    卖出时点固定为**到期日当天**（旧档到期 = 新档开仓同一天，没有空档期）。
    注意锚点：历史回测里换锚点能差 ±1.5pt，但那是路径运气、事前无法优化，所以只提供"可改"。*/
-var CC_KEY='ccSchedule';
 var CC_ANCHOR_DEFAULT='2026-10-30';   /* 让 SMH 的 11-20 正好与 VGT 的月度到期日重合 */
-var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'every3w',anchor:CC_ANCHOR_DEFAULT}};
+/* v374：节奏不再写死在表里 —— 每只期权标的的 rule/weeks/anchor 存在 state.core.opt 里，
+   用 ccCfgMap() 现算给 scheduleRow/complianceStreak（见 core-config.js 的 optScheduleOf）。 */
+function ccCfgMap(){var m={};OPTION_SYMS.forEach(function(s){var c=optScheduleOf(coreCfg,s);if(c)m[s]=c});return m}
 /* v343 一次性清掉残留的「节奏设置」：
    v336 已按用户要求删掉那个设置入口（saveCcSchedule 只剩定义、没人调），但老设备的本机存储里
    可能还留着当时点过的值 —— 例如把 SMH 设成「月度」，卡片就会把 SMH 算成 10-16 该处理、
@@ -2101,17 +2186,17 @@ var ccDividends={};
 /** 节奏每行的 nextExpiry 是**卖出日**；target 才是"卖出哪一档到期"（新模型下这两个日期是分开的）。
     提醒文案要说清"哪天卖出 → 哪一档到期"，不能把卖出日说成到期日。 */
 function ccRows(){
-  return ['VGT','SMH'].map(function(s){
-    var r=scheduleRow(s,ccSchedule,marketDate());
+  return OPTION_SYMS.map(function(s){
+    var r=scheduleRow(s,ccCfgMap(),marketDate());
     if(!r)return null;
     r.target=ccRollExpiry(s);
     return r;
   }).filter(Boolean);
 }
-function ccStreaks(){var m={};['VGT','SMH'].forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccSchedule,marketDate())});return m}
+function ccStreaks(){var m={};OPTION_SYMS.forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccCfgMap(),marketDate())});return m}
 function ccExDivItems(){
   var out=[];
-  ['VGT','SMH'].forEach(function(s){
+  OPTION_SYMS.forEach(function(s){
     var list=ccDividends[s];if(!list||!list.length)return;
     var next=null;try{next=estimateNextExDiv(list,marketDate())}catch(e){logSwallowed("estimateNextExDiv",e)}
     if(next)out.push({sym:s,next:next});
@@ -2169,14 +2254,16 @@ function bindAlertBadgeToggle(){
 }
 async function refreshDividends(force){
   if(!force&&ccDividends.VGT&&ccDividends.SMH){refreshCcAlerts();return}
-  var res=await Promise.all(['VGT','SMH'].map(fetchDividends));
-  ['VGT','SMH'].forEach(function(s,i){if(res[i])ccDividends[s]=res[i]});
+  var res=await Promise.all(OPTION_SYMS.map(fetchDividends));
+  OPTION_SYMS.forEach(function(s,i){if(res[i])ccDividends[s]=res[i]});
   refreshCcAlerts();
 }
 
 /* 容错：initProb 可能在任何时候同步调用它，这里再兜一次底，保证 otmSettings 一定存在。 */
 function updateOtm(){if(!otmSettings)otmSettings={vgt:7,smh:6};otmSettings.vgt=otmPercent(otmSettings.vgt,7);otmSettings.smh=otmPercent(otmSettings.smh,6);renderProbCard();}
-function adjOtm(sym,dir){var key=sym==="VGT"?"vgt":"smh";otmSettings[key]=stepOtmPercent(otmSettings[key],dir,key==='vgt'?7:6);LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
+/* v374：OTM 按标的存进 state.core（不再是 {vgt,smh} 两个固定键） */
+function setOtm(sym,value){var e=entryOf(coreCfg,sym);if(!e)return;e.opt=Object.assign({on:true},e.opt,{otm:value});coreCfg=normalizeCore(coreCfg);state.core=coreCfg;saveState()}
+function adjOtm(sym,dir){var cur=otmOfCore(coreCfg,sym,sym==='SMH'?6:7);setOtm(sym,stepOtmPercent(cur,dir,sym==='SMH'?6:7));updateOtm();autoPushDebounce();}
 setTimeout(updateOtm,800);
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
@@ -2319,7 +2406,7 @@ if(typeof window!=='undefined'){
     var value=price>0?shares*price:0;
     var pnl=(price>0&&cost>0)?value-cost:null;
     var pct=pnl===null?null:pnl/cost*100;
-    var target=sym==='VGT'?state.vgt:sym==='SMH'?state.smh:(sym==='BTC'||sym==='IBIT')?state.btc:null;
+    var target=targetOf(coreCfg,sym)||null;   /* v374：目标比例来自配置（按标的） */
     var sh=Number(row.getAttribute('data-share'));
     var meta='占比 '+(isFinite(sh)?sh.toFixed(1):'—')+'%';
     if(target!=null&&isFinite(sh)){
@@ -3034,7 +3121,7 @@ function initAccountPanel() {
   var cleanBtn = document.getElementById('accountCleanLocal');
   if (cleanBtn) cleanBtn.addEventListener('click', cleanOtherLocalData);
   var entry = document.getElementById('sbSettingsEntry');
-  if (entry) entry.addEventListener('click', function () { setTimeout(function () { loadAccounts(); loadActivity(); scanLocalLeftovers(); }, 80); });
+  if (entry) entry.addEventListener('click', function () { setTimeout(function () { loadAccounts(); loadActivity(); scanLocalLeftovers(); coreDraft = draftFromCore(coreCfg); renderCoreEditor(); }, 80); });
   loadAccounts();
   loadActivity();
   scanLocalLeftovers();

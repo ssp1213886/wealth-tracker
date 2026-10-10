@@ -2994,3 +2994,18 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 @media(min-width:801px){#tab-holding .equity-card{grid-column:1/-1}}
 @media(min-width:1160px){#tab-holding .equity-card{height:200px}}
 @media(max-width:800px){#tab-holding .equity-card{order:5}}
+
+
+/* ── v374：核心仓编辑器（设置 → 投资参数）── */
+.core-list{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+.core-row{border:1px solid var(--rule);border-radius:12px;padding:10px;background:var(--card-bg)}
+.core-main{display:grid;grid-template-columns:minmax(64px,1fr) 64px auto auto;align-items:center;gap:6px}
+.core-main .core-sym{min-width:0}
+.core-main .core-target{text-align:right;padding-right:4px}
+.core-pct{color:var(--muted);font-size:11.5px;margin-left:-4px}
+.core-main .toggle-wrap{font-size:11.5px;white-space:nowrap}
+.core-extra{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule)}
+.core-extra .settings-field{margin:0}
+.core-extra label.settings-field:nth-child(1) span,.core-extra label.settings-field:nth-child(5) span{grid-column:auto}
+#coreStatus.is-err{color:var(--red)}
+@media(pointer:coarse){.core-main{grid-template-columns:minmax(60px,1fr) 56px auto;grid-auto-rows:auto;row-gap:8px}.core-main .core-del{grid-column:1/-1}}

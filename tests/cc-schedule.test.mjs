@@ -91,7 +91,7 @@ test('ruleFor：非法/缺失值按标的名回落（VGT 月度、SMH 每 3 周�
   assert.equal(ruleFor('SMH', null), 'every3w');
   assert.equal(ruleFor('VGT', { VGT: { rule: 'every3w' } }), 'every3w', '显式配置优先');
   assert.equal(ruleFor('VGT', { VGT: { rule: 'nonsense' } }), 'monthly3', '非法值回落');
-  assert.deepEqual(CC_RULES, ['monthly3', 'every3w']);
+  assert.deepEqual(CC_RULES, ['monthly3', 'every3w', 'everyNw'], 'v374 起支持任意 N 周（everyNw 看 cfg.weeks）');
   assert.equal(RULE_LABELS.monthly3, '每月第三个周五');
 });
 

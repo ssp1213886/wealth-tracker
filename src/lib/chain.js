@@ -9,7 +9,8 @@
 // 所以兜底路径把 iv 留成 0，由前端用成交价反推，绝不让脏 IV 流进概率计算。
 import { edgeGetJson, edgePutJson } from './edge-cache.js';
 
-const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH']);
+/* v374：期权标的可在「投资参数」里配置 → 改成格式校验（CBOE/Yahoo 都按股票代码取链）。 */
+const SYM_RE = /^[A-Z][A-Z0-9.\-]{0,9}$/;
 const CACHE_TTL_SECONDS = 30 * 60;
 const MAX_DTE = 200;          // 只留半年内的到期日
 // 24 档足够装下 200 天内的全部到期日（SMH 有 16 档、VGT 只有 6 档）。
@@ -272,7 +273,7 @@ async function fetchFromYahoo(sym, now) {
 export async function handleChain(request, url) {
   if (request.method !== 'GET') return { status: 405, body: { ok: false, error: 'Method not allowed' } };
   const sym = String(url.searchParams.get('sym') || '').toUpperCase();
-  if (!ALLOWED_SYMBOLS.has(sym)) return { status: 400, body: { ok: false, error: 'Unsupported symbol' } };
+  if (!SYM_RE.test(sym)) return { status: 400, body: { ok: false, error: 'Unsupported symbol' } };
   const now = Math.floor(Date.now() / 1000);
   const cacheKey = 'chain:' + sym;
   const cached = await edgeGetJson(url.origin, cacheKey);
