@@ -1,5 +1,6 @@
 // 本地存储基础设施：key 常量、统一读写（带容错）、数据版本迁移。
 // 只做"存取"这一件事，不掺业务副作用（同步、备份、刷新 UI 仍由 index.js 负责）。
+import { convertLegacyBtcTrade } from './util.js';
 
 
 /* ===== 多用户：本地存储按账号分区 =====
@@ -48,6 +49,7 @@ export const KEYS = {
   cash: 'wealth_cash_v2',
   cashLog: 'wealth_cashlog_v2',
   options: 'wealth_options_v2',
+  watchlist: 'wealth_watchlist_v1',
   activity: 'wealth_activity_v1',
   syncState: 'wealth_sync_state',
   syncConfig: 'wealth_sync_cfg',
@@ -57,6 +59,119 @@ export const KEYS = {
   optPing: 'wealth_opt_ping_v1',
   schema: 'wealth_schema_v1',
 };
+
+/* ===== v2 → v3（v373）：第三腿从 Grayscale 的 BTC ETF 换成 iShares 的 IBIT =====
+   **不是只改代码**：两个基金 1 股 ≠ 1 股，股数与每股价格要按比例换算（只改代码会让市值凭空 +28.5%）。
+   换算系数与规则见 util.js 的 convertLegacyBtcTrade —— 唯一实现，交易归一化与 CSV 导入共用同一份。
+   做三件事，缺一不可：
+     ① 迁移前的原始值原样存一份到本机备份键（不同步）—— 出问题能在本机回滚；
+     ② 改完记一份"动了哪些键"，交给 index.js 在启动后标脏推云（否则云端还是旧数据，换设备一拉就变回去）；
+     ③ 幂等：重复跑不会把 IBIT 再改一遍（认的是 BTC→IBIT，第二次没有 BTC 可改）。
+   为什么系数写死：迁移在本机离线执行（拿不到行情），而且两台设备必须算出同一份数据。 */
+const IBIT_BACKUP_KEY = 'wealth_pre_ibit_migration_v1';
+const IBIT_DIRTY_KEY = 'wealth_ibit_migration_dirty_v1';
+
+function renameSymbolInList(raw, key) {
+  if (!raw) return '';
+  let list;
+  try { list = JSON.parse(raw); } catch (e) { return ''; }
+  if (!Array.isArray(list)) return '';
+  let hit = 0;
+  const next = list.map(function (row) {
+    if (!row || typeof row !== 'object') return row;
+    if (String(row[key] || '').toUpperCase() !== 'BTC') return row;
+    hit += 1;
+    return Object.assign({}, row, { [key]: 'IBIT' });
+  });
+  if (!hit) return '';
+  return JSON.stringify(next);
+}
+
+/** 交易列表：逐条走 convertLegacyBtcTrade（BTC → IBIT + 股数/价格换算）。 */
+function convertTradeList(raw) {
+  if (!raw) return '';
+  let list;
+  try { list = JSON.parse(raw); } catch (e) { return ''; }
+  if (!Array.isArray(list)) return '';
+  let hit = 0;
+  const next = list.map(function (row) {
+    const after = convertLegacyBtcTrade(row);
+    if (after !== row) hit += 1;
+    return after;
+  });
+  if (!hit) return '';
+  return JSON.stringify(next);
+}
+
+/**
+ * 观察列表：只把「BTC ETF」那一行（旧符号 BTCETF）改名成 IBIT。
+ * ⚠️ **加密现货那行（BTC）不能动** —— 它是"只看行情"的现货比特币，跟 Mini Trust 不是一回事，
+ * 第一版用通用的 renameSymbolInList 把两行都改了（单测当场抓到）。
+ */
+function renameEtfWatchRow(raw) {
+  if (!raw) return '';
+  let list;
+  try { list = JSON.parse(raw); } catch (e) { return ''; }
+  if (!Array.isArray(list)) return '';
+  let hit = 0;
+  const next = list.map(function (row) {
+    if (!row || typeof row !== 'object') return row;
+    if (String(row.sym || '').toUpperCase() !== 'BTCETF') return row;
+    hit += 1;
+    return Object.assign({}, row, { sym: 'IBIT' });
+  });
+  if (!hit) return '';
+  return JSON.stringify(next);
+}
+
+/** 行情缓存：BTC 那一份是 Mini Trust 的价，换成 IBIT 就**不能留**（价格不是一回事）—— 直接删掉，让下次启动重新取。 */
+function dropBtcPriceKey(raw) {
+  if (!raw) return '';
+  let map;
+  try { map = JSON.parse(raw); } catch (e) { return ''; }
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return '';
+  if (!Object.prototype.hasOwnProperty.call(map, 'BTC')) return '';
+  const next = {};
+  Object.keys(map).forEach(function (k) {
+    if (k === 'BTC') return;
+    next[k] = map[k];
+  });
+  return JSON.stringify(next);
+}
+
+function migrateBtcToIbit() {
+  const jobs = [
+    /* 交易要**换算股数** → 用 util.js 的 convertLegacyBtcTrade；options/watchlist 只改代码 */
+    { key: KEYS.trades, field: 'symbol', rename: convertTradeList },
+    { key: KEYS.options, field: 'sym', rename: renameSymbolInList },
+    { key: KEYS.watchlist, field: 'sym', rename: renameEtfWatchRow },
+    { key: KEYS.prices, field: null, rename: dropBtcPriceKey },
+  ];
+  const snapshot = {};
+  const touched = [];
+  jobs.forEach(function (job) {
+    const before = readRaw(job.key);
+    if (!before) return;
+    if (!Object.prototype.hasOwnProperty.call(snapshot, job.key)) snapshot[job.key] = before;
+    const after = job.rename(before, job.field);
+    if (!after) return;
+    if (writeRaw(job.key, after)) touched.push(job.key);
+  });
+  /* 备份只写一次（保留最早那份"迁移前"的样子），避免第二次运行把它覆盖成"已经改完"的版本 */
+  if (!readRaw(IBIT_BACKUP_KEY) && Object.keys(snapshot).length) {
+    writeRaw(IBIT_BACKUP_KEY, JSON.stringify({ at: Date.now(), data: snapshot }));
+  }
+  if (touched.length) writeRaw(IBIT_DIRTY_KEY, touched.join(','));
+  return touched;
+}
+
+/** index.js 启动时用它取"迁移改了哪些键"（取完就清，避免每次启动都重复标脏）。 */
+export function takeIbitMigrationDirty() {
+  const raw = readRaw(IBIT_DIRTY_KEY);
+  if (!raw) return [];
+  removeKey(IBIT_DIRTY_KEY);
+  return raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+}
 
 // 浏览器存储超限（Safari 无痕模式、配额用尽）统一走这里判断
 export function isQuotaError(error) {
@@ -109,7 +224,7 @@ export function writeJSON(key, value) {
   }
 }
 
-export const DATA_SCHEMA = 2;
+export const DATA_SCHEMA = 3;
 
 // 迁移链：每次数据结构变化时，往 steps 里加一个新版本号对应的函数即可。
 // onError 用于把迁移异常交给上层上报（store 本身不依赖具体的日志实现）。
@@ -120,6 +235,10 @@ export function runMigrations(onError) {
   const steps = {
     // v1 → v2：清掉早期用 localStorage 持久化的"提醒已读"标记（现在改成仅本次会话有效）
     1: () => removeKey(KEYS.alertSeen),
+    /* v2 → v3（v373）：第三腿 Grayscale BTC ETF → iShares IBIT（换算股数，见 migrateBtcToIbit）。
+       ⚠️ 键是"**到达**版本 N 时执行的那一步"（`from=2` 循环只跑 steps[3]），不是"从 N 出发"——
+       v373 第一版把这段写成 steps[2]，结果整段迁移被静默跳过（try/catch 把 no-op 藏住了，是单测抓出来的）。 */
+    3: () => migrateBtcToIbit(),
   };
 
   for (let v = from + 1; v <= DATA_SCHEMA; v += 1) {

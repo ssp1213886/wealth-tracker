@@ -63,7 +63,7 @@ const context = vm.createContext({
   HOME_TIME_ZONE: 'Asia/Shanghai',
   MARKET_TIME_ZONE: 'America/New_York',
   ETF_SYMS: ['VGT', 'SMH', 'BTC'],
-  TRADE_SYMBOLS: ['VGT', 'SMH', 'BTC'],
+  TRADE_SYMBOLS: ['VGT', 'SMH', 'IBIT'],
   trades: [],
   tradeIdCounter: 1,
 });
@@ -81,6 +81,7 @@ for (const name of [
   'cleanText',
   'escapeHtml',
   'normalizeDateValue',
+  'convertLegacyBtcTrade',
   'normalizeTrades',
   'normalizeOptions',
   'parseCSVRow',
@@ -120,14 +121,18 @@ test('US market dates do not roll over at Beijing midnight', () => {
   assert.equal(context.marketDate(new Date('2026-08-01T00:30:00+08:00')).slice(0, 7), '2026-07');
 });
 
-test('trade normalization accepts BTC ETF ticker and rejects spot symbols', () => {
+test('trade normalization：IBIT 是交易标的；历史 BTC 按别名归一成 IBIT；现货 BTC-USD 仍被剔除', () => {
   const rows = context.normalizeTrades([
     { id: 1, symbol: 'btc', date: '2026-07-18', shares: 10, price: 28.38 },
-    { id: 2, symbol: 'BTC-USD', date: '2026-07-18', shares: 1, price: 118000 },
+    { id: 2, symbol: 'ibit', date: '2026-07-19', shares: 3, price: 46.75 },
+    { id: 3, symbol: 'BTC-USD', date: '2026-07-18', shares: 1, price: 118000 },
   ]);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].symbol, 'BTC');
-  assert.equal(rows[0].price, 28.38);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].symbol, 'IBIT', '历史的 btc → IBIT');
+  assert.ok(Math.abs(rows[0].shares - 10 * 0.778456) < 1e-6, '股数按比例换算');
+  assert.ok(Math.abs(rows[0].shares * rows[0].price - 10 * 28.38) < 1e-3, '成本不变');
+  assert.equal(rows[1].symbol, 'IBIT');
+  assert.equal(rows[1].shares, 3, '本来就是 IBIT 的行不能被二次换算');
 });
 
 test('option IDs cannot inject markup or inline handlers', () => {
@@ -148,11 +153,11 @@ test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', (
     '07/18/2026,Buy,BTC,10,"$28.38"',
   ].join('\n');
   // v244：解析已抽到 records-import.js（纯函数，返回待插入的行；id 与写入留给 index.js 的包装层）
-  const parsed = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'BTC'], existingTrades: [] });
-  assert.equal(parsed.imported, 2, '重复行与非白名单代码应被剔除');
+  const parsed = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'IBIT'], existingTrades: [] });
+  assert.equal(parsed.imported, 2, '重复行与非法代码（BTC-USD 现货）应被剔除');
   assert.equal(parsed.rows.length, 2);
-  assert.equal(parsed.rows[0].symbol, 'BTC');
-  assert.equal(parsed.rows[0].shares, 10, 'Buy 记正股数');
+  assert.equal(parsed.rows[0].symbol, 'IBIT', 'CSV 里的 BTC（旧 Mini Trust 导出）→ 按别名记成 IBIT');
+  assert.ok(Math.abs(parsed.rows[0].shares - 10 * 0.778456) < 1e-6, 'Buy 记正股数（BTC → IBIT 按比例换算）');
   assert.equal(parsed.rows[1].symbol, 'VGT');
   assert.equal(parsed.rows[1].shares, -1, 'Sell 记负股数');
   assert.ok(parsed.rows.every((r) => r.id === undefined), '纯函数不分配 id');
@@ -171,9 +176,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=372');
+  assert.equal(manifest.start_url, '/?v=373');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v372/);
+  assert.match(serviceWorker, /wealth-v373/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -187,7 +192,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=372',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=373',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });

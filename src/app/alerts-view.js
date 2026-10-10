@@ -91,7 +91,7 @@ var alertIcons={orange:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18
 export function buildAlerts(ctx) {
 var alerts=[],now=marketDate(ctx.now).slice(0,7),opts=ctx.options,activeOpts=opts.filter(function(o){return isActiveOption(o,ctx.now)}),callGroups={};
 activeOpts.filter(function(o){return o.type==='CALL'}).forEach(function(o){if(!callGroups[o.sym])callGroups[o.sym]=[];callGroups[o.sym].push(o)});
-Object.keys(callGroups).sort(function(a,b){var order=['VGT','SMH','BTC'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b)}).forEach(function(sym){
+Object.keys(callGroups).sort(function(a,b){var order=['VGT','SMH','IBIT','BTC'],ai=order.indexOf(a),bi=order.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi)||a.localeCompare(b)}).forEach(function(sym){
 var calls=callGroups[sym].slice().sort(function(a,b){return String(a.expiry).localeCompare(String(b.expiry))}),contracts=calls.reduce(function(sum,o){return sum+(Number(o.contracts)||1)},0),nearest=calls[0],cp=Number(ctx.prices[sym])||0,closest=calls.slice().sort(function(a,b){return Math.abs(cp-a.strike)-Math.abs(cp-b.strike)})[0];
 /* v372：只有"实值 + 除息日落在本轮周期内"才进待办 —— 那是真风险（除息日前可能被提前行权，
    要准备 T+1 买回）。其余三种都只是信息，本来就不需要动作，全部移出待办列表：

@@ -30,6 +30,30 @@ export function sparklinePath(values){var points=(Array.isArray(values)?values:[
 
 export function dateOrdinal(value){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value||'');return m?Math.floor(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]))/86400000):NaN}
 
+/* ===== v373：第三腿 Grayscale BTC ETF → iShares IBIT 的换算（唯一实现）=====
+   两个基金 **1 股 ≠ 1 股**（每股的比特币敞口不同），所以换腿时不能只改代码 ——
+   实测 2026-10-09 收盘：Grayscale Bitcoin Mini Trust（代码 BTC）$36.39 / IBIT $46.7454，
+   只改代码不动股数会让这条腿的市值凭空 +28.5%。
+   换算规则：股数 × r、每股价格 ÷ r → 每一笔的"股数×价格"（成本）不变，市值也保持不变。
+   r 为什么写死：迁移在本机离线执行（拿不到行情），而且两台设备必须算出**同一份**数据，
+   否则会互相覆盖打架。取值 = 36.39 / 46.7454（两个基金同一时点收盘价之比）。
+   数据迁移（store.js）、交易归一化、CSV 导入三处**共用这一个函数**，不许各写一套。 */
+export const BTC_TO_IBIT_SHARES = 0.778456;
+export function convertLegacyBtcTrade(row){
+  if(!row||typeof row!=='object')return row;
+  if(String(row.symbol||'').toUpperCase()!=='BTC')return row;
+  var out=Object.assign({},row,{symbol:'IBIT'});
+  var shares=Number(row.shares),price=Number(row.price);
+  /* 脏数据（缺股数/价格）只改代码、不硬算，交给 normalizeTrades 那边去剔除 */
+  if(!isFinite(shares)||shares===0||!isFinite(price)||price<=0)return out;
+  var cost=shares*price;
+  var nextShares=Math.round(shares*BTC_TO_IBIT_SHARES*1e6)/1e6;
+  if(!nextShares)return out;
+  out.shares=nextShares;
+  out.price=Math.round((cost/nextShares)*1e6)/1e6;   /* 反推价格，保证成本一分不差 */
+  return out;
+}
+
 /** 客户端网络调用的默认截止时间（毫秒）。行情/榜单这类"页面上看得见在转圈"的请求，超了就别再等。 */
 export const FETCH_TIMEOUT_MS = 10000;
 

@@ -24,17 +24,17 @@ import {
   quotesStale,
 } from '../src/app/watch.js';
 
-test('默认观察列表覆盖用户指定的标的（含 BTC ETF 行）', () => {
+test('默认观察列表覆盖用户指定的标的（含 IBIT 行）', () => {
   const syms = WATCH_DEFAULTS.map((item) => item.sym);
-  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'BTCETF', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
+  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'IBIT', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
   assert.equal(kindOf('GOLD'), 'gold');
   assert.equal(kindOf('ETH'), 'crypto');
   assert.equal(kindOf('NVDA'), 'stock');
-  // BTCETF：用户观察列表里的「BTC ETF」行；行情代码由 worker 的 QUOTE_ALIAS 映射到 Yahoo 的 BTC
-  assert.equal(kindOf('BTCETF'), 'stock', 'BTC ETF 不算加密现货');
+  // IBIT：第三腿（iShares Bitcoin Trust）；v373 之前那行叫 BTCETF（Grayscale），数据迁移会改名
+  assert.equal(kindOf('IBIT'), 'stock', 'IBIT 是股票/ETF，不算加密现货');
   assert.equal(labelOf('GOLD'), '金价');
   assert.equal(labelOf('BTC'), 'BTC 现货');
-  assert.equal(labelOf('BTCETF'), 'BTC ETF');
+  assert.equal(labelOf('IBIT'), 'IBIT');
   assert.equal(quoteSymbolOf('GOLD'), 'GOLD');
 });
 
@@ -183,10 +183,11 @@ test('toExposureRows：单一底层资产（比特币）计入、其余成分股
   assert.ok(Math.abs(shareSum - 100) < 0.3, '占比合计应为 100%，实际 ' + shareSum);
 });
 
-test('resolveHeldSymbol：BTCETF 归到 BTC，BTC 现货不算持仓，其它按自身', () => {
-  assert.deepEqual(WATCH_HELD_OF, { BTCETF: 'BTC', BTC: '' });
-  assert.equal(resolveHeldSymbol('BTCETF'), 'BTC');
-  assert.equal(resolveHeldSymbol('btcetf'), 'BTC', '大小写不敏感');
+test('resolveHeldSymbol：IBIT 就是持仓代码，过渡别名 BTCETF 也指到 IBIT，BTC 现货不算持仓', () => {
+  assert.deepEqual(WATCH_HELD_OF, { BTCETF: 'IBIT', BTC: '' });
+  assert.equal(resolveHeldSymbol('IBIT'), 'IBIT');
+  assert.equal(resolveHeldSymbol('BTCETF'), 'IBIT', '过渡别名（还没迁移的老观察列表行）也指到 IBIT');
+  assert.equal(resolveHeldSymbol('btcetf'), 'IBIT', '大小写不敏感');
   assert.equal(resolveHeldSymbol('BTC'), '', '现货 BTC 不参与持仓');
   assert.equal(resolveHeldSymbol('NVDA'), 'NVDA');
   assert.equal(resolveHeldSymbol(''), '');

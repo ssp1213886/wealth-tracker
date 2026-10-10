@@ -7,16 +7,17 @@
 ### 持仓组合
 - VGT（科技 ETF）：50%
 - SMH（半导体 ETF）：30%  
-- BTC（美股 BTC ETF 代码，非现货 BTC）：20%
+- IBIT（iShares Bitcoin Trust，现货比特币 ETF）：20%
+  - 2026-10 起第三腿由 Grayscale 的 BTC ETF（代码 BTC）换成 IBIT；历史记录已按两只基金当时的收盘价比（36.39 / 46.7454）**换算股数**迁移，成本与市值口径不变
 - 比例可调，每年仅在 12 月 31 日进行调整（年度再平衡窗口）
 
 ### 买入规则
 - 月度 DCA（定期定额），不择时，不判断市场方向
-- 收到工资后按比例买入 VGT/SMH/BTC
+- 收到工资后按比例买入 VGT / SMH / IBIT
 - 不卖出核心仓位的正股，永不减仓
 
 ### Covered Call 规则
-- Covered Call 只用于 VGT / SMH；BTC ETF 不进入期权提醒和期权录入
+- Covered Call 只用于 VGT / SMH；IBIT 暂不进入期权提醒和期权录入（标的将在 v374 做成可在「投资参数」里配置）
 - 每持有 100 股 VGT 或 SMH，可卖出 1 张 OTM CALL
 - OTM（虚值）百分比可手动调节：**默认均 +6%**（VGT/SMH 通用）
 - 卖出天数：**VGT 28 天 · SMH 21 天** —— 依据见下

@@ -159,8 +159,9 @@ export const GOLD_QUOTE = 'GC=F';
 export const QUOTE_ALIAS = {
   GOLD: 'GC=F',
   SKHYV: '000660.KS',
-  // BTCETF：用户观察列表里的"BTC ETF"行；Yahoo 上这只 ETF 的代码就是 BTC（Grayscale Bitcoin Mini Trust）
-  BTCETF: 'BTC',
+  // v373：观察列表里的第三腿已是 IBIT（iShares Bitcoin Trust）。BTCETF 只剩过渡别名（还没迁移的老列表），
+  // 一律指到 IBIT —— 不再指向 Grayscale 的 BTC（Mini Trust 已退出本仓库）。
+  BTCETF: 'IBIT',
 };
 
 const stockCache = new Map();

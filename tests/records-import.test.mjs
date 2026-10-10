@@ -29,14 +29,29 @@ test('normalizeTrades：非白名单标的/坏日期/零股数/非正价格一�
   assert.deepEqual(rows, []);
   assert.deepEqual(normalizeTrades('not-an-array'), []);
   assert.equal(normalizeTrades([{ symbol: 'VGT', date: '2026-07-18', shares: 1, price: 1 }]).length, 1, '不传白名单时用默认三只');
-  assert.deepEqual(TRADE_SYMBOLS, ['VGT', 'SMH', 'BTC']);
+  assert.deepEqual(TRADE_SYMBOLS, ['VGT', 'SMH', 'IBIT']);
+});
+
+test('normalizeTrades：历史的 BTC（Grayscale Mini Trust）按别名归一成 IBIT', () => {
+  /* v373：第三腿换成 IBIT 之后，任何写着 BTC 的交易都按 IBIT 记账 ——
+     既不让"旧设备推回来的数据"被剔除丢掉，也不留旧的 Mini Trust 语义。 */
+  const rows = normalizeTrades([
+    { id: 1, symbol: 'BTC', date: '2026-07-18', shares: 10, price: 28.38 },
+    { id: 2, symbol: 'btc', date: '2026-07-19', shares: 5, price: 29 },
+    { id: 3, symbol: 'BTC-USD', date: '2026-07-20', shares: 1, price: 100 },   // 加密现货仍不是交易标的
+  ]);
+  assert.deepEqual(rows.map((r) => r.symbol), ['IBIT', 'IBIT'], 'BTC 一律归一成 IBIT');
+  /* 1 股 ≠ 1 股：股数按比例换算（×0.778456），但**成本（股数×价格）必须一分不差** */
+  assert.ok(Math.abs(rows[0].shares - 10 * 0.778456) < 1e-6, '股数要按比例换算');
+  assert.ok(Math.abs(rows[0].shares * rows[0].price - 10 * 28.38) < 1e-3, '成本不变');
+  assert.ok(Math.abs(rows[1].shares - 5 * 0.778456) < 1e-6);
 });
 
 test('normalizeTrades：id 缺失或重复时自动补一个唯一值', () => {
   const rows = normalizeTrades([
     { id: 7, symbol: 'VGT', date: '2026-07-18', shares: 1, price: 100 },
     { id: 7, symbol: 'SMH', date: '2026-07-18', shares: 1, price: 100 },
-    { symbol: 'BTC', date: '2026-07-18', shares: 1, price: 100 },
+    { symbol: 'IBIT', date: '2026-07-18', shares: 1, price: 100 },
   ]);
   const ids = rows.map((r) => r.id);
   assert.equal(new Set(ids).size, 3, '三行 id 必须互不相同');
@@ -85,8 +100,9 @@ test('parseSchwabCSV：英文表头 + 买/卖 + 去重 + 白名单过滤', () =>
   ].join('\n');
   const out = parseSchwabCSV(csv, { symbols: TRADE_SYMBOLS, existingTrades: [], now: new Date('2026-09-29T02:00:00Z') });
   assert.equal(out.imported, 2);
-  assert.equal(out.rows[0].symbol, 'BTC');
-  assert.equal(out.rows[0].shares, 10);
+  assert.equal(out.rows[0].symbol, 'IBIT', 'CSV 里写 BTC 的老导出 → 按别名记成 IBIT');
+  assert.ok(Math.abs(out.rows[0].shares - 10 * 0.778456) < 1e-6, '股数按比例换算');
+  assert.ok(Math.abs(out.rows[0].shares * out.rows[0].price - 10 * 28.38) < 1e-3, '成本不变');
   assert.equal(out.rows[1].symbol, 'VGT');
   assert.equal(out.rows[1].shares, -1, 'Sell 记负股数');
   assert.match(out.rows[0].time, /^\d{2}:\d{2}$/);
@@ -96,11 +112,14 @@ test('parseSchwabCSV：中文表头识别；缺表头时报错；与已有交易
   const cn = ['日期,方向,代码,数量,成交价', '2026/7/18,买入,BTC,10,28.38'].join('\n');
   const out = parseSchwabCSV(cn);
   assert.equal(out.imported, 1);
-  assert.equal(out.rows[0].symbol, 'BTC');
-  assert.equal(out.rows[0].shares, 10);
+  assert.equal(out.rows[0].symbol, 'IBIT');
+  assert.ok(Math.abs(out.rows[0].shares - 10 * 0.778456) < 1e-6);
   assert.throws(() => parseSchwabCSV('foo,bar\n1,2'), /未找到 Date、Symbol、Quantity、Price 列/);
-  const dup = parseSchwabCSV(cn, { existingTrades: [{ date: '2026-07-18', symbol: 'BTC', shares: 10, price: 28.38 }] });
+  /* 去重：把"第一次导入的结果"当成已有交易，再导一遍同一份 CSV —— 一行都不该进来。
+     （不能手写 shares/price：BTC → IBIT 会换算股数，手写的值对不上，测的就不是去重了） */
+  const dup = parseSchwabCSV(cn, { existingTrades: out.rows });
   assert.equal(dup.imported, 0, '与已有交易重复时不重复导入');
+  assert.equal(dup.skipped.dup, 1);
 });
 
 // v319：被跳过的行不再静默 —— 解析器给出分类统计，导入提示用 csvSkipSummary 说明原因

@@ -1,6 +1,7 @@
 import { edgeGetJson, edgePutJson } from './edge-cache.js';
 
-const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'BTC', 'SGOV']);
+/* v373：第三腿换成 IBIT —— 原来的 'BTC' 是 Grayscale Bitcoin Mini Trust 的股票代码，已随本次迁移退出。 */
+const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'IBIT', 'SGOV']);
 const ALLOWED_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']);
 
 /** 实时价 60 秒；历史区间（1y/max 这类）一天都不会变，给长缓存。 */

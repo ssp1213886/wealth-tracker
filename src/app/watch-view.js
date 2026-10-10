@@ -10,7 +10,7 @@ export const CRYPTO_NAMES={BTC:'Bitcoin',ETH:'Ethereum',BNB:'Binance Coin',HYPE:
 
 /**
  * 观察列表行/详情要显示的名字：
- *   已知加密标的 → 品牌名 + ' · 现货'（与 BTC ETF 行区分）
+ *   已知加密标的 → 品牌名 + ' · 现货'（与 IBIT 那行区分）
  *   接口标了 crypto  → 去掉尾部 USD 再补 ' · 现货'
  *   兜底表 → 直接返回；否则用接口名（去掉尾部括号里的代码），中文名不要
  */
@@ -28,7 +28,7 @@ export function quotePrice(quote, livePrice, cached) {
   return Number((quote && quote.price) || livePrice || (cached && cached.price) || 0) || 0;
 }
 
-/** 本地行情缓存按"归属代码"取（BTCETF 的行情记在 BTC 名下） */
+/** 本地行情缓存按"归属代码"取（IBIT 的行情记在 IBIT 名下；BTCETF 为过渡别名） */
 export function historyOf(cache, key) {
   if (!key) return [];
   const c = (cache || {})[key];
