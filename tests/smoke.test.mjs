@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=388');
+  assert.equal(manifest.start_url, '/?v=389');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v388/);
+  assert.match(serviceWorker, /wealth-v389/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=388',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=389',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -808,15 +808,6 @@ test('操作台：观察列表置顶，顺序为 观察列表 → 买卖操作�
  *   本期 = 今天之后最近的节奏档；状态 = 记录里有没有这一档的 CALL。
  * 没记就显示"未卖出"—— 绝不拿行情去猜你到底卖没卖。
  */
-test('index.js：本期状态由「今天 + 记录」推出，且卡片上要写出节奏（VGT 按月 / SMH 每3周）', () => {
-  assert.match(indexSource, /function ccPeriod\(sym\)/, '缺 ccPeriod');
-  assert.match(indexSource, /function ccSold\(sym,expiry\)/, '缺 ccSold');
-  assert.match(indexSource, /o\.sym===sym&&o\.type==='CALL'&&o\.expiry===expiry&&!o\.archived/,
-    '"已卖出"只能按记录判（同标的、同到期日的 CALL、未归档）');
-  assert.match(indexSource, /fixed:roll\.date/, '★ 要标在「该卖」那一档（结论行主行说的同一档）');
-  assert.match(indexSource, /ruleLabel:ruleLabel,/, '节奏名要跟着实际选中的那一档走');
-  assert.match(indexSource, /sold:ccSold\(probTab,roll\.date\)/, '状态挂在「该卖」那一档上（吸附后的挂牌日）');
-});
 
 /**
  * v352：两张卡都在讲"到期日"，用户被绕晕了。分工写到标题上，并各自删掉对方的东西：
@@ -824,7 +815,8 @@ test('index.js：本期状态由「今天 + 记录」推出，且卡片上要写
  *   到期日历   = 资料卡（市场有哪些到期日：月度/周度、间距、我的持仓），不再标 ★
  */
 test('期权页：两张卡的分工写在标题上，节奏 ★ 只在「被行权概率」卡', () => {
-  assert.match(html, /<h3>被行权概率<span class="card-sub">该卖哪一档<\/span><\/h3>/, '概率卡要写清它是决策卡');
+  assert.match(html, /<h3>被行权概率<\/h3>/, 'v389：概率卡标题不再写该卖哪一档（该卖整套判定已取消）');
+  assert.doesNotMatch(html, /probSummary/, '结论块的元素也一并删掉');
   assert.match(html, /<h3>到期日历<span class="card-sub">市场有哪些到期日<\/span><\/h3>/, '日历卡要写清它是资料卡');
   assert.doesNotMatch(html, /★ = 按固定节奏该卖的档位/, '日历卡里不再重复 ★ 的说明');
   assert.doesNotMatch(indexSource, /fixed\[sym\]/, '日历卡不再收「节奏那一档」——★ 归概率卡');
@@ -855,50 +847,18 @@ test('可卖 CALL 张数只有一处口径：期权状态卡的"可卖 N 张" �
   assert.doesNotMatch(alertsSource, /Math\.floor\(sh\/100\)-used/, '不要再自己算一份');
 });
 
-test('index.js：节奏档要先吸附到真实挂牌到期日，链没到时按日历显示、不编「已顺延」', () => {
-  // v387：卖出日改成「有持仓＝那张的到期日；空仓＝今天」，所以吸附的是 sellBase
-  assert.match(indexSource, /snapToListed\(sellBase,listed\)/, '卖出日要吸附到真实挂牌档');
-  // v387：该卖的到期日改成以「卖出日」为起点推下一档节奏日（卖出日跟实际持仓走）
-  // v387b：目标到期日要**对齐策略**（取最接近 卖出日＋周期 的节奏日，而不是之后第一个）
-  // v388b：目标到期日改成「卖出日之后 30~45 天」的真实挂牌档（月度档优先）
-  assert.match(indexSource, /var WIN_MIN=30,WIN_MAX=45,WIN_MID=37\.5;/, '窗口常量 30~45 天');
-  assert.match(indexSource, /inWin=listed\.filter\(function\(d\)\{return dteFromSell\(d\)>=WIN_MIN&&dteFromSell\(d\)<=WIN_MAX\}\)/,
-    '要从真实挂牌档里筛窗口');
-  assert.match(indexSource, /var mons=inWin\.filter\(function\(d\)\{return isMonthlyExpiry\(d\)\}\)/, '窗口内优先月度第三个周五');
-  assert.match(indexSource, /Math\.abs\(dateMs\(a\)-want\)-Math\.abs\(dateMs\(b\)-want\)/, '取最接近「卖出日＋周期」的那个节奏日');
-  assert.match(indexSource, /var roll=winPick\?\{date:winPick,shifted:false\}:snapToListed\(rollRaw,listed\)/,
-    'v388b：窗口内选到挂牌档就用它，否则退回日历档再吸附');
-  assert.match(indexSource, /shiftNote:roll\.shifted\?\([^)]*rollRaw/, '顺延提示里的日期要用「该卖」那一档的节奏日，别写成本期');
-  assert.match(indexSource, /function listedExpiries\(chain\)/, '要取链里真实挂牌的到期日列表');
-  assert.match(indexSource, /shiftNote:roll\.shifted/, '顺延了要写在结论行上，不能悄悄换日期');
-});
 
 /**
  * v387：卖出日原来取"下一个节奏日"，相位不巧时会指到 3 周后
  * （实测 2026-10-11 时 SMH/IBIT 显示"10-30 卖出，还有 19 天"——而节奏的本意是
  * "手上那张到期那天卖下一档"，空仓则随时可卖）。现在改成跟实际持仓走。
  */
-test('v387：卖出日跟实际持仓走（有 CALL → 它的到期日；空仓 → 今天）', () => {
-  assert.match(indexSource, /o\.sym===probTab&&isActiveOption\(o,new Date\(\)\)/, '只认该标的的活跃 CALL');
-  assert.match(indexSource, /var sellBase=actOpt\.length\?actOpt\[0\]:marketDate\(\)/, '空仓时卖出日＝今天');
-  assert.match(indexSource, /sellDay=actOpt\.length\?snapToListed\(sellBase,listed\):\{date:sellBase,shifted:false\}/,
-    '有持仓时用那张的到期日（吸附到真实挂牌档）');
-  assert.doesNotMatch(indexSource, /var sellDay=snapToListed\(period\.date,listed\)/, '别再拿"下一个节奏日"当卖出日');
-});
 
 /**
  * v356：到期日历原本默认只筛「月度档」，可 VGT 和 SMH 的市场月度档**本来就是同几天**
  * （每月第三个周五）—— 于是两张标的的日历看起来一模一样，SMH 的周度档全被滤掉了。
  * 改成：默认列**周五档**的前 3 个，并且永远带上该标的的节奏档。
  */
-test('到期日历：默认列「周五档」而不是「月度档」，并永远带上该标的的节奏档', () => {
-  assert.match(indexSource, /all\.filter\(function\(e\)\{return weekdayOf\(e\.date\)===5\}\)\.slice\(0,3\)/,
-    '默认要按周五筛（VGT 全是周五；SMH 才留下周度档）');
-  assert.match(indexSource, /var beat=ccRollExpiry\(sym\)/, '日历要知道该标的的节奏档');
-  assert.match(indexSource, /picked=picked\.concat\(\[hitStep\]\)/, '节奏档必须并进默认视图，否则 SMH 会跟 VGT 一样');
-  assert.doesNotMatch(indexSource, /all\.filter\(function\(e\)\{return isMonthlyExpiry\(e\.date\)\}\)\.slice\(0,3\)/,
-    '不要再按"月度档"筛默认视图');
-});
 
 /* ===== v370 的四条源码钉子 ===== */
 

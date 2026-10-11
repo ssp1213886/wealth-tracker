@@ -57,3 +57,22 @@ test('场景脚本不许"漏挂"：要么进常跑入口，要么在白名单里
   const ci = fs.readFileSync('.github/workflows/ci.yml', 'utf8');
   assert.match(ci, /e2e:all|run-all\.mjs/, 'CI 里要跑总入口（npm run e2e:all），专项脚本才不会腐烂');
 });
+
+// v389 补的第二道守卫：**"跑进常跑入口"不等于"挂了会红"**。
+//
+// 实测教训（v389）：`run-all.mjs` / `run.mjs` 只看 driver 的退出码，而 driver 原来无论脚本内部
+// 断言挂没挂都退 0 —— 于是 `e2e:all` 一直打印"全部通过（7 项）"，实际有三条断言在裸奔：
+//   · `scripts/e2e-full.mjs` 查的 `otmVgt*` 三个 id 从 v336 起就不存在了（改名成 `probOtm*`）
+//   · `scripts/test-options.mjs` 从 v297 起没先打开期权录入弹层就去 `fill('#ostrike')`
+// 所以"防腐烂"必须钉住驱动本身：它要读返回值里的失败信息（`scripts/e2e/verdict.mjs`），
+// 并在判定失败时以非 0 退出码结束。
+test('常跑入口必须真的会红：驱动要读返回值里的失败信息，不能只看"脚本有没有 throw"', () => {
+  for (const rel of ['scripts/e2e/driver.mjs', 'scripts/e2e/driver-engine.mjs']) {
+    const src = fs.readFileSync(rel, 'utf8');
+    assert.match(src, /import \{ failureOf \} from '\.\/verdict\.mjs'/, rel + '：没接入 verdict 判据');
+    assert.match(src, /const verdict = failureOf\(result\)/, rel + '：没有对返回值做失败判定');
+    assert.match(src, /if \(verdict\) \{[\s\S]{0,160}?process\.exit\(1\)/,
+      rel + '：判定失败时没有以非 0 退出码结束（run-all 会继续报"全部通过"）');
+  }
+  assert.ok(fs.existsSync('scripts/e2e/verdict.mjs'), 'verdict.mjs 必须存在（判据的唯一来源）');
+});

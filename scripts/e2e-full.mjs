@@ -131,7 +131,9 @@ const opt = await page.evaluate(() => {
   return {
     rowCount: rows.length,
     firstCells: rows[0] ? [...rows[0].children].map((td) => td.textContent.trim().slice(0, 18)) : null,
-    hasOtm: !!document.getElementById('otmVgtMinus'),
+    /* v389 修腐烂：OTM 加减号从 v336 起就改叫 probOtm*（老 id otmVgt* 早没了），
+       这里一直在查一个不存在的元素 → 断言常年失败却没人发现（见 scripts/e2e/verdict.mjs）。 */
+    hasOtm: !!document.getElementById('probOtmMinus'),
     hasMetrics: document.querySelectorAll('.option-metric').length,
     hasRevenue: !!document.getElementById('mrev') || !!document.getElementById('trev'),
   };
@@ -143,12 +145,12 @@ check("期权指标块齐全", opt.hasMetrics >= 3, opt.hasMetrics + " 个");
 check("Covered Call 收入卡存在", opt.hasRevenue);
 
 // OTM 步进按钮可点击并改变数值
-const otmBefore = await page.evaluate(() => (document.getElementById('otmVgtVal') || {}).textContent || '');
+const otmBefore = await page.evaluate(() => (document.getElementById('probOtmVal') || {}).textContent || '');
 const otmAfter = await page.evaluate(() => {
-  const btn = document.getElementById('otmVgtPlus');
+  const btn = document.getElementById('probOtmPlus');
   if (!btn) return null;
   btn.click();
-  return (document.getElementById('otmVgtVal') || {}).textContent || '';
+  return (document.getElementById('probOtmVal') || {}).textContent || '';
 });
 check("OTM 步进可调整", otmBefore !== otmAfter, otmBefore + " → " + otmAfter);
 
@@ -304,10 +306,17 @@ check("运行期无未捕获错误", finalError === null, finalError || "");
 await page.close();
 
 const failed = results.filter((r) => !r.pass);
-return {
+const summary = {
   total: results.length,
   passed: results.length - failed.length,
   failed: failed.length,
   failures: failed.map((f) => f.name + " → " + f.detail),
   all: results.map((r) => (r.pass ? "✓ " : "✗ ") + r.name + (r.detail ? "  [" + r.detail + "]" : "")),
 };
+/* v389：以前只把这个对象 return 出去，而 driver 无论如何都退 0 —— 断言挂了也永远是"绿"。
+   现在先打印同样的摘要，再 throw，让 driver 退 1，run-all 才会把这一阶段标记成失败。 */
+if (failed.length) {
+  console.log(JSON.stringify(summary, null, 2));
+  throw new Error("全站回归失败 " + failed.length + "/" + results.length + " 项：" + summary.failures.join(" | "));
+}
+return summary;

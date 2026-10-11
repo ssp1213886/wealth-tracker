@@ -145,4 +145,11 @@ await step('E. 恢复后页面渲染是否正常（持仓/交易/期权三处）
 
 const lastError = await page.evaluate(() => window.__lastError || null);
 await page.close();
-return { log, lastError, exportedFile: exported };
+const summary = { log, lastError, exportedFile: exported };
+/* v389：与期权专项同一套判据 —— 步骤失败要变成非 0 退出码（见 scripts/e2e/verdict.mjs） */
+if (log.some((s) => !s.ok)) {
+  console.log(JSON.stringify(summary, null, 2));
+  throw new Error('备份专项失败 ' + log.filter((s) => !s.ok).length + ' 步：' +
+    log.filter((s) => !s.ok).map((s) => s.step).join(' / '));
+}
+return summary;

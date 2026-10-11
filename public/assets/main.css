@@ -2906,33 +2906,14 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-col.is-on{background:var(--accent-l);color:var(--accent-d);font-weight:700}
 /* 列头第二行：这一档 OTM 对应的价格（现价 ×(1+OTM)），当参照用 */
 .mx-table thead th .mx-target{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:1px}
-/* v387：★ 那一行原来是整行浅橙 + 橙色小字，视觉上和"警告"混淆；改成首列左侧 3px 色条，
-   标记还在、噪音小很多（浅橙底留给下面的结论块）。 */
-.mx-table tbody tr.mx-sell-row td:first-child{position:relative}
-.mx-table tbody tr.mx-sell-row td:first-child::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px;background:var(--orange)}
-.mx-sell-tag{color:var(--orange);font-weight:660}
+/* 「我持有这一档」的中性标记（v389 起；v387 时这套样式标的是"★ 该卖"）。
+   现在只说事实、不给建议，所以沿用**到期日历 `.cal-mine` 的那套语言**（accent 系），
+   不再用橙色 —— 橙在本项目里是"提醒/待办"语义（待办提醒、未卖出徽章），
+   拿它标"我已有仓位"会被读成"系统在暗示你卖这一期"。 */
+.mx-table tbody tr.mx-held-row td:first-child{position:relative}
+.mx-table tbody tr.mx-held-row td:first-child::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px;background:var(--accent)}
+.mx-held-tag{color:var(--accent-d);font-weight:660}
 
-/* 「本轮该卖」结论行：把 25 个数字收敛成一句 */
-.mx-sum{margin:2px 0 12px;padding:11px 13px;border-radius:var(--radius-inner);background:color-mix(in srgb,var(--orange) 9%,transparent);border:1px solid color-mix(in srgb,var(--orange) 25%,transparent)}
-.mx-sum-head{color:var(--muted);font-size:11.5px;font-weight:560}
-.mx-sum-head b{color:var(--fg)}
-/* v387：结论块从"3 行散文"改成「标题 / 时间线 / 带标签的数值格」—— 值一个不少，但能扫读 */
-.mx-sum-when{margin-top:2px;color:var(--muted);font-size:11.5px;font-variant-numeric:tabular-nums;line-height:1.5}
-.mx-sum-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:9px}
-.mx-stat{display:grid;gap:1px;min-width:0;font-variant-numeric:tabular-nums}
-.mx-stat>span{color:var(--muted);font-size:11px;font-weight:560}
-.mx-stat>b{font-size:.92rem;font-weight:680;color:var(--fg)}
-.mx-stat>small{color:var(--muted);font-size:11px}
-/* 本期状态徽章：已卖出 / 未卖出 / 今天该卖 */
-.mx-badge{display:inline-block;margin-left:5px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:640;vertical-align:1px}
-.mx-badge.is-done{background:color-mix(in srgb,var(--accent) 17%,transparent);color:var(--accent-d)}
-.mx-badge.is-todo{background:color-mix(in srgb,var(--orange) 17%,transparent);color:var(--orange)}
-.mx-badge.is-due{background:color-mix(in srgb,var(--red) 17%,transparent);color:var(--red)}
-/* 节奏日没挂牌、已顺延到真实挂牌档时的提示（假期周把周五挪到周四就是这种） */
-.mx-shift{color:var(--orange);font-size:10.5px;font-weight:560}
-.mx-sum-meta{color:var(--muted);font-size:11.5px;line-height:1.55}
-.mx-sum-meta b{font-weight:700}
-.mx-sum-empty{background:transparent;border-style:dashed;color:var(--muted);font-size:12px}
 @media(max-width:800px){
   /* 手机上放不下就横向滚动，交给外层容器；.mx-table 必须保持 display:table。
      之前把它设成 display:block、再给 thead/tbody 各自 display:table，

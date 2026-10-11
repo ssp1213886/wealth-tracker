@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   probColor, fmtProb, fmtIv,
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
-  probMatrixHtml, probTabsHtml, matrixCellHtml, probSummaryHtml,
+  probMatrixHtml, probTabsHtml, matrixCellHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
 } from '../src/app/prob-view.js';
 
@@ -93,20 +93,27 @@ const MX_ROWS = [
 const MX_CTX = { otm: 7, ruleLabel: '每月第三个周五', from: '2026-11-20', periodDate: '2026-11-20', daysToSale: 8, tenor: 28 };
 const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS, spot: 129.37 };
 
-test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮，只有 ★该卖 一个标记', () => {
+test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮；每行都给年化（v389 不再标该卖）', () => {
   const html = probMatrixHtml(MX, { otm: 7 });
   // v355：剩余天数并进到期日格（第二行小字），少一列 —— 手机上才不用横滑
   assert.match(html, /<thead><tr><th>到期日<\/th><th><button/);
-  assert.match(html, /data-cell="expiry" title="月度到期日[^"]*">2026-11-20<small class="prob-sub">43 天<\/small><\/td>/, '到期日格里带剩余天数');
-  assert.match(html, /class="mx-col is-on" data-probotm="7" title="把 OTM 设成 7%">7%<\/button>/, '当前 OTM 那一列的列头按钮要高亮，且点它就能设 OTM');
+  assert.match(html, /data-cell="expiry" title="月度到期日[^"]*">2026-11-20<small class="prob-sub">43 天<\/small><small class="prob-sub">年化 13\.2%<\/small><\/td>/, '到期日格里带剩余天数与年化（分两行，宽度不撑表）');
+  assert.match(html, /class="mx-col is-on" data-probotm="7" title="把 OTM 设成 7%" aria-label="把 OTM 设成 7%">7%<\/button>/, '当前 OTM 那一列的列头按钮要高亮、可点、且有 aria-label');
   assert.equal((html.match(/mx-col/g) || []).length, 5, '五档 OTM 各自一个按钮');
   assert.equal((html.match(/is-on/g) || []).length, 1, '只有当前 OTM 那个列头按钮带 is-on');
   assert.equal((html.match(/mx-on/g) || []).length, 2, '每行当前 OTM 那一格带 mx-on');
   // 列头第二行＝这一档 OTM 对应的价格（现价 ×(1+OTM)），给"距离多少钱"一个参照
   assert.match(html, /7%<\/button><small class="mx-target">\$138\.43<\/small>/, '7% → 129.37×1.07 = $138.43');
   assert.match(html, /15%<\/button><small class="mx-target">\$148\.78<\/small>/);
-  assert.match(html, /class="mx-sell-row"/, '本轮该卖的整行要高亮');
-  assert.match(html, /mx-sell-tag" title="[^"]*">71 天 · ★ 该卖</, '★ 并进到期日格的小字，不额外占一行');
+  // v389：不再标该卖；行头给的是事实 —— 剩余天数 · 持有几张（若有）· 年化（按当前 OTM）
+  assert.match(html, /<small class="prob-sub">年化 13\.2%<\/small>/, '行头要带年化（按当前 OTM 那一列算）');
+  assert.doesNotMatch(html, /★|该卖/, 'v389：表里不再有该卖的字样');
+  const held = probMatrixHtml(MX, { otm: 7, holdings: { '2026-12-18': 2 } });
+  assert.match(held, /class="mx-held-row"/, '我持有的那一档用中性标记标出来');
+  assert.match(held, /71 天 · <span class="mx-held-tag">持有 2 张<\/span><\/small><small class="prob-sub">年化 12\.1%<\/small>/, '持有张数只是事实，不是建议');
+  /* 颜色必须挂在**子元素**上：手机端有一条 `.card small{color:var(--muted)!important}`，
+     写在 <small class="prob-sub mx-held-tag"> 自身会被它压掉（v387 的橙色小字在手机上从没显过色）。 */
+  assert.doesNotMatch(held, /<small class="prob-sub mx-held-tag"/, '持有标记不能直接挂在 small 上（手机端 !important 会吃掉颜色）');
   // 「本轮该处理」和「本轮该卖」本来就是同一轮（到期日当天卖下一档），拆两个标记是多读一层
   assert.doesNotMatch(html, /mx-settle/, '不该再有「本轮该处理」的标记');
   assert.doesNotMatch(html, /该处理/);
@@ -171,71 +178,6 @@ test('probMatrixHtml：相邻两列吸到同一张合约时照常各写一遍（
   assert.match(html, /真实挂牌行权价 \$140\.00/, '悬停里仍然写明实际挂在哪一档');
 });
 
-test('probSummaryHtml：主行直接给「该卖哪个到期日 / 哪天卖出 / 还有几天 / 持有多久」', () => {
-  const html = probSummaryHtml(MX, MX_CTX);
-  assert.match(html, /mx-sum-head">该卖 <b>2026-12-18<\/b> 到期 · 每月第三个周五/, '标题行＝该卖哪一档 + 节奏名');
-  assert.match(html, /mx-sum-when">2026-11-20 卖出 · 还有 8 天 · 持有 28 天<\/div>/, '时间线行＝哪天卖出 / 还有几天 / 持有多久');
-  assert.match(html, /mx-badge is-todo">未卖</, '状态徽章挂在「该卖」那一档上：没记这张 CALL 就是未卖');
-  assert.match(html, /\$152\.00/);
-  assert.match(html, /<b>\$152\.00<\/b><small>\+5\.0% OTM<\/small>/, '行权价 + 完整的 OTM（相对现价）同格显示');
-  assert.doesNotMatch(html, /比目标/, '误差项不该再出现在主行');
-  assert.match(html, /25\.6%/, '被行权概率');
-  assert.match(html, /\$2\.90/, '权利金');
-  assert.match(html, /12\.1%/, '年化');
-  assert.match(html, /每月第三个周五/, '节奏名要能看出来（VGT 按月 / SMH 每3周）');
-  assert.doesNotMatch(html, /轮 1 次/, '「约 N 轮 1 次」已按用户要求去掉');
-});
-
-test('probSummaryHtml：该卖那一档已卖出 → 徽章变「已卖 ✓」，主行仍是该卖那一档', () => {
-  const html = probSummaryHtml(MX, { otm: 7, ruleLabel: '每 3 周的周五',
-    sold: { sym: 'SMH', type: 'CALL', strike: 665, contracts: 2, premium: 13.45, added: '2026-10-30' },
-    from: '2026-11-20', periodDate: '2026-11-20', daysToSale: 8, tenor: 21 });
-  assert.match(html, /mx-badge is-done">已卖 ✓</);
-  assert.match(html, /每 3 周的周五/, 'SMH 的节奏也要能看出来');
-  assert.match(html, /该卖 <b>2026-12-18<\/b> 到期/, '主行讲的始终是"接下来该卖哪一档"');
-});
-
-test('probSummaryHtml：今天就是卖出日 → 「还有 N 天」换成「今天」，徽章换成「今天该卖」', () => {
-  const html = probSummaryHtml(MX, { otm: 7, due: true, ruleLabel: '每月第三个周五', from: '2026-11-20', periodDate: '2026-11-20' });
-  assert.match(html, /mx-sum-when">2026-11-20 卖出 · 今天<\/div>/, '当天就别再写"还有 N 天"');
-  assert.match(html, /mx-badge is-due">今天该卖</);
-});
-
-test('probSummaryHtml：拿不到卖出日 / 持有天数时就不写那两段（不编数字）', () => {
-  const html = probSummaryHtml(MX, { otm: 7 });
-  assert.match(html, /^<div class="mx-sum"><div class="mx-sum-head">该卖 <b>2026-12-18<\/b> 到期 /);
-  assert.doesNotMatch(html, /卖出（/);
-  assert.doesNotMatch(html, /持有 \d+ 天/);
-});
-
-test('probSummaryHtml：节奏日没挂牌、已顺延到真实挂牌档时要说出来', () => {
-  const html = probSummaryHtml(MX, { ...MX_CTX, shiftNote: '节奏日 2026-11-20 未挂牌' });
-  assert.match(html, /持有 28 天 · <span class="mx-shift">节奏日 2026-11-20 未挂牌<\/span><\/div>/, '顺延提示跟时间线同一行');
-  assert.doesNotMatch(probSummaryHtml(MX, MX_CTX), /mx-shift/, '正常情况不该出现顺延提示');
-});
-
-test('probSummaryHtml：当前 OTM 那一档没挂牌时，退到最近可卖的那一档（别变死胡同）', () => {
-  /* 复刻实测：VGT 本期 10-16 上方只挂到 $135，5%/6% 够不到，最近的 7% 有数。 */
-  const row = { date: '2026-10-16', dte: 8, sell: true, cells: [
-    cell(null, 0, null, null), cell(null, 0, null, null), cell(0.146, 140, 1.05, 6.9),
-    cell(null, 0, null, null), cell(null, 0, null, null)] };
-  const m = { otms: [5, 6, 7, 8, 10], rows: [row], spot: 129.37 };
-  const html = probSummaryHtml(m, { otm: 5, ruleLabel: '每月第三个周五' });
-  assert.match(html, /5% 在这一档没挂牌档位/, '当前档没挂牌要说清楚');
-  assert.match(html, /最近可卖 7% = \$140\.00/, '要给出最近能卖的那一档，而不是只说"换一档"');
-  const dead = probSummaryHtml({ otms: [5], rows: [{ date: '2026-10-16', dte: 8, sell: true, cells: [cell(null, 0, null, null)] }] }, { otm: 5 });
-  assert.match(dead, /换一档 OTM/, '整行都没挂牌时才退回"换一档"');
-  assert.doesNotMatch(dead, /最近可卖/);
-});
-
-test('probSummaryHtml：没有 ★ 档 / 该 OTM 那格没挂牌时给明确提示，不显示半截数字', () => {
-  assert.match(probSummaryHtml(null, { otm: 7 }), /还没有可卖的到期档/);
-  assert.match(probSummaryHtml({ otms: [3, 5, 7, 10, 15], rows: [{ date: 'x', dte: 30, sell: true, cells: [] }] }, { otm: 7 }), /没挂牌档位|没有挂牌/);
-  const miss = { otms: [3, 5, 7, 10, 15], rows: [{ date: '2026-12-18', dte: 71, sell: true, cells: [cell(0.3, 138, 2, 9), cell(0.2, 145, 1.5, 7), cell(null, 0, null, null), cell(null, 0, null, null), cell(null, 0, null, null)] }] };
-  const html = probSummaryHtml(miss, { otm: 7 });
-  assert.match(html, /没挂牌档位/);
-  assert.doesNotMatch(html, /\$0\.00/);
-});
 
 test('probTabsHtml：VGT / SMH 分段，只有当前那个 is-on', () => {
   const html = probTabsHtml('SMH');

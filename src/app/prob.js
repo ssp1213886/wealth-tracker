@@ -261,9 +261,10 @@ export const MATRIX_OTMS = [3, 5, 7, 10, 15];
  * ③ **只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺（SMH 1 天那行实测
  *    15% 的概率比 10% 还高），放进表里只会误导。
  *
- * 表里只有**一个**标记：★ 本轮该卖。所谓"本轮该处理"（手里那张等着结算/行权）和
- * "本轮该卖"本来就是同一轮 —— 到期日当天就把下一档卖出去 —— 拆成两个标记只会让人多读一层，
- * 所以 settle 那套已经去掉（那些持仓的风险在「持仓与收入」里逐张显示）。
+ * 表里**不再有任何"该卖哪一档"的标记**（v389）：系统不替用户决策。每行只给事实 ——
+ * 剩余天数、年化（按当前 OTM 算），界面另标"我持有这一档"。挑哪一期由用户横向比较后自己定；
+ * 所以这里既不收"目标档"（原 `fixed`），也不做吸附、不强制保留某一行。
+ * （那些持仓本身的风险在「持仓与收入」里逐张显示。）
  */
 export function probMatrix(chain, opts) {
   const o = opts || {};
@@ -273,14 +274,9 @@ export function probMatrix(chain, opts) {
   const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
   const spot = Number(chain && chain.spot);
   if (!(spot > 0)) return { otms: otms, rows: [], spot: 0 };
-  const beat = String(o.fixed || '');       /* ★ 本轮该卖的那一档 */
   const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
-  /* ★ 那一档必须始终在表里 —— 它可能离得很近，被 minDte 滤掉的话最该看的那行反而没了。 */
+  /* v389：不再有"该卖的那一档"（fixed）—— 表里只按"14 天以上、取前 maxRows 档"来排。 */
   const picked = [];
-  if (beat) {
-    const hit = all.filter(function (e) { return e.date === beat; })[0];
-    if (hit) picked.push(hit);
-  }
   all.forEach(function (e) {
     if (picked.length >= maxRows) return;
     if (Number(e.dte) < minDte) return;
@@ -294,7 +290,7 @@ export function probMatrix(chain, opts) {
       /* monthly / gapPct 一起带出去：行头悬停要写"这是不是月度到期日、行权价多粗"，
          这样不用展开「到期日历」卡也能判断能不能精确挑到目标 OTM。 */
       return {
-        date: e.date, dte: e.dte, sell: e.date === beat,
+        date: e.date, dte: e.dte,
         monthly: isMonthlyExpiry(e.date), gapPct: Number(e.gapPct) || 0,
         cells: cells, probs: cells.map(function (c) { return c.prob; }),
       };

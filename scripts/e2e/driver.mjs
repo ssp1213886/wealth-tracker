@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { failureOf } from './verdict.mjs';
 
 function fail(message) {
   console.error('ERR: ' + message);
@@ -67,9 +68,15 @@ try {
   fail('执行出错: ' + (error && error.stack ? error.stack : error));
 }
 await browser.close().catch(() => {});
+/* v389：脚本内部断言失败要能让常跑入口变红，不能只看"有没有 throw" —— 见 verdict.mjs 的头注释 */
+const verdict = failureOf(result);
 if (result === undefined) console.log('(无返回值)');
 else if (typeof result === 'string') console.log(result);
 else {
   try { console.log(JSON.stringify(result, null, 2)); } catch { console.log(String(result)); }
+}
+if (verdict) {
+  console.error('✗ ' + verdict + '（' + file + '）');
+  process.exit(1);
 }
 process.exit(0);

@@ -158,10 +158,6 @@ export function renderProbUnavailable(doc, hint) {
 }
 
 /**
- * 概率矩阵：行 = 未来到期日，列 = 各 OTM% 下的被行权概率。
- * 当前 OTM 那一列整列高亮；★ 标记本轮该卖的那一档，「本轮该处理」是手里那张。
- */
-/**
  * 一格：上面是被行权概率（大字、按风险着色），下面是权利金（灰色小字）。
  * 两行同格 = 不用再来回切「看概率 / 看权利金」，风险与收益一眼同时在。
  * 年化不占格位（放悬停提示里），免得一格挤三行。
@@ -189,7 +185,8 @@ function cellTitle(cell) {
 
 /**
  * 概率矩阵。
- *  · 行：未来到期日。sell=true 是本轮该卖的那一档（★）—— 表里只有这一个标记。
+ *  · 行：未来到期日。行头只给**事实** —— 剩余天数 · 我持有几张（若有）· 年化（按当前选的 OTM 算）。
+ *    v389 起**不再标"该卖哪一档"**：系统不替用户决策，每一行都标年化，横向一比自己挑哪一期。
  *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
  *  · 每格两行：概率（按风险着色）+ 权利金（灰字）。相邻两列吸到同一张合约时**照常各写一遍**
  *    —— 「同上」这种简称在手机上没有 hover 可解释，看不懂。
@@ -203,113 +200,48 @@ export function probMatrixHtml(matrix, ctx) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
   const cur = Number(c.otm);
+  const curIdx = otms.findIndex(function (o) { return Number(o) === cur; });
   /* 列头第二行：这一档 OTM 对应的价格＝现价 ×(1+OTM%)，给你一个"距离多少钱"的参照。
      实际下单看的是真实挂牌档（可能差一点），那个写在每格的悬停提示里。 */
   const spot = Number(m.spot) || 0;
+  const heldBy = c.holdings || {};
   /* 刻意不加 .prob-table：那套手机端规则是给「到期日历」用的 */
   let html = '<table class="mx-table"><thead><tr><th>到期日</th>' +
     otms.map(function (o) {
       const tgt = spot > 0 ? '<small class="mx-target">$' + (spot * (1 + Number(o) / 100)).toFixed(2) + '</small>' : '';
       return '<th><button type="button" class="mx-col' + (Number(o) === cur ? ' is-on' : '') +
-        '" data-probotm="' + o + '" title="把 OTM 设成 ' + o + '%">' + o + '%</button>' + tgt + '</th>';
+        '" data-probotm="' + o + '" title="把 OTM 设成 ' + o + '%" aria-label="把 OTM 设成 ' + o + '%">' + o + '%</button>' + tgt + '</th>';
     }).join('') + '</tr></thead><tbody>';
   rows.forEach(function (r) {
     /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
     const cells = Array.isArray(r.cells) ? r.cells : [];
-    const cls = r.sell ? 'mx-sell-row' : '';
     /* 行头悬停：月度/周度 + 相邻行权价间距 —— 「到期日历」卡的两条独有信息挪到这儿，
        免得切来切去才能判断这一行能不能精确挑到目标 OTM。 */
     const rowTitle = (r.monthly ? '月度到期日（第三个周五）' : '周度到期日') +
       (r.gapPct > 0 ? ' · 相邻行权价间距 ' + Number(r.gapPct).toFixed(2) + '%' : '');
-    /* 剩余天数 + ★ 并进到期日格的小字：少一整列，手机上就不用横着拖了 */
-    const sub = r.dte + ' 天' + (r.sell ? ' · ★ 该卖' : '');
-    html += '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
+    /* v389：不再标"该卖"。行头只放**事实**：剩余天数 · 我持有几张 · 年化（按当前 OTM 算）。
+       年化原来是只给"该卖那一档"看的，现在每一行都有 —— 你自己比一比挑哪一期。 */
+    const held = Number(heldBy[r.date]) || 0;
+    const cell = curIdx >= 0 ? cells[curIdx] : null;
+    const ann = cell && cell.annualPct != null ? Number(cell.annualPct) : null;
+    /* 拆两行小字，宽度不超"剩余天数"那一列 —— 挤成一行会把表格撑出横向滚动（8% 那列被截）。
+       「持有 N 张」挂在**内联 span** 上，而不是直接写在 small 上：手机端有一条
+       `.card small{color:var(--muted)!important}`，写在 small 自身的颜色会被它压掉（v387 的橙色小字
+       在手机上其实从没显过色）；挂在子元素上就不受这条继承类规则影响 —— 继承永远输给元素自己的声明。 */
+    const sub2 = ann != null ? '年化 ' + ann.toFixed(1) + '%' : '';
+    const heldTag = held ? ' · <span class="mx-held-tag">持有 ' + held + ' 张</span>' : '';
+    html += '<tr' + (held ? ' class="mx-held-row"' : '') + '>' +
       '<td data-cell="expiry" title="' + escapeHtml(rowTitle) + '">' + escapeHtml(r.date) +
-        '<small class="prob-sub' + (r.sell ? ' mx-sell-tag' : '') + '"' +
-          (r.sell ? ' title="按你的固定节奏，下一个到期日当天（本期的到期日）就把它卖出去"' : '') +
-        '>' + sub + '</small></td>' +
+        '<small class="prob-sub">' + r.dte + ' 天' + heldTag + '</small>' +
+        (sub2 ? '<small class="prob-sub">' + sub2 + '</small>' : '') + '</td>' +
       otms.map(function (o, i) {
-        const cell = cells[i];
+        const cellI = cells[i];
         return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
-          '" title="' + escapeHtml(cellTitle(cell)) + '">' + matrixCellHtml(cell) + '</td>';
+          '" title="' + escapeHtml(cellTitle(cellI)) + '">' + matrixCellHtml(cellI) + '</td>';
       }).join('') +
       '</tr>';
   });
   return html + '</tbody></table>';
-}
-
-/**
- * 结论行：第一行直接给答案 —— **该卖哪个到期日**（★ 那一行），以及哪天卖出、还有几天、持有多少天。
- * 紧接着一个小徽章给本期状态（以今天为准那一档的 CALL 记了没有）：已卖 / 未卖 / 今天该卖。
- * 下面按当前 OTM 给目标行权价、被行权概率、权利金、年化。
- */
-/** 当前那一列没挂牌时，退到列里最近的一个有数有档的列；都没有返回 -1。 */
-function nearestListedIdx(cells, idx) {
-  const list = Array.isArray(cells) ? cells : [];
-  const at = idx >= 0 ? idx : 0;
-  let best = -1;
-  let bestGap = Infinity;
-  for (let i = 0; i < list.length; i += 1) {
-    const c = list[i];
-    if (!c || c.prob == null || !(c.strike > 0)) continue;
-    const gap = Math.abs(i - at);
-    if (gap < bestGap) { best = i; bestGap = gap; }
-  }
-  return best;
-}
-
-export function probSummaryHtml(matrix, ctx) {
-  const c = ctx || {};
-  const m = matrix || { otms: [], rows: [] };
-  const row = (Array.isArray(m.rows) ? m.rows : []).filter(function (r) { return r.sell; })[0];
-  if (!row) return '<div class="mx-sum mx-sum-empty">还没有可卖的到期档</div>';
-  const cur = Number(c.otm);
-  const idx = (Array.isArray(m.otms) ? m.otms : []).indexOf(cur);
-  const cell = idx >= 0 ? (row.cells || [])[idx] : null;
-  const sold = c.sold || null;
-  const due = !!c.due;                       /* 今天就是卖出日 */
-  const from = String(c.from || '');         /* 卖出日：有持仓＝那张到期日；空仓＝今天 */
-  const days = Number(c.daysToSale);
-  const badge = sold ? '已卖 ✓' : (due ? '今天该卖' : '未卖');
-  const badgeCls = sold ? 'is-done' : (due ? 'is-due' : 'is-todo');
-  const when = due ? '今天' : (Number.isFinite(days) && days > 0 ? '还有 ' + days + ' 天' : '');
-  /* v387：原来这里是 3 行散文（· 分隔 6 个概念），数字没有标签、要逐字读。
-     现在拆成「标题 / 时间线 / 带标签的数值格」—— 值一个不少，但能扫读了。 */
-  const head = '<div class="mx-sum-head">该卖 <b>' + escapeHtml(row.date) + '</b> 到期' +
-    (c.ruleLabel ? ' · ' + escapeHtml(String(c.ruleLabel)) : '') +
-    (idx < 0 ? ' · ' + cur + '%' : '') +
-    ' <span class="mx-badge ' + badgeCls + '">' + badge + '</span></div>' +
-    '<div class="mx-sum-when">' +
-      (from ? escapeHtml(from) + ' 卖出' + (when ? ' · ' + when : '') : (when ? escapeHtml(when) : '—')) +
-      (c.tenor != null ? ' · 持有 ' + c.tenor + ' 天' : '') +
-      (c.shiftNote ? ' · <span class="mx-shift">' + escapeHtml(String(c.shiftNote)) + '</span>' : '') +
-    '</div>';
-  if (!cell || cell.prob == null) {
-    /* 当前 OTM 在这一档没挂牌（实测 VGT 10-16 上方只到 $135，7% 就够不到）。
-       别让结论行变成死胡同 —— 退到最近一个有数的列，直接告诉你现在能卖哪一档。 */
-    const alt = nearestListedIdx(row.cells, idx);
-    const tip = alt >= 0
-      ? ('最近可卖 ' + m.otms[alt] + '% = $' + Number(row.cells[alt].strike).toFixed(2))
-      : ('换一档 OTM');
-    return '<div class="mx-sum">' + head +
-      '<div class="mx-sum-meta">' + cur + '% 在这一档没挂牌档位 · ' + tip + '</div></div>';
-  }
-  const otmTxt = cell.otmPct == null ? ''
-    : (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '% OTM';
-  return '<div class="mx-sum">' + head +
-    '<div class="mx-sum-stats">' +
-      '<div class="mx-stat"><span>行权价</span><b>$' + Number(cell.strike).toFixed(2) + '</b>' +
-        (otmTxt ? '<small>' + otmTxt + '</small>' : '') + '</div>' +
-      '<div class="mx-stat"><span>被行权</span><b style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</b></div>' +
-      '<div class="mx-stat"><span>权利金</span><b>' + (cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—') + '</b>' +
-        '<small>年化 ' + (cell.annualPct != null ? Number(cell.annualPct).toFixed(1) + '%' : '—') + '</small></div>' +
-    '</div></div>';
-}
-
-/** 把「本期」结论行写进 DOM。 */
-export function renderProbSummary(doc, matrix, ctx) {
-  const el = doc.getElementById('probSummary');
-  if (el) el.innerHTML = probSummaryHtml(matrix, ctx);
 }
 
 /** 把概率矩阵写进 DOM。 */
@@ -353,8 +285,8 @@ export function expiryCalendarHtml(entries, ctx) {
     '</tr></thead><tbody>';
   rows.forEach(function (e) {
     const mine = holdings[sym + '|' + e.date] || 0;
-    /* 这张卡只讲"市场有哪些到期日"，不再标 ★ 节奏档 —— 那个标记归「被行权概率」卡，
-       两张卡各标一次只会让人分不清该看哪张。 */
+    /* 这张卡只讲"市场有哪些到期日"。v389 起全站**没有任何"该卖哪一档"的标记**了
+       （概率矩阵也只标"我持有这一档"这个事实），所以这里不再有节奏档 ★。 */
     /* 只显示平值附近相邻行权价的中位间距 —— 它决定"能不能精确挑到目标 OTM%"。
        市场挂牌的**个数**不显示：那是市场侧的事实，不是选行权价需要的输入。 */
     const gap = Number(e.gapPct) > 0 ? Number(e.gapPct).toFixed(2) + '%' : '—';

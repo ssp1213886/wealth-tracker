@@ -3,10 +3,11 @@ const OUT = 'C:/Users/topeasejs/ChromeDebug/manual';
 const log = [];
 const step = async (name, fn) => {
   try {
+    await preStep();
     const detail = await fn();
     log.push({ step: name, ok: true, detail: detail === undefined ? '' : String(detail) });
   } catch (e) {
-    log.push({ step: name, ok: false, detail: String(e && e.message).slice(0, 140) });
+    log.push({ step: name, ok: false, detail: String(e && e.message).slice(0, 400) });
   }
 };
 
@@ -28,6 +29,25 @@ const state = () => page.evaluate(() => ({
   cashLog: JSON.parse(localStorage.getItem('wealth_cashlog_v2') || '[]'),
   cash: Number(localStorage.getItem('wealth_cash_v2') || 0),
 }));
+
+/**
+ * 每步动手前，先关掉挡在页面上的**同步冲突弹窗**。
+ *
+ * v389 才发现第 D 步一直卡在这：`<div id="conflictModal"> intercepts pointer events` —— 弹窗盖住整页，
+ * `page.click('#btnAddOption')` 一直等到超时。成因是本脚本为了造数据**直接改 localStorage**，
+ * 而应用记着云端版本号 → 推上去必然 409 → 弹窗。同步链路的题材由 `scripts/e2e/sync-full.mjs` 负责，
+ * 这里点「全部用本地」把弹窗收掉即可（本地数据说了算，正是本脚本想要的）。
+ */
+async function preStep() {
+  const had = await page.evaluate(() => {
+    const m = document.getElementById('conflictModal');
+    if (!m) return false;
+    const b = document.getElementById('cfCancel');
+    if (b) b.click(); else m.remove();
+    return true;
+  });
+  if (had) await page.waitForTimeout(400);
+}
 
 // v322：认 E2E_BASE（默认仍是 8788），便于纳入 e2e:all 常跑
 await page.goto((process.env.E2E_BASE || "http://127.0.0.1:8788/"), { waitUntil: "load" });
@@ -60,6 +80,10 @@ await page.waitForTimeout(3000);
 await step('A. 记录一张卖 Call（行权价 $130）', async () => {
   await page.evaluate(() => window.switchTab && window.switchTab('option'));
   await page.waitForTimeout(900);
+  /* v389 修腐烂：录入表单从 v297 起收进了底部弹层（#optSheet），不先打开的话 #ostrike 虽在 DOM 里
+     但不可见，page.fill 会直接超时 —— 这一步空转了很久（当时只看退出码，发现不了）。 */
+  await page.evaluate(() => window.openOptSheet && window.openOptSheet());
+  await page.waitForTimeout(600);
   await page.fill('#ostrike', '130');
   await page.fill('#opremium', '1.5');
   await page.fill('#ocontracts', '1');
@@ -127,10 +151,16 @@ await step('C. 持仓补到 100 股后点行权（确认）→ 应生成行权�
   return `弹窗="${dialogs.map((d) => d.message).join(' / ').slice(0, 60)}" | 行权交易=${assignTrade ? assignTrade.shares + '股@$' + assignTrade.price : '无'} | 期权settled=${s.opts[0] ? s.opts[0].settled : 'n/a'} | 持仓行=${holdRow ? holdRow.slice(0, 3).join('/') : '已清空'}`;
 });
 
-/* ---------- 场景 D：删除未结算期权 → 退回权利金 ---------- */
-await step('D. 记录新期权后直接删除 → 应退回权利金并写一条负数流水', async () => {
+/* ---------- 场景 D：删除未结算期权 → 撤掉那条权利金流水、现金只退一次 ----------
+   v389 把这一步从"只描述"升级成**真断言**（原来它只 return 一句 detail，写错了也没人知道）：
+   v384 修过"删除退两次现金"——老写法是再补一条「权利金退回-X」，而原地那条「权利金+X」还留着，
+   用户随后删掉那条孤儿流水就又退一次。现在的正确口径是**连带删掉**那条权利金流水。 */
+await step('D. 记录新期权后直接删除 → 权利金流水被连带删掉、现金只退一次（v384 口径）', async () => {
   await page.evaluate(() => window.switchTab && window.switchTab('option'));
   await page.waitForTimeout(900);
+  /* 同场景 A：录入弹层要先打开（v389 修腐烂） */
+  await page.evaluate(() => window.openOptSheet && window.openOptSheet());
+  await page.waitForTimeout(600);
   await page.fill('#ostrike', '300');
   await page.fill('#opremium', '2.5');
   await page.fill('#ocontracts', '2');
@@ -148,16 +178,23 @@ await step('D. 记录新期权后直接删除 → 应退回权利金并写一条
   await page.evaluate(() => {
     const rows = [...document.querySelectorAll('#holdingsBody tr')];
     const target = rows.find((r) => r.textContent.includes('300'));
-    const btn = target && target.querySelector('button');
+    /* 按 class 找删除键（.opt-del，文字是 X）—— 别再"取这一行第一个按钮"，那只是碰巧对 */
+    const btn = target && target.querySelector('.opt-del');
     if (btn) btn.click();
   });
   await page.waitForTimeout(1200);
   const after = await state();
-  const refund = after.cashLog.find((l) => String(l.type).indexOf('权利金退回') >= 0);
+  const refunded = before.cash - after.cash;
+  const bad = [];
+  if (after.opts.length !== before.opts.length - 1) bad.push('期权没被删掉：' + before.opts.length + '→' + after.opts.length);
+  if (after.cashLog.length !== before.cashLog.length - 1) bad.push('权利金流水没被连带删掉：' + before.cashLog.length + '→' + after.cashLog.length);
+  if (after.cashLog.some((l) => String(l.type).indexOf('退回') >= 0)) bad.push('又出现了「退回」流水（v384 的老 bug：一次删除退两次现金）');
+  if (Math.abs(refunded - 5) > 0.01) bad.push('退回金额应为 $5.00（2 张 × $2.5），实际 $' + refunded.toFixed(2));
+  if (bad.length) throw new Error(bad.join(' | '));
   await page.evaluate(() => window.switchTab && window.switchTab('data'));
   await page.waitForTimeout(900);
   await page.screenshot({ path: OUT + '/opt-D-refund.png' });
-  return `期权 ${before.opts.length}→${after.opts.length} | 退回流水=${refund ? refund.type + ' $' + refund.amount : '无'} | 现金 ${before.cash}→${after.cash}`;
+  return `期权 ${before.opts.length}→${after.opts.length} | 现金 ${before.cash}→${after.cash}（退回 $${refunded.toFixed(2)}） | 权利金流水 ${before.cashLog.length}→${after.cashLog.length} 条（连带删除，不再写「退回」）`;
 });
 
 /* ---------- 场景 E：到期结算 ---------- */
@@ -188,4 +225,12 @@ await step('E. 用一张已过期的期权点「结算」→ 标记为已结算'
 
 const lastError = await page.evaluate(() => window.__lastError || null);
 await page.close();
-return { log, lastError, screenshots: OUT };
+const summary = { log, lastError, screenshots: OUT };
+/* v389：步骤失败要能变成非 0 退出码（否则 driver 只看"有没有 throw"，这套专项的失败永远不算失败）。
+   先打印摘要再 throw —— 摘要照样看得到，退出码交给 driver 变成 1。 */
+if (log.some((s) => !s.ok)) {
+  console.log(JSON.stringify(summary, null, 2));
+  throw new Error('期权专项失败 ' + log.filter((s) => !s.ok).length + ' 步：' +
+    log.filter((s) => !s.ok).map((s) => s.step).join(' / '));
+}
+return summary;
