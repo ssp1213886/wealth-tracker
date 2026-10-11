@@ -2926,7 +2926,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
    缺档用灰胶囊（读起来是"有意标注"，不是坏格）。橙色在本项目是提醒语义，这里一律不用。 */
 .mx-pill{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:650;letter-spacing:.02em;line-height:1.45;vertical-align:1px}
 .mx-pill.is-spot,.mx-pill.is-ann{background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--fg);font-variant-numeric:tabular-nums}
-.mx-pill.is-pick,.mx-pill.is-held{background:var(--accent-l);color:var(--accent-d)}
+.mx-pill.is-held{background:var(--accent-l);color:var(--accent-d)}
 .mx-pill.is-none{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted);font-weight:600;font-size:10px}
 /* 「我持有这一档」的中性标记（v389 起；v387 时这套样式标的是"★ 该卖"）。
    现在只说事实、不给建议，所以沿用**到期日历 `.cal-mine` 的那套语言**（accent 系），
