@@ -76,106 +76,108 @@ test('expiryCalendarHtml：自己有持仓的那一档高亮并显示张数', ()
   assert.equal((html.match(/cal-mine/g) || []).length, 1, '只有持有那一档高亮');
 });
 
-/** 造一格：prob=null 表示这一档没有挂牌行权价（阶梯够不到）。 */
+/** 造一格：prob=null（或 strike=0）表示这一期没有这一档 → 界面写「无此档」。 */
 function cell(prob, strike, premium, annualPct) {
-  /* otmPct＝这一档相对**现价**的 OTM（主行显示的就是它）；drift＝相对你设的目标价的误差项（只进悬停） */
-  return { pct: 7, target: 138.43, strike, drift: 0.011, otmPct: 0.05, prob, premium, annualPct, listed: prob != null };
+  return { strike, otmPct: strike > 0 ? strike / 129.37 - 1 : null, prob, premium, annualPct, listed: prob != null && strike > 0 };
 }
 
-/* 表里只有 ★ 一个标记（「本轮该处理」已去掉）；卖出日由 ctx.sellFrom 传进来。 */
+/* v391：列 = 真实挂牌档位；selected=2 → 选中 $152（is-on 那一列，行头的年化按它算）。 */
+const MX_COLS = [138, 145, 152, 160].map((k) => ({ strike: k, otmPct: k / 129.37 - 1 }));
 const MX_ROWS = [
-  { date: '2026-11-20', dte: 43, sell: false, monthly: true, gapPct: 3.87,
-    cells: [cell(0.362, 138, 2.9, 27.4), cell(0.269, 145, 2.0, 18.9), cell(0.188, 152, 1.4, 13.2), cell(0.096, 160, 0.9, 8.5), cell(0.037, 168, 0.5, 4.7)] },
-  { date: '2026-12-18', dte: 71, sell: true, monthly: true, gapPct: 3.87,
-    cells: [cell(0.398, 138, 4.6, 17.9), cell(0.324, 145, 3.4, 15.3), cell(0.256, 152, 2.9, 12.1), cell(0.180, 160, 1.9, 9.4), cell(null, 0, null, null)] },
+  { date: '2026-11-20', dte: 43, monthly: true, gapPct: 3.87,
+    cells: [cell(0.362, 138, 2.9, 27.4), cell(0.269, 145, 2.0, 18.9), cell(0.188, 152, 1.4, 13.2), cell(0.096, 160, 0.9, 8.5)] },
+  { date: '2026-12-18', dte: 71, monthly: true, gapPct: 3.87,
+    cells: [cell(0.398, 138, 4.6, 17.9), cell(0.324, 145, 3.4, 15.3), cell(0.256, 152, 2.9, 12.1), cell(null, 160, null, null)] },
 ];
-/* ★ 与主行＝该卖的那一档（12-18）；卖出日＝本期到期日 11-20（到期日当天卖下一档）。 */
-const MX_CTX = { otm: 7, ruleLabel: '每月第三个周五', from: '2026-11-20', periodDate: '2026-11-20', daysToSale: 8, tenor: 28 };
-const MX = { otms: [3, 5, 7, 10, 15], rows: MX_ROWS, spot: 129.37 };
+const MX = { columns: MX_COLS, rows: MX_ROWS, ladder: [130, 135, 138, 145, 152, 160], selected: 2, spot: 129.37 };
 
-test('probMatrixHtml：列头是可点的 OTM 按钮，当前列整列高亮；每行都给年化（v389 不再标该卖）', () => {
-  const html = probMatrixHtml(MX, { otm: 7 });
+test('probMatrixHtml：列头是真实行权价按钮（第二行 OTM%），当前列整列高亮；每行都给年化', () => {
+  const html = probMatrixHtml(MX, {});
   // v355：剩余天数并进到期日格（第二行小字），少一列 —— 手机上才不用横滑
   assert.match(html, /<thead><tr><th>到期日<\/th><th><button/);
   assert.match(html, /data-cell="expiry" title="月度到期日[^"]*">2026-11-20<small class="prob-sub">43 天<\/small><small class="prob-sub">年化 13\.2%<\/small><\/td>/, '到期日格里带剩余天数与年化（分两行，宽度不撑表）');
-  assert.match(html, /class="mx-col is-on" data-probotm="7" title="把 OTM 设成 7%" aria-label="把 OTM 设成 7%">7%<\/button>/, '当前 OTM 那一列的列头按钮要高亮、可点、且有 aria-label');
-  assert.equal((html.match(/mx-col/g) || []).length, 5, '五档 OTM 各自一个按钮');
-  assert.equal((html.match(/is-on/g) || []).length, 1, '只有当前 OTM 那个列头按钮带 is-on');
-  assert.equal((html.match(/mx-on/g) || []).length, 2, '每行当前 OTM 那一格带 mx-on');
-  // 列头第二行＝这一档 OTM 对应的价格（现价 ×(1+OTM)），给"距离多少钱"一个参照
-  assert.match(html, /7%<\/button><small class="mx-target">\$138\.43<\/small>/, '7% → 129.37×1.07 = $138.43');
-  assert.match(html, /15%<\/button><small class="mx-target">\$148\.78<\/small>/);
+  assert.match(html, /class="mx-col is-on" data-probstrike="152" data-probotmpct="17\.49" title="选 \$152（高于现价 \+17\.5%）" aria-label="选 \$152（高于现价 \+17\.5%）">\$152<\/button>/, '选中那一列＝真实行权价、可点、带 aria-label');
+  assert.equal((html.match(/mx-col/g) || []).length, 4, '四档真实行权价各自一个按钮');
+  assert.equal((html.match(/is-on/g) || []).length, 1, '只有选中那一档的列头带 is-on');
+  assert.equal((html.match(/mx-on/g) || []).length, 2, '每行选中那一格带 mx-on');
+  // 列头两行：第一行真实行权价（要下单的就是它）、第二行相对现价的 OTM%
+  assert.match(html, />\$138<\/button><small class="mx-otm">\+6\.7%<\/small>/, '138 高于现价 6.7%');
+  assert.match(html, />\$160<\/button><small class="mx-otm">\+23\.7%<\/small>/);
   // v389：不再标该卖；行头给的是事实 —— 剩余天数 · 持有几张（若有）· 年化（按当前 OTM）
-  assert.match(html, /<small class="prob-sub">年化 13\.2%<\/small>/, '行头要带年化（按当前 OTM 那一列算）');
+  assert.match(html, /<small class="prob-sub">年化 13\.2%<\/small>/, '行头要带年化（按选中那一档算）');
   assert.doesNotMatch(html, /★|该卖/, 'v389：表里不再有该卖的字样');
-  const held = probMatrixHtml(MX, { otm: 7, holdings: { '2026-12-18': 2 } });
+  const held = probMatrixHtml(MX, { holdings: { '2026-12-18': 2 } });
   assert.match(held, /class="mx-held-row"/, '我持有的那一档用中性标记标出来');
   assert.match(held, /71 天 · <span class="mx-held-tag">持有 2 张<\/span><\/small><small class="prob-sub">年化 12\.1%<\/small>/, '持有张数只是事实，不是建议');
   /* 颜色必须挂在**子元素**上：手机端有一条 `.card small{color:var(--muted)!important}`，
      写在 <small class="prob-sub mx-held-tag"> 自身会被它压掉（v387 的橙色小字在手机上从没显过色）。 */
   assert.doesNotMatch(held, /<small class="prob-sub mx-held-tag"/, '持有标记不能直接挂在 small 上（手机端 !important 会吃掉颜色）');
-  // 「本轮该处理」和「本轮该卖」本来就是同一轮（到期日当天卖下一档），拆两个标记是多读一层
   assert.doesNotMatch(html, /mx-settle/, '不该再有「本轮该处理」的标记');
   assert.doesNotMatch(html, /该处理/);
   assert.match(html, /36\.2%/);
   assert.match(html, /9\.6%/);
   assert.match(html, /var\(--red\)/, '>25% 用红');
   assert.match(html, /var\(--ok\)/, '<10% 用语义绿');
-  assert.match(html, /真实挂牌行权价 \$152\.00/, '悬浮要写清这格实际挂在哪个挂牌行权价上');
-  assert.match(html, /距现价 \+5\.0% · 你设的目标 7% = \$138\.43 · 年化/, '悬停里：完整的 OTM + 你设的目标价当参照');
+  assert.match(html, /行权价 \$152\.00 · 高于现价 \+17\.5% · 权利金 \$1\.40 · 年化 13\.2%/, '悬停要写清这一档的真实价、OTM%、权利金与年化');
+  assert.match(html, /这一期没有 \$160\.00 这一档/, '某一期缺这一档时，悬停里说明是"没这一档"而不是数据缺失');
   assert.doesNotMatch(html, /mx-fixed/, 'v339 起改用 mx-sell-row');
   assert.doesNotMatch(html, /prob-table/, '矩阵不能用 prob-table（那套手机端规则会把 td 变 grid）');
 });
 
 test('probMatrixHtml：每格同时给概率与权利金（不用切视角），年化只在悬停提示里', () => {
-  const html = probMatrixHtml(MX, { otm: 7 });
+  const html = probMatrixHtml(MX, {});
   assert.match(html, /class="mx-prem">\$2\.90</, '下行是权利金');
   assert.match(html, /class="mx-prem">\$4\.60</);
   assert.doesNotMatch(html, /data-probview/, '视角切换已删 —— 两个数同格显示，不需要它');
   assert.match(html, /年化 27\.4%/, '年化挪进悬停提示，不占格位');
-  assert.match(html, /class="mx-prem">—</, '缺挂牌那一格下行显示破折号');
+  assert.match(html, /class="mx-prem mx-none">无此档</, '这一期没这一档时写明「无此档」，不吸到隔壁');
 });
 
 test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
   assert.match(probMatrixHtml(null, {}), /prob-empty/);
-  assert.match(probMatrixHtml({ otms: [], rows: [] }, { emptyHint: '没有 14 天以上的档' }), /没有 14 天以上的档/);
-  assert.match(probMatrixHtml({ otms: [5], rows: [{ date: 'x', dte: 30, cells: null }] }, {}), /—|prob-empty/);
-  assert.doesNotMatch(probMatrixHtml({ otms: [7], rows: MX_ROWS.slice(0, 1) }, {}), /mx-target/, '没有现价就不算目标价，别编一个');
+  assert.match(probMatrixHtml({ columns: [], rows: [] }, { emptyHint: '没有 14 天以上的档' }), /没有 14 天以上的档/);
+  assert.match(probMatrixHtml({ columns: MX_COLS, rows: [{ date: 'x', dte: 30, cells: null }] }, {}), /无此档/);
+  /* 没有 selected（老调用方 / 空链）时把第一列当选中，不能抛错也不能一格不渲染 */
+  const noSel = probMatrixHtml({ columns: MX_COLS, rows: MX_ROWS.slice(0, 1), selected: -1 }, {});
+  assert.equal((noSel.match(/mx-cell/g) || []).length, 4, '四列都要渲染，整行不能错位');
+  assert.equal((noSel.match(/is-on/g) || []).length, 1, '没有 selected 时退到第一列高亮');
 });
 
 test('probMatrixHtml：行头悬停写清「月度/周度 + 行权价间距」——日历卡的两条信息搬到了用得到的地方', () => {
-  const html = probMatrixHtml(MX, { otm: 7 });
+  const html = probMatrixHtml(MX, {});
   assert.match(html, /data-cell="expiry" title="月度到期日（第三个周五） · 相邻行权价间距 3\.87%"/);
-  const weekly = probMatrixHtml({ otms: [7], spot: 625, rows: [
-    { date: '2026-11-13', dte: 36, monthly: false, gapPct: 0, cells: [cell(0.2, 660, 5, 10)] }] }, { otm: 7 });
+  const weekly = probMatrixHtml({ columns: [{ strike: 660, otmPct: 0.056 }], selected: 0, rows: [
+    { date: '2026-11-13', dte: 36, monthly: false, gapPct: 0, cells: [cell(0.2, 660, 5, 10)] }] }, {});
   assert.match(weekly, /title="周度到期日"/, '没有间距数据时不硬写数字');
   assert.doesNotMatch(weekly, /0\.00%/);
 });
 
-test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金，缺挂牌两行都给「—」', () => {
+test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金；这一期没这一档时写明「无此档」', () => {
   const hot = matrixCellHtml(cell(0.362, 138, 2.9, 27.4));
   assert.match(hot, /class="mx-prob" style="color:var\(--red\)">36\.2%<\/span>/, '>25% 用红');
   assert.match(hot, /class="mx-prem">\$2\.90<\/span>/);
   assert.match(matrixCellHtml(cell(0.037, 168, 0.5, 4.7)), /var\(--ok\)/, '<10% 用语义绿');
   const none = matrixCellHtml(cell(null, 0, null, null));
   assert.match(none, /class="mx-prob" style="color:var\(--muted\)">—<\/span>/);
-  assert.match(none, /class="mx-prem">—<\/span>/);
-  assert.equal((matrixCellHtml(null).match(/—/g) || []).length, 2, '空 cell 也要给两行，不能少渲染一行（会整行错位）');
+  assert.match(none, /class="mx-prem mx-none">无此档<\/span>/, '链上没这一档 → 照实写，不吸到隔壁也不编数');
+  assert.ok((matrixCellHtml(null).match(/<span class="mx-/g) || []).length >= 2, '空 cell 也要给两行，不能少渲染一行（会整行错位）');
   assert.match(matrixCellHtml(cell(0.2, 140, 0, 5)), /class="mx-prem">—<\/span>/, '有概率但没权利金时只这一行给「—」');
 });
 
-test('probMatrixHtml：相邻两列吸到同一张合约时照常各写一遍（不用「同上」这种简称）', () => {
-  /* 实测 VGT 11-20 在 $135 与 $145 之间只挂了 $140 一档：7%/8%/10% 会全落到它。
-     以前从第二列起写「同上」，但手机上没有 hover 可解释 —— 改成照常重复数字。 */
+test('probMatrixHtml：列就是真实档位，不会出现"两列其实是同一张合约"的假选择（v391）', () => {
+  /* 老口径的病根：拿 spot×(1+OTM%) 去吸最近的档，VGT 11-20 的 5%/6%/7% 会全吸到 $135。
+     现在列直接就是真实行权价，同一张合约只可能出现一次。 */
   const dup = {
-    otms: [7, 8, 10],
-    rows: [{ date: '2026-11-20', dte: 43, cells: [cell(0.146, 140, 1.05, 6.9), cell(0.146, 140, 1.05, 6.9), cell(0.146, 140, 1.05, 6.9)] }],
+    columns: [{ strike: 135, otmPct: 0.0434 }, { strike: 140, otmPct: 0.0822 }],
+    selected: 0,
+    rows: [{ date: '2026-11-20', dte: 43, cells: [cell(0.146, 135, 1.05, 6.9), cell(0.08, 140, 0.55, 4.2)] }],
   };
-  const html = probMatrixHtml(dup, { otm: 8 });
-  assert.equal((html.match(/14\.6%/g) || []).length, 3, '三列都照常写数字');
-  assert.equal((html.match(/mx-prem">\$1\.05/g) || []).length, 3);
+  const html = probMatrixHtml(dup, {});
+  assert.match(html, />\$135<\/button>/, '列头是真实行权价');
+  assert.match(html, />\$140<\/button>/);
+  assert.equal((html.match(/data-probstrike=/g) || []).length, 2, '两张合约两列，不重复');
   assert.doesNotMatch(html, /同上|mx-ditto|mx-same/, '不再有「同上」这种简称');
-  assert.match(html, /真实挂牌行权价 \$140\.00/, '悬停里仍然写明实际挂在哪一档');
+  assert.match(html, /行权价 \$135\.00 · 高于现价 \+4\.4%/, '悬停里写明这一档的真实价与 OTM%');
 });
 
 

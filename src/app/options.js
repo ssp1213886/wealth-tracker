@@ -151,11 +151,6 @@ export function otmPercent(raw, fallback) {
   return n ? n : fallback;
 }
 
-/** 加减 OTM 百分比并钳制在 1~20%（设定面板的 +/- 按钮）。 */
-export function stepOtmPercent(current, delta, fallback) {
-  return Math.min(20, Math.max(1, otmPercent(current, fallback) + (Number(delta) || 0)));
-}
-
 /**
  * 可卖 CALL 张数 = floor(持股 / 100) − 该标的已有的活跃 CALL 张数。
  *

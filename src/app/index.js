@@ -5,9 +5,9 @@ import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, 
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
 import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
-import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike, freeCallContracts, planOptionDelete} from './options.js';
+import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, suggestedStrike, freeCallContracts, planOptionDelete} from './options.js';
 import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
-import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtProb} from './prob-view.js';
+import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtProb, fmtStrike} from './prob-view.js';
 import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v390';var APP_DATA_VERSION=5;
+var APP_BUILD='v391';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1123,7 +1123,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=390',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=391',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1819,29 +1819,23 @@ try{
 var probTab=OPTION_SYMS[0];
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
 function otmOf(sym){var v=Number(otmSettings&&otmSettings[otmKeyOf(sym)]);return v>0?v:otmDefaultOf(sym)}
-/** 矩阵的 OTM 列：默认只看常用的 5%~8%（每 1% 一档，4 列）。
-    当前 OTM 被调到区间外时，换成"离当前值最近的 4 档" —— 列数固定 4，
-    永远围着你的设置（否则调到 12% 时当前那列会没地方放，也就没法高亮）。 */
-function matrixOtms(cur){
-  var base=[5,6,7,8],c=Number(cur);
-  if(!(c>0)||base.indexOf(c)>=0)return base;
-  return base.concat([c])
-    .sort(function(a,b){return Math.abs(a-c)-Math.abs(b-c)||a-b})
-    .slice(0,4)
-    .sort(function(a,b){return a-b});
-}
+/* 最近一次渲染出来的矩阵摘要 —— ± 按钮与列头点击都要靠它把指针在**真实档位**上移动。
+   ladder 是这一期的完整候选阶梯（真实挂牌价、高于现价 ≤20%），不走 DOM 读。 */
+var lastProb={sym:'',ladder:[],selected:-1,spot:0};
 function renderProbCard(){
   var tabs=document.getElementById('probTabs');
   if(tabs)tabs.innerHTML=probTabsHtml(probTab,OPTION_SYMS);
   var otm=otmOf(probTab);
-  /* OTM 控件上的标的与当前值（加减号只改数字，标签随标的切页变） */
-  var olab=document.getElementById('probOtmSym');if(olab)olab.textContent=probTab+' OTM';
-  var oval=document.getElementById('probOtmVal');if(oval)oval.textContent=otm+'%';
-  /* 标的现价：OTM%、列头目标价、格里的实际档位全是相对它算的，摆在 OTM 旁边最省解释 */
+  /* v391：控件说的是"你选中那一档**真实合约**"（$135），OTM% 降级成它的属性（写在现价那一行）。
+     标签只随标的切页变；合约价要等矩阵算完 —— 下一档由链上的真实阶梯决定，不是"7% + 1%"。 */
+  var olab=document.getElementById('probOtmSym');if(olab)olab.textContent=probTab+' 行权价';
+  var oval=document.getElementById('probOtmVal');if(oval)oval.textContent='—';
+  /* 标的现价：列头的 OTM%、格里的真实档位全是相对它算的，摆在旁边最省解释 */
   var ospot=document.getElementById('probSpot');
   var chain=chainFor(probTab);
   if(!chain){
     if(ospot)ospot.textContent='';
+    lastProb={sym:'',ladder:[],selected:-1,spot:0};
     renderProbNote(document,{});          /* 先清掉上一次的说明 */
     var nb=document.getElementById('probNote');
     if(nb&&chainStatus.loading)nb.textContent='加载中…';
@@ -1850,19 +1844,25 @@ function renderProbCard(){
     renderExpiryCalendar();
     return;
   }
-  if(ospot)ospot.textContent=Number(chain.spot)>0?('现价 $'+Number(chain.spot).toFixed(2)):'';
   var mx=null;
-  /* v389：**不再判定"该卖哪一档"** —— 表里每一行都给年化（按你当前选的 OTM 算），你自己挑哪一期。
+  /* v389：**不再判定"该卖哪一档"** —— 表里每一行都给年化（按当前选中那一档算），你自己挑哪一期。
+     v391：列 = **链上真实挂牌档位**，`otm` 只负责把窗口定位到你想的 % 附近（真实价才是能下单的东西）。
      系统只给两类事实：剩余天数、以及你手上已经持有了哪几档（中性标记，不是建议）。
      minDte 保持 14：SMH 有每日到期日，门槛放低会把它那堆 7/8/11 天的档全拉进来。 */
-  try{mx=probMatrix(chain,{minDte:14,maxRows:5,otms:matrixOtms(otm)})}catch(e){logSwallowed("probMatrix",e)}
+  try{mx=probMatrix(chain,{otm:otm,minDte:14,maxRows:5})}catch(e){logSwallowed("probMatrix",e)}
+  /* selected 存的是**完整阶梯**里的下标（probMatrix 的 selectedAbs）—— ± 靠它走相邻真实档 */
+  lastProb={sym:probTab,ladder:(mx&&mx.ladder)||[],selected:mx?Number(mx.selectedAbs):-1,spot:Number(mx&&mx.spot)||0};
+  var selCol=mx&&mx.columns&&mx.selected>=0?mx.columns[mx.selected]:null;
+  if(oval)oval.textContent=selCol?fmtStrike(selCol.strike):'—';
+  if(ospot)ospot.textContent=(Number(chain.spot)>0?('现价 $'+Number(chain.spot).toFixed(2)):'')+
+    (selCol&&selCol.otmPct!=null?(' · 这一档 '+(selCol.otmPct>=0?'+':'')+(selCol.otmPct*100).toFixed(1)+'%'):'');
   /* 我持有哪几档：与「到期日历」同一口径（settled/archived 不算） */
   var heldByDate={};
   (optionTrades||[]).forEach(function(o){
     if(!o||o.settled||o.archived||!o.expiry)return;
     heldByDate[o.expiry]=(heldByDate[o.expiry]||0)+(Number(o.contracts)||1);
   });
-  renderProbMatrix(document,mx,{otm:otm,holdings:heldByDate,
+  renderProbMatrix(document,mx,{holdings:heldByDate,
     emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链里没有 14 天以上的到期日'});
   renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),
     iv30:(function(){var m={},all=iv30Map();if(all[probTab]!=null)m[probTab]=all[probTab];return m})()});
@@ -1949,22 +1949,20 @@ function bindProbControls(){
     renderProbCard();
     haptic('light');
   });
-  /* OTM 加减：每次 1%（钳制在 1~20%），与点列头写的是同一份 otmSettings。
-     点列头是「快速跳到 3/5/7/10/15」，加减号是「微调到 6%/8% 这种非五档值」。
-     非五档值会被 matrixOtms 插进列头，当前档始终高亮。 */
+  /* v391：加减号在**链上相邻的真实档位**之间移动指针（不再是 ±1%）。
+     走到阶梯两端就不动；点列头与加减号写的是同一份 otmSettings（存的是那一档真实的 OTM%）。 */
   var minus=document.getElementById('probOtmMinus');
   if(minus)minus.addEventListener('click',function(){adjOtm(probTab,-1);haptic('light')});
   var plus=document.getElementById('probOtmPlus');
   if(plus)plus.addEventListener('click',function(){adjOtm(probTab,1);haptic('light')});
-  /* 点列头 = 直接把 OTM 设成那一档（替代原来的 +/- 按钮；矩阵本来就有这 5 列） */
+  /* 点列头 = 把指针移到那一档真实合约（写回它真实的 OTM%） */
   var mxEl=document.getElementById('probMatrix');
   if(mxEl)mxEl.addEventListener('click',function(e){
-    var b=e.target.closest('[data-probotm]');if(!b)return;
-    var want=Number(b.dataset.probotm);
-    if(!(want>0))return;
-    var key=otmKeyOf(probTab),cur=otmOf(probTab);
-    if(want===cur)return;
-    otmSettings[key]=Math.min(20,Math.max(1,want));
+    var b=e.target.closest('[data-probstrike]');if(!b)return;
+    if(b.classList.contains('is-on'))return;          /* 已经是这一档，不用写一遍 */
+    var want=Number(b.dataset.probotmpct);
+    if(!isFinite(want))return;
+    otmSettings[otmKeyOf(probTab)]=Math.min(20,Math.max(0,want));
     LS.setItem('otmSettings',JSON.stringify(otmSettings));
     markDirty('otmSettings');
     updateOtm();
@@ -2096,7 +2094,23 @@ async function refreshDividends(force){
 
 /* 容错：initProb 可能在任何时候同步调用它，这里再兜一次底，保证 otmSettings 一定存在。 */
 function updateOtm(){if(!otmSettings)otmSettings={};Object.keys(OTM_DEFAULTS).forEach(function(k){otmSettings[k]=otmPercent(otmSettings[k],OTM_DEFAULTS[k])});renderProbCard();}
-function adjOtm(sym,dir){var key=otmKeyOf(sym);otmSettings[key]=stepOtmPercent(otmSettings[key],dir,otmDefaultOf(sym));LS.setItem("otmSettings",JSON.stringify(otmSettings));markDirty('otmSettings');updateOtm();autoPushDebounce();}
+/**
+ * ± 的落点：**链上相邻的真实档位**。用最近一次渲染的阶梯把指针移一格，
+ * 再把那一档真实的 OTM% 写回设置（所以设置里存的是"这张合约"而不是"一个圆整的百分比"）。
+ * 走到两端就原地不动 —— 不要偷偷绕回另一头。
+ */
+function adjOtm(sym,dir){
+  if(!lastProb||lastProb.sym!==sym)return;
+  var lad=lastProb.ladder||[],i=Number(lastProb.selected)+(dir>0?1:-1);
+  if(i<0||i>=lad.length||i===Number(lastProb.selected))return;
+  var sp=Number(lastProb.spot)||0;
+  if(!(sp>0))return;
+  otmSettings[otmKeyOf(sym)]=Math.min(20,Math.max(0,Number(((lad[i]/sp-1)*100).toFixed(2))));
+  LS.setItem("otmSettings",JSON.stringify(otmSettings));
+  markDirty('otmSettings');
+  updateOtm();
+  autoPushDebounce();
+}
 setTimeout(updateOtm,800);
 
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}

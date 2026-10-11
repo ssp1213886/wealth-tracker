@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=390');
+  assert.equal(manifest.start_url, '/?v=391');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v390/);
+  assert.match(serviceWorker, /wealth-v391/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=390',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=391',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -743,8 +743,9 @@ test('期权页：OTM 加减号与「看什么」视角都在，且加减号接�
   assert.match(indexSource, /getElementById\('probOtmPlus'\)[\s\S]{0,140}adjOtm\(probTab,1\)/,
     '加号没接回 adjOtm');
   // 切 VGT / SMH 时标签与数值要跟着变，否则 SMH 那页会顶着「VGT OTM」
-  assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,100}probTab\+' OTM'/, 'OTM 标签没跟着标的切');
-  assert.match(indexSource, /getElementById\('probOtmVal'\)[\s\S]{0,100}otm\+'%'/, 'OTM 数值没跟着设置刷新');
+  /* v391：控件说的是"你选中的那一档**真实合约**"——标签随标的切页变，数值是行权价，不是百分比 */
+  assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,120}probTab\+' 行权价'/, '行权价标签没跟着标的切');
+  assert.match(indexSource, /getElementById\('probOtmVal'\)[\s\S]{0,1400}fmtStrike\(selCol\.strike\)/, '数值要写真实行权价，别退回百分比');
 });
 
 /**
@@ -777,15 +778,21 @@ test('CSS：概率矩阵的横向滚动挂在外层容器，表格本身不许�
 });
 
 /**
- * 用户的常用区间是 5%~8%（VGT 默认 7%、SMH 默认 6%），3%/10%/15% 那些档平时不看。
- * 默认列固定 5/6/7/8 四档；调到区间外时换成"离当前值最近的 4 档"，当前档永远在表里。
+ * v391：矩阵的列＝**链上真实挂牌档位**（以前是 5/6/7/8 那四档 OTM% 目标）。
+ * 钉住三件事：① 列由 prob.js 的阶梯算出来，index.js 不许自己编 % 当列；
+ * ② 指针（± / 点列头）走的是真实档位，写回设置时换算成那一档真实的 OTM%；
+ * ③ 指针要缓存下来给 ± 用，不能靠读 DOM。
  */
-test('index.js：矩阵默认列是 5/6/7/8 四档，且当前 OTM 永远在表里', () => {
-  assert.match(indexSource, /var base=\[5,6,7,8\],c=Number\(cur\)/, '默认列改成常用区间 5~8（每 1% 一档）');
-  assert.match(indexSource, /\.slice\(0,4\)/, '列数固定 4 —— 手机上少拖一点');
-  const fn = indexSource.slice(indexSource.indexOf('function matrixOtms'));
+test('index.js：矩阵列来自链上真实档位，± 在真实档位之间移动（v391）', () => {
+  assert.match(indexSource, /probMatrix\(chain,\{otm:otm,minDte:14,maxRows:5\}\)/, '要把 OTM% 交给 probMatrix 定窗口');
+  assert.doesNotMatch(indexSource, /function matrixOtms/, '旧的"按 % 造列"已经删掉');
+  assert.match(indexSource, /lastProb=\{sym:probTab,ladder:[\s\S]{0,80}selected:mx\?Number\(mx\.selectedAbs\)/, '要缓存**完整阶梯里的下标**（selectedAbs），不是窗口内的下标');
+  const fn = indexSource.slice(indexSource.indexOf('function adjOtm'));
   const body = fn.slice(0, fn.indexOf('\n}') + 2);
-  assert.match(body, /Math\.abs\(a-c\)-Math\.abs\(b-c\)/, '区间外要按"离当前值最近"挑，而不是硬塞');
+  assert.match(body, /lastProb\.ladder/, '± 要沿着真实阶梯走');
+  assert.match(body, /\(lad\[i\]\/sp-1\)\*100/, '写回设置的是那一档真实的 OTM%');
+  assert.match(body, /i<0\|\|i>=lad\.length/, '走到阶梯两端就不动，不许绕回另一头');
+  assert.match(indexSource, /data-probstrike/, '列头点击要带上真实行权价');
 });
 
 /**

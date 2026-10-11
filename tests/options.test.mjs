@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals,
-  otmPercent, stepOtmPercent, suggestedStrike, pendingBuybacks, optionActionItems,
+  otmPercent, suggestedStrike, pendingBuybacks, optionActionItems,
   freeCallContracts, DEFAULT_OPTION_SYMBOLS, planOptionDelete,
 } from '../src/app/options.js';
 
@@ -180,14 +180,11 @@ test('optionTotals：累计/本月/本年权利金、本月 CALL 张数、活跃
   assert.deepEqual(optionTotals(null, { now: BEFORE_CLOSE }), { total: 0, month: 0, year: 0, callsThisMonth: 0, activeCount: 0, nearest: null });
 });
 
-test('OTM 工具：百分比回落默认、加减后钳制 1~20、建议行权价按现价推算', () => {
+test('OTM 工具：百分比回落默认、建议行权价按现价推算', () => {
   assert.equal(otmPercent(0, 7), 7);
   assert.equal(otmPercent('abc', 5), 5);
   assert.equal(otmPercent(9, 7), 9);
-  assert.equal(stepOtmPercent(20, 1, 7), 20, '上限 20');
-  assert.equal(stepOtmPercent(1, -1, 7), 1, '下限 1');
-  assert.equal(stepOtmPercent(7, 1, 7), 8);
-  assert.equal(stepOtmPercent('bad', -1, 7), 6);
+  assert.equal(otmPercent(5.49, 7), 5.49, 'v391：设置里存的是"选中那一档真实的 OTM%"，可以带小数');
   assert.equal(suggestedStrike(100, 7), 107);
   assert.equal(suggestedStrike(0, 7), 0, '现价缺失不显示建议价');
   assert.equal(Math.round(suggestedStrike(593.45, 5)), Math.round(593.45 * 1.05));

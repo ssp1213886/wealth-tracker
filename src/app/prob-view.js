@@ -24,6 +24,13 @@ export function fmtIv(iv) {
   return (iv * 100).toFixed(1) + '%';
 }
 
+/** 行权价文案：整数不带小数（$135）、带小数的保留两位（$132.5 / $131.88）。 */
+export function fmtStrike(strike) {
+  const n = Number(strike);
+  if (!(n > 0)) return '—';
+  return '$' + (Math.round(n * 100) / 100);
+}
+
 function fmtMoney(value) {
   const n = Number(value);
   if (!(n > 0)) return '—';
@@ -161,70 +168,74 @@ export function renderProbUnavailable(doc, hint) {
  * 一格：上面是被行权概率（大字、按风险着色），下面是权利金（灰色小字）。
  * 两行同格 = 不用再来回切「看概率 / 看权利金」，风险与收益一眼同时在。
  * 年化不占格位（放悬停提示里），免得一格挤三行。
- * 这一档没有挂牌行权价（阶梯够不到）时两行都给「—」，不编数。
+ * 这一期**没有这一档**时上行给「—」、下行写「无此档」—— 不是"数据缺失"，
+ * 是链上真的没这个价（各期阶梯粗细不同），所以照实写、不吸到隔壁档（v391）。
  */
 export function matrixCellHtml(cell) {
-  if (!cell || cell.prob == null) {
-    return '<span class="mx-prob" style="color:var(--muted)">—</span><span class="mx-prem">—</span>';
+  if (!cell || !cell.listed || !(cell.strike > 0)) {
+    return '<span class="mx-prob" style="color:var(--muted)">—</span><span class="mx-prem mx-none">无此档</span>';
   }
   const prem = cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—';
+  if (cell.prob == null) {
+    return '<span class="mx-prob" style="color:var(--muted)">—</span><span class="mx-prem">' + prem + '</span>';
+  }
   return '<span class="mx-prob" style="color:' + probColor(cell.prob) + '">' + fmtProb(cell.prob) + '</span>' +
     '<span class="mx-prem">' + prem + '</span>';
 }
 
-/** 单元格的悬浮提示：写出这一格挂在哪个真实行权价上、年化多少。 */
+/** 单元格的悬浮提示：这一格挂在哪一档、离现价多少、权利金与年化。 */
 function cellTitle(cell) {
-  if (!cell || !(cell.strike > 0)) return '这一档没有挂牌行权价（行权价阶梯够不到该 OTM）';
-  const parts = ['真实挂牌行权价 $' + Number(cell.strike).toFixed(2)];
-  /* 主行写"距现价多少"（完整的 OTM）；"你设的目标价"放悬停里当参照，两个口径别混在一行 */
-  if (cell.otmPct != null) parts.push('距现价 ' + (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '%');
-  if (cell.pct != null && Number(cell.target) > 0) parts.push('你设的目标 ' + cell.pct + '% = $' + Number(cell.target).toFixed(2));
+  if (!cell || !(cell.strike > 0)) return '这一列没有行权价';
+  if (!cell.listed) return '这一期没有 $' + Number(cell.strike).toFixed(2) + ' 这一档（各期阶梯粗细不同）';
+  const parts = ['行权价 $' + Number(cell.strike).toFixed(2)];
+  if (cell.otmPct != null) parts.push('高于现价 ' + (cell.otmPct >= 0 ? '+' : '') + (cell.otmPct * 100).toFixed(1) + '%');
+  if (cell.premium > 0) parts.push('权利金 $' + Number(cell.premium).toFixed(2));
   if (cell.annualPct != null) parts.push('年化 ' + Number(cell.annualPct).toFixed(1) + '%');
   return parts.join(' · ');
 }
 
 /**
- * 概率矩阵。
- *  · 行：未来到期日。行头只给**事实** —— 剩余天数 · 我持有几张（若有）· 年化（按当前选的 OTM 算）。
+ * 概率矩阵（v391：**列 = 链上真实挂牌档位**，不再是 OTM% 目标）。
+ *  · 行：未来到期日。行头只给**事实** —— 剩余天数 · 我持有几张（若有）· 年化（按当前选中那一档算）。
  *    v389 起**不再标"该卖哪一档"**：系统不替用户决策，每一行都标年化，横向一比自己挑哪一期。
- *  · 列头是**可点的按钮** —— 点一下就把 OTM 设成那一档，不需要 +/- 按钮。
- *  · 每格两行：概率（按风险着色）+ 权利金（灰字）。相邻两列吸到同一张合约时**照常各写一遍**
- *    —— 「同上」这种简称在手机上没有 hover 可解释，看不懂。
+ *  · 列头是**可点的按钮**：第一行是真实行权价（要下单的就是它），第二行小字是它相对现价的 OTM%。
+ *    点一下 / 按 ± 都是把指针移到真实档位上 —— OTM% 仍是驱动（你想的是几 %），列是结果（你能卖多少钱）。
+ *  · 每格两行：概率（按风险着色）+ 权利金（灰字）；某一期没这一档时写「无此档」，不吸到隔壁。
  */
 export function probMatrixHtml(matrix, ctx) {
   const c = ctx || {};
-  const m = matrix || { otms: [], rows: [] };
+  const m = matrix || { columns: [], rows: [] };
   const rows = Array.isArray(m.rows) ? m.rows : [];
-  const otms = Array.isArray(m.otms) ? m.otms : [];
-  if (!rows.length || !otms.length) {
+  const cols = Array.isArray(m.columns) ? m.columns : [];
+  if (!rows.length || !cols.length) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
-  const cur = Number(c.otm);
-  const curIdx = otms.findIndex(function (o) { return Number(o) === cur; });
-  /* 列头第二行：这一档 OTM 对应的价格＝现价 ×(1+OTM%)，给你一个"距离多少钱"的参照。
-     实际下单看的是真实挂牌档（可能差一点），那个写在每格的悬停提示里。 */
-  const spot = Number(m.spot) || 0;
+  const sel = Number(m.selected);
+  const selIdx = sel >= 0 && sel < cols.length ? sel : 0;
   const heldBy = c.holdings || {};
   /* 刻意不加 .prob-table：那套手机端规则是给「到期日历」用的 */
   let html = '<table class="mx-table"><thead><tr><th>到期日</th>' +
-    otms.map(function (o) {
-      const tgt = spot > 0 ? '<small class="mx-target">$' + (spot * (1 + Number(o) / 100)).toFixed(2) + '</small>' : '';
-      return '<th><button type="button" class="mx-col' + (Number(o) === cur ? ' is-on' : '') +
-        '" data-probotm="' + o + '" title="把 OTM 设成 ' + o + '%" aria-label="把 OTM 设成 ' + o + '%">' + o + '%</button>' + tgt + '</th>';
+    cols.map(function (col, i) {
+      const pct = col.otmPct == null ? '' : (col.otmPct >= 0 ? '+' : '') + (col.otmPct * 100).toFixed(1) + '%';
+      const label = '选 $' + col.strike + (pct ? '（高于现价 ' + pct + '）' : '');
+      return '<th><button type="button" class="mx-col' + (i === selIdx ? ' is-on' : '') +
+        '" data-probstrike="' + col.strike + '" data-probotmpct="' + (col.otmPct == null ? '' : (col.otmPct * 100).toFixed(2)) +
+        '" title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">$' + col.strike + '</button>' +
+        '<small class="mx-otm">' + escapeHtml(pct) + '</small></th>';
     }).join('') + '</tr></thead><tbody>';
   rows.forEach(function (r) {
-    /* 按 otms 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
+    /* 按 columns 逐列取值，而不是遍历 r.cells —— 万一某行缺几列，直接 map 会少渲染 td、整行错位 */
     const cells = Array.isArray(r.cells) ? r.cells : [];
     /* 行头悬停：月度/周度 + 相邻行权价间距 —— 「到期日历」卡的两条独有信息挪到这儿，
-       免得切来切去才能判断这一行能不能精确挑到目标 OTM。 */
+       免得切来切去才知道这一期的档位有多粗（粗的期数会出现「无此档」）。 */
     const rowTitle = (r.monthly ? '月度到期日（第三个周五）' : '周度到期日') +
       (r.gapPct > 0 ? ' · 相邻行权价间距 ' + Number(r.gapPct).toFixed(2) + '%' : '');
-    /* v389：不再标"该卖"。行头只放**事实**：剩余天数 · 我持有几张 · 年化（按当前 OTM 算）。
+    /* v389：不再标"该卖"。行头只放**事实**：剩余天数 · 我持有几张 · 年化（按当前选中那一档算）。
        年化原来是只给"该卖那一档"看的，现在每一行都有 —— 你自己比一比挑哪一期。 */
     const held = Number(heldBy[r.date]) || 0;
-    const cell = curIdx >= 0 ? cells[curIdx] : null;
+    const cell = cells[selIdx];
     const ann = cell && cell.annualPct != null ? Number(cell.annualPct) : null;
-    /* 拆两行小字，宽度不超"剩余天数"那一列 —— 挤成一行会把表格撑出横向滚动（8% 那列被截）。
+    /* 拆两行小字，宽度不超"剩余天数"那一列 —— 挤成一行会把表格撑出横向滚动。
        「持有 N 张」挂在**内联 span** 上，而不是直接写在 small 上：手机端有一条
        `.card small{color:var(--muted)!important}`，写在 small 自身的颜色会被它压掉（v387 的橙色小字
        在手机上其实从没显过色）；挂在子元素上就不受这条继承类规则影响 —— 继承永远输给元素自己的声明。 */
@@ -234,9 +245,9 @@ export function probMatrixHtml(matrix, ctx) {
       '<td data-cell="expiry" title="' + escapeHtml(rowTitle) + '">' + escapeHtml(r.date) +
         '<small class="prob-sub">' + r.dte + ' 天' + heldTag + '</small>' +
         (sub2 ? '<small class="prob-sub">' + sub2 + '</small>' : '') + '</td>' +
-      otms.map(function (o, i) {
+      cols.map(function (col, i) {
         const cellI = cells[i];
-        return '<td class="mx-cell' + (Number(o) === cur ? ' mx-on' : '') +
+        return '<td class="mx-cell' + (i === selIdx ? ' mx-on' : '') +
           '" title="' + escapeHtml(cellTitle(cellI)) + '">' + matrixCellHtml(cellI) + '</td>';
       }).join('') +
       '</tr>';

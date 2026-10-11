@@ -244,36 +244,101 @@ export function optionProbabilities(chain, options, opts) {
   });
 }
 
-/** 概率矩阵默认的 OTM 档位（%）。 */
-export const MATRIX_OTMS = [3, 5, 7, 10, 15];
+/** 矩阵最多显示几列（手机一屏放得下的真实档位数）。 */
+export const MATRIX_COLS = 4;
+
+/** 阶梯带：只把「高于现价 0~20%」的档当候选（再往上权利金趋近 0，卖它没意义）。 */
+export const LADDER_MAX_OTM = 0.2;
+
+/** 这一档在这份阶梯里吗（1 分钱容差；CBOE 的档位都是 0.5/1/2.5/5 的整数倍）。 */
+function findStrike(calls, strike) {
+  const list = Array.isArray(calls) ? calls : [];
+  const k = Number(strike);
+  for (let i = 0; i < list.length; i += 1) {
+    if (Math.abs(Number(list[i].k) - k) < 0.001) return list[i];
+  }
+  return null;
+}
 
 /**
- * 概率矩阵：行 = 未来的到期日，列 = 各 OTM%。每格给【真实挂牌那一档】的
- * 行权价 / 被行权概率 / 权利金 / 年化。
+ * 可卖档位阶梯：**锚定那一行**（＝剩余天数最短的那一行）真实挂牌、且高于现价 ≤20% 的行权价，升序。
  *
- * 三个刻意的取舍：
- * ① **概率与权利金必须同口径**：都用链里最接近目标 OTM 的**真实挂牌档**算。
- *    之前概率用精确目标价、权利金用挂牌价会是两个口径（一行里 138.43 的概率配 140 的权利金），
- *    看着差不多、实际对不上，所以统一到挂牌档。
- * ② **够不到的档显示 null（界面出「—」），不编数**：近月阶梯常被截断
- *    （实测 VGT 8 天那档只挂到现价 +4.4%），5%/7%/10%/15% 会全落到同一档。
- *    与其四列显示同一个数，不如老实说"这档不存在"。偏离目标超过 STRIKE_TOLERANCE 即判为不存在。
- * ③ **只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺（SMH 1 天那行实测
- *    15% 的概率比 10% 还高），放进表里只会误导。
+ * 为什么用"某一行的阶梯"，而不是"所有行的交集 / 并集"（v391 定稿前的实测取舍）：
+ *   · **并集** → 只在这一期挂牌的档，在别的行就变成一格「无此档」，一大片空格看着像坏了；
+ *   · **交集** → 远期月份阶梯很粗（实测 VGT 2027-02 那期上方只有 $5 一档），会把整张表压成 2~3 列；
+ *   · **锚定最近那一期** → 它是你最先要操作的一期，也一定每列都有报价；别的行缺某一档时照实写
+ *     「无此档」—— 那是各期阶梯粗细的真实差异，不该被抹平（VGT 2027-02 确实没有 $137.5）。
+ */
+export function ladderOf(expiry, spot) {
+  const sp = Number(spot);
+  if (!(sp > 0)) return [];
+  return sortedCalls(expiry)
+    .map(function (c) { return Number(c.k); })
+    .filter(function (k) {
+      const pct = k / sp - 1;
+      return pct >= 0 && pct <= LADDER_MAX_OTM;
+    });
+}
+
+/** 阶梯里离目标 OTM% 最近的那一档的下标（阶梯为空返回 -1）。 */
+export function nearestLadderIdx(ladder, spot, otmPct) {
+  const list = Array.isArray(ladder) ? ladder : [];
+  const sp = Number(spot);
+  if (!list.length || !(sp > 0)) return -1;
+  const want = sp * (1 + (Number(otmPct) || 0) / 100);
+  let best = 0;
+  let gap = Math.abs(list[0] - want);
+  for (let i = 1; i < list.length; i += 1) {
+    const g = Math.abs(list[i] - want);
+    if (g < gap) { best = i; gap = g; }
+  }
+  return best;
+}
+
+/**
+ * 从阶梯里切出要显示的窗口：以你选中的那一档为锚，让它落在窗口的**第 2 个位置**
+ * （左边留一档好往下调，右边留够看上面几档）；到两端时窗口贴边、不越界。
+ * 返回 { window, selected }；selected 是选中档在 window 里的下标（阶梯为空时 -1）。
+ */
+export function matrixWindow(ladder, spot, otmPct, count) {
+  const list = Array.isArray(ladder) ? ladder : [];
+  const cols = Number(count) > 0 ? Number(count) : MATRIX_COLS;
+  const sel = nearestLadderIdx(list, spot, otmPct);
+  if (sel < 0) return { window: [], selected: -1, start: 0 };
+  const start = Math.min(Math.max(sel - 1, 0), Math.max(0, list.length - cols));
+  return { window: list.slice(start, start + cols), selected: sel - start, start: start };
+}
+
+/**
+ * 概率矩阵：行 = 未来的到期日，列 = **链上真实挂牌档位**（v391 起；以前是"OTM% 目标"）。
  *
- * 表里**不再有任何"该卖哪一档"的标记**（v389）：系统不替用户决策。每行只给事实 ——
- * 剩余天数、年化（按当前 OTM 算），界面另标"我持有这一档"。挑哪一期由用户横向比较后自己定；
- * 所以这里既不收"目标档"（原 `fixed`），也不做吸附、不强制保留某一行。
- * （那些持仓本身的风险在「持仓与收入」里逐张显示。）
+ * 为什么列要换成真实档位：OTM% 只是你的想法，能下单的是**行权价**。老口径拿 spot×(1+OTM%)
+ * 去吸最近的档、容差 2%，于是 VGT 2026-11-20 那一期 5%/6%/7% 三列**全吸到同一张 $135**
+ * （真实 +5.5%），列头却写着链上根本不存在的 $134.38/$135.66/$136.94 —— 手机上（没有悬停）
+ * 你一张真实价格都看不到。现在列就是真实档位，OTM% 降级成列头那行小字与选中指针。
+ *
+ * 三条不变的取舍：
+ * ① **概率与权利金同口径**：都用这一档**真实挂牌**的报价与 IV 算（不再有"目标价"这种中间量）。
+ * ② **缺档就老实说「无此档」**：那一期阶梯里没有这一档时不吸到隔壁、也不编数。
+ * ③ **只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺，放进表里只会误导。
+ *
+ * 表里**没有任何"该卖哪一档"的标记**（v389）：系统不替用户决策。每行只给事实 ——
+ * 剩余天数、年化（按当前选中那一列算），界面另标"我持有这一档"。
+ *
+ * opts：`otm`（你选的 OTM%，驱动窗口位置）、`minDte`、`maxRows`、`cols`、`rate`。
+ * 返回 { columns:[{strike,otmPct}], rows, ladder, selected, spot }：
+ *   · `ladder` 是这一期的完整候选阶梯（± 按钮靠它逐档移动指针）
+ *   · `selected` 是选中列在 columns 里的下标
  */
 export function probMatrix(chain, opts) {
   const o = opts || {};
-  const otms = Array.isArray(o.otms) && o.otms.length ? o.otms : MATRIX_OTMS;
   const minDte = Number(o.minDte) > 0 ? Number(o.minDte) : 14;
   const maxRows = Number(o.maxRows) > 0 ? Number(o.maxRows) : 5;
+  const cols = Number(o.cols) > 0 ? Number(o.cols) : MATRIX_COLS;
+  const otm = Number(o.otm) || 0;
   const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
   const spot = Number(chain && chain.spot);
-  if (!(spot > 0)) return { otms: otms, rows: [], spot: 0 };
+  if (!(spot > 0)) return { columns: [], rows: [], ladder: [], selected: -1, spot: 0 };
   const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
   /* v389：不再有"该卖的那一档"（fixed）—— 表里只按"14 天以上、取前 maxRows 档"来排。 */
   const picked = [];
@@ -284,9 +349,15 @@ export function probMatrix(chain, opts) {
     picked.push(e);
   });
   picked.sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
-  const rows = picked.slice(0, maxRows)
+  /* 阶梯锚在**最近的那一行**上（它一定有报价、也是你最先操作的一期）；那一行没档就顺延到下一行。
+     注意：行对象里的 gapPct 仍然是**各期自己**的档距（悬停里要写"这一期档位多粗"）。 */
+  const shown = picked.slice(0, maxRows);
+  let ladder = [];
+  for (let i = 0; i < shown.length && !ladder.length; i += 1) ladder = ladderOf(shown[i], spot);
+  const win = matrixWindow(ladder, spot, otm, cols);
+  const rows = shown
     .map(function (e) {
-      const cells = otms.map(function (pct) { return matrixCell(e, spot, pct, rate); });
+      const cells = win.window.map(function (k) { return matrixCellAt(e, spot, k, rate); });
       /* monthly / gapPct 一起带出去：行头悬停要写"这是不是月度到期日、行权价多粗"，
          这样不用展开「到期日历」卡也能判断能不能精确挑到目标 OTM。 */
       return {
@@ -295,12 +366,15 @@ export function probMatrix(chain, opts) {
         cells: cells, probs: cells.map(function (c) { return c.prob; }),
       };
     });
-  /* spot 一起带出去：列头要用它算「这一档 OTM 对应的价格」＝现价 ×(1+OTM%)。 */
-  return { otms: otms, rows: rows, spot: spot };
+  return {
+    columns: win.window.map(function (k) { return { strike: k, otmPct: k / spot - 1 }; }),
+    rows: rows, ladder: ladder, selected: win.selected,
+    /* selectedAbs＝选中档在**完整阶梯**里的下标（± 靠它走相邻真实档）。
+       只给窗口内下标的 selected 会导致 ± 走错档 —— 实测过（VGT 点 + 从 $135 跳到 $129.38）。 */
+    selectedAbs: win.selected < 0 ? -1 : win.start + win.selected,
+    spot: spot,
+  };
 }
-
-/** 挂牌档偏离目标 OTM 超过这个比例就当"这一档不存在"（阶梯够不到）。 */
-export const STRIKE_TOLERANCE = 0.02;
 
 /** 标准月度到期日＝每月第三个周五（纯日期判断；VGT 只有这种，SMH 还有周度）。 */
 export function isMonthlyExpiry(date) {
@@ -312,28 +386,26 @@ export function isMonthlyExpiry(date) {
 }
 
 /**
- * 矩阵里的一格：把目标 OTM% 吸附到该到期日**真实挂牌**的那一档，然后用它算概率与权利金。
- * 返回 { pct, strike, target, drift, prob, premium, annualPct }；档位不存在时三个数为 null。
+ * 矩阵里的一格：**直接取这一档**在该到期日的真实报价，算概率 / 权利金 / 年化。
+ *
+ * v391 起不再有"目标价"与吸附容差 —— 列本身就是真实档位，
+ * 所以只有两种结果：这一期有这一档（listed=true，三个数都算得出来）或没有（listed=false，界面写「无此档」）。
+ * 返回 { strike, otmPct, prob, premium, annualPct, listed }。
  */
-export function matrixCell(expiry, spot, pct, rate) {
+export function matrixCellAt(expiry, spot, strike, rate) {
   const r = Number.isFinite(Number(rate)) ? Number(rate) : DEFAULT_RATE;
   const sp = Number(spot);
-  const target = sp * (1 + Number(pct) / 100);
-  const trade = nearestCall(sortedCalls(expiry), target);
-  const out = { pct: Number(pct), target: target, strike: 0, drift: null, otmPct: null, prob: null, premium: null, annualPct: null, listed: true };
-  if (!trade || !(Number(trade.k) > 0)) { out.listed = false; return out; }
-  const strike = Number(trade.k);
-  out.strike = strike;
-  /* drift＝实际挂牌档相对"你设的目标价"偏了多少（误差项）；
-     otmPct＝实际挂牌档相对**现价**高多少（＝这张合约真正的 OTM）——界面主行显示的是后者。 */
-  out.drift = strike / target - 1;
-  if (sp > 0) out.otmPct = strike / sp - 1;
-  if (Math.abs(out.drift) > STRIKE_TOLERANCE) { out.listed = false; return out; }
+  const k = Number(strike);
+  const out = { strike: k, otmPct: sp > 0 && k > 0 ? k / sp - 1 : null, prob: null, premium: null, annualPct: null, listed: false };
+  if (!(sp > 0) || !(k > 0)) return out;
+  const trade = findStrike(sortedCalls(expiry), k);
+  if (!trade) return out;
+  out.listed = true;
   const dte = Number(expiry && expiry.dte) || 0;
-  const iv = resolveIv(expiry, Number(spot), dte, strike, r);
-  out.prob = probITM({ spot: Number(spot), strike: strike, iv: iv, dte: dte, rate: r });
+  const iv = resolveIv(expiry, sp, dte, k, r);
+  out.prob = probITM({ spot: sp, strike: k, iv: iv, dte: dte, rate: r });
   const mid = contractMid(trade);          /* 真实挂单价：优先买卖价中值 */
   out.premium = mid > 0 ? mid : null;
-  out.annualPct = annualizedPremiumPct(out.premium, Number(spot), dte);
+  out.annualPct = annualizedPremiumPct(out.premium, sp, dte);
   return out;
 }

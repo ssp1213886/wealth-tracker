@@ -2904,8 +2904,10 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* 列头改成按钮：点一下就把 OTM 设成那一档 */
 .mx-col{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:560;padding:2px 4px;border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums}
 .mx-col.is-on{background:var(--accent-l);color:var(--accent-d);font-weight:700}
-/* 列头第二行：这一档 OTM 对应的价格（现价 ×(1+OTM)），当参照用 */
-.mx-table thead th .mx-target{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:1px}
+/* 列头第二行：这一档**真实报价**高于现价多少（v391 起列头主位是真实行权价，OTM% 降级成注解） */
+.mx-table thead th .mx-otm{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:1px}
+/* 这一期没有这一档（各期阶梯粗细不同）——不是"数据缺失"，所以用灰字写明而不是只给一个「—」 */
+.mx-cell .mx-prem.mx-none{font-size:10px;font-weight:600}
 /* 「我持有这一档」的中性标记（v389 起；v387 时这套样式标的是"★ 该卖"）。
    现在只说事实、不给建议，所以沿用**到期日历 `.cal-mine` 的那套语言**（accent 系），
    不再用橙色 —— 橙在本项目里是"提醒/待办"语义（待办提醒、未卖出徽章），

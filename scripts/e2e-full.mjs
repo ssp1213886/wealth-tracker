@@ -8,6 +8,26 @@ const page = await context.newPage();
 await page.route("**/assets/*", (route) =>
   route.continue({ headers: { ...route.request().headers(), "cache-control": "no-cache", pragma: "no-cache" } }),
 );
+/* v391：`#probOtmVal` 现在显示的是"选中那一档的**真实行权价**" —— 没有期权链时它是「—」，
+   而 ± 是按链上阶梯移动指针的（没有链就无处可走）。所以这里注入一条最小真实链，
+   让下面那条"步进可调整"真的在验"在链上相邻档之间移动"，而不是"两次都读到同一个空值"
+   （v389 的教训：读空值比大小的断言，永远绿）。 */
+const mkCalls = (spot) => [1.02, 1.04, 1.06, 1.08, 1.1, 1.12].map((mult) => {
+  const k = Math.round(spot * mult * 100) / 100;
+  const mid = Math.max(0.2, (Number(spot) * 0.14 - (k - spot)) * 0.25);
+  return { k, b: +(mid - 0.1).toFixed(2), a: +(mid + 0.1).toFixed(2), lp: +mid.toFixed(2), iv: 0.22, oi: 50, v: 3 };
+});
+await page.route("**/api/chain**", (route) => {
+  const sym = String(new URL(route.request().url()).searchParams.get("sym") || "").toUpperCase();
+  const spot = { VGT: 150, SMH: 300, IBIT: 45 }[sym];
+  const body = spot
+    ? { ok: true, chain: { sym, spot, source: "e2e", updated: "", iv30: 22, expiries: [
+      { date: "2026-11-20", ts: 1, dte: 40, gapPct: 2, calls: mkCalls(spot) },
+      { date: "2026-12-18", ts: 2, dte: 68, gapPct: 2, calls: mkCalls(spot) },
+    ] } }
+    : { ok: false, error: "unsupported" };
+  route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+});
 await page.setViewportSize({ width: 390, height: 844 });
 const consoleErrors = [];
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 120)); });
@@ -152,7 +172,9 @@ const otmAfter = await page.evaluate(() => {
   btn.click();
   return (document.getElementById('probOtmVal') || {}).textContent || '';
 });
-check("OTM 步进可调整", otmBefore !== otmAfter, otmBefore + " → " + otmAfter);
+check("OTM 步进可调整（在链上相邻真实档位之间移动）",
+  otmBefore !== otmAfter && /^\$\d/.test(otmBefore) && /^\$\d/.test(String(otmAfter)),
+  otmBefore + " → " + otmAfter);
 
 /* ================= 5. 记录页 ================= */
 await page.evaluate(() => { if (window.switchTab) window.switchTab('data'); });
