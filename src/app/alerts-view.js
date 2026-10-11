@@ -166,6 +166,10 @@ if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id
 /* 固定节奏提醒（v328）：到期日当天就卖下一档。节奏日历由 index.js 传进来（ccRows），
    这里只负责把"该操作了 / 漏了"翻成人话。没有 ccRows 时（老调用方）整段跳过，行为不变。 */
 var ccRows=ctx.ccRows||[],ccStreaks=ctx.ccStreaks||{},todayMs=Date.parse(marketDate(ctx.now)+'T00:00:00Z');
+/* v390：提醒**不再点出"卖哪一档"的具体日期**（与 v389 的卡片侧口径一致）——
+   只说「哪天卖」和「按什么标准挑」，具体哪一期由你自己比年化后挑。
+   挑档的经验区间（卖出日之后 30~45 天）写在 INVESTMENT_STRATEGY.md。 */
+var CC_TARGET_HINT='30~45 天后到期的档，自己挑';
 /**
  * v357：卖 CALL 的前提是"有 100 股（1 张）可被行权"。手里不足 1 张、或已被现有 CALL 占满时，
  * 不该催你去卖 —— 你根本卖不出来。口径与「期权状态」卡的"可卖 N 张"一致：
@@ -182,10 +186,10 @@ ccRows.forEach(function(r){
   var left=(Date.parse(r.nextExpiry+'T00:00:00Z')-todayMs)/86400000;
   if(left===0){
     alerts.push({id:'ccdue:'+r.sym,type:'accent',severity:'high',title:'今天该卖 '+r.sym+' 的下一档 CALL',
-      detail:r.label+' · '+(r.target?('今天卖出 → '+r.target+' 到期'):'到期日当天卖下一档（旧档到期即新档开仓）'),action:'option'});
+      detail:r.label+' · 今天卖出（旧档到期即新档开仓）· 目标 '+CC_TARGET_HINT,action:'option'});
   }else if(left===1){
     alerts.push({id:'ccsoon:'+r.sym,type:'blue',severity:'medium',title:'明天该卖 '+r.sym+' 的下一档 CALL',
-      detail:r.label+' · '+(r.target?('明天（'+r.nextExpiry+'）卖出 → '+r.target+' 到期'):'到期日 '+r.nextExpiry),action:'option'});
+      detail:r.label+' · 明天（'+r.nextExpiry+'）卖出 · 目标 '+CC_TARGET_HINT,action:'option'});
   }
   var s=ccStreaks[r.sym];
   if(s&&s.missed&&s.streak===0&&s.total>0){

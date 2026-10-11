@@ -8,7 +8,7 @@ import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWi
 import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, stepOtmPercent, suggestedStrike, freeCallContracts, planOptionDelete} from './options.js';
 import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
 import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtProb} from './prob-view.js';
-import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf, dateMs, isoOf} from './cc-schedule.js';
+import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v389';var APP_DATA_VERSION=5;
+var APP_BUILD='v390';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1123,7 +1123,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=389',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=390',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1905,27 +1905,8 @@ function renderExpiryCalendar(){
   if(btn)btn.textContent=calShowAll?'只看周五档':'显示全部到期日';
 }
 function toggleCalShowAll(){calShowAll=!calShowAll;renderExpiryCalendar();haptic('light')}
-/** 该标的按固定节奏的下一次到期日（＝本期卖出日：到期日当天卖下一档）。只给提醒用。 */
-function ccNextExpiry(sym){
-  try{var r=scheduleRow(sym,ccSchedule,marketDate());return r?r.nextExpiry:''}catch(e){return ''}
-}
-/**
- * 节奏提醒里"卖出之后哪一档到期"的那个日期（＝下一个节奏档之后的那个节奏档）。
- *
- * ⚠️ 这是**全站唯一一处仍然由系统指定到期日**的地方，v389 有意保留：
- * 提醒要可执行，只说"今天该卖"而不说到底卖哪一期就没法照做。卡片侧已经不替用户选了
- * （见 renderProbCard / probMatrixHtml）—— 想让提醒也只给窗口、不给具体日期，
- * 改 ccRows() 的 r.target 与 alerts-view.js 的 ccDue/ccSoon 文案即可。
- */
-function ccRollExpiry(sym){
-  try{
-    var next=ccNextExpiry(sym);
-    if(!next)return '';
-    var after=isoOf(dateMs(next)+86400000);          // 下一个到期日的次日
-    var r=scheduleRow(sym,ccSchedule,after);
-    return r?r.nextExpiry:'';
-  }catch(e){return ''}
-}
+/* v390：`ccNextExpiry` / `ccRollExpiry` 已删 —— 它们是**最后两处替用户指定到期日的地方**
+   （提醒里的"今天卖出 → 某档到期"）。现在提醒只说哪天卖 + 挑档标准，具体哪一期由用户自己挑。 */
 async function fetchChain(sym){
   try{
     var r=await fetchWithTimeout('/api/chain?sym='+encodeURIComponent(sym));
@@ -2036,13 +2017,12 @@ try{
   if(!LS.getItem(CC_RESET_KEY)){LS.removeItem(CC_KEY);LS.setItem(CC_RESET_KEY,'1')}
 }catch(e){logSwallowed("ccScheduleReset",e)}
 var ccDividends={};
-/** 节奏每行的 nextExpiry 是**卖出日**；target 才是"卖出哪一档到期"（新模型下这两个日期是分开的）。
-    提醒文案要说清"哪天卖出 → 哪一档到期"，不能把卖出日说成到期日。 */
+/** 节奏每行的 nextExpiry 是**卖出日**（到期日当天卖下一档）。
+    v390：不再附带 target（"卖出哪一档到期"）—— 提醒只说哪天卖 + 挑档标准，具体哪一期由用户自己挑。 */
 function ccRows(){
   return OPTION_SYMS.map(function(s){
     var r=scheduleRow(s,ccSchedule,marketDate());
     if(!r)return null;
-    r.target=ccRollExpiry(s);
     return r;
   }).filter(Boolean);
 }

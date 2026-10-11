@@ -345,3 +345,29 @@ test('applyAppBadge：setAppBadge 的 rejection 必须被收掉（否则会被 u
   assert.equal(applyAppBadge(nav, 2), true);
   assert.equal(caught, true, 'rejection 必须被 catch');
 });
+
+/* v390：提醒是**最后一处**还想替用户指定"卖哪一档"的地方（「今天卖出 → 2026-12-18 到期」）。
+   现在只说哪天卖 + 按什么标准挑（30~45 天窗口写在 INVESTMENT_STRATEGY.md），
+   具体哪一期由用户比完年化自己定 —— 与卡片侧 v389 的口径一致。 */
+test('v390：节奏提醒不再指定"卖哪一档到期"，只给卖出日与挑档标准', () => {
+  const hold = { symbol: 'VGT', shares: 100, date: '2026-09-02', price: 100 };
+  /* 今天（美东 2026-09-29）就是卖出日 */
+  const due = buildAlerts(ctx({
+    ccRows: [{ sym: 'VGT', nextExpiry: '2026-09-29', label: '每月第三个周五' }],
+    trades: [hold],
+  })).find((a) => a.id === 'ccdue:VGT');
+  assert.ok(due, '该卖那天要提醒');
+  assert.match(due.detail, /30~45 天后到期的档，自己挑/, '只给挑档标准');
+  assert.doesNotMatch(due.detail, /\d{4}-\d{2}-\d{2}/, '不许再出现具体到期日（v390 改软）');
+  assert.doesNotMatch(due.detail, /→\s*\d/, '不许再写"卖出 → 某档到期"');
+
+  /* 明天是卖出日：可以写"明天（哪天）卖"，但同样不许点名买哪一期 */
+  const soon = buildAlerts(ctx({
+    ccRows: [{ sym: 'VGT', nextExpiry: '2026-09-30', label: '每月第三个周五' }],
+    trades: [hold],
+  })).find((a) => a.id === 'ccsoon:VGT');
+  assert.ok(soon, '前一天要预告');
+  assert.match(soon.detail, /明天（2026-09-30）卖出/, '卖出日仍然要给（那是"哪天动手"）');
+  assert.match(soon.detail, /30~45 天后到期的档，自己挑/);
+  assert.equal((soon.detail.match(/\d{4}-\d{2}-\d{2}/g) || []).length, 1, '只允许出现卖出日这一个日期');
+});
