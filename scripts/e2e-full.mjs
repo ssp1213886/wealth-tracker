@@ -176,6 +176,28 @@ check("OTM 步进可调整（在链上相邻真实档位之间移动）",
   otmBefore !== otmAfter && /^\$\d/.test(otmBefore) && /^\$\d/.test(String(otmAfter)),
   otmBefore + " → " + otmAfter);
 
+/* v392：控件不许互相压（线上真出现过"现价那行压住 + 按钮"），矩阵不许在自己的容器里横滑。
+   这两条都是"看着像小事、真机上立刻很难看"的排版回归，纯靠肉眼看截图抓不住，所以钉成断言。 */
+const layoutCx = await page.evaluate(() => {
+  const sels = ['#probOtmMinus', '#probOtmVal', '#probOtmPlus', '#probSpot', '#probOtmSym'];
+  const items = sels.map((s) => { const el = document.querySelector(s); return el ? { s, el, r: el.getBoundingClientRect() } : null; }).filter(Boolean);
+  const bad = [];
+  for (let i = 0; i < items.length; i += 1) {
+    for (let j = i + 1; j < items.length; j += 1) {
+      /* 父容器包含子元素不算重叠 */
+      if (items[i].el.contains(items[j].el) || items[j].el.contains(items[i].el)) continue;
+      const a = items[i].r, b = items[j].r;
+      const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (ox > 1 && oy > 1) bad.push(items[i].s + ' ∩ ' + items[j].s + ' ' + Math.round(ox) + 'x' + Math.round(oy));
+    }
+  }
+  const m = document.getElementById('probMatrix');
+  return { bad, overflow: m ? Math.max(0, m.scrollWidth - m.clientWidth) : 0 };
+});
+check("期权卡控件互不重叠（v391 出现过现价压住 + 按钮）", layoutCx.bad.length === 0, layoutCx.bad.join(' | '));
+check("期权矩阵在自己的容器里不横滑", layoutCx.overflow === 0, layoutCx.overflow + "px");
+
 /* ================= 5. 记录页 ================= */
 await page.evaluate(() => { if (window.switchTab) window.switchTab('data'); });
 await page.waitForTimeout(900);

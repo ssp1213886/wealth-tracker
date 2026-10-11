@@ -74,7 +74,7 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
 
-var APP_BUILD='v391';var APP_DATA_VERSION=5;
+var APP_BUILD='v392';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1123,7 +1123,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=391',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=392',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1822,13 +1822,24 @@ function otmOf(sym){var v=Number(otmSettings&&otmSettings[otmKeyOf(sym)]);return
 /* 最近一次渲染出来的矩阵摘要 —— ± 按钮与列头点击都要靠它把指针在**真实档位**上移动。
    ladder 是这一期的完整候选阶梯（真实挂牌价、高于现价 ≤20%），不走 DOM 读。 */
 var lastProb={sym:'',ladder:[],selected:-1,spot:0};
+/**
+ * 矩阵显示几列（v392）：手机 3 列、桌面 4 列。
+ * 手机 4 列时每格只有 55px（列头 `$131.88` 一个就占 42px），左右留白剩 5px、360px 的机器还得横滑；
+ * 3 列时每格约 68px，数字不贴边。少看一档不影响挑档 —— ± 本来就沿真实阶梯逐档移动。
+ * 用 window.innerWidth 而不是量卡片宽度：卡片在未打开的页签里时宽度是 0，会误判成手机。
+ */
+var lastProbCols=0;
+function probCols(){return window.innerWidth<=800?3:4}
+/* 只在"列数真的变了"时重画 —— iOS 滚动时地址栏伸缩也会触发 resize，别跟着反复重绘 */
+window.addEventListener('resize',function(){if(probCols()!==lastProbCols)renderProbCard()});
 function renderProbCard(){
   var tabs=document.getElementById('probTabs');
   if(tabs)tabs.innerHTML=probTabsHtml(probTab,OPTION_SYMS);
   var otm=otmOf(probTab);
-  /* v391：控件说的是"你选中那一档**真实合约**"（$135），OTM% 降级成它的属性（写在现价那一行）。
-     标签只随标的切页变；合约价要等矩阵算完 —— 下一档由链上的真实阶梯决定，不是"7% + 1%"。 */
-  var olab=document.getElementById('probOtmSym');if(olab)olab.textContent=probTab+' 行权价';
+  /* v391：控件说的是"你选中那一档**真实合约**"（$135）；v392 把「现价」搬到同一行左边当对照，
+     标签因此简化成「行权价」（哪个标的由上面那排 tab 高亮着，不必再写一遍）。
+     合约价要等矩阵算完 —— 下一档由链上的真实阶梯决定，不是"7% + 1%"。 */
+  var olab=document.getElementById('probOtmSym');if(olab)olab.textContent='行权价';
   var oval=document.getElementById('probOtmVal');if(oval)oval.textContent='—';
   /* 标的现价：列头的 OTM%、格里的真实档位全是相对它算的，摆在旁边最省解释 */
   var ospot=document.getElementById('probSpot');
@@ -1849,13 +1860,18 @@ function renderProbCard(){
      v391：列 = **链上真实挂牌档位**，`otm` 只负责把窗口定位到你想的 % 附近（真实价才是能下单的东西）。
      系统只给两类事实：剩余天数、以及你手上已经持有了哪几档（中性标记，不是建议）。
      minDte 保持 14：SMH 有每日到期日，门槛放低会把它那堆 7/8/11 天的档全拉进来。 */
-  try{mx=probMatrix(chain,{otm:otm,minDte:14,maxRows:5})}catch(e){logSwallowed("probMatrix",e)}
+  var cols=probCols();lastProbCols=cols;
+  try{mx=probMatrix(chain,{otm:otm,minDte:14,maxRows:5,cols:cols})}catch(e){logSwallowed("probMatrix",e)}
   /* selected 存的是**完整阶梯**里的下标（probMatrix 的 selectedAbs）—— ± 靠它走相邻真实档 */
   lastProb={sym:probTab,ladder:(mx&&mx.ladder)||[],selected:mx?Number(mx.selectedAbs):-1,spot:Number(mx&&mx.spot)||0};
   var selCol=mx&&mx.columns&&mx.selected>=0?mx.columns[mx.selected]:null;
   if(oval)oval.textContent=selCol?fmtStrike(selCol.strike):'—';
-  if(ospot)ospot.textContent=(Number(chain.spot)>0?('现价 $'+Number(chain.spot).toFixed(2)):'')+
-    (selCol&&selCol.otmPct!=null?(' · 这一档 '+(selCol.otmPct>=0?'+':'')+(selCol.otmPct*100).toFixed(1)+'%'):'');
+  /* v392：现价用胶囊（中性底＝市场事实）。"这一档 +X%"不再重复写一遍 ——
+     选中列头 `.mx-col.is-on` 那格下方就写着它的 +X%，而现价与行权价现在挨在同一行，差多少一眼能比。 */
+  if(ospot){
+    var spotPill=Number(chain.spot)>0?('<span class="mx-pill is-spot">现价 $'+Number(chain.spot).toFixed(2)+'</span>'):'';
+    ospot.innerHTML=spotPill;
+  }
   /* 我持有哪几档：与「到期日历」同一口径（settled/archived 不算） */
   var heldByDate={};
   (optionTrades||[]).forEach(function(o){

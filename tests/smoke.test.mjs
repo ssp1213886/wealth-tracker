@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=391');
+  assert.equal(manifest.start_url, '/?v=392');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v391/);
+  assert.match(serviceWorker, /wealth-v392/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=391',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=392',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -743,8 +743,8 @@ test('期权页：OTM 加减号与「看什么」视角都在，且加减号接�
   assert.match(indexSource, /getElementById\('probOtmPlus'\)[\s\S]{0,140}adjOtm\(probTab,1\)/,
     '加号没接回 adjOtm');
   // 切 VGT / SMH 时标签与数值要跟着变，否则 SMH 那页会顶着「VGT OTM」
-  /* v391：控件说的是"你选中的那一档**真实合约**"——标签随标的切页变，数值是行权价，不是百分比 */
-  assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,120}probTab\+' 行权价'/, '行权价标签没跟着标的切');
+  /* v391：控件说的是"你选中的那一档**真实合约**"；v392 现价搬到同一行左边，标签简化成「行权价」 */
+  assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,120}textContent='行权价'/, '标签是「行权价」（标的由上面那排 tab 高亮）');
   assert.match(indexSource, /getElementById\('probOtmVal'\)[\s\S]{0,1400}fmtStrike\(selCol\.strike\)/, '数值要写真实行权价，别退回百分比');
 });
 
@@ -784,7 +784,15 @@ test('CSS：概率矩阵的横向滚动挂在外层容器，表格本身不许�
  * ③ 指针要缓存下来给 ± 用，不能靠读 DOM。
  */
 test('index.js：矩阵列来自链上真实档位，± 在真实档位之间移动（v391）', () => {
-  assert.match(indexSource, /probMatrix\(chain,\{otm:otm,minDte:14,maxRows:5\}\)/, '要把 OTM% 交给 probMatrix 定窗口');
+  assert.match(indexSource, /probMatrix\(chain,\{otm:otm,minDte:14,maxRows:5,cols:cols\}\)/, '要把 OTM% 与列数交给 probMatrix');
+  /* v392：手机上 3 列（每格 ~68px）、桌面 4 列；跨断点重画，但不跟着 iOS 地址栏伸缩反复重绘 */
+  assert.match(indexSource, /function probCols\(\)\{return window\.innerWidth<=800\?3:4\}/, '列数按视口宽定：手机 3 列');
+  assert.match(indexSource, /if\(probCols\(\)!==lastProbCols\)renderProbCard\(\)/, '跨断点才重画');
+  /* v392：现价包成胶囊，和「行权价 − 值 +」并排在同一行两端（B 版排版）；
+     "这一档 +X%" 不再重复写 —— 选中列头那格下方就写着它 */
+  assert.match(indexSource, /mx-pill is-spot">现价 \$/, '现价要包成胶囊');
+  assert.doesNotMatch(indexSource, /mx-pill is-pick/, '"这一档 +X%" 已去掉（选中列头已有）');
+  assert.match(html, /prob-controls[\s\S]{0,200}id="probSpot"[\s\S]{0,300}id="probOtmSym"/, '现价要在行首（B 版：现价在行权价左边）');
   assert.doesNotMatch(indexSource, /function matrixOtms/, '旧的"按 % 造列"已经删掉');
   assert.match(indexSource, /lastProb=\{sym:probTab,ladder:[\s\S]{0,80}selected:mx\?Number\(mx\.selectedAbs\)/, '要缓存**完整阶梯里的下标**（selectedAbs），不是窗口内的下标');
   const fn = indexSource.slice(indexSource.indexOf('function adjOtm'));

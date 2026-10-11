@@ -94,8 +94,10 @@ const MX = { columns: MX_COLS, rows: MX_ROWS, ladder: [130, 135, 138, 145, 152, 
 test('probMatrixHtml：列头是真实行权价按钮（第二行 OTM%），当前列整列高亮；每行都给年化', () => {
   const html = probMatrixHtml(MX, {});
   // v355：剩余天数并进到期日格（第二行小字），少一列 —— 手机上才不用横滑
-  assert.match(html, /<thead><tr><th>到期日<\/th><th><button/);
-  assert.match(html, /data-cell="expiry" title="月度到期日[^"]*">2026-11-20<small class="prob-sub">43 天<\/small><small class="prob-sub">年化 13\.2%<\/small><\/td>/, '到期日格里带剩余天数与年化（分两行，宽度不撑表）');
+  assert.match(html, /<thead><tr><th>到期日<span class="mx-otm">年化<\/span><\/th><th><button/);
+  /* v392：行头两行 —— 第一行「到期日 + 右侧年化」（表头那格写一次「年化」当标注），第二行剩余天数等 */
+  assert.match(html, /<th>到期日<span class="mx-otm">年化<\/span><\/th>/, '表头第一格要标出"年化"（行头右侧那个数是什么）');
+  assert.match(html, /data-cell="expiry" title="月度到期日[^"]*"><span class="mx-head"><span class="mx-date">2026-11-20<\/span><span class="mx-pill is-ann">13\.2%<\/span><\/span><small class="prob-sub">43 天<\/small><\/td>/, '行头两行：日期+年化胶囊 / 剩余天数');
   assert.match(html, /class="mx-col is-on" data-probstrike="152" data-probotmpct="17\.49" title="选 \$152（高于现价 \+17\.5%）" aria-label="选 \$152（高于现价 \+17\.5%）">\$152<\/button>/, '选中那一列＝真实行权价、可点、带 aria-label');
   assert.equal((html.match(/mx-col/g) || []).length, 4, '四档真实行权价各自一个按钮');
   assert.equal((html.match(/is-on/g) || []).length, 1, '只有选中那一档的列头带 is-on');
@@ -104,14 +106,14 @@ test('probMatrixHtml：列头是真实行权价按钮（第二行 OTM%），当�
   assert.match(html, />\$138<\/button><small class="mx-otm">\+6\.7%<\/small>/, '138 高于现价 6.7%');
   assert.match(html, />\$160<\/button><small class="mx-otm">\+23\.7%<\/small>/);
   // v389：不再标该卖；行头给的是事实 —— 剩余天数 · 持有几张（若有）· 年化（按当前 OTM）
-  assert.match(html, /<small class="prob-sub">年化 13\.2%<\/small>/, '行头要带年化（按选中那一档算）');
+  assert.match(html, /<span class="mx-pill is-ann">13\.2%<\/span>/, '行头要带年化（按选中那一档算），且是胶囊、就在日期右边');
   assert.doesNotMatch(html, /★|该卖/, 'v389：表里不再有该卖的字样');
   const held = probMatrixHtml(MX, { holdings: { '2026-12-18': 2 } });
   assert.match(held, /class="mx-held-row"/, '我持有的那一档用中性标记标出来');
-  assert.match(held, /71 天 · <span class="mx-held-tag">持有 2 张<\/span><\/small><small class="prob-sub">年化 12\.1%<\/small>/, '持有张数只是事实，不是建议');
+  assert.match(held, /<span class="mx-pill is-ann">12\.1%<\/span><\/span><small class="prob-sub">71 天 · <span class="mx-pill is-held">持有 2 张<\/span><\/small>/, '持有张数只是事实（绿胶囊），不是建议');
   /* 颜色必须挂在**子元素**上：手机端有一条 `.card small{color:var(--muted)!important}`，
      写在 <small class="prob-sub mx-held-tag"> 自身会被它压掉（v387 的橙色小字在手机上从没显过色）。 */
-  assert.doesNotMatch(held, /<small class="prob-sub mx-held-tag"/, '持有标记不能直接挂在 small 上（手机端 !important 会吃掉颜色）');
+  assert.doesNotMatch(held, /<small class="prob-sub mx-pill/, '持有胶囊不能直接挂在 small 上（手机端 !important 会吃掉颜色）');
   assert.doesNotMatch(html, /mx-settle/, '不该再有「本轮该处理」的标记');
   assert.doesNotMatch(html, /该处理/);
   assert.match(html, /36\.2%/);
@@ -130,7 +132,7 @@ test('probMatrixHtml：每格同时给概率与权利金（不用切视角），
   assert.match(html, /class="mx-prem">\$4\.60</);
   assert.doesNotMatch(html, /data-probview/, '视角切换已删 —— 两个数同格显示，不需要它');
   assert.match(html, /年化 27\.4%/, '年化挪进悬停提示，不占格位');
-  assert.match(html, /class="mx-prem mx-none">无此档</, '这一期没这一档时写明「无此档」，不吸到隔壁');
+  assert.match(html, /class="mx-pill is-none">无此档</, '这一期没这一档时写明「无此档」（灰胶囊），不吸到隔壁');
 });
 
 test('probMatrixHtml：空矩阵给空态；缺 cells 不抛错', () => {
@@ -159,7 +161,7 @@ test('matrixCellHtml：上行概率（按风险着色）+ 下行权利金；这�
   assert.match(matrixCellHtml(cell(0.037, 168, 0.5, 4.7)), /var\(--ok\)/, '<10% 用语义绿');
   const none = matrixCellHtml(cell(null, 0, null, null));
   assert.match(none, /class="mx-prob" style="color:var\(--muted\)">—<\/span>/);
-  assert.match(none, /class="mx-prem mx-none">无此档<\/span>/, '链上没这一档 → 照实写，不吸到隔壁也不编数');
+  assert.match(none, /class="mx-pill is-none">无此档<\/span>/, '链上没这一档 → 照实写（灰胶囊），不吸到隔壁也不编数');
   assert.ok((matrixCellHtml(null).match(/<span class="mx-/g) || []).length >= 2, '空 cell 也要给两行，不能少渲染一行（会整行错位）');
   assert.match(matrixCellHtml(cell(0.2, 140, 0, 5)), /class="mx-prem">—<\/span>/, '有概率但没权利金时只这一行给「—」');
 });

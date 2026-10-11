@@ -2830,9 +2830,13 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .icon-refresh{width:44px;min-width:44px;padding:0;display:grid;place-items:center}.icon-refresh svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
 
 /* ===== v325 被行权概率：目标概率反解行权价 + 行权价参考的概率联动 ===== */
-.prob-controls{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.prob-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .prob-control{display:flex;align-items:center;gap:8px;min-width:0}
 .prob-control>span{flex:none;color:var(--muted);font-size:11.5px;font-weight:560;letter-spacing:.01em}
+/* v392：**现价**放大一号 —— 它是这张卡里的对照基准（"我卖的行权价比现价高多少"），
+   行权价那一组保持原尺寸（± 与值的 34px 胶囊已经够醒目，再放大就抢了主控件的位）。
+   表格里的胶囊（年化/持有/无此档）仍是 10.5px 那档，这里只放大控件区这一颗。 */
+.prob-card .prob-controls .mx-pill{font-size:13px;font-weight:650;padding:3px 8px;border-radius:7px}
 /* 标的现价：跟在 OTM 控件右边，给 OTM%、列头目标价、格里的实际档位当参照 */
 .prob-card .prob-spot{color:var(--muted);font-size:11.5px;font-weight:560;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prob-chips{display:flex;gap:4px}
@@ -2871,6 +2875,10 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 
   .prob-control{width:auto;justify-content:flex-start}
   .prob-chip{min-width:44px;height:34px}
+  /* v392：现价（左）与「行权价 − 值 +」（右）分两组摆在一行两端 —— 3 个标的 × 360~430px 实测
+     需要 265px、最窄的 360 也有 279px，稳在一行；真放不下时靠上面那条 flex-wrap 自动折行，
+     不会再出现"两块各自被压扁、文字压住 + 按钮"（v391 的线上 bug）。 */
+  .prob-card .prob-controls{gap:6px 8px}
 }
 
 /* ===== v326 到期日历 + 行权价参考的备注 ===== */
@@ -2889,32 +2897,43 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .cc-due{color:var(--accent-d);font-weight:700}
 .cc-streak{color:var(--accent-d)}
 .cc-missed{color:var(--orange)}
-/* ===== v336 被行权概率矩阵（周期 × OTM）===== */
+/* ===== v336 被行权概率矩阵（v391 起列＝链上真实档位）===== */
 .mx-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
-.mx-table thead th{text-align:right;padding:7px 6px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}
+.mx-table thead th{text-align:right;padding:6px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}
 .mx-table thead th:first-child{text-align:left}
-.mx-table tbody td{text-align:right;padding:9px 6px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.mx-table tbody td{text-align:right;padding:10px 6px;border-bottom:1px solid var(--rule);white-space:nowrap}
 .mx-table tbody td:first-child{text-align:left;font-weight:620}
 .mx-table tbody tr:last-child td{border-bottom:0}
 .mx-table td.mx-on{background:color-mix(in srgb,var(--accent) 13%,transparent)}
 /* 每格两行：上行概率（按风险着色）+ 下行权利金（灰字）—— 不用再切视角 */
 .mx-cell .mx-prob{display:block;font-weight:640;font-variant-numeric:tabular-nums}
-.mx-cell .mx-prem{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:1px}
+.mx-cell .mx-prem{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:2px}
+/* v392：行头压成两行 —— 第一行「到期日 …… 年化」（左右分开、年化加粗），第二行才是剩余天数等小字。
+   三行改两行的实测收益：行高 69 → 54px，五行的表矮 75px（手机上不再是一堵数字墙）。 */
+.mx-table tbody td[data-cell="expiry"] .mx-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.mx-table tbody td[data-cell="expiry"] .mx-date{font-weight:620}
+.mx-table tbody td[data-cell="expiry"] .mx-pill.is-ann{font-weight:680}
 
 /* 列头改成按钮：点一下就把 OTM 设成那一档 */
 .mx-col{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:560;padding:2px 4px;border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums}
 .mx-col.is-on{background:var(--accent-l);color:var(--accent-d);font-weight:700}
 /* 列头第二行：这一档**真实报价**高于现价多少（v391 起列头主位是真实行权价，OTM% 降级成注解） */
 .mx-table thead th .mx-otm{display:block;color:var(--muted);font-size:10px;font-weight:500;margin-top:1px}
-/* 这一期没有这一档（各期阶梯粗细不同）——不是"数据缺失"，所以用灰字写明而不是只给一个「—」 */
-.mx-cell .mx-prem.mx-none{font-size:10px;font-weight:600}
+/* v392：关键文字用**胶囊**包起来（用户要求"更有高级感"）。几何只有一处定义（与「到期日历」的
+   .cal-tag 完全一致：圆角 6 / 10.5px / 650 / 字距 .02em），颜色按**语义**分两组：
+     · 中性（市场事实/我算出来的数）：现价、年化
+     · accent（你的：选中的那一档、你持有的那张）：这一档、持有 N 张
+   缺档用灰胶囊（读起来是"有意标注"，不是坏格）。橙色在本项目是提醒语义，这里一律不用。 */
+.mx-pill{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:650;letter-spacing:.02em;line-height:1.45;vertical-align:1px}
+.mx-pill.is-spot,.mx-pill.is-ann{background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--fg);font-variant-numeric:tabular-nums}
+.mx-pill.is-pick,.mx-pill.is-held{background:var(--accent-l);color:var(--accent-d)}
+.mx-pill.is-none{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--muted);font-weight:600;font-size:10px}
 /* 「我持有这一档」的中性标记（v389 起；v387 时这套样式标的是"★ 该卖"）。
    现在只说事实、不给建议，所以沿用**到期日历 `.cal-mine` 的那套语言**（accent 系），
    不再用橙色 —— 橙在本项目里是"提醒/待办"语义（待办提醒、未卖出徽章），
    拿它标"我已有仓位"会被读成"系统在暗示你卖这一期"。 */
 .mx-table tbody tr.mx-held-row td:first-child{position:relative}
 .mx-table tbody tr.mx-held-row td:first-child::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px;background:var(--accent)}
-.mx-held-tag{color:var(--accent-d);font-weight:660}
 
 @media(max-width:800px){
   /* 手机上放不下就横向滚动，交给外层容器；.mx-table 必须保持 display:table。

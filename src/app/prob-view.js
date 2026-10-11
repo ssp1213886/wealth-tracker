@@ -173,7 +173,7 @@ export function renderProbUnavailable(doc, hint) {
  */
 export function matrixCellHtml(cell) {
   if (!cell || !cell.listed || !(cell.strike > 0)) {
-    return '<span class="mx-prob" style="color:var(--muted)">—</span><span class="mx-prem mx-none">无此档</span>';
+    return '<span class="mx-prob" style="color:var(--muted)">—</span><span class="mx-pill is-none">无此档</span>';
   }
   const prem = cell.premium > 0 ? '$' + Number(cell.premium).toFixed(2) : '—';
   if (cell.prob == null) {
@@ -214,7 +214,8 @@ export function probMatrixHtml(matrix, ctx) {
   const selIdx = sel >= 0 && sel < cols.length ? sel : 0;
   const heldBy = c.holdings || {};
   /* 刻意不加 .prob-table：那套手机端规则是给「到期日历」用的 */
-  let html = '<table class="mx-table"><thead><tr><th>到期日</th>' +
+  /* 表头第一格写「到期日 / 年化」：行头第一行的右侧就是这个数，标一次比每行都写"年化"省地方 */
+  let html = '<table class="mx-table"><thead><tr><th>到期日<span class="mx-otm">年化</span></th>' +
     cols.map(function (col, i) {
       const pct = col.otmPct == null ? '' : (col.otmPct >= 0 ? '+' : '') + (col.otmPct * 100).toFixed(1) + '%';
       const label = '选 $' + col.strike + (pct ? '（高于现价 ' + pct + '）' : '');
@@ -231,7 +232,8 @@ export function probMatrixHtml(matrix, ctx) {
     const rowTitle = (r.monthly ? '月度到期日（第三个周五）' : '周度到期日') +
       (r.gapPct > 0 ? ' · 相邻行权价间距 ' + Number(r.gapPct).toFixed(2) + '%' : '');
     /* v389：不再标"该卖"。行头只放**事实**：剩余天数 · 我持有几张 · 年化（按当前选中那一档算）。
-       年化原来是只给"该卖那一档"看的，现在每一行都有 —— 你自己比一比挑哪一期。 */
+       v392 起行头压成**两行**：第一行＝到期日 + 右侧年化（它是横向比的那把尺，摆到眼睛先落的地方），
+       第二行＝剩余天数 · 持有张数。三行改两行的实测收益：行高 69 → 54px，五行的表矮 75px。 */
     const held = Number(heldBy[r.date]) || 0;
     const cell = cells[selIdx];
     const ann = cell && cell.annualPct != null ? Number(cell.annualPct) : null;
@@ -239,12 +241,12 @@ export function probMatrixHtml(matrix, ctx) {
        「持有 N 张」挂在**内联 span** 上，而不是直接写在 small 上：手机端有一条
        `.card small{color:var(--muted)!important}`，写在 small 自身的颜色会被它压掉（v387 的橙色小字
        在手机上其实从没显过色）；挂在子元素上就不受这条继承类规则影响 —— 继承永远输给元素自己的声明。 */
-    const sub2 = ann != null ? '年化 ' + ann.toFixed(1) + '%' : '';
-    const heldTag = held ? ' · <span class="mx-held-tag">持有 ' + held + ' 张</span>' : '';
+    const annTag = ann != null ? '<span class="mx-pill is-ann">' + ann.toFixed(1) + '%</span>' : '';
+    const heldTag = held ? ' · <span class="mx-pill is-held">持有 ' + held + ' 张</span>' : '';
     html += '<tr' + (held ? ' class="mx-held-row"' : '') + '>' +
-      '<td data-cell="expiry" title="' + escapeHtml(rowTitle) + '">' + escapeHtml(r.date) +
-        '<small class="prob-sub">' + r.dte + ' 天' + heldTag + '</small>' +
-        (sub2 ? '<small class="prob-sub">' + sub2 + '</small>' : '') + '</td>' +
+      '<td data-cell="expiry" title="' + escapeHtml(rowTitle) + '">' +
+        '<span class="mx-head"><span class="mx-date">' + escapeHtml(r.date) + '</span>' + annTag + '</span>' +
+        '<small class="prob-sub">' + r.dte + ' 天' + heldTag + '</small></td>' +
       cols.map(function (col, i) {
         const cellI = cells[i];
         return '<td class="mx-cell' + (i === selIdx ? ' mx-on' : '') +
