@@ -7,7 +7,7 @@ import { computeHoldings, buildPositionRows } from './calc.js';
  * 组合汇总：
  *   unreal      浮动盈亏（拿不到价时为 null）
  *   total       总盈亏 = 浮动 + 已实现 + 权利金 + 股息
- *   pct         总收益率（分母是累计买入 totalInvested）
+ *   pct         总收益率（分母是**累计入金**；老调用方没传 deposits 时退回累计买入）
  *   totalAssets 持仓市值 + 净现金
  *   cashPct     现金占总资产比例（%）；总资产 ≤ 0 时为 null（占比无意义，界面显示「—」）
  *
@@ -26,9 +26,15 @@ export function portfolioTotals(input) {
   const optionPremium = Number(o.optionPremium) || 0;
   const dividend = Number(o.dividend) || 0;
   const netCash = Number(o.netCash) || 0;
+  const deposits = Number(o.deposits) || 0;
   const unreal = hasPriced ? totalValue - totalCost : null;
   const total = (hasPriced && unreal !== null) ? unreal + totalRealized + optionPremium + dividend : null;
-  const pct = (hasPriced && totalInvested > 0) ? total / totalInvested : null;
+  /* v394：分母改成**累计入金**（与年度复盘的 CAGR 同源）。
+     为什么不用累计买入：策略里有"被行权 → T+1 买回"，每次买回都会让累计买入再涨一截，
+     十年下来分母会比真实投入的资本大一倍，收益率被系统性稀释。
+     老调用方（没传 deposits，例如历史测试）退回累计买入，避免突然显示「—」。 */
+  const base = deposits > 0 ? deposits : totalInvested;
+  const pct = (hasPriced && base > 0) ? total / base : null;
   const totalAssets = totalValue + netCash;
   const cashPct = cashPctOf(totalAssets, netCash);
   return { unreal: unreal, total: total, pct: pct, totalAssets: totalAssets, cashPct: cashPct, dividend: dividend };

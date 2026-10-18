@@ -198,6 +198,23 @@ const layoutCx = await page.evaluate(() => {
 check("期权卡控件互不重叠（v391 出现过现价压住 + 按钮）", layoutCx.bad.length === 0, layoutCx.bad.join(' | '));
 check("期权矩阵在自己的容器里不横滑", layoutCx.overflow === 0, layoutCx.overflow + "px");
 
+/* v394：累计收益必须带百分比 —— 手机汇总条与桌面胶囊读的是同一份 portfolioTotals。
+   这里用正则卡"真百分比"，避免只写了「—」也算通过。 */
+const pnlPct = await page.evaluate(() => {
+  const ms = document.getElementById('msPnlPct');
+  const pill = document.getElementById('hmPnLPctPill');
+  const sub = document.getElementById('hmPnLPct');
+  return {
+    ms: ms ? ms.textContent.trim() : null,
+    pill: pill ? pill.textContent.trim() : null,
+    pillHidden: pill ? !!pill.hidden : null,
+    subHasParenPct: sub ? /\(\s*[+-]?\d/.test(sub.textContent) : null,
+  };
+});
+check("累计收益带百分比（手机汇总条）", /^[+-]\d+\.\d%$/.test(pnlPct.ms || ''), pnlPct.ms);
+check("累计收益带百分比（桌面胶囊）", pnlPct.pillHidden === false && /^[+-]\d+\.\d%$/.test(pnlPct.pill || ''), String(pnlPct.pill) + ' hidden=' + pnlPct.pillHidden);
+check("百分比不再重复出现在小字行", pnlPct.subHasParenPct === false);
+
 /* ================= 5. 记录页 ================= */
 await page.evaluate(() => { if (window.switchTab) window.switchTab('data'); });
 await page.waitForTimeout(900);

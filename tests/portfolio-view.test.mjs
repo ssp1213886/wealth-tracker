@@ -9,7 +9,11 @@ import {
 } from '../src/app/portfolio-view.js';
 
 function makeEl(extra) {
-  return Object.assign({ textContent: '', innerHTML: '', className: '', style: {}, attrs: {} }, extra || {});
+  return Object.assign({
+    textContent: '', innerHTML: '', className: '', style: {}, attrs: {}, hidden: false, title: '',
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+  }, extra || {});
 }
 
 function fakeDoc(els) {
@@ -83,7 +87,8 @@ test('renderMetricsPnl：今日涨跌与总盈亏的正负着色', () => {
   const hup = makeEl();
   const hp = makeEl();
   const hpp = makeEl();
-  const doc = fakeDoc({ hmUnreal: hu, hmUnrealPct: hup, hmPnL: hp, hmPnLPct: hpp });
+  const pill = makeEl();
+  const doc = fakeDoc({ hmUnreal: hu, hmUnrealPct: hup, hmPnL: hp, hmPnLPct: hpp, hmPnLPctPill: pill });
   renderMetricsPnl(doc, {
     hasPriced: true, totalPnL: 88.75, totalPct: 0.0784, unpriced: [],
     totalPnLUnreal: 88.75, totalRealized: -12, realizedOptionPremium: 120,
@@ -94,7 +99,13 @@ test('renderMetricsPnl：今日涨跌与总盈亏的正负着色', () => {
   assert.match(hup.innerHTML, /\+0\.42% 今日/);
   assert.equal(hp.textContent, '+$88.75');
   assert.equal(hp.className, 'm-val pnl-pos');
-  assert.match(hpp.innerHTML, /\(\+7\.8%\)/);
+  /* v394：百分比从小字行提到金额旁边的胶囊；小字行只留明细 */
+  assert.equal(pill.hidden, false);
+  assert.equal(pill.textContent, '+7.8%');
+  assert.equal(pill.className, 'm-pct is-pos');
+  assert.equal(pill.title, '累计收益 ÷ 累计入金 = +7.8%', '悬停写清分母是累计入金');
+  assert.match(pill.attrs['aria-label'] || '', /对累计入金/);
+  assert.doesNotMatch(hpp.innerHTML, /\(\+7\.8%\)/, '小字行不再重复百分比');
   assert.match(hpp.innerHTML, /浮动 \+\$88\.75/);
   assert.match(hpp.innerHTML, /已实现 -\$12\.00/, '负数时符号在 $ 前面（v319）');
   assert.match(hpp.innerHTML, /权利金 \+\$120\.00/);
@@ -105,7 +116,8 @@ test('renderMetricsPnl：跌的时候走 pnl-neg', () => {
   const hup = makeEl();
   const hp = makeEl();
   const hpp = makeEl();
-  const doc = fakeDoc({ hmUnreal: hu, hmUnrealPct: hup, hmPnL: hp, hmPnLPct: hpp });
+  const pill = makeEl();
+  const doc = fakeDoc({ hmUnreal: hu, hmUnrealPct: hup, hmPnL: hp, hmPnLPct: hpp, hmPnLPctPill: pill });
   renderMetricsPnl(doc, {
     hasPriced: true, totalPnL: -50, totalPct: -0.05, unpriced: [],
     totalPnLUnreal: -50, totalRealized: -5, realizedOptionPremium: -30,
@@ -114,7 +126,8 @@ test('renderMetricsPnl：跌的时候走 pnl-neg', () => {
   assert.equal(hu.className, 'm-val pnl-neg');
   assert.match(hup.innerHTML, /-1\.10% 今日/);
   assert.equal(hp.className, 'm-val pnl-neg');
-  assert.match(hpp.innerHTML, /\(-5\.0%\)/);
+  assert.equal(pill.textContent, '-5.0%');
+  assert.equal(pill.className, 'm-pct is-neg');
   assert.match(hpp.innerHTML, /权利金 -\$30\.00/);
 });
 
@@ -122,7 +135,8 @@ test('renderMetricsPnl：没有实时价时不加方向类，并点名需要设�
   const hu = makeEl();
   const hup = makeEl();
   const hpp = makeEl();
-  const doc = fakeDoc({ hmUnreal: hu, hmUnrealPct: hup, hmPnL: makeEl(), hmPnLPct: hpp });
+  const pill = makeEl({ hidden: false });
+  const doc = fakeDoc({ hmUnreal: hu, hmUnrealPct: hup, hmPnL: makeEl(), hmPnLPct: hpp, hmPnLPctPill: pill });
   renderMetricsPnl(doc, {
     hasPriced: false, totalPnL: null, totalPct: null, unpriced: ['SMH', 'BTC'],
     totalPnLUnreal: 0, totalRealized: 0, realizedOptionPremium: 0, dailyChg: 0, dailyPct: null,
@@ -130,6 +144,8 @@ test('renderMetricsPnl：没有实时价时不加方向类，并点名需要设�
   assert.equal(hu.className, 'm-val ', '没有实时价时不加方向类（既有行为）');
   assert.doesNotMatch(hu.className, /pnl-/);
   assert.equal(hup.textContent, '按实时价估算');
+  assert.equal(pill.hidden, true, '算不出发收益率时把胶囊藏起来，不留一个空壳');
+  assert.equal(pill.textContent, '');
   assert.match(hpp.innerHTML, /需设价:SMH,BTC/);
 });
 

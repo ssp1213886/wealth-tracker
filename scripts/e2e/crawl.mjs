@@ -41,8 +41,11 @@ await p.evaluate(async () => {
     { id: 101, date: '2026-09-20', time: '10:00', action: '买入 VGT', detail: '10 股 @ 100' },
     { id: 102, date: '2026-09-21', time: '11:00', action: '入金', detail: '$2,000' },
   ]));
+  /* v394：期权到期日改成"相对今天 +10 天" —— 写死日期一过期，这张 CALL 就变"已到期"，
+     爬查/断言会在某一天之后自己变红（flows-data 就是这么坏的） */
+  const exp = (() => { const d = new Date(); d.setDate(d.getDate() + 10); const p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); })();
   localStorage.setItem('wealth_options_v2', JSON.stringify([
-    { id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: '2026-10-16', added: '2026-09-20' },
+    { id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: exp, added: '2026-09-20' },
   ]));
   localStorage.setItem('otmSettings', JSON.stringify({ vgt: 7, smh: 5 }));
   localStorage.setItem('exit_portfolio', '测试退出策略');

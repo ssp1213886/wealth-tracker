@@ -216,7 +216,7 @@
 <div class="mob-status-bar" id="mobStatusBar">
   <div class="ms-header"><button class="ms-brand" id="msPageTitle" onclick="openMobileSettings()" aria-label="打开设置">My Portfolio</button><span class="ms-sync"><i></i><span id="msSyncText">本地已保存</span></span><button class="ms-tool ms-bell" onclick="qaToggle()" aria-label="查看提醒"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button class="ms-tool ms-theme" onclick="toggleTheme()" aria-label="切换明暗主题"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg></button></div>
   <div class="ms-hero"><span class="ms-left"><span class="ms-label">总资产 <button class="ms-eye" onclick="togglePrivacy()" aria-label="隐藏或显示金额"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></span><span class="ms-val" id="msTotal">$0</span><span class="ms-daily" id="msDaily">今日 --</span></span><span class="ms-prices" id="msPrices"></span></div>
-  <div class="ms-summary"><div><span>可用现金</span><strong id="msCash">$0</strong></div><div><span>累计收益</span><strong id="msPnl">$0</strong></div></div>
+<div class="ms-summary"><div><span>可用现金</span><strong id="msCash">$0</strong></div><div><span>累计收益</span><strong id="msPnl">$0</strong><small class="ms-pnl-pct" id="msPnlPct">—</small></div></div>
 </div>
 
 
@@ -293,7 +293,7 @@
 
 
 
-    <div class="metric metric-profit"><div class="m-label"><span>累计收益</span><i class="metric-glyph trend" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></i></div><div class="m-val" id="hmPnL">$0</div><div class="m-sub" id="hmPnLPct"></div></div>
+    <div class="metric metric-profit"><div class="m-label"><span>累计收益</span><i class="metric-glyph trend" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></i></div><div class="m-val-row"><div class="m-val" id="hmPnL">$0</div><span class="m-pct" id="hmPnLPctPill" hidden></span></div><div class="m-sub" id="hmPnLPct"></div></div>
 
 
 

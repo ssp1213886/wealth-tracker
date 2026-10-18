@@ -1,7 +1,7 @@
 // 图表数据整形单测（v245 抽出）：纪律月度、年度矩阵、甜甜圈切片、热力色阶
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices, equitySeries, equityCurveSvg } from '../src/app/charts.js';
+import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveSvg } from '../src/app/charts.js';
 
 const buy = (date, symbol, shares, price) => ({ date, symbol, shares, price, id: date + symbol });
 
@@ -252,6 +252,29 @@ test('annualMatrix：没有任何买入与入金 → empty，并且不超过 20 
   // 这是长期休眠限制（当前数据只有 2 年），此处按实际行为钉住，避免误以为是回归。
   assert.equal(long.cells[0].ym, '2000');
   assert.equal(long.cells[19].ym, '2019');
+});
+
+test('totalDeposits：只算「入金」，股息/权利金/出金都不算（首页与年度复盘共用这一个分母）', () => {
+  const log = [
+    { type: '入金', amount: 5000 },
+    { type: '入金', amount: '2500.5' },   /* 老数据里 amount 可能是字符串 */
+    { type: '出金', amount: 1000 },
+    { type: '股息', amount: 300 },
+    { type: '权利金+VGT', amount: 120 },
+    { type: '修正', amount: 200 },
+    null,
+    { type: '入金' },                     /* 缺 amount 按 0，不产生 NaN */
+  ];
+  assert.equal(totalDeposits(log), 7500.5);
+  assert.equal(totalDeposits([]), 0);
+  assert.equal(totalDeposits(null), 0, '脏输入不抛错');
+  /* 年度复盘的 CAGR 必须用同一个分母：5,000 入金 + 第二年再入 2,500 → 7,500 */
+  const out = annualMatrix({
+    trades: [buy('2025-01-02', 'VGT', 10, 100)],
+    cashLog: [{ date: '2025-01-02', type: '入金', amount: 5000 }],
+    prices: { VGT: 100 }, netCash: 0, now: new Date('2026-09-29T00:00:00'),
+  });
+  assert.equal(out.totalInvested, 5000, '年度复盘的分母与 totalDeposits 一致');
 });
 
 test('heatColorFor：阈值分档（含无数据与负贡献率）', () => {

@@ -60,7 +60,22 @@ export function renderMetricsPnl(doc, m) {
 var hu=doc.getElementById('hmUnreal');if(hu){hu.textContent=m.hasPriced?fmtPnLFull(m.dailyChg):'-';hu.className='m-val '+(m.hasPriced?(m.dailyChg>=0?'pnl-pos':'pnl-neg'):'')}
   var hup=doc.getElementById('hmUnrealPct');if(hup){if(m.hasPriced&&m.dailyPct!=null){var s2=m.dailyPct>=0?'+':'';hup.innerHTML='<span style=color:'+(m.dailyPct>=0?'var(--ok)':'var(--red)')+';font-weight:550>'+s2+m.dailyPct.toFixed(2)+'% 今日</span>'}else{hup.textContent='按实时价估算'}}
   var hp=doc.getElementById('hmPnL');if(hp){hp.textContent=m.hasPriced&&m.totalPnL!=null?fmtPnLFull(m.totalPnL):'-';hp.className='m-val '+(m.hasPriced&&m.totalPnL!=null?(m.totalPnL>=0?'pnl-pos':'pnl-neg'):'')}
-  var hpp=doc.getElementById('hmPnLPct');if(hpp){var s='';if(m.hasPriced&&m.totalPct!=null){s+=fmtPnLPctParen(m.totalPct)+'<br>'}else if(m.unpriced.length>0){s+='需设价:'+m.unpriced.join(',')+'<br>'}var uc=m.totalPnLUnreal||0,rc=m.totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(m.realizedOptionPremium>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(m.realizedOptionPremium>=0?'var(--accent-d)':'#b53a2a')+';">权利金 '+fmtPnLFull(m.realizedOptionPremium)+'</span>';/* 股息只在非零时占一个标签，免得总分和可见标签对不上 */var dv=Number(m.dividendTotal)||0;if(dv!==0){s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(dv>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(dv>=0?'var(--accent-d)':'#b53a2a')+';">股息 '+fmtPnLFull(dv)+'</span>'}hpp.innerHTML=s;}
+  /* v394：百分比从"小字行"提到金额旁边（胶囊）—— 它回答的是"投进去的钱赚了多少"，
+     比一堆明细小字更该先被看到；小字行只留浮动/已实现/权利金/股息。
+     胶囊的文案带 title/aria：分母是**累计入金**（与年度复盘的 CAGR 同源），别和"今日 %"混。 */
+  var hppill=doc.getElementById('hmPnLPctPill');
+  if(hppill){
+    var showPct=!!(m.hasPriced&&m.totalPct!=null);
+    hppill.hidden=!showPct;
+    if(showPct){
+      var ptxt=(m.totalPct>=0?'+':'')+(m.totalPct*100).toFixed(1)+'%';
+      hppill.textContent=ptxt;
+      hppill.className='m-pct '+(m.totalPct>=0?'is-pos':'is-neg');
+      hppill.title='累计收益 ÷ 累计入金 = '+ptxt;
+      hppill.setAttribute('aria-label','累计收益率 '+ptxt+'（对累计入金）');
+    }else{hppill.textContent='';hppill.className='m-pct';hppill.title='';hppill.setAttribute('aria-label','');}
+  }
+  var hpp=doc.getElementById('hmPnLPct');if(hpp){var s='';if(!(m.hasPriced&&m.totalPct!=null)&&m.unpriced.length>0){s+='需设价:'+m.unpriced.join(',')+'<br>'}var uc=m.totalPnLUnreal||0,rc=m.totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(m.realizedOptionPremium>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(m.realizedOptionPremium>=0?'var(--accent-d)':'#b53a2a')+';">权利金 '+fmtPnLFull(m.realizedOptionPremium)+'</span>';/* 股息只在非零时占一个标签，免得总分和可见标签对不上 */var dv=Number(m.dividendTotal)||0;if(dv!==0){s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(dv>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(dv>=0?'var(--accent-d)':'#b53a2a')+';">股息 '+fmtPnLFull(dv)+'</span>'}hpp.innerHTML=s;}
 }
 
 /** 持仓表：每行的资产色、股数、均价、市值、盈亏。 */

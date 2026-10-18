@@ -60,7 +60,7 @@ import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, render
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, renderCashTotals} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
-import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, heatColorFor, donutSlices, equitySeries, equityCurveSvg} from './charts.js';
+import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveSvg} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue, csvSkipSummary} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
@@ -73,8 +73,11 @@ var state={monthlyDCA:2000,roadmapStart:'2025-01',roadmapAge:27,targetGoal:25000
 
 
 var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},tradeIdCounter=0;
+/* v394：最近一次算出来的组合汇总（total / pct 等）。手机状态栏只读它，不重算 ——
+   累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
+var lastPortfolioTotals=null;
 
-var APP_BUILD='v393';var APP_DATA_VERSION=5;
+var APP_BUILD='v394';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -241,7 +244,9 @@ function updatePortfolio(){
   var realizedOptionPremium=0;try{realizedOptionPremium=optionTotals(optionTrades).total}catch(e){logSwallowed("updatePortfolio",e)}
   /* 累计股息：股息是真实收益（只是以现金形式躺着），要计入累计收益 —— 否则会和「纪律热力图」的当月收益对不上 */
   var dividendTotal=0;try{dividendTotal=(cashLog||[]).reduce(function(s,l){return String((l&&l.type)||'').indexOf('股息')>=0?s+(Number(l&&l.amount)||0):s},0)}catch(e){logSwallowed("dividendTotal",e)}
-  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,optionPremium:realizedOptionPremium,dividend:dividendTotal,netCash:getNetCash()});
+  /* v394：累计收益率的分母＝累计入金（与年度复盘 CAGR 同源；见 charts.totalDeposits） */
+  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,optionPremium:realizedOptionPremium,dividend:dividendTotal,netCash:getNetCash(),deposits:totalDeposits(cashLog)});
+  lastPortfolioTotals=totals;
   var totalPnL=totals.total,totalPct=totals.pct;
 
 
@@ -958,6 +963,14 @@ function updateMobStatusBar(){
   renderCashTotals(document,totalV+nc,nc);
   var mc=document.getElementById('msCash');if(mc)mc.textContent=fmtFull(nc);
   var mp=document.getElementById('msPnl'),srcPnl=document.getElementById('hmPnL');if(mp&&srcPnl){mp.textContent=srcPnl.textContent;mp.classList.toggle('pnl-neg',srcPnl.textContent.indexOf('-')===0);mp.classList.toggle('pnl-pos',srcPnl.textContent.indexOf('-')!==0)}
+  /* v394：手机汇总条的累计收益率。只读 portfolioTotals 的结果（不在这里重算一遍）；
+     金额与 % 都来自同一次计算，所以两处永远同口径。 */
+  var mpct=document.getElementById('msPnlPct');
+  if(mpct){
+    var mpctVal=lastPortfolioTotals&&lastPortfolioTotals.total!=null?lastPortfolioTotals.pct:null;
+    if(mpctVal!=null){mpct.textContent=(mpctVal>=0?'+':'')+(mpctVal*100).toFixed(1)+'%';mpct.className='ms-pnl-pct '+(mpctVal>=0?'pnl-pos':'pnl-neg');}
+    else{mpct.textContent='—';mpct.className='ms-pnl-pct';}
+  }
   var md=document.getElementById('msDaily'),dailyPct=mobDaily.pct,dailyText='今日 '+(daily>=0?'+':'-')+fmtFull(Math.abs(daily))+' · '+(dailyPct==null?'—':((dailyPct>=0?'+':'')+dailyPct.toFixed(2)+'%'));if(md){md.textContent=dailyText;md.classList.toggle('negative',daily<0)}var sd=document.getElementById('sbToday');if(sd){sd.textContent=dailyText;sd.style.color=daily<0?'var(--red)':'var(--accent)'}
   var pp=document.getElementById('msPrices');if(pp){pp.innerHTML=ETF_SYMS.map(function(sym){var p=livePrices[sym],ch=liveChanges[sym],chHtml='',chCls='';if(ch!=null){var prev=p-ch,pct=prev>0?ch/prev*100:0;chCls=ch>=0?'ms-pos':'ms-neg';chHtml=' <span class="'+chCls+'">'+(ch>=0?'+':'')+pct.toFixed(1)+'%</span>'}return '<span class="ms-pill" data-sym="'+sym+'" data-price="'+(p||0)+'"><strong>'+sym+'</strong> '+(p?'$'+p.toFixed(2):'--')+chHtml+'</span>'}).join('')}
 }
@@ -1123,7 +1136,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=393',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=394',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */

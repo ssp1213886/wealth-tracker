@@ -243,7 +243,7 @@ export function annualMatrix(input) {
       hasData: dcaTotal > 0,
     });
   }
-  const totalInvested = deposits.reduce(function (sum, l) { return sum + l.amount; }, 0);
+  const totalInvested = totalDeposits(cashLog);
   const activeYears = cells.filter(function (c) { return c.hasData; }).length;
   const totalHoldings = {};
   trades.forEach(function (t) { totalHoldings[t.symbol] = (totalHoldings[t.symbol] || 0) + t.shares; });
@@ -260,6 +260,19 @@ export function annualMatrix(input) {
     cagr: cagr,
     targetGap: Math.max(0, targetGoal - totalAssets),
   };
+}
+
+/**
+ * 累计入金（现金流水里 type 含「入金」的合计）。
+ *
+ * 为什么单独抽出来：首页「累计收益率」与年度复盘的 CAGR 用的是**同一个分母**（累计入金）。
+ * 两处各写一份过滤，迟早出现"首页 20.1% / 年度 19.4%"这种对不上的数（这个项目里踩过多次）。
+ * 口径：股息、权利金是**收益**不算注资；出金不冲减（累计口径回答的是"我投进去的钱赚了多少"）。
+ */
+export function totalDeposits(cashLog) {
+  return (Array.isArray(cashLog) ? cashLog : []).reduce(function (sum, l) {
+    return l && String(l.type || '').indexOf('入金') >= 0 ? sum + (Number(l.amount) || 0) : sum;
+  }, 0);
 }
 
 /** 年度热力色阶：返回 [底色, 主文字色, 次级文字色, 边框色]（阈值与旧实现一致）。 */

@@ -18,6 +18,20 @@ test('portfolioTotals：浮动 + 已实现 + 权利金，现金占比按总资�
   assert.ok(near(t.cashPct, 1000 / 2950 * 100));
 });
 
+test('portfolioTotals：累计收益率的分母是**累计入金**（v394），没传时退回累计买入', () => {
+  const base = { hasPriced: true, totalValue: 1950, totalCost: 1650, totalInvested: 2200,
+    totalRealized: 200, optionPremium: 120, netCash: 1000 };
+  /* 有累计入金 → 用它（与年度复盘的 CAGR 同源） */
+  assert.ok(near(portfolioTotals({ ...base, deposits: 4000 }).pct, 620 / 4000), '分母＝累计入金 4000');
+  /* 老调用方 / 没记入金流水 → 退回累计买入，不能突然显示「—」 */
+  assert.ok(near(portfolioTotals(base).pct, 620 / 2200), '缺 deposits 时退回累计买入');
+  assert.equal(portfolioTotals({ ...base, deposits: 0 }).pct, 620 / 2200, 'deposits=0 同样退回');
+  /* 入金为负（脏数据/只有出金）也不能出现负分母 */
+  assert.ok(near(portfolioTotals({ ...base, deposits: -500 }).pct, 620 / 2200), '负入金退回累计买入');
+  /* 没有任何分母 → null，不编 0% */
+  assert.equal(portfolioTotals({ hasPriced: true, totalValue: 100, totalCost: 50, totalInvested: 0, deposits: 0 }).pct, null);
+});
+
 test('portfolioTotals：股息计入总盈亏（否则和「纪律热力图」的当月收益对不上）', () => {
   const base = { hasPriced: true, totalValue: 1950, totalCost: 1650, totalInvested: 2200, totalRealized: 200, optionPremium: 120, netCash: 1000 };
   assert.equal(portfolioTotals(base).total, 620, '没有股息时不变');

@@ -111,7 +111,10 @@ await ev(() => {
   const set = (id, v) => { const el = document.getElementById(id); if (!el) return; el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
   set('otype', 'CALL');
   set('osym', 'VGT');
-  set('oexpiry', '2026-10-16');
+  /* v394：到期日不要写死 —— 写死的日期一过期，这张 CALL 就变"已到期"，断言半年后自己坏掉 */
+  const d = new Date(); d.setDate(d.getDate() + 10);
+  const pad = (n) => String(n).padStart(2, '0');
+  set('oexpiry', d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()));
   set('ostrike', '130');
   set('opremium', '120');
   set('ocontracts', '1');

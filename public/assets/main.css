@@ -205,6 +205,15 @@ input,select,textarea{font-size:16px}
 
 
 .metric .m-sub{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.3}
+/* v394：累计收益率与金额同行（胶囊）。注意 `[hidden]` 必须显式压掉 display ——
+   否则会被 .m-pct 的 inline-block 顶掉（v305 在 .cash-actions 上踩过同类坑）。 */
+.m-val-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
+.m-pct{display:inline-block;padding:2px 8px;border-radius:7px;font-size:12px;font-weight:650;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.m-pct[hidden]{display:none}
+.m-pct.is-pos{background:color-mix(in srgb,var(--ok) 13%,transparent);color:var(--ok)}
+.m-pct.is-neg{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}
+/* 手机汇总条：累计收益金额下面一行百分比（正负色沿用 .ms-summary .pnl-pos/.pnl-neg） */
+.ms-pnl-pct{display:block;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
 
 
 
@@ -1260,7 +1269,8 @@ button,input,select,textarea{font:inherit}.card,.metric,.chart-card{background:v
 @media(max-width:800px){
   .ms-header{gap:6px!important}.ms-tool{flex-basis:34px!important;padding:5px!important}.ms-tool svg{width:23px!important;height:23px!important;stroke-width:1.8!important}
   .ms-eye{width:24px!important;height:24px!important;padding:4px!important}.ms-eye svg{width:17px!important;height:17px!important}
-  .ms-summary{height:56px!important}.ms-summary:before{margin-bottom:7px!important}.ms-summary>div+div{padding-left:19px!important}
+/* v394：从写死 56px 改成 min-height —— 累计收益多了一行百分比，写死高度会把那一行裁掉 */
+.ms-summary{min-height:56px!important}.ms-summary:before{margin-bottom:7px!important}.ms-summary>div+div{padding-left:19px!important}
   .card,.chart-card{margin-bottom:9px!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(18,28,22,.02),0 5px 16px rgba(18,28,22,.025)!important}
   .card.mobile-attention{min-height:0!important;padding:16px!important}.mobile-attention .mobile-section-title{height:20px;margin-bottom:8px!important;font-size:.95rem!important}.mobile-attention .mobile-section-title small{font-size:11.5px!important}#mobileAlerts .qa-alert-item{height:auto}.alert-leading{gap:9px!important}.alert-icon{width:31px!important;height:31px!important;flex-basis:31px!important;font-size:13.5px}.alert-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.alert-copy{gap:0!important}.alert-copy strong{font-size:12.5px;line-height:1.2!important}.alert-copy small{font-size:11.5px;line-height:1.2!important}.qa-alert-main>b{font-size:1.1rem}
   #dashWidgets{height:127px!important}.dca-card{height:127px!important;padding:14px 16px!important}.dca-heading{height:17px;margin:0 0 5px!important}.dca-heading h3{font-size:13.5px}.mobile-dca-value{height:25px;font-size:11.5px}.mobile-dca-value em{font-size:.86rem}.mobile-dca-track{height:6px!important;margin:5px 0 10px!important}.mobile-dca-pills{height:32px;gap:8px!important}.mobile-dca-pills>div{min-height:32px!important;height:32px!important;grid-template-columns:7px 1fr auto!important;grid-template-rows:1fr!important;padding:4px 8px!important;border-radius:8px!important;column-gap:6px!important}.mobile-dca-pills i{grid-row:auto!important;width:7px!important;height:7px!important}.mobile-dca-pills span,.mobile-dca-pills strong{font-size:11.5px}.mobile-dca-pills small{display:none!important}
