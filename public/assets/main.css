@@ -1305,13 +1305,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .main{width:calc(100% - clamp(248px,19.4vw,298px));min-height:0!important;height:100dvh!important;padding:0 28px 33px!important;max-width:1520px;margin:0 auto 0 0;overflow-y:auto!important;overflow-x:hidden!important;background:var(--bg);overscroll-behavior:contain;scrollbar-gutter:stable}
   .top-bar{height:66px!important;min-height:66px!important;margin:0!important;padding:0 7px!important}.desktop-heading h2{font-size:21px;font-weight:650;letter-spacing:-.02em}.desktop-heading>span{font-size:11.5px}.desktop-tools{gap:10px}.desktop-theme,.desktop-copy{height:32px;border-radius:8px;box-shadow:none}
   .tabs{height:44px!important;margin:0 0 17px!important;padding:0 20px!important;border-radius:9px!important;gap:18px!important}.tab-btn{min-width:86px!important;padding:0 14px!important;font-size:11.5px}
-  #tab-holding.active{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;grid-template-rows:172px 185px 264px 220px!important;gap:16px!important;align-items:stretch!important}
-  #holdMetrics{grid-column:1/-1!important;grid-row:1!important;grid-template-columns:1.12fr repeat(3,1fr)!important;gap:0!important;height:172px!important;overflow:hidden;border:0;border-radius:12px;background:var(--card-bg);box-shadow:0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)}#holdMetrics .metric{height:170px!important;min-height:0!important;padding:18px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}#holdMetrics .metric+.metric{border-left:1px solid var(--rule)!important}.metric .m-label{margin-bottom:15px!important;font-size:11.5px}.metric .m-val{font-size:clamp(1.38rem,1.55vw,1.7rem)!important}.metric .m-sub{margin-top:15px!important;font-size:11.5px;line-height:1.65!important}.metric-glyph{width:27px;height:27px;border-radius:7px}
+  #tab-holding.active{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;grid-template-rows:172px 185px auto 220px!important;gap:16px!important;align-items:stretch!important}
+  #holdMetrics{grid-column:1/-1!important;grid-row:1!important;grid-template-columns:1.12fr repeat(3,1fr)!important;gap:0!important;height:172px!important;overflow:hidden;border:0;border-radius:12px;background:var(--card-bg);box-shadow:0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)}#holdMetrics .metric{height:170px!important;min-height:0!important;padding:20px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}#holdMetrics .metric+.metric{border-left:1px solid var(--rule)!important}.metric .m-label{margin-bottom:15px!important;font-size:11.5px}.metric .m-val{font-size:clamp(1.38rem,1.55vw,1.7rem)!important}.metric .m-sub{margin-top:15px!important;font-size:11.5px;line-height:1.65!important}.metric-glyph{width:27px;height:27px;border-radius:7px}
   #dashWidgets{grid-column:1/7!important;grid-row:2!important;height:185px!important}.dca-card{height:185px!important;min-height:0!important;padding:20px!important}.mobile-dca-value{margin-top:11px!important}.mobile-dca-value span strong{font-size:1.72rem}.mobile-dca-track{margin:8px 0 13px!important}.mobile-dca-pills>div{min-height:46px!important;border-radius:7px!important;background:transparent!important}
-  .card.mobile-attention{grid-column:7/-1!important;grid-row:2!important;height:185px!important;min-height:0!important;padding:20px!important}.mobile-attention .mobile-section-title{margin-bottom:9px!important}.mobile-attention .mobile-section-title small{display:block!important}.attention-bell{width:16px;height:16px}.mobile-attention #mobileAlerts{max-height:126px;gap:8px!important;overflow-y:auto;scrollbar-width:thin}.mobile-attention #mobileAlerts .qa-alert-item{min-height:58px!important;height:58px!important;border-radius:8px!important;background:transparent!important;padding:7px 8px!important}.mobile-attention .alert-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-  .holdings-card{height:264px!important;min-height:0!important;padding:20px!important}.holdings-card .collapsible-header{height:28px!important;margin:0 0 7px!important}.holdings-card #pnlSummary{display:block!important;border:0!important;box-shadow:none!important}.asset-row{height:49px!important;min-height:49px!important;padding:7px 2px!important;border-radius:0!important;grid-template-columns:minmax(90px,1fr) 74px minmax(108px,auto) 10px!important}.asset-identity>i{width:8px!important;height:8px!important}.asset-identity strong{font-size:11.5px}.asset-identity small,.asset-result small{font-size:11.5px}.asset-result strong{font-size:11.5px}
+  .card.mobile-attention{grid-column:7/-1!important;grid-row:2!important;height:185px!important;min-height:0!important;padding:20px!important}.mobile-attention .mobile-section-title{margin-bottom:8px!important}.mobile-attention .mobile-section-title small{display:block!important}.attention-bell{width:16px;height:16px}.mobile-attention #mobileAlerts{max-height:126px;gap:8px!important;overflow-y:auto;scrollbar-width:thin}.mobile-attention #mobileAlerts .qa-alert-item{min-height:58px!important;height:58px!important;border-radius:8px!important;background:transparent!important;padding:7px 8px!important}.mobile-attention .alert-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  .holdings-card{height:auto!important;min-height:264px!important;padding:20px!important}.holdings-card .collapsible-header{height:28px!important;margin:0 0 8px!important}.holdings-card #pnlSummary{display:block!important;border:0!important;box-shadow:none!important}.asset-row{height:49px!important;min-height:49px!important;padding:7px 2px!important;border-radius:0!important;grid-template-columns:minmax(90px,1fr) 74px minmax(108px,auto) 10px!important}.asset-identity>i{width:8px!important;height:8px!important}.asset-identity strong{font-size:11.5px}.asset-identity small,.asset-result small{font-size:11.5px}.asset-result strong{font-size:11.5px}
   .goal-row{grid-column:1/9!important;grid-row:4!important;height:220px!important;display:grid!important;grid-template-columns:minmax(230px,.78fr) minmax(360px,1.22fr)!important;gap:0!important;margin:0!important;padding:20px!important;border:0;border-radius:12px;background:var(--card-bg);box-shadow:0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)}.goal-row>.card{height:184px!important;min-height:0!important;margin:0!important;padding:0 18px 0 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}.goal-row>.drawdown-card{padding:0 0 0 19px!important;border-left:1px solid var(--rule)!important}.goal-row h3{font-size:12.5px!important}.journey-track{height:6px}.drawdown-card #hmDrawdown{font-size:1rem}.drawdown-card .drawdown-visual{gap:12px;margin-top:13px}.drawdown-card .drawdown-row{grid-template-columns:62px minmax(0,1fr) 50px}.drawdown-card .drawdown-track{height:8px}
-  .cc-overview{grid-column:9/-1!important;grid-row:4!important;height:220px!important;min-height:0!important;margin:0!important;padding:20px!important}.cc-overview .mobile-section-title{margin-bottom:10px!important}.cc-overview-grid{grid-template-columns:1fr!important}.cc-overview-grid>div{min-height:67px!important}.cc-premium{grid-template-columns:1fr auto!important}.cc-expiry{border-top:1px solid var(--rule)}/* v395 桌面材质（路线一）：四张主卡统一 12px 圆角 + 去描边 + 两层极淡阴影；这里只写一处，替代四份重复的 9px/none（原来分散在 dca/attention/holdings/cc 四条里） */.dca-card,.card.mobile-attention,.holdings-card,.goal-row,.cc-overview{border:0!important;border-radius:12px!important;box-shadow:0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)!important}#holdMetrics>.metric{border-left:1px solid var(--rule)!important}#holdMetrics>.metric:first-child{border-left:0!important}.main .card>h3,.main .chart-card>h3,.main .holdings-card .collapsible-header h3{font-size:14px;font-weight:600;color:var(--fg);letter-spacing:-.012em}#holdMetrics .m-label{font-size:12px;font-weight:520}.main .mobile-section-title{font-size:14px;font-weight:650;letter-spacing:-.012em}.main .card>h3,.main .chart-card>h3,.main .card .collapsible-header h3{font-size:14px;font-weight:600;color:var(--fg);letter-spacing:-.012em}#holdMetrics .m-val{font-weight:650;letter-spacing:-.022em}
+  .cc-overview{grid-column:9/-1!important;grid-row:4!important;height:220px!important;min-height:0!important;margin:0!important;padding:20px!important}.cc-overview .mobile-section-title{margin-bottom:10px!important}.cc-overview-grid{grid-template-columns:1fr!important}.cc-overview-grid>div{min-height:67px!important}.cc-premium{grid-template-columns:1fr auto!important}.cc-expiry{border-top:1px solid var(--rule)}/* v395 桌面材质（路线一）：四张主卡统一 12px 圆角 + 去描边 + 两层极淡阴影；这里只写一处，替代四份重复的 9px/none（原来分散在 dca/attention/holdings/cc 四条里） */.dca-card,.card.mobile-attention,.holdings-card,.goal-row,.cc-overview{border:0!important;border-radius:12px!important;box-shadow:0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)!important}#holdMetrics>.metric{border-left:1px solid var(--rule)!important}#holdMetrics>.metric:first-child{border-left:0!important}.main .card>h3,.main .chart-card>h3,.main .holdings-card .collapsible-header h3{font-size:14px;font-weight:600;color:var(--fg);letter-spacing:-.012em}#holdMetrics .m-label{font-size:12px;font-weight:520}.main .mobile-section-title{font-size:14px;font-weight:650;letter-spacing:-.012em}/* v397 P6：卡片高度已解绑，行内列宽与占比条可以按设计来 */.main .holdings-card .asset-row{grid-template-columns:minmax(150px,190px) minmax(160px,1fr) minmax(118px,150px) 12px!important;column-gap:14px!important}.main .holdings-card .asset-row::after{text-align:left;align-self:center;grid-column:2;grid-row:1}.main .holdings-card .asset-allocation{display:block;grid-column:2;grid-row:1;align-self:end;justify-self:stretch;height:4px!important;margin:0 0 6px!important;border-radius:999px!important;overflow:hidden;background:color-mix(in srgb,var(--fg) 7%,transparent)}.main .holdings-card .asset-allocation i{display:block;height:100%;border-radius:inherit}.main .card>h3,.main .chart-card>h3,.main .card .collapsible-header h3{font-size:14px;font-weight:600;color:var(--fg);letter-spacing:-.012em}#holdMetrics .m-val{font-weight:650;letter-spacing:-.022em}
 }
 
 @media(hover:hover) and (pointer:fine){
@@ -1926,7 +1926,7 @@ body[data-active-tab="data"]{--bar-solid:color-mix(in srgb,var(--accent) 9%,var(
 /* ===== Sidebar · compact desktop v2 ===== */
 @media(min-width:801px){
   .sidebar>.sb-section,.sidebar>.sb-section[style]{padding:10px 22px!important}
-  .sidebar>.sb-section>h3{margin-bottom:7px!important}
+  .sidebar>.sb-section>h3{margin-bottom:8px!important}
   .sidebar .sb-price-row{padding-top:5px!important;padding-bottom:5px!important}
   .sidebar .sb-health-row{min-height:44px!important;padding:6px 10px!important}
   .sidebar .sb-quick-menu > button{height:28px!important}
@@ -3011,3 +3011,78 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 @media(min-width:801px){#tab-holding .equity-card{grid-column:1/-1}}
 @media(min-width:1160px){#tab-holding .equity-card{height:200px}}
 @media(max-width:800px){#tab-holding .equity-card{order:5}}
+
+/* ===== v397 P1 · 桌面端边界：hairline ring 取代硬边框（参考 beautifului） =====
+   做法：保留 1px 边框宽度但变透明（几何完全不变），边界交给半透明 ring；
+   分隔线（列表/表格）保留 1px，只把颜色降到半透明。全部只在 ≥801 生效。 */
+@media(min-width:801px){
+  .desktop-theme,.desktop-copy,.tabs,.qa-alert-item,.sync-retry,
+  .card.equity-card,.card.hold-block,.card.drawdown-card{border-color:transparent}
+  .desktop-theme,.desktop-copy,.tabs,.qa-alert-item,.sync-retry{box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 6%,transparent)}.main #mobileAlerts .qa-alert-item{border-color:transparent!important}
+  .card.equity-card,.card.hold-block,.card.drawdown-card{box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 5%,transparent),0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)!important}
+  .main .card{border-color:transparent;box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 4%,transparent),0 1px 2px rgba(20,30,24,.045),0 10px 28px rgba(20,30,24,.05)}
+  .main .asset-row,.main .trade-table td,.main .trade-table th,.main .res-table td,.main .res-table th{
+    border-bottom-color:color-mix(in srgb,var(--rule) 55%,transparent)}
+}
+
+/* ===== v397 P2 · 桌面端圆角/字号 token（参考 apple-design：每个值都要能解释） =====
+   语义四档：card 12 / control 10 / inner 8 / pill|circle 999(50 为圆点)。
+   字号七档：caption 11.5 / body 12.5 / subtitle 13.5 / title 14 / control 16 / page 21 / hero(流体 22–28)。 */
+@media(min-width:801px){
+  :root{--radius-card:12px;--radius-control:10px;--radius-inner:8px;
+    --fs-caption:11.5px;--fs-body:12.5px;--fs-subtitle:13.5px;--fs-title:14px;--fs-control:16px;--fs-page:21px}
+  .sym-badge{border-radius:var(--radius-inner)}
+  .metric-glyph{border-radius:var(--radius-inner)}
+  .tabs{border-radius:var(--radius-card)!important}
+  .card.hold-block{border-radius:var(--radius-card)}
+  .desktop-theme,.desktop-copy{border-radius:var(--radius-control)}
+  .main .card h3,.main .card>.collapsible-header h3,.main .drawdown-heading h3{font-size:var(--fs-title)!important}
+  .m-pct{font-size:var(--fs-body)}
+  .main .mobile-section-title button,.main .qa-alert-main b,.main .cc-premium>strong{font-size:var(--fs-control)!important}
+  .sb-header h1{font-size:var(--fs-control)}
+}
+
+/* v397 P2b：卡内图标底与小控件统一到 inner 8（7/9px 都是历史值） */
+@media(min-width:801px){
+  .m-pct,.sidebar .sb-health-row>i,.sidebar .sb-quick-menu>button svg,
+  .main .watch-mbtn,.main .plan-edit,.main .acc-actions button,.main .acc-inline,
+  .main .ds-banner-actions button,.main .ds-skeleton i{border-radius:var(--radius-inner)!important}
+}
+
+/* ===== v397 P3 · 焦点与可点语义（apple-design：同外观必同行为；beautifului：focus 用 ring） ===== */
+@media(min-width:801px){
+  .main :focus-visible,.sidebar :focus-visible,.top-bar :focus-visible{
+    outline:none!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 32%,transparent)!important}
+  /* 高对比/强制色模式下 box-shadow 可能不显示，退回 outline */
+  @media(forced-colors:active){
+    .main :focus-visible,.sidebar :focus-visible,.top-bar :focus-visible{outline:2px solid!important}
+  }
+  /* 可点行：鼠标形态跟上（.hold-row 早就是 pointer，.asset-row 之前漏了） */
+  .main .asset-row{cursor:pointer}
+  /* CC 卡的「›」是动作按钮：给 28px 热区（原来只有几个像素的字） */
+  .main .cc-overview .mobile-section-title>button{width:28px;height:28px;display:grid;place-items:center;
+    border:0;border-radius:var(--radius-inner);background:transparent;color:var(--muted);cursor:pointer;font-size:16px}
+  /* 静态卡片：明确不可点，不要任何 pointer/hover 暗示 */
+  .main .metric,.main .card.equity-card,.main .card.hold-block,.main .card.drawdown-card,.main .card.goal-progress-card,.main .allocation-card{cursor:default}
+  /* 控件字族统一（只统一字族，不改字号：16px 输入框是 iOS 的硬要求） */
+  .main button,.main input,.main select,.main textarea,.sidebar button,.top-bar button{font-family:inherit}
+  @media(hover:hover) and (pointer:fine){
+    .main .asset-row:hover{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent)}
+    .main .cc-overview .mobile-section-title>button:hover{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
+  }
+}
+
+/* ===== v397 P4 · 系统偏好降级（apple-design：材质与可读性都要有退路） ===== */
+@media(prefers-reduced-transparency: reduce){
+  /* 半透明胶囊/徽章改成不透明底色（只影响开了该偏好的设备） */
+  .m-pct,.mx-pill,.cal-tag{background-image:none!important;backdrop-filter:none!important}
+  .m-pct.is-pos,.m-pct.is-neg,.mx-pill.is-ann,.mx-pill.is-spot{background-color:var(--surface)!important}
+  .mx-pill.is-held{background-color:var(--accent-l)!important}
+  .mx-pill.is-none,.cal-tag{background-color:var(--rule)!important}
+}
+@media(prefers-contrast: more){
+  /* 文字与分隔线各加深一档；桌面的 hairline ring 从 5% 提到 14% */
+  :root{--rule:#aab4ad;--muted:#3f4842}
+  .main .card,.main .qa-alert-item,.desktop-theme,.desktop-copy,.tabs{
+    box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 14%,transparent)!important}
+}
