@@ -2,7 +2,7 @@
 // 全部用假 fetch，不碰真实 Nasdaq。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleMarketCap, parseBiggestList } from '../src/lib/marketcap.js';
+import { handleMarketCap, parseBiggestList, parseScreener } from '../src/lib/marketcap.js';
 
 function withFetch(impl, fn) {
   const saved = globalThis.fetch;
@@ -44,7 +44,7 @@ test('handleMarketCap：stocks 查不到时按 etf 再查一次（SMH 这类 ETF
   await withFetch(fake, async () => {
     const result = await call('TESTB');
     assert.equal(result.body.caps.TESTB, 78467697147);
-    const nasdaqCalls = seen.filter((u) => u.includes('api.nasdaq.com'));
+    const nasdaqCalls = seen.filter((u) => u.includes('api.nasdaq.com') && !u.includes('screener/stocks'));
     assert.equal(nasdaqCalls.length, 2, '应该先 stocks 再 etf');
     assert.match(nasdaqCalls[1], /assetclass=etf/);
   });
@@ -65,7 +65,7 @@ test('handleMarketCap：N/A / 空 / 上游报错都进 missing，不编数字', 
 test('handleMarketCap：命中缓存后不再出网', async () => {
   let hits = 0;
   await withFetch((url) => {
-    if (String(url).includes('api.nasdaq.com')) hits += 1;
+    if (String(url).includes('api.nasdaq.com') && !String(url).includes('screener/stocks')) hits += 1;
     return nasdaq({ MarketCap: { value: '1,000,000,000' } });
   }, async () => {
     await call('TESTE');
@@ -257,5 +257,45 @@ test('handleMarketCap：ETF 取 ETF 页的规模（Assets），不用 Nasdaq 那
     const result = await call('ETFA');
     assert.equal(result.body.caps.ETFA, 155480000000, 'ETF 规模要取 ETF 页的 Assets（155.48B）');
     assert.ok(!asked.some((u) => u.includes('/ETFA/')), 'ETF 页拿到了就不该再问 Nasdaq');
+  });
+});
+
+/* ===== v400：Nasdaq 全市场 screener 作为第二批量源 ===== */
+const screenerSymbol = (i) => 'S' + String.fromCharCode(65 + Math.floor(i / 676))
+  + String.fromCharCode(65 + Math.floor((i % 676) / 26)) + String.fromCharCode(65 + (i % 26));
+
+test('parseScreener：全市场表解析（数值字符串 / 非法代码 / N/A）', () => {
+  const rows = [
+    { symbol: 'COIN', marketCap: '28824793318.00' },
+    { symbol: 'TSM', marketCap: '1825686031742.00' },
+    { symbol: 'NOCAP', marketCap: 'N/A' },
+    { symbol: 'BAD!', marketCap: '1' },
+  ];
+  for (let i = 0; i < 600; i += 1) rows.push({ symbol: screenerSymbol(i), marketCap: String((i + 1) * 1e9) });
+  const caps = parseScreener({ data: { rows } });
+  assert.equal(caps.COIN, 28824793318);
+  assert.equal(caps.TSM, 1825686031742);
+  assert.equal(caps.NOCAP, undefined);
+  assert.equal(caps['BAD!'], undefined);
+  assert.ok(Object.keys(caps).length >= 600);
+});
+
+test('handleMarketCap：大表没有的票，用 screener 一次补全（不再逐只问 Nasdaq）', async () => {
+  const asked = [];
+  const target = 'SCRNA';
+  const filler = Array.from({ length: 22 }, (_, i) => listRow('U' + String.fromCharCode(65 + i) + 'X', (i + 1) + 'B', 'U' + i)).join('');
+  const rows = [{ symbol: target, marketCap: '123000000000.00' }];
+  for (let i = 0; i < 600; i += 1) rows.push({ symbol: screenerSymbol(i), marketCap: String((i + 1) * 1e9) });
+  const fake = (url) => {
+    const u = String(url);
+    asked.push(u);
+    if (u.includes('biggest-companies')) return Promise.resolve(new Response(filler, { status: 200 }));
+    if (u.includes('screener/stocks')) return Promise.resolve(new Response(JSON.stringify({ data: { rows } }), { status: 200 }));
+    return nasdaq({ MarketCap: { value: '9,999,000,000' } });
+  };
+  await withFetch(fake, async () => {
+    const result = await call(target);
+    assert.equal(result.body.caps[target], 123000000000, '应该来自 screener（123B）');
+    assert.ok(!asked.some((u) => u.includes('/quote/' + target + '/')), 'screener 命中后不该再按代码查');
   });
 });

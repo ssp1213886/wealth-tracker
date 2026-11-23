@@ -35,6 +35,13 @@ const LIST_SYM_RE = /<div class="text-xs text-faded">([A-Z0-9.\-]{1,10})<\/div>/
 const LIST_CAP_RE = /<td class="[^"]*text-right font-semibold[^"]*">([\d.,]+)([TBMK])<\/td>/;
 /** 至少解析出这么多行才认为页面结构正常；低于它按"上游改版"处理并报错。 */
 const LIST_MIN_ROWS = 20;
+/**
+ * v400：Nasdaq 官方 screener —— 一次请求返回全部约 7300 只美股（约 2.3MB，含 marketCap）。
+ * 用来补 stockanalysis 前 100 名之外的中小盘（COIN/TSM/MRVL/KLAC/CRCL 这类）。
+ * 数值按最新收盘（比实时晚一天，用户已确认可接受）；缓存 6 小时。
+ */
+const SCREENER_URL = 'https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=10000&offset=0&download=true';
+const SCREENER_MIN_ROWS = 500;
 const LIST_UNITS = { T: 1e12, B: 1e9, M: 1e6, K: 1e3 };
 /**
  * ETF 规模（AUM）：stockanalysis 的 ETF 页上写作 "Assets $155.48B"。
@@ -76,6 +83,8 @@ try {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** 市值大表（内存层）。 */
 let biggestList = null;
+/** Nasdaq screener 全表（内存层）。 */
+let screenerTable = null;
 
 /** "5,475,761,000,000" → 5475761000000；"N/A" / 空 / 非正数 → null。 */
 function parseCap(value) {
@@ -106,6 +115,19 @@ export function parseBiggestList(html) {
     if (symbol && cap && caps[symbol] === undefined) caps[symbol] = cap;
   }
   return Object.keys(caps).length >= LIST_MIN_ROWS ? caps : null;
+}
+
+/** 解析 Nasdaq screener：{data:{rows:[{symbol, marketCap}]}} → { symbol: cap }。 */
+export function parseScreener(payload) {
+  const rows = payload && payload.data && Array.isArray(payload.data.rows) ? payload.data.rows : [];
+  const caps = {};
+  rows.forEach((row) => {
+    const symbol = String((row && row.symbol) || '').toUpperCase();
+    if (!SYMBOL_RE.test(symbol)) return;
+    const cap = parseCap(row && row.marketCap);
+    if (cap && caps[symbol] === undefined) caps[symbol] = cap;
+  });
+  return Object.keys(caps).length >= SCREENER_MIN_ROWS ? caps : null;
 }
 
 /**
@@ -157,6 +179,59 @@ async function fetchBiggestList(origin, budgetMs) {
     return caps;
   } catch (error) {
     return biggestList ? biggestList.caps : {};
+  }
+}
+
+/**
+ * 取 Nasdaq 全市场市值表：内存 → 边缘缓存 → 上游。
+ * 一次 2.3MB，但能覆盖所有美股；失败返回空表，不拖累主流程。
+ */
+async function fetchNasdaqScreener(origin, budgetMs) {
+  if (screenerTable && Date.now() - screenerTable.at < LIST_TTL) return screenerTable.caps;
+  const key = edgeKey(origin, '__SCREENER__');
+  try {
+    const cached = edgeCache ? await edgeCache.match(key) : null;
+    if (cached) {
+      const caps = JSON.parse(await cached.text());
+      if (caps && Object.keys(caps).length >= SCREENER_MIN_ROWS) {
+        screenerTable = { at: Date.now(), caps };
+        return caps;
+      }
+    }
+  } catch (error) {
+    // 缓存读失败就当没命中
+  }
+  try {
+    const response = await Promise.race([
+      fetch(SCREENER_URL, {
+        headers: {
+          'User-Agent': BROWSER_UA,
+          Accept: 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(Math.max(400, budgetMs)),
+      }),
+      sleep(Math.max(400, budgetMs)).then(() => null),
+    ]);
+    if (!response || !response.ok) return {};
+    const caps = parseScreener(await response.json());
+    if (!caps) {
+      console.error('[marketcap] Nasdaq screener 解析失败：rows 数量不足 ' + SCREENER_MIN_ROWS);
+      return {};
+    }
+    screenerTable = { at: Date.now(), caps };
+    if (edgeCache) {
+      try {
+        await edgeCache.put(key, new Response(JSON.stringify(caps), {
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=' + LIST_TTL_SECONDS },
+        }));
+      } catch (error) {
+        // 写缓存失败不影响本次返回
+      }
+    }
+    return caps;
+  } catch (error) {
+    return {};
   }
 }
 
@@ -325,6 +400,23 @@ export async function handleMarketCap(request, url) {
       caps[symbol] = cap;
       edgePut(origin, symbol, cap);
     });
+  }
+
+  // ③b v400：大表没有的（排行榜 100 名之外的美股），用 Nasdaq 全市场表一次补全
+  if (rest.length) {
+    const remaining = deadlineAt - Date.now();
+    if (remaining > 400) {
+      const bulk = await fetchNasdaqScreener(origin, remaining);
+      for (let index = rest.length - 1; index >= 0; index -= 1) {
+        const symbol = rest[index];
+        const cap = bulk[symbol];
+        if (!cap) continue;
+        cache.set(symbol, { at: Date.now(), cap });
+        caps[symbol] = cap;
+        edgePut(origin, symbol, cap);
+        rest.splice(index, 1);
+      }
+    }
   }
 
   // ④ 大表里没有的（ETF、小盘、币）再按代码查；一次最多 MAX_LOOKUPS 只，多出来的交给前端下一轮

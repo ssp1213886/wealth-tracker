@@ -181,7 +181,7 @@ else if (Math.abs(busConsistency.pillPrice - busConsistency.rowPrice) > 0.011) {
 /* G) v399：缓存过期 + 上游全部失败 → 已拿到的旧值必须保留，不能改成「—」。
    线上事故：刷新失败把 null 写进缓存，NVDA/AAPL/MSFT 一整天都是「—」。 */
 const cacheHadNvda = await ev(() => {
-  const key = Object.keys(localStorage).find((x) => /wealth_marketcap_v2$/.test(x)) || 'wealth_marketcap_v2';
+  const key = Object.keys(localStorage).find((x) => /wealth_marketcap_v3$/.test(x)) || 'wealth_marketcap_v3';
   const v = JSON.parse(localStorage.getItem(key) || '{}');
   const had = !!(v.caps && Number(v.caps.NVDA) > 0);
   v.at = Date.now() - 7 * 60 * 60 * 1000; // 超过 6h → 开机后会自动刷新
