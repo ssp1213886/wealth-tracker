@@ -2,7 +2,7 @@
 // 全部用假 fetch，不碰真实 Nasdaq。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleMarketCap } from '../src/lib/marketcap.js';
+import { handleMarketCap, parseBiggestList } from '../src/lib/marketcap.js';
 
 function withFetch(impl, fn) {
   const saved = globalThis.fetch;
@@ -188,14 +188,43 @@ test('handleMarketCap：上游卡住时按 5 秒硬超时返回已有部分（�
   });
 });
 
+/** v399 上游改版后的真实行结构（symbol 在 text-xs text-faded 的 div 里，市值在 text-right font-semibold 的 td 里）。 */
+const listRow = (sym, cap, name) => '<tr class="border-default/70 border-b">'
+  + '<td class="py-3 pl-2 pr-1 text-center text-sm font-semibold text-faded sm:px-4">1</td>'
+  + '<td class="px-2 py-3 sm:px-4"><a href="/stocks/' + sym.toLowerCase() + '/" class="group flex items-center gap-2 sm:gap-3">'
+  + '<div><div class="truncate font-semibold text-default" title="' + name + '">' + name + '</div>'
+  + '<div class="text-xs text-faded">' + sym + '</div></div></a></td>'
+  + '<td class="whitespace-nowrap px-2 py-3 text-right font-semibold text-default sm:px-4">' + cap + '</td>'
+  + '<td class="hidden whitespace-nowrap px-3 py-3 text-right sm:table-cell sm:px-4">$125.53</td>'
+  + '</tr>';
+
+test('parseBiggestList：新 DOM 逐行解析（NVDA/AAPL 必须出来），海外数字代码跳过', () => {
+  const rows = [
+    listRow('AAPL', '4.98T', 'Apple Inc.'),
+    listRow('NVDA', '3.03T', 'NVIDIA Corporation'),
+    // 海外上市的数字代码（Tadawul 2222）：不该混进美股代码表
+    '<tr><td><a href="/quote/tadawul/2222/"><div class="text-xs text-faded">2222</div></a></td>'
+      + '<td class="text-right font-semibold">1.71T</td></tr>',
+  ];
+  const filler = (i) => 'T' + String.fromCharCode(65 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26));
+  for (let i = 0; i < 23; i += 1) rows.push(listRow(filler(i), (i + 1) + 'B', 'Name ' + i));
+  const caps = parseBiggestList(rows.join(''));
+  assert.equal(caps.NVDA, 3.03e12);
+  assert.equal(caps.AAPL, 4.98e12);
+  assert.equal(caps['2222'], undefined);
+  assert.equal(Object.keys(caps).length, 25);
+});
+
+test('parseBiggestList：页面再改版（不足 20 行）返回 null，不返回半张表', () => {
+  assert.equal(parseBiggestList('<table><tr><td>oops</td></tr></table>'), null);
+  const twoRows = [listRow('AAPL', '4.98T', 'Apple'), listRow('NVDA', '3.03T', 'NVIDIA')].join('');
+  assert.equal(parseBiggestList(twoRows), null);
+});
+
 test('handleMarketCap：先用一个请求的「市值最大 500 家」大表覆盖美股，Nasdaq 只兜底', async () => {
-  // 造 120 行（解析函数要求至少 100 行才认）；代码只用字母，白名单不接受数字
+  // 代码只用字母，白名单不接受数字；20 行是 v399 的判定阈值
   const symOf = (i) => 'L' + String.fromCharCode(65 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26));
-  const listHtml = Array.from({ length: 120 }, (_, i) => {
-    const sym = symOf(i);
-    return '<td class="sym svelte-1"><a href="/stocks/' + sym.toLowerCase() + '/">' + sym + '</a><!--]--></td><!--]-->'
-      + '<td class="slw svelte-1">Name ' + i + '</td><td class="svelte-1">' + (i + 1) + '.5B</td>';
-  }).join('');
+  const listHtml = Array.from({ length: 55 }, (_, i) => listRow(symOf(i), (i + 1) + '.5B', 'Name ' + i)).join('');
   const asked = [];
   const fake = (url) => {
     const target = String(url);

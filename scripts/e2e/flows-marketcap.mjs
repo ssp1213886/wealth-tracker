@@ -178,6 +178,38 @@ else if (Math.abs(busConsistency.pillPrice - busConsistency.rowPrice) > 0.011) {
   failures.push('行情两条线还是不一致：胶囊 $' + busConsistency.pillPrice + ' vs 观察 $' + busConsistency.rowPrice);
 }
 
+/* G) v399：缓存过期 + 上游全部失败 → 已拿到的旧值必须保留，不能改成「—」。
+   线上事故：刷新失败把 null 写进缓存，NVDA/AAPL/MSFT 一整天都是「—」。 */
+const cacheHadNvda = await ev(() => {
+  const key = Object.keys(localStorage).find((x) => /wealth_marketcap_v2$/.test(x)) || 'wealth_marketcap_v2';
+  const v = JSON.parse(localStorage.getItem(key) || '{}');
+  const had = !!(v.caps && Number(v.caps.NVDA) > 0);
+  v.at = Date.now() - 7 * 60 * 60 * 1000; // 超过 6h → 开机后会自动刷新
+  localStorage.setItem(key, JSON.stringify(v));
+  return had;
+});
+if (!cacheHadNvda) failures.push('市值缓存里没有 NVDA，无法验证「失败保留旧值」');
+await p.route('**/api/marketcap*', (route) => route.fulfill({
+  status: 200,
+  contentType: 'application/json',
+  body: JSON.stringify({ ok: true, caps: {}, missing: ['IWM', 'NVDA', 'SKHYV', 'VGT', 'SMH'], deferred: [], ts: Date.now() }),
+}));
+await p.reload({ waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(7000);
+const lastGoodCap = await ev(() => {
+  const row = [...document.querySelectorAll('#watchRows .watch-row')].find((r) => /NVDA/.test(r.textContent));
+  if (!row) return null;
+  row.click();
+  const detail = row.nextElementSibling;
+  const el = detail && detail.querySelector('[data-cap-sym="NVDA"]');
+  const text = el ? el.textContent.trim() : null;
+  row.click();
+  return text;
+});
+if (!lastGoodCap || lastGoodCap === '—' || lastGoodCap === '…') {
+  failures.push('上游失败时把已缓存的市值改成了「' + lastGoodCap + '」');
+}
+
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
@@ -188,6 +220,7 @@ console.log('市值：观察行详情 ' + (watchDetail.hasCap ? '有' : '无') +
 console.log('敞口：SKHYV ' + (exposure.syms && exposure.syms.includes('SKHYV') ? '在列' : '缺失') + ' · 共 ' + ((exposure.syms && exposure.syms.length) || 0) + ' 行 · 脚注「' + sourceText.slice(0, 60) + '」');
 console.log('二次打开：市值接口调用 ' + secondOpen.marketcap + ' 次（应为 0）· 缓存直接显示 ' + secondOpen.capShown);
 console.log('行情一致性：VGT 胶囊 $' + busConsistency.pillPrice + ' vs 观察 $' + busConsistency.rowPrice);
+console.log('上游失败保留旧值：NVDA ' + lastGoodCap);
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('市值流测试失败：\n  - ' + failures.join('\n  - '));

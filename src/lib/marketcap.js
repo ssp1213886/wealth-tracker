@@ -25,9 +25,16 @@ const MAX_LOOKUPS = 12;
  * 表里没有的（ETF、小盘、币）再走 Nasdaq / CoinLore 兜底。
  */
 const LIST_URL = 'https://stockanalysis.com/list/biggest-companies/';
-const LIST_TTL = 24 * 60 * 60 * 1000;
-const LIST_TTL_SECONDS = 24 * 60 * 60;
-const LIST_RE = /<td class="sym [^"]*">[\s\S]*?<a href="[/]stocks[/][^"]*">([A-Z0-9.\-]+)<\/a>[\s\S]{0,20}?<\/td>[\s\S]*?<td class="slw [^"]*">([^<]*)<\/td>[\s\S]*?<td class="[^"]*">([\d.]+)([TBMK])<\/td>/g;
+/* v399：上游 2026-11 改版，旧整页正则 0 命中（NVDA/AAPL/MSFT 因此一直显示「—」）。
+   新结构是标准 <tr>：公司代码在 <div class="text-xs text-faded">NVDA</div>，
+   市值在带 text-right font-semibold 的那个 <td>（如 3.03T）。逐行解析更抗改版。 */
+const LIST_TTL = 6 * 60 * 60 * 1000;
+const LIST_TTL_SECONDS = 6 * 60 * 60;
+const LIST_ROW_RE = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+const LIST_SYM_RE = /<div class="text-xs text-faded">([A-Z0-9.\-]{1,10})<\/div>/;
+const LIST_CAP_RE = /<td class="[^"]*text-right font-semibold[^"]*">([\d.,]+)([TBMK])<\/td>/;
+/** 至少解析出这么多行才认为页面结构正常；低于它按"上游改版"处理并报错。 */
+const LIST_MIN_ROWS = 20;
 const LIST_UNITS = { T: 1e12, B: 1e9, M: 1e6, K: 1e3 };
 /**
  * ETF 规模（AUM）：stockanalysis 的 ETF 页上写作 "Assets $155.48B"。
@@ -36,14 +43,16 @@ const LIST_UNITS = { T: 1e12, B: 1e9, M: 1e6, K: 1e3 };
 const ETF_PAGE_URL = (symbol) => `https://stockanalysis.com/etf/${symbol.toLowerCase()}/`;
 // 实测 "Assets" 到金额之间隔着 132 个字符的属性文本，窗口给足
 const ETF_ASSETS_RE = /Assets[\s\S]{0,400}?\$([\d.]+)([TBMK])/;
-const CAP_TTL = 24 * 60 * 60 * 1000;
-/** 拿不到市值的代码缩短缓存（1 小时），免得一次上游抖动被钉死一整天。 */
-const MISS_TTL = 60 * 60 * 1000;
+const CAP_TTL = 6 * 60 * 60 * 1000;
+/** 拿不到市值的代码缩短缓存（15 分钟），免得一次上游抖动被钉死一整天。 */
+const MISS_TTL = 15 * 60 * 1000;
 /** 整批的硬超时：到点先返回已有的部分，剩下的进 deferred。 */
 const DEADLINE_MS = 5000;
 /** 边缘缓存时长（秒）；拿不到市值的条目短一些。 */
-const EDGE_TTL_SECONDS = 24 * 60 * 60;
-const EDGE_MISS_TTL_SECONDS = 60 * 60;
+const EDGE_TTL_SECONDS = 6 * 60 * 60;
+const EDGE_MISS_TTL_SECONDS = 15 * 60;
+/** 边缘缓存 key 的版本：改解析/口径时换一个，旧的坏值立即失效。 */
+const EDGE_VERSION = '3';
 /** 代码白名单：1–5 个字母，可带 . 或 -（BRK-B / BRK.B），拒绝一切其它字符（防注入）。 */
 const SYMBOL_RE = /^[A-Z]{1,5}([.\-][A-Z]{1,2})?$/;
 /** Nasdaq 与 stockanalysis 对通用 UA 都会 403，必须报一个像浏览器的 UA。 */
@@ -79,17 +88,24 @@ function parseCap(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-/** 解析「市值最大 500 家」页面：symbol → 市值。 */
-function parseBiggestList(html) {
+/** 解析「市值最大 500 家」页面：symbol → 市值。v399 起按 <tr> 逐行解析。 */
+export function parseBiggestList(html) {
   const caps = {};
-  let hit;
-  LIST_RE.lastIndex = 0;
-  while ((hit = LIST_RE.exec(html))) {
-    const symbol = String(hit[1]).toUpperCase();
-    const cap = parseCap(hit[3] + hit[4]);
+  const source = String(html == null ? '' : html);
+  LIST_ROW_RE.lastIndex = 0;
+  let row;
+  while ((row = LIST_ROW_RE.exec(source))) {
+    const symHit = LIST_SYM_RE.exec(row[1]);
+    if (!symHit) continue;
+    const capHit = LIST_CAP_RE.exec(row[1]);
+    if (!capHit) continue;
+    const symbol = String(symHit[1]).toUpperCase();
+    // 只收美股风格代码；海外上市的数字代码（如 Tadawul 2222）不进表
+    if (!SYMBOL_RE.test(symbol)) continue;
+    const cap = parseCap(capHit[1] + capHit[2]);
     if (symbol && cap && caps[symbol] === undefined) caps[symbol] = cap;
   }
-  return Object.keys(caps).length >= 100 ? caps : null;
+  return Object.keys(caps).length >= LIST_MIN_ROWS ? caps : null;
 }
 
 /**
@@ -103,7 +119,7 @@ async function fetchBiggestList(origin, budgetMs) {
     const cached = edgeCache ? await edgeCache.match(key) : null;
     if (cached) {
       const caps = JSON.parse(await cached.text());
-      if (caps && Object.keys(caps).length >= 100) {
+      if (caps && Object.keys(caps).length >= LIST_MIN_ROWS) {
         biggestList = { at: Date.now(), caps };
         return caps;
       }
@@ -123,7 +139,11 @@ async function fetchBiggestList(origin, budgetMs) {
     if (!response) return biggestList ? biggestList.caps : {};
     if (!response.ok) return {};
     const caps = parseBiggestList(await response.text());
-    if (!caps) return {};
+    if (!caps) {
+      // 上游改版时必须"响"：否则又会静默退回 Nasdaq 单查，一半标的显示「—」
+      console.error('[marketcap] biggest-list 解析失败：页面结构可能又改了（期望 ≥' + LIST_MIN_ROWS + ' 行）');
+      return {};
+    }
     biggestList = { at: Date.now(), caps };
     if (edgeCache) {
       try {
@@ -211,7 +231,7 @@ async function fetchCryptoCaps() {
 
 /** 边缘缓存按「单个代码」存：一次只补缺的那几只，命中就是毫秒级。 */
 function edgeKey(origin, symbol) {
-  return new Request(new URL('/api/marketcap?symbol=' + encodeURIComponent(symbol), origin).toString(), { method: 'GET' });
+  return new Request(new URL('/api/marketcap?symbol=' + encodeURIComponent(symbol) + '&v=' + EDGE_VERSION, origin).toString(), { method: 'GET' });
 }
 
 /** 命中返回数字；缓存里明确记着「没有」返回 null；没缓存返回 undefined。 */
