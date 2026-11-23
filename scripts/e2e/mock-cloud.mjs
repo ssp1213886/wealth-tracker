@@ -290,6 +290,19 @@ const server = http.createServer((req, res) => {
       ],
     }));
   }
+  // 市场状态测试专用：/api/price?range=1y 返回确定性的 251 日线（强势形态）。
+  // 只拦 range=1y，避免改变其它行情场景对 1mo / 实时快照的预期。
+  if (url.pathname === '/api/price' && url.searchParams.get('range') === '1y') {
+    const sym = String(url.searchParams.get('symbol') || '').toUpperCase();
+    if (['VGT', 'SMH', 'IBIT'].includes(sym)) {
+      const closes = Array.from({ length: 251 }, (_, i) => (i < 201 ? 100 : 120));
+      res.writeHead(200, cors);
+      return res.end(JSON.stringify({
+        ok: true,
+        data: { chart: { result: [{ indicators: { quote: [{ close: closes }] } }] } },
+      }));
+    }
+  }
   // 其它 /api/*：返回空但结构正确，避免前端等待或报错
   if (url.pathname.startsWith('/api/')) {
     res.writeHead(200, cors);

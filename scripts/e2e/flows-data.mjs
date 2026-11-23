@@ -135,6 +135,7 @@ const optUi = await ev(() => ({
   status: (document.getElementById('optStatus') || {}).textContent,
   calls: (document.getElementById('ccSub') || {}).textContent,
   nearest: (document.getElementById('ccNearest') || {}).textContent,
+  market: (document.getElementById('marketRegime') || {}).textContent,
   rows: document.querySelectorAll('#tab-option tbody tr').length,
 }));
 if (optUi.total !== '$120.00') failures.push('累计权利金应为 $120.00，实际 ' + optUi.total);
@@ -142,6 +143,10 @@ if (optUi.month !== '$120.00') failures.push('本月权利金应为 $120.00，�
 if (!/天/.test(optUi.status || '')) failures.push('期权状态没显示剩余天数：' + optUi.status);
 if (!/CALL/.test(optUi.calls || '')) failures.push('"复投核心仓"那行没显示 CALL 张数：' + optUi.calls);
 if (optUi.rows < 1) failures.push('期权行没渲染出来');
+if (!/市场状态/.test(optUi.market || '')) failures.push('期权页没显示市场状态提示：' + optUi.market);
+if (!/强势/.test(optUi.market || '') || !/10% OTM/.test(optUi.market || '')) {
+  failures.push('市场状态没按 1 年日线给出强势/VGT 10% OTM：' + optUi.market);
+}
 
 /* 云端是否真的收到 */
 await p.waitForTimeout(1500);
@@ -160,7 +165,7 @@ await p.evaluate(() => {
 await p.close();
 
 console.log('数据流：买入 ' + beforeBuy.trades + '→' + afterBuy.trades + ' 笔 · 现金 ' + beforeDep.cash + '→' + afterDep.cash + ' · 期权 ' + beforeOpt.options + '→' + afterOpt.options);
-console.log('期权页：累计权利金 ' + optUi.total + ' · 本月 ' + optUi.month + ' · 状态 "' + optUi.status + '" · 最近到期 "' + optUi.nearest + '"');
+console.log('期权页：累计权利金 ' + optUi.total + ' · 本月 ' + optUi.month + ' · 状态 "' + optUi.status + '" · 市场 "' + optUi.market + '" · 最近到期 "' + optUi.nearest + '"');
 console.log('推送记录：' + pushes.join('  |  '));
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {

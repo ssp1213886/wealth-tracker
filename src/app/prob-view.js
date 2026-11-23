@@ -3,6 +3,7 @@
 import { fmtFull } from './util.js';
 import { emptyStateHTML, escapeHtml } from './render.js';
 import { DEFAULT_OPTION_SYMBOLS } from './options.js';
+import { adviceForRegime, REGIME_LABELS } from './regime.js';
 
 /** 概率的颜色分级：越容易被行权越红。 */
 export function probColor(prob) {
@@ -152,6 +153,49 @@ export function noteHtml(meta) {
 export function renderProbNote(doc, meta) {
   const el = doc.getElementById('probNote');
   if (el) el.innerHTML = noteHtml(meta);
+}
+
+function fmtRegimePrice(value) {
+  const n = Number(value);
+  return n > 0 ? '$' + n.toFixed(2) : '—';
+}
+
+/**
+ * 期权页的市场状态条。只展示趋势和建议，不改 OTM 设置。
+ * 强势/弱势用 200 日均线 ±2% + 50/200 均线方向判定；数据不足时明确回落。
+ */
+export function marketRegimeHtml(info, symbol, opts) {
+  const c = opts || {};
+  const d = info || {};
+  const sym = String(symbol || '').toUpperCase();
+  const regime = REGIME_LABELS[d.regime] ? d.regime : 'unknown';
+  const label = REGIME_LABELS[regime];
+  const advice = adviceForRegime(sym, regime);
+  let detail = '';
+  if (!info && c.loading) {
+    detail = '读取 1 年日线，计算 50/200 日均线…';
+  } else if (!info && c.error) {
+    detail = '行情暂不可用，继续使用当前 OTM 设置';
+  } else if (regime === 'unknown') {
+    detail = '1 年日线不足 200 个交易日，继续使用当前 OTM 设置';
+  } else {
+    detail = '现价 ' + fmtRegimePrice(d.spot) +
+      ' · 50D ' + fmtRegimePrice(d.sma50) +
+      ' · 200D ' + fmtRegimePrice(d.sma200) +
+      ' · 日线收盘';
+  }
+  const title = '市场状态按 50/200 日均线判断；现价高于 200D 2% 以上且 50D > 200D 为强势，低于 200D 2% 以下且 50D < 200D 为弱势，其余为中性。';
+  return '<div class="regime-main" title="' + escapeHtml(title) + '">' +
+    '<span class="regime-kicker">市场状态</span>' +
+    '<span class="regime-badge is-' + regime + '">' + escapeHtml(label) + '</span>' +
+    '<strong class="regime-advice">' + escapeHtml(advice.text) + '</strong>' +
+    '</div><div class="regime-detail">' + escapeHtml(detail) + '</div>';
+}
+
+/** 把市场状态条写进 DOM；opts 的 loading/error 只影响无数据时的文案。 */
+export function renderMarketRegime(doc, symbol, info, opts) {
+  const el = doc.getElementById('marketRegime');
+  if (el) el.innerHTML = marketRegimeHtml(info, symbol, opts);
 }
 
 /**

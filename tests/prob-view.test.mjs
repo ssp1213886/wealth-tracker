@@ -8,6 +8,7 @@ import {
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
   probMatrixHtml, probTabsHtml, matrixCellHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
+  marketRegimeHtml, renderMarketRegime,
 } from '../src/app/prob-view.js';
 
 /** CBOE 实际返回的时间戳格式：美东挂钟时间、不带时区标记。 */
@@ -29,6 +30,32 @@ test('fmtProb / fmtIv：缺值显示「—」而不是 NaN', () => {
   assert.equal(fmtIv(0.213), '21.3%');
   assert.equal(fmtIv(0), '—');
   assert.equal(fmtIv(null), '—');
+});
+
+test('marketRegimeHtml：状态、建议与均线数据都在同一行内可读', () => {
+  const html = marketRegimeHtml({ regime: 'bull', spot: 256.2, sma50: 244.1, sma200: 231.8 }, 'IBIT');
+  assert.match(html, /regime-badge is-bull">强势/);
+  assert.match(html, /暂不卖 Call/);
+  assert.match(html, /现价 \$256\.20/);
+  assert.match(html, /50D \$244\.10/);
+  assert.match(html, /200D \$231\.80/);
+  assert.match(html, /50\/200 日均线/);
+});
+
+test('marketRegimeHtml：加载中/数据不足回落，且不会编造 OTM', () => {
+  assert.match(marketRegimeHtml(null, 'VGT', { loading: true }), /读取 1 年日线/);
+  const unknown = marketRegimeHtml({ regime: 'unknown', samples: 80 }, 'VGT');
+  assert.match(unknown, /数据不足/);
+  assert.match(unknown, /使用当前 OTM 设置/);
+});
+
+test('renderMarketRegime：只写 marketRegime 容器', () => {
+  let html = '';
+  const el = { set innerHTML(value) { html = value; } };
+  const doc = { getElementById(id) { return id === 'marketRegime' ? el : null; } };
+  renderMarketRegime(doc, 'SMH', { regime: 'neutral', spot: 400, sma50: 390, sma200: 380 });
+  assert.match(html, /建议 6% OTM/);
+  assert.match(html, /is-neutral/);
 });
 
 test('expiryCalendarHtml：空链给空态', () => {

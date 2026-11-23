@@ -28,13 +28,13 @@
 </head>
 <body>
 <h1>使用文档</h1>
-<p class="sub">Wealth Tracker · 个人投资仪表盘 · 最后更新：2026-09-25</p>
+<p class="sub">Wealth Tracker · 个人投资仪表盘 · 最后更新：2026-11-23</p>
 
 <h2>投资策略</h2>
 <p>本工具围绕「永久核心仓 + Covered Call 增强」策略设计，<strong>仅卖出 CALL、不卖正股</strong>（不做空、不卖标的）：</p>
 <ul>
   <li><strong>核心仓永不动</strong>：VGT / SMH / IBIT（iShares Bitcoin Trust，美股 ETF，非现货 BTC）按月定投，侧边栏可调节分配比例</li>
-  <li><strong>Covered Call 收租</strong>：仅针对 VGT / SMH，持有正股卖出虚值 CALL，收获权利金</li>
+  <li><strong>Covered Call 收租</strong>：针对 VGT / SMH / IBIT，持有正股卖出虚值 CALL，收获权利金</li>
   <li><strong>被动行权 T+1 买回</strong>：若 CALL 被行权（股价涨超行权价），T+1 手动买回正股，保持仓位不变</li>
   <li><strong>权利金复投</strong>：权利金收入按核心仓比例继续买入标的</li>
   <li><strong>回撤应对</strong>：回撤时通过定投加仓降低成本，不增额外风险</li>
@@ -69,8 +69,9 @@
 
 <h3>期权</h3>
 <ul>
-  <li><strong>持仓指标</strong>：VGT/SMH 持仓市值、成本、可卖张数 + 可复投金额</li>
-  <li><strong>🎯 OTM 行权价参考</strong>：VGT/SMH 按百分比自动计算 CALL 行权价，可手动调节后 localStorage 记忆</li>
+  <li><strong>持仓指标</strong>：VGT/SMH/IBIT 持仓市值、成本、可卖张数 + 可复投金额</li>
+  <li><strong>市场状态提示</strong>：按 1 年日线的 50/200 日均线判定强势/中性/弱势，显示该标的的建议 OTM；只给建议，不自动改设置。强势时 IBIT 提示暂不卖 Call</li>
+  <li><strong>🎯 OTM 行权价参考</strong>：VGT/SMH/IBIT 按百分比自动计算 CALL 行权价，可手动调节后 localStorage 记忆</li>
   <li><strong>📝 记录期权</strong>：录入 CALL/PUT 合约（标的、类型、行权价、权利金、到期日、张数）</li>
   <li><strong>期权状态</strong>：当前活跃期权的盈亏状态 — 实值（ITM）CALL 显示<strong>蓝色</strong>「临近行权」标签（显示剩余天数），附带铁律提示文字</li>
   <li><strong>CC 收入</strong>：本月 + 累计权利金汇总 + 可复投金额</li>
