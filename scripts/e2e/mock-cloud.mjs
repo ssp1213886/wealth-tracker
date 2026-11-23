@@ -144,6 +144,9 @@ const server = http.createServer((req, res) => {
       try { json = JSON.parse(body); } catch (e) { /* 忽略 */ }
       const keys = Object.keys(json).filter((k) => k !== 'meta' && k !== 'prices');
       keys.forEach((k) => { store[k] = json[k]; meta[k] = Date.now(); });
+      // v398：prices 和真 Worker 一样是可再生缓存（没有版本戳），但必须能被种进来，
+      // 否则「云端旧价覆盖实时价」这条回归在 e2e 里永远测不到。
+      if (json.prices && typeof json.prices === 'object') store.prices = json.prices;
       if (json.meta) {
         log.push({ at: new Date().toISOString(), keys: keys.map((k) => 'remote:' + k), expected: json.meta });
       }
@@ -196,6 +199,7 @@ const server = http.createServer((req, res) => {
           }
         }
         keys.forEach((k) => { store[k] = json[k]; meta[k] = syncTs; });
+        if (json.prices && typeof json.prices === 'object') store.prices = json.prices;
         log.push({ at: new Date().toISOString(), keys, expected: json.__expectedVersions || null });
         res.writeHead(200, cors);
         res.end(JSON.stringify({ ok: true, saved: keys.length, ts: syncTs }));
@@ -219,6 +223,7 @@ const server = http.createServer((req, res) => {
     const prices = {
       NVDA: 186.4, AAPL: 231.2, MSFT: 512.6, VGT: 124.85, SMH: 606.9, TSM: 456.94,
       IWM: 242.3, BTC: 83042.73, BTCETF: 29.38, SPY: 640.1, SKHYV: 31.5, MRVL: 78.2, KLAC: 105.4,
+      IBIT: 47, SGOV: 100.51,
     };
     const symbols = String(url.searchParams.get('symbols') || '').split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
     const quotes = {};

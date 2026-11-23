@@ -23,7 +23,7 @@ function attach(page) {
   return errors;
 }
 
-async function boot(ctx, token, seedTrades) {
+async function boot(ctx, token, seedTrades, seedPrices) {
   const page = await ctx.newPage();
   const errors = attach(page);
   await page.goto(BASE + 'icon.png', { waitUntil: 'load' });
@@ -39,7 +39,8 @@ async function boot(ctx, token, seedTrades) {
     localStorage.setItem('wealth_cashlog_v2', '[]');
     localStorage.setItem('wealth_activity_v1', '[]');
     localStorage.setItem('wealth_options_v2', '[]');
-  }, { base: CLOUD, token: token, seed: seedTrades || [] });
+    if (args.prices) localStorage.setItem('wealth_prices_v2', JSON.stringify(args.prices));
+  }, { base: CLOUD, token: token, seed: seedTrades || [], prices: seedPrices || null });
   await page.goto(BASE + '?dev=' + Date.now() + Math.random(), { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(4000);
   return { page, errors };
@@ -196,12 +197,53 @@ const dCloud = await cloudLog();
 expect(!!dState.dirty.trades || Object.keys(dCloud.store).includes('trades'), '⑥ 「云端空 + 本地有」时既没标脏也没补推');
 notes.push('⑥ 云端清空后：dirty=' + JSON.stringify(dState.dirty) + ' · 云端 store=' + Object.keys(dCloud.store).join(','));
 
-for (const [name, ctx] of [['A', A], ['B', B2], ['C', C], ['D', D]]) {
+/* ---------- ⑦ 云端旧价不得覆盖实时报价（v398） ----------
+   线上事故：/api/quotes 先回（持仓市值正确），/api/sync 后回，把 10/10 的旧价写回内存，
+   持仓市值/总资产退回旧值。这里把「云端是旧价、实时是新价」钉成回归。 */
+await fetch(CLOUD + '/_reset').catch(() => {});
+const PRICE_OLD = 1791647036555;            // 云端/本地缓存：10/10 的旧价
+const seedTrades7 = [{ id: 21, date: '2026-11-01', symbol: 'VGT', shares: 2, price: 100, type: 'buy' }];
+await fetch(CLOUD + '/_seed', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'X-Auth-Token': GOOD },
+  body: JSON.stringify({
+    trades: seedTrades7,
+    cashBalance: 1000,
+    cashLog: [],
+    activities: [],
+    optionTrades: [],
+    otmSettings: { vgt: 7, smh: 6 },
+    exit_portfolio: '',
+    prices: { VGT: { price: 500, prevClose: 500, change: 0, time: PRICE_OLD, source: 'yahoo' } },
+  }),
+});
+const E = await boot(await browser.newContext(), GOOD, seedTrades7, {
+  VGT: { price: 500, prevClose: 500, change: 0, time: PRICE_OLD, source: 'yahoo' },
+});
+const valueAfterQuotes = await ev(E.page, () => (document.getElementById('hmValue') || {}).textContent);
+// 假云端 /api/quotes 的 VGT = 124.85 → 2 股 = $249.70；若被旧价覆盖会是 $1,000.00
+expect(valueAfterQuotes === '$249.70', '⑦ 实时报价到达后持仓市值不是 $249.70，实际 ' + valueAfterQuotes);
+
+// 主动再触发一次拉取（等同于切回前台）：旧价仍然不许把它盖回去
+await ev(E.page, () => document.dispatchEvent(new Event('visibilitychange')));
+await E.page.waitForTimeout(2000);
+const valueAfterPull = await ev(E.page, () => (document.getElementById('hmValue') || {}).textContent);
+expect(valueAfterPull === '$249.70', '⑦ 同步拉取后持仓市值被云端旧价覆盖，实际 ' + valueAfterPull);
+
+const eCache = await ev(E.page, () => {
+  const key = Object.keys(localStorage).find((k) => /wealth_prices_v2$/.test(k)) || 'wealth_prices_v2';
+  try { return JSON.parse(localStorage.getItem(key) || '{}').VGT || null; } catch (e) { return null; }
+});
+expect(!!eCache && Number(eCache.price) === 124.85, '⑦ 实时报价没有写回本地价格缓存，实际 ' + JSON.stringify(eCache));
+expect(!!eCache && Number(eCache.time) > PRICE_OLD, '⑦ 本地价格缓存时间没有前进');
+notes.push('⑦ 旧价拉取：报价后 ' + valueAfterQuotes + ' · 拉取后 ' + valueAfterPull + ' · 缓存 VGT=' + (eCache && eCache.price));
+
+for (const [name, ctx] of [['A', A], ['B', B2], ['C', C], ['D', D], ['E', E]]) {
   if (ctx.errors && ctx.errors.length) failures.push(name + ' 页面报错：' + ctx.errors.join(' | '));
 }
 
 // 收尾：清掉所有 context 的 token
-for (const [name, dev] of [['A', A], ['B', B2], ['C', C], ['D', D]]) {
+for (const [name, dev] of [['A', A], ['B', B2], ['C', C], ['D', D], ['E', E]]) {
   await ev(dev.page, () => { localStorage.removeItem('wealth_sync_cfg'); localStorage.removeItem('wealth_sync_state'); }).catch(() => {});
   await dev.page.close().catch(() => {});
 }
@@ -212,4 +254,4 @@ if (failures.length) {
   console.error('发现问题：\n  - ' + failures.join('\n  - '));
   throw new Error('sync-full failed');
 }
-console.log('✓ 同步全链路通过（推送 / 拉取 / 双向 / 409 冲突 / 坏令牌 / 云端清空自愈）');
+console.log('✓ 同步全链路通过（推送 / 拉取 / 双向 / 409 冲突 / 坏令牌 / 云端清空自愈 / 旧价不覆盖实时价）');
