@@ -50,6 +50,16 @@ const LIST_UNITS = { T: 1e12, B: 1e9, M: 1e6, K: 1e3 };
 const ETF_PAGE_URL = (symbol) => `https://stockanalysis.com/etf/${symbol.toLowerCase()}/`;
 // 实测 "Assets" 到金额之间隔着 132 个字符的属性文本，窗口给足
 const ETF_ASSETS_RE = /Assets[\s\S]{0,400}?\$([\d.]+)([TBMK])/;
+/**
+ * v401：个股页兜底。screener 在部分网络环境下会被上游拒绝，个股页是最后一条稳定来源：
+ *   <a ...>Market Cap</a></td><td ...>27.00B <span>-61.1%</span></td>
+ */
+const STOCK_PAGE_URL = (symbol) => `https://stockanalysis.com/stocks/${symbol.toLowerCase()}/`;
+const STOCK_CAP_RE = /Market Cap[\s\S]{0,600}?([\d.]+)([TBMK])/;
+export function parseStockCap(html) {
+  const match = String(html == null ? '' : html).match(STOCK_CAP_RE);
+  return match ? parseCap(match[1] + match[2]) : null;
+}
 const CAP_TTL = 6 * 60 * 60 * 1000;
 /** 拿不到市值的代码缩短缓存（15 分钟），免得一次上游抖动被钉死一整天。 */
 const MISS_TTL = 15 * 60 * 1000;
@@ -59,7 +69,7 @@ const DEADLINE_MS = 5000;
 const EDGE_TTL_SECONDS = 6 * 60 * 60;
 const EDGE_MISS_TTL_SECONDS = 15 * 60;
 /** 边缘缓存 key 的版本：改解析/口径时换一个，旧的坏值立即失效。 */
-const EDGE_VERSION = '3';
+const EDGE_VERSION = '4';
 /** 代码白名单：1–5 个字母，可带 . 或 -（BRK-B / BRK.B），拒绝一切其它字符（防注入）。 */
 const SYMBOL_RE = /^[A-Z]{1,5}([.\-][A-Z]{1,2})?$/;
 /** Nasdaq 与 stockanalysis 对通用 UA 都会 403，必须报一个像浏览器的 UA。 */
@@ -245,6 +255,20 @@ async function fetchEtfAssets(symbol) {
     if (!response.ok) return null;
     const match = (await response.text()).match(ETF_ASSETS_RE);
     return match ? parseCap(match[1] + match[2]) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/** 个股页的 Market Cap（screener 被拒时的最后兜底）。 */
+async function fetchStockCap(symbol) {
+  try {
+    const response = await fetch(STOCK_PAGE_URL(symbol), {
+      headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html,application/json;q=0.9' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    return parseStockCap(await response.text());
   } catch (error) {
     return null;
   }
@@ -447,7 +471,9 @@ export async function handleMarketCap(request, url) {
       .forEach((symbol) => {
         tasks.push((async () => {
           const etfCap = await fetchEtfAssets(symbol);
-          await remember(symbol, etfCap || (await fetchCap(symbol)));
+          // v401：ETF 页 → Nasdaq 单查 → 个股页（screener 在部分网络下会被拒）。
+          // 个股页放在最后：正常路径的子请求数与原来一致，只在 Nasdaq 也失败时才多打一次。
+          await remember(symbol, etfCap || (await fetchCap(symbol)) || (await fetchStockCap(symbol)));
         })());
       });
     // 硬超时：到点就带着"已完成的部分"返回；没跑完的任务继续跑完并写缓存，下一轮直接命中

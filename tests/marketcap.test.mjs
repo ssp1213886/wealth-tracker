@@ -2,7 +2,7 @@
 // 全部用假 fetch，不碰真实 Nasdaq。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleMarketCap, parseBiggestList, parseScreener } from '../src/lib/marketcap.js';
+import { handleMarketCap, parseBiggestList, parseScreener, parseStockCap } from '../src/lib/marketcap.js';
 
 function withFetch(impl, fn) {
   const saved = globalThis.fetch;
@@ -297,5 +297,34 @@ test('handleMarketCap：大表没有的票，用 screener 一次补全（不再�
     const result = await call(target);
     assert.equal(result.body.caps[target], 123000000000, '应该来自 screener（123B）');
     assert.ok(!asked.some((u) => u.includes('/quote/' + target + '/')), 'screener 命中后不该再按代码查');
+  });
+});
+
+test('parseStockCap：个股页 Market Cap 解析（v401 真实片段）', () => {
+  const html = '<td class="x"><a href="/stocks/coin/market-cap/" class="dothref">Market Cap</a></td>'
+    + '<td class="y">27.00B <span class="rr">-61.1%</span></td>';
+  assert.equal(parseStockCap(html), 27000000000);
+  assert.equal(parseStockCap('<html>nothing</html>'), null);
+});
+
+test('handleMarketCap：ETF 页没有规模时，用个股页 Market Cap 兜底（v401）', async () => {
+  const asked = [];
+  const target = 'STKAA';
+  const fake = (url) => {
+    const u = String(url);
+    asked.push(u);
+    if (u.includes('biggest-companies')) return Promise.resolve(new Response('', { status: 200 }));
+    if (u.includes('screener/stocks')) return Promise.resolve(new Response('', { status: 200 }));
+    if (u.includes('/etf/stkaa/')) return Promise.resolve(new Response('<html>no assets</html>', { status: 200 }));
+    if (u.includes('/stocks/stkaa/')) {
+      return Promise.resolve(new Response('<a>Market Cap</a><td>27.00B <span>-61.1%</span></td>', { status: 200 }));
+    }
+    // Nasdaq 两条 assetclass 都拿不到，才轮到个股页
+    return nasdaq({ MarketCap: { value: 'N/A' } });
+  };
+  await withFetch(fake, async () => {
+    const result = await call(target);
+    assert.equal(result.body.caps[target], 27000000000, '应该来自个股页（27B）');
+    assert.ok(asked.some((u) => u.includes('/stocks/stkaa/')), '应该真的去抓了个股页');
   });
 });
