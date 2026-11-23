@@ -2856,6 +2856,15 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .regime-badge.is-unknown{background:color-mix(in srgb,var(--muted) 10%,transparent);color:var(--muted)}
 .regime-advice{font-size:12px;font-weight:680;font-variant-numeric:tabular-nums}
 .regime-detail{margin-top:4px;color:var(--muted);font-size:10.5px;line-height:1.45;font-variant-numeric:tabular-nums}
+.regime-reason{margin-top:6px;color:var(--fg);font-size:11px;line-height:1.55}
+.regime-rules{margin-top:5px;border-top:1px solid var(--rule);padding-top:2px}
+.regime-rules summary{min-height:34px;display:flex;align-items:center;gap:6px;list-style:none;cursor:pointer;color:var(--muted);font-size:11px;font-weight:620;-webkit-tap-highlight-color:transparent}
+.regime-rules summary::-webkit-details-marker{display:none}
+.regime-rules summary::before{content:'▸';font-size:12px;line-height:1}
+.regime-rules[open] summary{color:var(--fg)}
+.regime-rules[open] summary::before{content:'▾'}
+.regime-rules-body{padding:0 0 7px 16px;color:var(--muted);font-size:10.5px;line-height:1.6}
+.regime-rules-body b{color:var(--fg);font-weight:650}
 .prob-dte-warning{margin:0 0 10px;padding:7px 9px;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--orange) 10%,transparent);color:var(--orange);font-size:11px;line-height:1.5}
 .prob-chips{display:flex;gap:4px}
 .prob-chip{min-width:40px;height:30px;padding:0 9px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .16s var(--ease-out),color .16s var(--ease-out),border-color .16s var(--ease-out)}
@@ -2897,6 +2906,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
      需要 265px、最窄的 360 也有 279px，稳在一行；真放不下时靠上面那条 flex-wrap 自动折行，
      不会再出现"两块各自被压扁、文字压住 + 按钮"（v391 的线上 bug）。 */
   .prob-card .prob-controls{gap:6px 8px}
+  .regime-rules summary{min-height:44px;margin:0 -2px;padding:0 2px}
 }
 
 /* ===== v326 到期日历 + 行权价参考的备注 ===== */

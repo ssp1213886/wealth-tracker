@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cleanCloses, simpleMovingAverage, classifyRegime, regimeFromChartPayload,
-  adviceForRegime, REGIME_LABELS,
+  adviceForRegime, regimeReason, REGIME_LABELS,
 } from '../src/app/regime.js';
 
 function series(before, after, split) {
@@ -53,4 +53,18 @@ test('adviceForRegime：强牛市 IBIT 不卖 Call，其余标的给对应 OTM',
   assert.equal(adviceForRegime('IBIT', 'neutral').text, '建议 12%～15% OTM');
   assert.equal(adviceForRegime('IBIT', 'bear').otm, 10);
   assert.equal(adviceForRegime('VGT', 'unknown').otm, null);
+});
+
+test('regimeReason：说明当前状态，尤其解释中性为何不是弱势', () => {
+  assert.match(regimeReason({ spot: 120, sma50: 118, sma200: 100 }, 'bull'), /高于 200 日均线 2% 以上/);
+  assert.match(regimeReason({ spot: 80, sma50: 90, sma200: 100 }, 'bear'), /低于 200 日均线 2% 以下/);
+  assert.match(
+    regimeReason({ spot: 97, sma50: 119, sma200: 110 }, 'neutral'),
+    /现价已在 200 日均线下方.*50 日均线仍高于 200 日均线.*尚未确认弱势/,
+  );
+  assert.match(
+    regimeReason({ spot: 115, sma50: 105, sma200: 110 }, 'neutral'),
+    /现价仍在 200 日均线上方.*50 日均线低于 200 日均线.*尚未确认强势/,
+  );
+  assert.match(regimeReason({}, 'unknown'), /数据不足/);
 });

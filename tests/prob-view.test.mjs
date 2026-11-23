@@ -40,6 +40,11 @@ test('marketRegimeHtml：状态、建议与均线数据都在同一行内可读'
   assert.match(html, /50 日均线 \$244\.10/);
   assert.match(html, /200 日均线 \$231\.80/);
   assert.match(html, /50 日和 200 日均线/);
+  assert.match(html, /class="regime-reason">现价高于 200 日均线 2% 以上/);
+  assert.match(html, /<details class="regime-rules"><summary>判断规则<\/summary>/);
+  assert.match(html, /<b>强势<\/b>/);
+  assert.match(html, /<b>弱势<\/b>/);
+  assert.match(html, /<b>中性<\/b>/);
 });
 
 test('marketRegimeHtml：加载中/数据不足回落，且不会编造 OTM', () => {

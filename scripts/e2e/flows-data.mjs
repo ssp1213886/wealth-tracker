@@ -150,6 +150,28 @@ if (!/强势/.test(optUi.market || '') || !/10% OTM/.test(optUi.market || '')) {
 if (!/200 日均线/.test(optUi.market || '') || /200D/.test(optUi.market || '')) {
   failures.push('市场状态还要显示 200D 这种旧文案：' + optUi.market);
 }
+const regimeExplain = await ev(() => {
+  const details = document.querySelector('#marketRegime details.regime-rules');
+  const summary = details && details.querySelector('summary');
+  const reason = document.querySelector('#marketRegime .regime-reason');
+  if (!details || !summary) return { missing: true };
+  const before = details.open;
+  summary.click();
+  return {
+    reason: reason ? reason.textContent.trim() : '',
+    summary: summary.textContent.trim(),
+    before: before,
+    open: details.open,
+    summaryHeight: summary.getBoundingClientRect().height,
+    mobile: window.matchMedia('(max-width: 800px)').matches,
+  };
+});
+if (regimeExplain.missing) failures.push('市场状态缺少判断规则说明');
+if (!/下方|上方|高于|低于|趋势/.test(regimeExplain.reason || '')) failures.push('市场状态没有解释当前判断原因：' + regimeExplain.reason);
+if (regimeExplain.summary !== '判断规则') failures.push('判断规则入口文案不对：' + regimeExplain.summary);
+if (!regimeExplain.open) failures.push('移动端点开判断规则后没有展开');
+if (!regimeExplain.mobile) failures.push('端到端场景未按移动端宽度运行');
+if (!(regimeExplain.summaryHeight >= 40)) failures.push('移动端判断规则触控高度不足：' + regimeExplain.summaryHeight);
 
 /* 云端是否真的收到 */
 await p.waitForTimeout(1500);

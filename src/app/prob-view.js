@@ -3,7 +3,7 @@
 import { fmtFull } from './util.js';
 import { emptyStateHTML, escapeHtml } from './render.js';
 import { DEFAULT_OPTION_SYMBOLS } from './options.js';
-import { adviceForRegime, REGIME_LABELS } from './regime.js';
+import { adviceForRegime, regimeReason, REGIME_LABELS } from './regime.js';
 
 /** 概率的颜色分级：越容易被行权越红。 */
 export function probColor(prob) {
@@ -183,12 +183,21 @@ export function marketRegimeHtml(info, symbol, opts) {
       ' · 50 日均线 ' + fmtRegimePrice(d.sma50) +
       ' · 200 日均线 ' + fmtRegimePrice(d.sma200);
   }
+  const reason = info ? '<div class="regime-reason">' + escapeHtml(regimeReason(d, regime)) + '</div>' : '';
+  const rules = '<details class="regime-rules">' +
+    '<summary>判断规则</summary>' +
+    '<div class="regime-rules-body">' +
+      '<div><b>强势</b>：现价高于 200 日均线 2% 以上，且 50 日均线高于 200 日均线。</div>' +
+      '<div><b>弱势</b>：现价低于 200 日均线 2% 以下，且 50 日均线低于 200 日均线。</div>' +
+      '<div><b>中性</b>：其余情况，常见于趋势转换或震荡阶段。</div>' +
+    '</div>' +
+    '</details>';
   const title = '市场状态按 50 日和 200 日均线判断，数据取日线收盘；现价高于 200 日均线 2% 以上且 50 日均线高于 200 日均线为强势，低于 200 日均线 2% 以下且 50 日均线低于 200 日均线为弱势，其余为中性。';
   return '<div class="regime-main" title="' + escapeHtml(title) + '">' +
     '<span class="regime-kicker">市场状态</span>' +
     '<span class="regime-badge is-' + regime + '">' + escapeHtml(label) + '</span>' +
     '<strong class="regime-advice">' + escapeHtml(advice.text) + '</strong>' +
-    '</div><div class="regime-detail">' + escapeHtml(detail) + '</div>';
+    '</div><div class="regime-detail">' + escapeHtml(detail) + '</div>' + reason + rules;
 }
 
 /** 把市场状态条写进 DOM；opts 的 loading/error 只影响无数据时的文案。 */

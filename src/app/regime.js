@@ -64,6 +64,26 @@ export function classifyRegime(values, opts) {
   return { regime: regime, spot: spot, sma50: sma50, sma200: sma200, samples: list.length };
 }
 
+/** 给当前状态补一句可读原因，避免只显示“中性/强势/弱势”而不知道依据。 */
+export function regimeReason(info, regime) {
+  const d = info || {};
+  const spot = Number(d.spot);
+  const sma50 = Number(d.sma50);
+  const sma200 = Number(d.sma200);
+  if (regime === 'bull') return '现价高于 200 日均线 2% 以上，且 50 日均线高于 200 日均线。';
+  if (regime === 'bear') return '现价低于 200 日均线 2% 以下，且 50 日均线低于 200 日均线。';
+  if (regime === 'neutral' && spot > 0 && sma50 > 0 && sma200 > 0) {
+    if (spot < sma200 && sma50 >= sma200) {
+      return '现价已在 200 日均线下方，但 50 日均线仍高于 200 日均线，尚未确认弱势。';
+    }
+    if (spot > sma200 && sma50 <= sma200) {
+      return '现价仍在 200 日均线上方，但 50 日均线低于 200 日均线，尚未确认强势。';
+    }
+    return '尚未同时满足强势或弱势条件，通常代表趋势转换或震荡阶段。';
+  }
+  return '日线数据不足 200 个交易日，暂不判断。';
+}
+
 /** 从 `/api/price` 返回体（{ok,data} 或原始 Yahoo chart）提取收盘序列。 */
 export function regimeFromChartPayload(payload) {
   const root = payload && payload.data ? payload.data : payload;
