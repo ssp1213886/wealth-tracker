@@ -173,18 +173,17 @@ export function marketRegimeHtml(info, symbol, opts) {
   const advice = adviceForRegime(sym, regime);
   let detail = '';
   if (!info && c.loading) {
-    detail = '读取 1 年日线，计算 50/200 日均线…';
+    detail = '读取 1 年日线，计算 50 日和 200 日均线…';
   } else if (!info && c.error) {
     detail = '行情暂不可用，继续使用当前 OTM 设置';
   } else if (regime === 'unknown') {
     detail = '1 年日线不足 200 个交易日，继续使用当前 OTM 设置';
   } else {
     detail = '现价 ' + fmtRegimePrice(d.spot) +
-      ' · 50D ' + fmtRegimePrice(d.sma50) +
-      ' · 200D ' + fmtRegimePrice(d.sma200) +
-      ' · 日线收盘';
+      ' · 50 日均线 ' + fmtRegimePrice(d.sma50) +
+      ' · 200 日均线 ' + fmtRegimePrice(d.sma200);
   }
-  const title = '市场状态按 50/200 日均线判断；现价高于 200D 2% 以上且 50D > 200D 为强势，低于 200D 2% 以下且 50D < 200D 为弱势，其余为中性。';
+  const title = '市场状态按 50 日和 200 日均线判断，数据取日线收盘；现价高于 200 日均线 2% 以上且 50 日均线高于 200 日均线为强势，低于 200 日均线 2% 以下且 50 日均线低于 200 日均线为弱势，其余为中性。';
   return '<div class="regime-main" title="' + escapeHtml(title) + '">' +
     '<span class="regime-kicker">市场状态</span>' +
     '<span class="regime-badge is-' + regime + '">' + escapeHtml(label) + '</span>' +
@@ -254,12 +253,16 @@ export function probMatrixHtml(matrix, ctx) {
   if (!rows.length || !cols.length) {
     return '<div class="prob-empty">' + escapeHtml(c.emptyHint || '期权链加载中…') + '</div>';
   }
+  const dteWarning = m.dteFallback
+    ? '<div class="prob-dte-warning">当前期权链只有 ' + Number(m.dteMin) + '～' + Number(m.dteMax) +
+      ' 天到期，已显示可用档位；短天期合约的概率与年化波动会更大。</div>'
+    : '';
   const sel = Number(m.selected);
   const selIdx = sel >= 0 && sel < cols.length ? sel : 0;
   const heldBy = c.holdings || {};
   /* 刻意不加 .prob-table：那套手机端规则是给「到期日历」用的 */
   /* 表头第一格写「到期日 / 年化」：行头第一行的右侧就是这个数，标一次比每行都写"年化"省地方 */
-  let html = '<table class="mx-table"><thead><tr><th>到期日<span class="mx-otm">年化</span></th>' +
+  let html = dteWarning + '<table class="mx-table"><thead><tr><th>到期日<span class="mx-otm">年化</span></th>' +
     cols.map(function (col, i) {
       const pct = col.otmPct == null ? '' : (col.otmPct >= 0 ? '+' : '') + (col.otmPct * 100).toFixed(1) + '%';
       const label = '选 $' + col.strike + (pct ? '（高于现价 ' + pct + '）' : '');

@@ -320,7 +320,9 @@ export function matrixWindow(ladder, spot, otmPct, count) {
  * 三条不变的取舍：
  * ① **概率与权利金同口径**：都用这一档**真实挂牌**的报价与 IV 算（不再有"目标价"这种中间量）。
  * ② **缺档就老实说「无此档」**：那一期阶梯里没有这一档时不吸到隔壁、也不编数。
- * ③ **只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺，放进表里只会误导。
+ * ③ **优先只留剩余 ≥ minDte 的到期日**：太近的 IV 噪、阶梯也残缺；
+ *    但如果整条链都没有 ≥ minDte 的档（例如 Yahoo 返回的 IBIT 只有 2~9 天），
+ *    退回展示现有档位并标记 `dteFallback`，让界面明确提示用户，而不是整张表消失。
  *
  * 表里**没有任何"该卖哪一档"的标记**（v389）：系统不替用户决策。每行只给事实 ——
  * 剩余天数、年化（按当前选中那一列算），界面另标"我持有这一档"。
@@ -339,12 +341,18 @@ export function probMatrix(chain, opts) {
   const rate = Number.isFinite(Number(o.rate)) ? Number(o.rate) : DEFAULT_RATE;
   const spot = Number(chain && chain.spot);
   if (!(spot > 0)) return { columns: [], rows: [], ladder: [], selected: -1, spot: 0 };
-  const all = (chain.expiries || []).filter(function (e) { return e && Number(e.dte) > 0; });
-  /* v389：不再有"该卖的那一档"（fixed）—— 表里只按"14 天以上、取前 maxRows 档"来排。 */
+  const all = (chain.expiries || [])
+    .filter(function (e) { return e && Number(e.dte) > 0; })
+    .slice()
+    .sort(function (a, b) { return Number(a.dte) - Number(b.dte); });
+  /* v389：不再有"该卖的那一档"（fixed）—— 表里只按"满足 minDte、取前 maxRows 档"来排。
+     如果没有任何档满足，则保留全部可用档并标记 short-dated fallback。 */
+  const mature = all.filter(function (e) { return Number(e.dte) >= minDte; });
+  const dteFallback = !mature.length && all.length > 0;
+  const source = dteFallback ? all : mature;
   const picked = [];
-  all.forEach(function (e) {
+  source.forEach(function (e) {
     if (picked.length >= maxRows) return;
-    if (Number(e.dte) < minDte) return;
     if (picked.indexOf(e) >= 0) return;
     picked.push(e);
   });
@@ -373,6 +381,9 @@ export function probMatrix(chain, opts) {
        只给窗口内下标的 selected 会导致 ± 走错档 —— 实测过（VGT 点 + 从 $135 跳到 $129.38）。 */
     selectedAbs: win.selected < 0 ? -1 : win.start + win.selected,
     spot: spot,
+    dteFallback: dteFallback,
+    dteMin: dteFallback && all.length ? Number(all[0].dte) : null,
+    dteMax: dteFallback && all.length ? Number(all[all.length - 1].dte) : null,
   };
 }
 

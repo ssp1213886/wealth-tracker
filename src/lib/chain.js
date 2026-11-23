@@ -17,6 +17,7 @@ const MAX_DTE = 200;          // 只留半年内的到期日
 // 这里**不能**像 v326 那样"每月只留第三个周五"：节奏虽然统一成月度（v388），但链里仍保留周度档 ——
 // 用户可能想自己挑近一点的到期日，"该卖哪一档"的处方已经去掉，不该在数据层替他筛掉。
 const MAX_EXPIRIES = 24;
+const YAHOO_EXPIRY_LIMIT = 6;
 const MIN_STRIKE_RATIO = 0.9;
 const MAX_STRIKE_RATIO = 1.5;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -144,6 +145,34 @@ export function medianGapPct(strikes, spot) {
   return Math.round(median / s * 10000) / 100;   // 保留两位百分数，例如 0.81
 }
 
+/**
+ * Yahoo 兜底只取少量到期日，不能简单拿最早的 N 个：IBIT 有大量近月周度/日度档，
+ * 最早 6 个可能全在 14 天内，概率矩阵会被 minDte 过滤成空。
+ * 这里同时取最近两档和 14/30/60/90 天后的代表档，既控制请求数，又保证有可用的中期限。
+ */
+export function pickFallbackExpiries(dates, now, maxTs, limit) {
+  const start = Number(now) || 0;
+  const end = Number(maxTs) || (start + MAX_DTE * 86400);
+  const cap = Number(limit) > 0 ? Math.floor(Number(limit)) : YAHOO_EXPIRY_LIMIT;
+  const all = Array.from(new Set(
+    (Array.isArray(dates) ? dates : [])
+      .map(Number)
+      .filter(function (ts) { return Number.isFinite(ts) && ts > start && ts <= end; }),
+  )).sort(function (a, b) { return a - b; });
+  if (!all.length) return [];
+  const out = [];
+  const add = function (ts) {
+    if (ts && out.indexOf(ts) < 0 && out.length < cap) out.push(ts);
+  };
+  all.slice(0, 2).forEach(add);
+  [14, 30, 60, 90].forEach(function (days) {
+    const target = start + days * 86400;
+    add(all.find(function (ts) { return ts >= target; }));
+  });
+  all.forEach(add);
+  return out.sort(function (a, b) { return a - b; });
+}
+
 /** 带超时的 fetch，模式与 lib/price.js 一致。 */
 async function fetchWithTimeout(url, options, timeoutMs) {
   const controller = new AbortController();
@@ -226,9 +255,7 @@ async function fetchFromYahoo(sym, now) {
   if (!root) throw new Error('yahoo shape');
   const spot = num(root.quote && root.quote.regularMarketPrice);
   const maxTs = now + MAX_DTE * 86400;
-  const wanted = (Array.isArray(root.expirationDates) ? root.expirationDates : [])
-    .filter(function (ts) { return ts > now && ts <= maxTs; })
-    .slice(0, 6);
+  const wanted = pickFallbackExpiries(root.expirationDates, now, maxTs, YAHOO_EXPIRY_LIMIT);
   // 第一次响应里已经带了最近一个到期日，避免重复请求
   const rest = wanted.slice(1);
   const extra = await Promise.all(rest.map(async function (ts) {
@@ -275,7 +302,7 @@ export async function handleChain(request, url) {
   const sym = String(url.searchParams.get('sym') || '').toUpperCase();
   if (!ALLOWED_SYMBOLS.has(sym)) return { status: 400, body: { ok: false, error: 'Unsupported symbol' } };
   const now = Math.floor(Date.now() / 1000);
-  const cacheKey = 'chain:' + sym;
+  const cacheKey = 'chain:v2:' + sym;
   const cached = await edgeGetJson(url.origin, cacheKey);
   if (cached && cached.ok) return { status: 200, body: cached };
   const failures = [];

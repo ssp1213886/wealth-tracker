@@ -2856,6 +2856,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .regime-badge.is-unknown{background:color-mix(in srgb,var(--muted) 10%,transparent);color:var(--muted)}
 .regime-advice{font-size:12px;font-weight:680;font-variant-numeric:tabular-nums}
 .regime-detail{margin-top:4px;color:var(--muted);font-size:10.5px;line-height:1.45;font-variant-numeric:tabular-nums}
+.prob-dte-warning{margin:0 0 10px;padding:7px 9px;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--orange) 10%,transparent);color:var(--orange);font-size:11px;line-height:1.5}
 .prob-chips{display:flex;gap:4px}
 .prob-chip{min-width:40px;height:30px;padding:0 9px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .16s var(--ease-out),color .16s var(--ease-out),border-color .16s var(--ease-out)}
 .prob-chip.is-on{background:var(--accent-l);border-color:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--accent-d)}

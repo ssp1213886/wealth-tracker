@@ -2,7 +2,7 @@
 // 这段决定了喂给概率计算的原始数据干不干净，所以脏数据必须被挡在外面。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOsiSymbol, buildChain, medianGapPct } from '../src/lib/chain.js';
+import { parseOsiSymbol, buildChain, medianGapPct, pickFallbackExpiries } from '../src/lib/chain.js';
 
 /** 2026-10-08 00:00 UTC 的秒级时间戳，作为所有用例的"现在"。 */
 const NOW = Math.floor(Date.UTC(2026, 9, 8) / 1000);
@@ -29,6 +29,15 @@ test('parseOsiSymbol：脏值一律返回 null（不存在的月份/日期、缺
   assert.equal(parseOsiSymbol(''), null);
   assert.equal(parseOsiSymbol(null), null);
   assert.equal(parseOsiSymbol(undefined), null);
+});
+
+test('pickFallbackExpiries：Yahoo 只取少量档时也要覆盖中期限', () => {
+  const dates = [day(2), day(4), day(7), day(8), day(9), day(15), day(31), day(65), day(95), day(250)];
+  assert.deepEqual(pickFallbackExpiries(dates, NOW, day(200), 6), [
+    day(2), day(4), day(15), day(31), day(65), day(95),
+  ], '最近两档 + 14/30/60/90 天后的代表档');
+  assert.deepEqual(pickFallbackExpiries([day(-1), day(1), day(1), day(250)], NOW, day(200), 6), [day(1)], '去重并剔除过期/超窗口');
+  assert.deepEqual(pickFallbackExpiries([], NOW, day(200), 6), []);
 });
 
 test('buildChain：只留 CALL、只留半年内、只留现价 0.9~1.5 倍的行权价', () => {

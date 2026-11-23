@@ -147,6 +147,9 @@ if (!/市场状态/.test(optUi.market || '')) failures.push('期权页没显示�
 if (!/强势/.test(optUi.market || '') || !/10% OTM/.test(optUi.market || '')) {
   failures.push('市场状态没按 1 年日线给出强势/VGT 10% OTM：' + optUi.market);
 }
+if (!/200 日均线/.test(optUi.market || '') || /200D/.test(optUi.market || '')) {
+  failures.push('市场状态还要显示 200D 这种旧文案：' + optUi.market);
+}
 
 /* 云端是否真的收到 */
 await p.waitForTimeout(1500);

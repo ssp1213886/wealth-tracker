@@ -37,9 +37,9 @@ test('marketRegimeHtml：状态、建议与均线数据都在同一行内可读'
   assert.match(html, /regime-badge is-bull">强势/);
   assert.match(html, /暂不卖 Call/);
   assert.match(html, /现价 \$256\.20/);
-  assert.match(html, /50D \$244\.10/);
-  assert.match(html, /200D \$231\.80/);
-  assert.match(html, /50\/200 日均线/);
+  assert.match(html, /50 日均线 \$244\.10/);
+  assert.match(html, /200 日均线 \$231\.80/);
+  assert.match(html, /50 日和 200 日均线/);
 });
 
 test('marketRegimeHtml：加载中/数据不足回落，且不会编造 OTM', () => {
@@ -151,6 +151,14 @@ test('probMatrixHtml：列头是真实行权价按钮（第二行 OTM%），当�
   assert.match(html, /这一期没有 \$160\.00 这一档/, '某一期缺这一档时，悬停里说明是"没这一档"而不是数据缺失');
   assert.doesNotMatch(html, /mx-fixed/, 'v339 起改用 mx-sell-row');
   assert.doesNotMatch(html, /prob-table/, '矩阵不能用 prob-table（那套手机端规则会把 td 变 grid）');
+});
+
+test('probMatrixHtml：短天期回退时明确提示，不把整张表当成空链', () => {
+  const html = probMatrixHtml(Object.assign({}, MX, { dteFallback: true, dteMin: 2, dteMax: 9 }), {});
+  assert.match(html, /prob-dte-warning/);
+  assert.match(html, /只有 2～9 天到期/);
+  assert.match(html, /短天期合约的概率与年化波动会更大/);
+  assert.match(html, /<table class="mx-table"/, '警告之后仍然渲染矩阵');
 });
 
 test('probMatrixHtml：每格同时给概率与权利金（不用切视角），年化只在悬停提示里', () => {

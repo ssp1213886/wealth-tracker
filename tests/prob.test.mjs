@@ -188,6 +188,16 @@ const TRUNCATED_CHAIN = {
   ] }],
 };
 
+/** IBIT 的 Yahoo 兜底形态：整条链只有短天期，不能因为 minDte=14 把表清空。 */
+const SHORT_CHAIN = {
+  sym: 'IBIT', spot: 33.02,
+  expiries: [
+    { date: '2026-11-25', ts: 1, dte: 2, calls: [{ k: 33, b: 0, a: 0, lp: 1.34, iv: 0, oi: 0, v: 1, d: 0 }] },
+    { date: '2026-11-27', ts: 2, dte: 4, calls: [{ k: 34, b: 0, a: 0, lp: 1.20, iv: 0, oi: 0, v: 1, d: 0 }] },
+    { date: '2026-12-02', ts: 3, dte: 9, calls: [{ k: 35, b: 0, a: 0, lp: 1.00, iv: 0, oi: 0, v: 1, d: 0 }] },
+  ],
+};
+
 /* ---------- 候选阶梯（v391：列改成真实档位之后的底座）---------- */
 
 test('ladderOf：候选阶梯＝高于现价 ≤20% 的真实挂牌档，升序', () => {
@@ -289,9 +299,14 @@ test('matrixCellAt：这一期没有这一档（或参数非法）→ listed=fal
   assert.equal(near.listed, true);
 });
 
-test('probMatrix：现价缺失 / 没到期日 → 空表，不抛错', () => {
+test('probMatrix：现价缺失 / 没到期日 → 空表；只有短天期时回退展示', () => {
   assert.deepEqual(probMatrix({ spot: 0, expiries: VGT_CHAIN.expiries }, {}).rows, []);
-  assert.deepEqual(probMatrix(VGT_CHAIN, { minDte: 400 }).rows, [], '没有满足 minDte 的档');
+  const fallback = probMatrix(SHORT_CHAIN, { minDte: 14, maxRows: 5 });
+  assert.equal(fallback.dteFallback, true);
+  assert.equal(fallback.dteMin, 2);
+  assert.equal(fallback.dteMax, 9);
+  assert.equal(fallback.rows.length, 3, 'IBIT 短天期链不能整张消失');
+  assert.equal(probMatrix(VGT_CHAIN, { minDte: 400 }).dteFallback, true, '没有任何 ≥ minDte 时也回退');
   assert.deepEqual(probMatrix(null, {}).rows, []);
   assert.deepEqual(probMatrix(null, {}).columns, [], '空链时列也要空（界面据此出提示）');
   assert.equal(probMatrix(VGT_CHAIN, { cols: 2, maxRows: 1 }).rows[0].probs.length, 2, '列数可配（手机上默认 4）');
