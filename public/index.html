@@ -482,9 +482,15 @@
       <div class="prob-chips"><button type="button" class="prob-chip" id="probOtmMinus" aria-label="上一档（链上相邻行权价）" title="上一档（链上相邻行权价）">−</button><span class="prob-chip is-on" id="probOtmVal">$135</span><button type="button" class="prob-chip" id="probOtmPlus" aria-label="下一档（链上相邻行权价）" title="下一档（链上相邻行权价）">+</button></div>
     </div>
   </div>
-  <div class="market-regime" id="marketRegime" aria-live="polite"><div class="regime-main"><span class="regime-kicker">市场状态</span><span class="regime-badge is-unknown">读取中</span><strong class="regime-advice">读取 1 年日线…</strong></div></div>
+  <div class="market-regime" id="marketRegime" aria-live="polite"><div class="regime-main"><span class="regime-kicker">市场状态</span><span class="regime-badge is-unknown">读取中</span><strong class="regime-advice">读取 2 年日线…</strong></div></div>
+  <div class="data-freshness" id="dataFreshness"><div class="freshness-row"><span class="freshness-chip">数据新鲜度读取中…</span></div></div>
   <div id="probMatrix"></div>
   <div class="prob-note is-refresh" id="probNote" title="点击刷新期权链（CBOE 免费接口为延迟报价，非实时）"></div>
+</div>
+
+<div class="card option-card trend-card">
+  <div class="opt-card-head"><h3>趋势图<span class="card-sub">近一年</span></h3><span class="mx-pill is-spot" id="trendSymbol"></span></div>
+  <div id="trendChart"><div class="trend-empty">读取 2 年日线…</div></div>
 </div>
 
 <div class="card option-card ma-cross-card">

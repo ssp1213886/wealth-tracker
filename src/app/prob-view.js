@@ -173,7 +173,7 @@ export function marketRegimeHtml(info, symbol, opts) {
   const advice = adviceForRegime(sym, regime);
   let detail = '';
   if (!info && c.loading) {
-    detail = '读取 1 年日线，计算 50 日和 200 日均线…';
+    detail = '读取 2 年日线，计算 50 日和 200 日均线…';
   } else if (!info && c.error) {
     detail = '行情暂不可用，继续使用当前 OTM 设置';
   } else if (regime === 'unknown') {

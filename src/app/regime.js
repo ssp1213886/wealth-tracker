@@ -64,6 +64,25 @@ export function classifyRegime(values, opts) {
   return { regime: regime, spot: spot, sma50: sma50, sma200: sma200, samples: list.length };
 }
 
+/** 从 Yahoo chart 里按日期对齐收盘价；缺值或时间戳缺失的交易日整行丢弃。 */
+export function seriesFromChartPayload(payload) {
+  const root = payload && payload.data ? payload.data : payload;
+  const result = root && root.chart && root.chart.result && root.chart.result[0];
+  const quote = result && result.indicators && result.indicators.quote && result.indicators.quote[0];
+  const rawCloses = quote && Array.isArray(quote.close) ? quote.close : [];
+  const rawTimes = result && Array.isArray(result.timestamp) ? result.timestamp : [];
+  const closes = [];
+  const timestamps = [];
+  rawCloses.forEach(function (value, index) {
+    const close = Number(value);
+    const ts = Number(rawTimes[index]);
+    if (!(close > 0) || !Number.isFinite(close)) return;
+    closes.push(close);
+    timestamps.push(Number.isFinite(ts) && ts > 0 ? ts : 0);
+  });
+  return { closes: closes, timestamps: timestamps };
+}
+
 /** 给当前状态补一句可读原因，避免只显示“中性/强势/弱势”而不知道依据。 */
 export function regimeReason(info, regime) {
   const d = info || {};
@@ -86,10 +105,8 @@ export function regimeReason(info, regime) {
 
 /** 从 `/api/price` 返回体（{ok,data} 或原始 Yahoo chart）提取收盘序列。 */
 export function regimeFromChartPayload(payload) {
-  const root = payload && payload.data ? payload.data : payload;
-  const result = root && root.chart && root.chart.result && root.chart.result[0];
-  const quote = result && result.indicators && result.indicators.quote && result.indicators.quote[0];
-  return classifyRegime(quote && quote.close);
+  const series = seriesFromChartPayload(payload);
+  return Object.assign(classifyRegime(series.closes), series);
 }
 
 /** 每只标的在不同状态下的建议（null 表示这轮不卖）。 */

@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cleanCloses, simpleMovingAverage, classifyRegime, regimeFromChartPayload,
-  adviceForRegime, regimeReason, REGIME_LABELS,
+  seriesFromChartPayload, adviceForRegime, regimeReason, REGIME_LABELS,
 } from '../src/app/regime.js';
 
 function series(before, after, split) {
@@ -38,11 +38,16 @@ test('classifyRegime：强势、弱势、中性按 2% 缓冲带判定', () => {
 
 test('regimeFromChartPayload：兼容 /api/price 的 {ok,data} 包装', () => {
   const closes = series(100, 120);
+  const timestamps = closes.map(function (_, i) { return 1000 + i * 86400; });
   const wrapped = {
     ok: true,
-    data: { chart: { result: [{ indicators: { quote: [{ close: closes }] } }] } },
+    data: { chart: { result: [{ timestamp: timestamps, indicators: { quote: [{ close: closes }] } }] } },
   };
-  assert.equal(regimeFromChartPayload(wrapped).regime, 'bull');
+  const info = regimeFromChartPayload(wrapped);
+  assert.equal(info.regime, 'bull');
+  assert.equal(info.closes.length, 200);
+  assert.equal(info.timestamps.length, 200);
+  assert.deepEqual(seriesFromChartPayload(wrapped).timestamps.slice(0, 2), [1000, 1000 + 86400]);
   assert.equal(regimeFromChartPayload(null).regime, 'unknown');
 });
 

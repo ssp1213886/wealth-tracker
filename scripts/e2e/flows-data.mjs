@@ -172,6 +172,19 @@ if (regimeExplain.summary !== '判断规则') failures.push('判断规则入口�
 if (!regimeExplain.open) failures.push('移动端点开判断规则后没有展开');
 if (!regimeExplain.mobile) failures.push('端到端场景未按移动端宽度运行');
 if (!(regimeExplain.summaryHeight >= 40)) failures.push('移动端判断规则触控高度不足：' + regimeExplain.summaryHeight);
+const chartUi = await ev(() => ({
+  svg: !!document.querySelector('#trendChart .trend-svg'),
+  price: !!document.querySelector('#trendChart .trend-line.is-price'),
+  sma50: !!document.querySelector('#trendChart .trend-line.is-sma50'),
+  sma200: !!document.querySelector('#trendChart .trend-line.is-sma200'),
+  states: document.querySelectorAll('#trendChart .trend-state').length,
+  freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
+}));
+if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200) failures.push('趋势图三条线没有完整渲染');
+if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
+if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {
+  failures.push('数据新鲜度信息不完整：' + chartUi.freshness);
+}
 const maBefore = await ev(() => {
   const list = document.getElementById('maCrossList');
   const ack = list && list.querySelector('[data-ma-cross-ack]');
@@ -203,6 +216,7 @@ const pwa320 = await ev(() => {
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     summaryHeight: summary ? summary.getBoundingClientRect().height : 0,
     regimeWidth: regime ? regime.getBoundingClientRect().width : 0,
+    trendWidth: (document.querySelector('#trendChart .trend-svg') || {getBoundingClientRect:()=>({width:0})}).getBoundingClientRect().width,
     tabs: document.querySelectorAll('.bb-btn').length,
   };
 });
@@ -210,6 +224,7 @@ if (!pwa320.mobile) failures.push('320px 场景没有命中移动端样式');
 if (pwa320.overflow > 0) failures.push('320px 出现横向溢出：' + pwa320.overflow);
 if (!(pwa320.summaryHeight >= 40)) failures.push('320px 判断规则触控高度不足：' + pwa320.summaryHeight);
 if (!(pwa320.regimeWidth > 0 && pwa320.regimeWidth <= 320)) failures.push('320px 市场状态卡宽度异常：' + pwa320.regimeWidth);
+if (!(pwa320.trendWidth > 0 && pwa320.trendWidth <= 320)) failures.push('320px 趋势图宽度异常：' + pwa320.trendWidth);
 if (pwa320.tabs !== 4) failures.push('320px 底部 PWA 导航数量异常：' + pwa320.tabs);
 
 /* 云端是否真的收到 */

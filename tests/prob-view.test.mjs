@@ -48,7 +48,7 @@ test('marketRegimeHtml：状态、建议与均线数据都在同一行内可读'
 });
 
 test('marketRegimeHtml：加载中/数据不足回落，且不会编造 OTM', () => {
-  assert.match(marketRegimeHtml(null, 'VGT', { loading: true }), /读取 1 年日线/);
+  assert.match(marketRegimeHtml(null, 'VGT', { loading: true }), /读取 2 年日线/);
   const unknown = marketRegimeHtml({ regime: 'unknown', samples: 80 }, 'VGT');
   assert.match(unknown, /数据不足/);
   assert.match(unknown, /使用当前 OTM 设置/);

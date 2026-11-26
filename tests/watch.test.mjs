@@ -141,6 +141,8 @@ test('toExposureRows：同一标的跨两张榜单合并，并按金额排序 + 
   assert.equal(ex.rows.length, 2);
   assert.equal(ex.rows[0].sym, 'NVDA');
   assert.equal(Math.round(ex.rows[0].amount), 2738, '10000*17.74% + 5000*19.28%');
+  assert.equal(ex.allRows.length, 2, '集中度分析需要完整底层列表，不受展示 limit 截断');
+  assert.deepEqual(ex.allRows.map((row) => row.sym), ['NVDA', 'AAPL']);
   assert.deepEqual(ex.rows[0].parts, ['VGT 17.74%', 'SMH 19.28%']);
   assert.equal(ex.rows[1].sym, 'AAPL');
   assert.equal(ex.covered.VGT, 33.5);

@@ -70,10 +70,12 @@
 <h3>期权</h3>
 <ul>
   <li><strong>持仓指标</strong>：VGT/SMH/IBIT 持仓市值、成本、可卖张数 + 可复投金额</li>
-  <li><strong>市场状态提示</strong>：按 1 年日线的 50 日和 200 日均线判定强势/中性/弱势，显示该标的的建议 OTM；只给建议，不自动改设置。强势时 IBIT 提示暂不卖 Call</li>
+  <li><strong>市场状态提示</strong>：按 2 年日线的 50 日和 200 日均线判定强势/中性/弱势，显示近一年状态历史和建议 OTM；只给建议，不自动改设置。强势时 IBIT 提示暂不卖 Call</li>
   <li><strong>状态解释</strong>：状态下方直接说明当前原因；点“判断规则”可展开查看强势、弱势、中性的完整条件，移动端触控高度已适配</li>
   <li><strong>短天期兜底</strong>：如果 IBIT 的期权链只有 2～9 天到期，仍显示可用档位并提示短天期风险，不会把概率矩阵清空</li>
   <li><strong>均线穿越提醒</strong>：每个交易日收盘后检查 VGT/SMH/IBIT 的 50/200 日均线；首次只建立基线，之后真正穿越才提醒，确认后所有设备同步消失</li>
+  <li><strong>数据新鲜度</strong>：现价、日线、期权链分别显示来源和年龄；均线扫描标明每交易日 22:10 UTC</li>
+  <li><strong>集中度摘要</strong>：底层资产敞口上方显示最大资产、前 3/5/10 大、重叠成分股、HHI 和 VGT+SMH 占比，点开原明细仍可逐项核对</li>
   <li><strong>🎯 OTM 行权价参考</strong>：VGT/SMH/IBIT 按百分比自动计算 CALL 行权价，可手动调节后 localStorage 记忆</li>
   <li><strong>📝 记录期权</strong>：录入 CALL/PUT 合约（标的、类型、行权价、权利金、到期日、张数）</li>
   <li><strong>期权状态</strong>：当前活跃期权的盈亏状态 — 实值（ITM）CALL 显示<strong>蓝色</strong>「临近行权」标签（显示剩余天数），附带铁律提示文字</li>

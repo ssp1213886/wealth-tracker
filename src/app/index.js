@@ -11,6 +11,8 @@ import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
 import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtProb, fmtStrike, renderMarketRegime} from './prob-view.js';
 import {regimeFromChartPayload} from './regime.js';
 import {renderMaCross} from './ma-cross-view.js';
+import {renderTrendChart} from './trend-chart.js';
+import {renderFreshness} from './freshness.js';
 import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
@@ -80,7 +82,7 @@ var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},trade
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v406';var APP_DATA_VERSION=5;
+var APP_BUILD='v408';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1160,7 +1162,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=406',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=408',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1854,19 +1856,19 @@ try{
 }catch(e){logSwallowed("otmSettingsInit",e)}
 
 var probTab=OPTION_SYMS[0];
-/* 市场状态只读 1 年日线；服务端对 1y 区间缓存 24 小时，页面内 6 小时刷新一次。 */
+/* 市场状态读取 2 年日线：至少保留 200 日预热，才能画出近一年状态历史。 */
 var REGIME_TTL_MS=6*60*60*1000;
 var REGIME_RETRY_MS=5*60*1000;
 var regimeBySym={};
 var regimeStatus={loading:false,loadedAt:0,error:''};
 async function fetchMarketRegime(sym){
   try{
-    var r=await fetchWithTimeout('/api/price?symbol='+encodeURIComponent(sym)+'&range=1y');
+    var r=await fetchWithTimeout('/api/price?symbol='+encodeURIComponent(sym)+'&range=2y');
     if(!r.ok)return{ok:false,error:'HTTP '+r.status};
     var j=await r.json();
     if(!j||!j.ok)return{ok:false,error:(j&&j.error)||'payload'};
     var info=regimeFromChartPayload(j);
-    if(!info||info.regime==='unknown')return{ok:false,error:'1 年日线不足 200 个交易日',info:info};
+    if(!info||info.regime==='unknown')return{ok:false,error:'日线不足 200 个交易日',info:info};
     return{ok:true,info:info};
   }catch(e){return{ok:false,error:(e&&e.message)||'failed'}}
 }
@@ -1875,6 +1877,24 @@ function renderMarketRegimeForTab(){
   var loading=regimeStatus.loading||(!info&&!regimeStatus.error);
   try{renderMarketRegime(document,probTab,info,{loading:loading,error:regimeStatus.error})}
   catch(e){logSwallowed("renderMarketRegime",e)}
+  try{renderTrendChart(document,info,probTab)}
+  catch(e){logSwallowed("renderTrendChart",e)}
+}
+function renderFreshnessCard(){
+  try{
+    var quote=liveQuoteData[probTab]||{};
+    var chain=null,status=typeof chainStatus==='object'?chainStatus:null;
+    try{chain=chainFor(probTab)}catch(e){logSwallowed("freshnessChain",e)}
+    var source=liveSources[probTab]||quote.source||'缓存';
+    var chainSource=chain&&chain.source==='cboe'?'CBOE':chain&&chain.source==='yahoo'?'Yahoo':(chain&&chain.source)||'—';
+    renderFreshness(document,{
+      quoteUpdated:quote.time||quote.asOf||quote.ts||0,
+      quoteSource:source,
+      regimeUpdated:regimeStatus.loadedAt,
+      chainUpdated:status&&status.loadedAt,
+      chainSource:chainSource,
+    },Date.now());
+  }catch(e){logSwallowed("renderFreshnessCard",e)}
 }
 async function refreshMarketRegimes(force){
   if(regimeStatus.loading)return;
@@ -1957,6 +1977,7 @@ function renderProbCard(){
   var tabs=document.getElementById('probTabs');
   if(tabs)tabs.innerHTML=probTabsHtml(probTab,OPTION_SYMS);
   renderMarketRegimeForTab();
+  renderFreshnessCard();
   var otm=otmOf(probTab);
   /* v391：控件说的是"你选中那一档**真实合约**"（$135）；v392 把「现价」搬到同一行左边当对照，
      标签因此简化成「行权价」（哪个标的由上面那排 tab 高亮着，不必再写一遍）。
@@ -2124,6 +2145,7 @@ function bindProbControls(){
   var run=function(){
     bindProbControls();updateOtm();
     refreshMarketRegimes(false);
+    setInterval(function(){if(document.visibilityState==='visible')renderFreshnessCard()},60000);
     /* 切到期权页时刷新（refreshChains 自带 5 分钟节流，不会每切一次就打上游） */
     document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.tab==='option'){refreshChains(false);refreshMarketRegimes(false)}})});
     setTimeout(function(){refreshChains(false);refreshDividends(false)},1200);

@@ -309,13 +309,15 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
     (Array.isArray(extras) ? extras.reduce((sum, item) => sum + (Number(item && item.amount) || 0), 0) : 0);
   const shareOf = (amount) => (base > 0 ? Number(((amount / base) * 100).toFixed(1)) : null);
   const restAmount = Number(all.slice(limit).reduce((sum, row) => sum + row.amount, 0).toFixed(2));
+  const allRows = all.map((row) => ({
+    ...row,
+    share: shareOf(row.amount),
+    sourceText: row.sourceText || row.parts.join(' + '),
+  }));
   return {
     // sourceText 统一在这里补齐：穿透行用各 ETF 的权重拼出来（表格里不再显示，点开详情才用）
-    rows: all.slice(0, limit).map((row) => ({
-      ...row,
-      share: shareOf(row.amount),
-      sourceText: row.sourceText || row.parts.join(' + '),
-    })),
+    rows: allRows.slice(0, limit),
+    allRows: allRows,
     rest: restAmount,
     restCount: Math.max(0, all.length - limit),
     restShare: all.length > limit ? shareOf(restAmount) : null,

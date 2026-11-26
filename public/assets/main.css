@@ -2801,6 +2801,22 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .clear-undo-bar .cub-btn{flex:0 0 auto;min-height:44px;padding:0 16px;border:0;border-radius:11px;background:#fff;color:var(--fg);font-size:12.5px;font-weight:650;cursor:pointer}
 /* ===== v305 底层资产敞口：把原来一整行流水账拆成带标签的三行 ===== */
 .expo-note{margin-top:9px;padding-top:8px;border-top:1px solid var(--rule);font-size:11.5px;line-height:1.5;color:var(--muted)}
+.concentration-summary{margin:4px 0 12px;padding:10px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:color-mix(in srgb,var(--fg) 2%,transparent)}
+.conc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.conc-head strong{font-size:12px;font-weight:680}
+.conc-badge{padding:2px 7px;border-radius:6px;background:color-mix(in srgb,var(--orange) 11%,transparent);color:var(--orange);font-size:10px;font-weight:680}
+.conc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.conc-grid>div{min-width:0;padding:7px 8px;border-radius:7px;background:var(--surface)}
+.conc-grid small{display:block;color:var(--muted);font-size:9.5px}
+.conc-grid b{display:block;margin-top:2px;font-size:11.5px;font-weight:680;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conc-overlaps{margin-top:8px;padding-top:7px;border-top:1px solid var(--rule)}
+.conc-sub{margin-bottom:4px;color:var(--muted);font-size:10px;font-weight:620}
+.conc-overlap-row{display:grid;grid-template-columns:56px 48px minmax(0,1fr);align-items:baseline;gap:6px;padding:3px 0;font-size:10.5px}
+.conc-overlap-row b{font-weight:680}
+.conc-overlap-row span{color:var(--accent-d);font-weight:680;font-variant-numeric:tabular-nums}
+.conc-overlap-row small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conc-foot{margin-top:7px;color:var(--muted);font-size:10.5px}
+@media(max-width:800px){.conc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* ===== v306 云端快照列表 + 撤销条关闭按钮 ===== */
 .snapshot-list{display:grid;gap:8px;max-height:52vh;overflow-y:auto}
 .snapshot-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
@@ -2865,6 +2881,11 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .regime-rules[open] summary::before{content:'▾'}
 .regime-rules-body{padding:0 0 7px 16px;color:var(--muted);font-size:10.5px;line-height:1.6}
 .regime-rules-body b{color:var(--fg);font-weight:650}
+.data-freshness{margin:-5px 0 12px}
+.freshness-row{display:flex;gap:6px;flex-wrap:wrap}
+.freshness-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid var(--rule);border-radius:7px;background:color-mix(in srgb,var(--fg) 2%,transparent);color:var(--muted);font-size:9.5px;line-height:1.4;white-space:nowrap}
+.freshness-chip b{color:var(--fg);font-weight:680}
+.freshness-chip.is-live{background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .prob-dte-warning{margin:0 0 10px;padding:7px 9px;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--orange) 10%,transparent);color:var(--orange);font-size:11px;line-height:1.5}
 .prob-chips{display:flex;gap:4px}
 .prob-chip{min-width:40px;height:30px;padding:0 9px;border:1px solid var(--rule);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .16s var(--ease-out),color .16s var(--ease-out),border-color .16s var(--ease-out)}
@@ -2935,6 +2956,27 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .ma-cross-ack{min-width:58px;min-height:34px;padding:0 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--fg);font:inherit;font-size:11px;font-weight:650;cursor:pointer}
 .ma-cross-empty{color:var(--muted);font-size:11.5px;padding:5px 0}
 @media(max-width:800px){.ma-cross-ack{min-height:44px}}
+.trend-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 4px;color:var(--muted);font-size:10.5px}
+.trend-legend span{display:inline-flex;align-items:center;gap:4px}
+.trend-dot{display:inline-block;width:14px;height:2px;border-radius:2px;background:currentColor}
+.trend-dot.is-price{color:var(--fg)}
+.trend-dot.is-sma50{color:var(--blue)}
+.trend-dot.is-sma200{color:var(--orange)}
+.trend-svg{display:block;width:100%;height:auto;overflow:visible}
+.trend-grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:3 4}
+.trend-line{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.trend-line.is-price{stroke:var(--fg);stroke-width:1.7}
+.trend-line.is-sma50{stroke:var(--blue);stroke-width:1.25}
+.trend-line.is-sma200{stroke:var(--orange);stroke-width:1.25}
+.trend-state.is-bull{fill:var(--accent)}
+.trend-state.is-neutral{fill:var(--muted);opacity:.45}
+.trend-state.is-bear{fill:var(--orange)}
+.trend-range{display:flex;justify-content:space-between;margin-top:-2px;color:var(--muted);font-size:9.5px;font-variant-numeric:tabular-nums}
+.trend-counts{display:flex;gap:12px;flex-wrap:wrap;margin-top:7px;font-size:10.5px;font-weight:620}
+.trend-counts .is-bull{color:var(--accent-d)}
+.trend-counts .is-neutral{color:var(--muted)}
+.trend-counts .is-bear{color:var(--orange)}
+.trend-empty{color:var(--muted);font-size:11.5px;padding:8px 0}
 /* ===== v336 被行权概率矩阵（v391 起列＝链上真实档位）===== */
 .mx-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .mx-table thead th{text-align:right;padding:6px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}

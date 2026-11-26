@@ -110,15 +110,19 @@ const exposure = await ev(() => {
   const syms = Array.from(expo.querySelectorAll('.hold-row[data-sym]')).map((r) => r.getAttribute('data-sym'));
   const row = expo.querySelector('.hold-row[data-sym="SKHYV"]') || expo.querySelector('.hold-row[data-sym]');
   if (!row) return { ok: false, why: '敞口卡里没有可点开的数据行', syms };
+  const conc = expo.querySelector('.concentration-summary');
   row.click();
   const detail = row.nextElementSibling;
   if (!detail || !detail.classList.contains('row-detail')) return { ok: false, why: '敞口行点开没有出现详情', syms };
   const text = detail.innerText.replace(/\s+/g, ' ');
-  return { ok: true, syms, text, hasCap: text.includes('总市值') };
+  return { ok: true, syms, text, hasCap: text.includes('总市值'), conc: conc ? conc.innerText.replace(/\s+/g, ' ') : '' };
 });
 if (!exposure.ok) failures.push('底层资产敞口：' + exposure.why + (exposure.syms ? '（现有 ' + exposure.syms.join(',') + '）' : ''));
 else {
   if (!exposure.hasCap) failures.push('敞口行详情里没有「总市值」：' + exposure.text.slice(0, 80));
+  if (!/集中度摘要/.test(exposure.conc) || !/前 5 大/.test(exposure.conc) || !/重叠成分股/.test(exposure.conc)) {
+    failures.push('底层资产敞口没有集中度摘要：' + exposure.conc);
+  }
   // SK Hynix 是本轮事故的主角：SMH 榜单换了源之后它必须回来
   if (!exposure.syms.includes('SKHYV')) failures.push('底层资产敞口里没有 SKHYV（现有 ' + exposure.syms.join(',') + '）');
 }

@@ -315,14 +315,16 @@ const server = http.createServer((req, res) => {
   }
   // 市场状态测试专用：/api/price?range=1y 返回确定性的 251 日线（强势形态）。
   // 只拦 range=1y，避免改变其它行情场景对 1mo / 实时快照的预期。
-  if (url.pathname === '/api/price' && url.searchParams.get('range') === '1y') {
+  if (url.pathname === '/api/price' && ['1y', '2y'].includes(url.searchParams.get('range'))) {
     const sym = String(url.searchParams.get('symbol') || '').toUpperCase();
     if (['VGT', 'SMH', 'IBIT'].includes(sym)) {
-      const closes = Array.from({ length: 251 }, (_, i) => (i < 201 ? 100 : 120));
+      const length = url.searchParams.get('range') === '2y' ? 501 : 251;
+      const closes = Array.from({ length }, (_, i) => (i < length - 100 ? 100 : 120));
+      const timestamps = Array.from({ length }, (_, i) => Date.UTC(2024, 0, 1) + i * 86400000);
       res.writeHead(200, cors);
       return res.end(JSON.stringify({
         ok: true,
-        data: { chart: { result: [{ indicators: { quote: [{ close: closes }] } }] } },
+        data: { chart: { result: [{ timestamp: timestamps, indicators: { quote: [{ close: closes }] } }] } },
       }));
     }
   }
