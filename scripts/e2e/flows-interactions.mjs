@@ -417,7 +417,7 @@ const migrated = await ev(() => {
     dirty: sync.dirty || {},
   };
 });
-if (migrated.schema !== '4') failures.push('v432 数据没有迁移到 schema 4：' + migrated.schema);
+if (migrated.schema !== '5') failures.push('v432 数据没有迁移到 schema 5：' + migrated.schema);
 if (migrated.state.qqqm !== 0.5 || migrated.state.vgt !== 0.3 || migrated.state.smh !== 0.2 || 'btc' in migrated.state) {
   failures.push('迁移后的目标配置不正确：' + JSON.stringify(migrated.state));
 }

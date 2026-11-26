@@ -111,7 +111,24 @@ export function writeJSON(key, value) {
   }
 }
 
-export const DATA_SCHEMA = 4;
+function normalizeCoreWatchOrder(raw) {
+  if (!Array.isArray(raw)) return null;
+  const removed = new Set([...RETIRED_CORE_SYMBOLS, 'BTC']);
+  const kept = raw
+    .filter((item) => item && !removed.has(String(item.sym || '').toUpperCase()))
+    .map((item) => Object.assign({}, item));
+  const core = [];
+  CORE_SYMBOLS.forEach((sym) => {
+    const found = kept.find((item) => String(item.sym || '').toUpperCase() === sym);
+    if (found) core.push(found);
+    else core.push({ sym, kind: 'stock', enabled: true, order: 0 });
+  });
+  const coreSet = new Set(CORE_SYMBOLS);
+  const rest = kept.filter((item) => !coreSet.has(String(item.sym || '').toUpperCase()));
+  return core.concat(rest).map((item, index) => Object.assign({}, item, { order: index }));
+}
+
+export const DATA_SCHEMA = 5;
 
 // 迁移链：每次数据结构变化时，往 steps 里加一个新版本号对应的函数即可。
 // onError 用于把迁移异常交给上层上报（store 本身不依赖具体的日志实现）。
@@ -151,18 +168,8 @@ export function runMigrations(onError) {
 
       [KEYS.trades, KEYS.cash, KEYS.cashLog].forEach((key) => removeKey(key));
 
-      const rawWatch = readJSON(KEYS.watchlist, null);
-      if (Array.isArray(rawWatch)) {
-        const removed = new Set([...RETIRED_CORE_SYMBOLS, 'BTC']);
-        const watch = rawWatch
-          .filter((item) => item && !removed.has(String(item.sym || '').toUpperCase()))
-          .map((item) => Object.assign({}, item));
-        if (!watch.some((item) => String(item.sym || '').toUpperCase() === 'QQQM')) {
-          watch.unshift({ sym: 'QQQM', kind: 'stock', enabled: true, order: 0 });
-        }
-        watch.forEach((item, index) => { item.order = index; });
-        writeRaw(KEYS.watchlist, JSON.stringify(watch));
-      }
+      const watch = normalizeCoreWatchOrder(readJSON(KEYS.watchlist, null));
+      if (watch) writeRaw(KEYS.watchlist, JSON.stringify(watch));
 
       const prices = readJSON(KEYS.prices, null);
       if (prices && typeof prices === 'object') {
@@ -183,6 +190,22 @@ export function runMigrations(onError) {
         });
         writeRaw(KEYS.syncState, JSON.stringify(next));
         // 已登录的老用户：下一次 autoPull 先推新组合，避免旧云端数据触发假冲突。
+        writeRaw(KEYS.coreMigrationV4, '1');
+      }
+    },
+    // v4 → v5：v433 首轮迁移后，已有 QQQM 的旧观察列表可能仍排在后面。
+    // 仅把三只核心基金移到最前并保留用户其它观察项，随后主动推送这份顺序。
+    5: () => {
+      const watch = normalizeCoreWatchOrder(readJSON(KEYS.watchlist, null));
+      if (!watch) return;
+      writeRaw(KEYS.watchlist, JSON.stringify(watch));
+      const syncState = readJSON(KEYS.syncState, null);
+      if (syncState && typeof syncState === 'object') {
+        const next = Object.assign({}, syncState);
+        next.dirty = Object.assign({}, syncState.dirty || {}, { watchlist: true });
+        next.cloudTs = Object.assign({}, syncState.cloudTs || {});
+        delete next.cloudTs.watchlist;
+        writeRaw(KEYS.syncState, JSON.stringify(next));
         writeRaw(KEYS.coreMigrationV4, '1');
       }
     },

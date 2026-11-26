@@ -118,7 +118,7 @@ test('v4 核心仓迁移：归档旧数据、切到 QQQM/VGT/SMH、清理旧观�
   writeRaw(KEYS.prices, JSON.stringify({ BTC: { price: 83000 }, IBIT: { price: 30 }, VGT: { price: 120 } }));
   writeRaw(KEYS.syncState, JSON.stringify({ dirty: {}, cloudTs: { state: 1, trades: 1 }, pendingConflicts: [] }));
 
-  assert.equal(runMigrations(), 4);
+  assert.equal(runMigrations(), 5);
   const state = JSON.parse(readRaw(KEYS.dashboard));
   assert.equal(state.qqqm, 0.5);
   assert.equal(state.vgt, 0.3);
@@ -134,7 +134,7 @@ test('v4 核心仓迁移：归档旧数据、切到 QQQM/VGT/SMH、清理旧观�
   assert.match(archive.cashLog, /入金/);
 
   const watch = JSON.parse(readRaw(KEYS.watchlist));
-  assert.deepEqual(watch.map((item) => item.sym), ['QQQM', 'VGT']);
+  assert.deepEqual(watch.map((item) => item.sym), ['QQQM', 'VGT', 'SMH']);
   const prices = JSON.parse(readRaw(KEYS.prices));
   assert.equal(prices.QQQM, undefined);
   assert.equal(prices.IBIT, undefined);
@@ -147,4 +147,25 @@ test('v4 核心仓迁移：归档旧数据、切到 QQQM/VGT/SMH、清理旧观�
     assert.equal(key in sync.cloudTs, false, key + ' 应忘掉旧云端版本');
   });
   assert.equal(readRaw(KEYS.coreMigrationV4), '1');
+});
+
+test('v5 观察列表迁移：已存在 QQQM 时也把三只核心基金移到最前', () => {
+  reset();
+  writeRaw(KEYS.schema, '4');
+  writeRaw(KEYS.watchlist, JSON.stringify([
+    { sym: 'VGT', enabled: true, order: 0 },
+    { sym: 'GOLD', enabled: true, order: 1 },
+    { sym: 'QQQM', enabled: true, order: 2 },
+    { sym: 'SMH', enabled: true, order: 3 },
+    { sym: 'NVDA', enabled: true, order: 4 },
+  ]));
+  writeRaw(KEYS.syncState, JSON.stringify({ dirty: {}, cloudTs: { watchlist: 12 }, pendingConflicts: [] }));
+
+  assert.equal(runMigrations(), 5);
+  const watch = JSON.parse(readRaw(KEYS.watchlist));
+  assert.deepEqual(watch.map((item) => item.sym), ['QQQM', 'VGT', 'SMH', 'GOLD', 'NVDA']);
+  assert.deepEqual(watch.map((item) => item.order), [0, 1, 2, 3, 4]);
+  const sync = JSON.parse(readRaw(KEYS.syncState));
+  assert.equal(sync.dirty.watchlist, true);
+  assert.equal(sync.cloudTs.watchlist, undefined);
 });
