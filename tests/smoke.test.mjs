@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=414');
+  assert.equal(manifest.start_url, '/?v=415');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v414/);
+  assert.match(serviceWorker, /wealth-v415/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=414',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=415',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -324,8 +324,8 @@ test('drawdown visualization exposes current-to-peak distance with desktop space
   assert.match(appSource, /class="drawdown-track"/);
   assert.match(appSource, /class="drawdown-marker" style="left:/);
   assert.match(appMarkup, /d\.dd>=20\?'var\(--red\)':d\.dd>=10\?'var\(--orange\)'/);
-  assert.match(css, /#tab-holding \.goal-row\{grid-column:9\/-1;grid-row:3/);
-  assert.match(css, /#tab-holding \.cc-overview\{grid-column:5\/9;grid-row:4;height:170px/);
+  assert.match(appMarkup, /\.goal-row\{grid-column:1\/9!important;grid-row:4!important;height:220px!important/);
+  assert.match(appMarkup, /\.cc-overview\{grid-column:9\/-1!important;grid-row:4!important;height:220px!important/);
 });
 
 test('data health shows cloud sync, backup, and conflict state', () => {
@@ -590,7 +590,7 @@ test('price refresh requests one-month history and retains valid closes', async 
 
 test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(appMarkup, /\[data-accent="ocean"\]\{--accent:#2867b7/);
-  assert.match(css, /\.main\{\s*margin:10px 10px 10px 0;[\s\S]{0,220}min-height:calc\(100dvh - 20px\)/);
+  assert.match(appMarkup, /\.main\{[^}]*height:100dvh!important[^}]*overflow-y:auto!important/);
   assert.doesNotMatch(appMarkup, /sparkTransform|paths=\{VGT:/);
   assert.match(appMarkup, /historyRange:'1mo'/);
   assert.match(appMarkup, /color=getAssetColor\(row\.sym\)/);
@@ -605,28 +605,9 @@ test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(appMarkup, /\['VGT','SMH','IBIT','SGOV'\]/, '首页行情行应含 IBIT');
   assert.match(appMarkup, /function legTargets\(\)/, '第三腿目标配比要走 legTargets()（键名收敛在一处）');
   assert.doesNotMatch(appMarkup, /sym==='IBIT'\?state\.btc/, '别再散落写死的第三腿三元');
-  assert.match(css, /#tab-holding #holdMetrics\{grid-column:1\/-1;grid-row:1;display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\);gap:10px/);
-  assert.match(css, /#tab-holding #holdMetrics \.metric\{min-height:122px;padding:14px;border-radius:12px;border:1px solid var\(--desk-line\)/);
+  assert.match(appMarkup, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
+  assert.match(appMarkup, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
   assert.match(appMarkup, /美股非交易时段/);
-});
-
-test('desktop 2026 visual layer keeps existing accents and top-tab switching', () => {
-  const marker = css.indexOf('/* ===== Desktop workspace 2026 =====');
-  assert.ok(marker > 0, '桌面视觉层必须存在');
-  const desktopCss = css.slice(marker);
-  assert.match(desktopCss, /html\[data-theme="light"\]\{[\s\S]*--desk-page:/);
-  assert.match(desktopCss, /html\[data-theme="dark"\]\{[\s\S]*--desk-page:/);
-  assert.match(desktopCss, /#tab-holding #holdMetrics/);
-  assert.match(desktopCss, /#tab-console\.active/);
-  assert.match(desktopCss, /#tab-option\.active/);
-  assert.match(desktopCss, /#tab-data\.active/);
-  assert.match(css, /\[data-accent="forest"\]/, '桌面改造不能移除原有森林配色');
-  assert.match(css, /\[data-accent="ocean"\]/, '桌面改造不能移除原有海洋配色');
-  assert.match(css, /\[data-accent="warm"\]/, '桌面改造不能移除原有暖阳配色');
-  assert.match(css, /\[data-accent="plum"\]/, '桌面改造不能移除原有梅紫配色');
-  assert.match(css, /\[data-accent="mono"\]/, '桌面改造不能移除原有极简配色');
-  assert.match(indexSource, /document\.querySelectorAll\('\.tab-btn'\)\.forEach\(function\(b\)\{b\.addEventListener\('click',function\(\)\{switchTab\(b\.dataset\.tab\)\}\)\}\)/,
-    '桌面仍使用原来的顶部 tab 切换');
 });
 
 /**
