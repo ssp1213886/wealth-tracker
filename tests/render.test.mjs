@@ -25,6 +25,15 @@ test('emptyStateHTML：默认结构包含图标、标题与提示', () => {
   assert.ok(html.includes('role="status"'));
 });
 
+test('emptyStateHTML：loading / error 状态提供可辨识语义', () => {
+  const loading = emptyStateHTML({ state: 'loading', title: '读取中' });
+  const error = emptyStateHTML({ state: 'error', title: '不可用' });
+  assert.match(loading, /class="ds-empty is-loading"/);
+  assert.match(loading, /role="status"/);
+  assert.match(error, /class="ds-empty is-error"/);
+  assert.match(error, /role="alert"/);
+});
+
 test('emptyStateHTML：compact 变体与自定义图标', () => {
   const html = emptyStateHTML({ title: 'T', hint: 'H', compact: true, icon: '<svg id="custom"></svg>' });
   assert.ok(html.includes('ds-empty ds-empty-compact'));

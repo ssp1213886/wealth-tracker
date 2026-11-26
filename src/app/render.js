@@ -5,10 +5,15 @@ export function escapeHtml(v){return cleanText(v,500).replace(/[&<>"']/g,functio
 
 export function emptyStateHTML(opts){
   var o=opts||{};
-  var icon=o.icon||'<svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="m4 7 8 6 8-6"/></svg>';
-  var cls='ds-empty'+(o.compact?' ds-empty-compact':'');
+  var state=o.state==='loading'||o.state==='error'?o.state:'empty';
+  var icon=o.icon||(state==='loading'
+    ?'<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>'
+    :state==='error'
+      ?'<svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3z"/><path d="M12 9v5"/><path d="M12 17.5v.1"/></svg>'
+      :'<svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="m4 7 8 6 8-6"/></svg>');
+  var cls='ds-empty'+(o.compact?' ds-empty-compact':'')+(state==='empty'?'':' is-'+state);
   var esc=function(s){return String(s).replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;'})};
-  var html='<div class="'+cls+'" role="status"><span class="ds-empty-icon" aria-hidden="true">'+icon+'</span>';
+  var html='<div class="'+cls+'" role="'+(state==='error'?'alert':'status')+'"><span class="ds-empty-icon" aria-hidden="true">'+icon+'</span>';
   html+='<span class="ds-empty-title">'+esc(o.title||'暂无数据')+'</span>';
   if(o.hint)html+='<span class="ds-empty-hint">'+esc(o.hint)+'</span>';
   return html+'</div>';

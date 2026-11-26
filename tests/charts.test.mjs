@@ -1,7 +1,7 @@
 // 图表数据整形单测（v245 抽出）：纪律月度、年度矩阵、甜甜圈切片、热力色阶
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveSvg } from '../src/app/charts.js';
+import { disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveSvg, equityCurveHtml } from '../src/app/charts.js';
 
 const buy = (date, symbol, shares, price) => ({ date, symbol, shares, price, id: date + symbol });
 
@@ -383,4 +383,13 @@ test('equityCurveSvg：有缺口的月份要断开（多段），且不画填充
   assert.ok(line, '应该有净值线');
   assert.equal((line[1].match(/M/g) || []).length, 2, '缺口两侧各起一段（两个 M）');
   assert.ok(!svg.includes('class="eq-area"'), '断开时不填色，免得看起来像数据齐的');
+});
+
+test('equityCurveHtml：提供交叉线与固定当前值标签', () => {
+  const html = equityCurveHtml(equitySeries(CURVE_WORLD));
+  assert.match(html, /^<div class="eq-shell" data-eq-points="/);
+  assert.match(html, /class="eq-crosshair" hidden/);
+  assert.match(html, /class="eq-tooltip" role="status" hidden/);
+  assert.match(html, /class="eq-end-label"/);
+  assert.match(html, /\$12,180/);
 });

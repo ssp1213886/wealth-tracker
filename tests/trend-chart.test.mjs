@@ -32,11 +32,17 @@ test('trendChartHtml：输出三条线、状态条与近一年统计', () => {
   assert.match(html, /trend-regime-band is-/);
   assert.match(html, /trend-axis-label/);
   assert.match(html, /trend-current-dot/);
+  assert.match(html, /trend-current-price/);
   assert.match(html, /trend-tooltip/);
   assert.match(html, /data-trend-points=/);
   assert.match(html, /data-trendrange="6m"/);
   assert.match(html, /强势 \d+ 天/);
   assert.match(html, /VGT 1 年趋势，共 61 个交易日/);
+});
+
+test('趋势图加载与错误状态使用统一组件', () => {
+  assert.match(trendChartHtml(null, 'VGT', '1y', { loading: true }), /ds-empty.*is-loading.*正在读取趋势数据/);
+  assert.match(trendChartHtml(null, 'VGT', '1y', { error: 'HTTP 503' }), /ds-empty.*is-error.*行情源暂不可用/);
 });
 
 test('趋势图禁止长按选择、复制与移动端 callout', () => {
@@ -73,10 +79,18 @@ test('时间戳：Unix 秒与毫秒都显示真实月份，不会落到 1970 年
 });
 
 test('renderTrendChart：写入标的和图表容器', () => {
-  const nodes = { trendChart: { innerHTML: '' }, trendSymbol: { textContent: '' }, trendTabs: { innerHTML: '' } };
+  const nodes = {
+    trendChart: { innerHTML: '' },
+    trendSymbol: { textContent: '' },
+    trendRangeLabel: { textContent: '' },
+    trendAsOf: { textContent: '' },
+    trendTabs: { innerHTML: '' },
+  };
   const doc = { getElementById(id) { return nodes[id] || null; } };
   renderTrendChart(doc, info(), 'smh', ['VGT', 'SMH', 'IBIT'], '6m');
   assert.equal(nodes.trendSymbol.textContent, 'SMH');
+  assert.equal(nodes.trendRangeLabel.textContent, '6 个月');
+  assert.match(nodes.trendAsOf.textContent, /^\d{4}\/\d{2}\/\d{2}$/);
   assert.match(nodes.trendChart.innerHTML, /50 日均线/);
   assert.match(nodes.trendChart.innerHTML, /data-trendrange="6m"/);
   assert.match(nodes.trendTabs.innerHTML, /data-trendtab="SMH"/);

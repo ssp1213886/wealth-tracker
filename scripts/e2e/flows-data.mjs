@@ -179,13 +179,17 @@ const chartUi = await ev(() => ({
   sma200: !!document.querySelector('#trendChart .trend-line.is-sma200'),
   states: document.querySelectorAll('#trendChart .trend-state').length,
   yLabels: document.querySelectorAll('#trendChart .trend-axis-label').length,
+  visibleYLabels: [...document.querySelectorAll('#trendChart .trend-axis-label')].filter((el) => el.getBoundingClientRect().height > 0).length,
   rangeTabs: document.querySelectorAll('#trendChart [data-trendrange]').length,
   rangeHeights: [...document.querySelectorAll('#trendChart [data-trendrange]')].map((el) => el.getBoundingClientRect().height),
   area: !!document.querySelector('#trendChart .trend-area'),
+  currentPriceLabel: (document.querySelector('#trendChart .trend-current-price') || {}).textContent || '',
   hoverLayer: !!document.querySelector('#trendChart .trend-hover'),
   trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
   activeTrend: (document.querySelector('#trendTabs .prob-chip.is-on') || {}).textContent || '',
   rangeLabels: [...document.querySelectorAll('#trendChart .trend-range span')].map((el) => el.textContent || ''),
+  titleRange: (document.getElementById('trendRangeLabel') || {}).textContent || '',
+  titleAsOf: (document.getElementById('trendAsOf') || {}).textContent || '',
   optionCards: [...document.querySelectorAll('#tab-option > .card')].map((el) => el.classList.contains('trend-card') ? 'trend' : el.classList.contains('prob-card') ? 'prob' : ''),
   freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
 }));
@@ -207,7 +211,9 @@ const chartNative = await ev(() => {
 });
 if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200 || !chartUi.area) failures.push('趋势图线条或面积没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
-if (chartUi.yLabels !== 4 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
+if (chartUi.yLabels !== 5 || chartUi.visibleYLabels !== 3 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
+if (!/^\$/.test(chartUi.currentPriceLabel)) failures.push('趋势图缺少当前价标签：' + JSON.stringify(chartUi.currentPriceLabel));
+if (!/^(6 个月|1 年|2 年)$/.test(chartUi.titleRange) || !/^\d{4}\/\d{2}\/\d{2}$/.test(chartUi.titleAsOf)) failures.push('趋势图标题缺少范围或数据截至日期：' + JSON.stringify({ range: chartUi.titleRange, asOf: chartUi.titleAsOf }));
 if (chartUi.rangeHeights.some((height) => height < 40)) failures.push('移动端趋势范围按钮触控高度不足：' + JSON.stringify(chartUi.rangeHeights));
 if (chartNative.userSelect !== 'none' || chartNative.webkitUserSelect !== 'none' ||
   (chartNative.touchCalloutSupported && chartNative.touchCallout !== 'none') ||
@@ -241,6 +247,32 @@ const trendHover = await ev(() => {
 if (trendHover.hidden || !/VGT/.test(trendHover.text) || !/\$/.test(trendHover.text) || !/50 日/.test(trendHover.text) || !/200 日/.test(trendHover.text)) {
   failures.push('趋势图悬停提示不完整：' + JSON.stringify(trendHover));
 }
+await ev(() => document.querySelector('.tab-btn[data-tab="holding"]').click());
+await p.waitForTimeout(350);
+await p.waitForFunction(() => !!document.querySelector('#equityChart .eq-shell'), null, { timeout: 12000 }).catch(() => {});
+const equityUi = await ev(() => {
+  const shell = document.querySelector('#equityChart .eq-shell');
+  const svg = shell && shell.querySelector('.eq-svg');
+  if (!svg) return { ready: false };
+  const rect = svg.getBoundingClientRect();
+  svg.dispatchEvent(new PointerEvent('pointermove', {
+    bubbles: true, pointerId: 1, pointerType: 'mouse',
+    clientX: rect.left + rect.width * 0.6, clientY: rect.top + rect.height * 0.45,
+  }));
+  const tip = shell.querySelector('.eq-tooltip');
+  return {
+    ready: true,
+    label: (shell.querySelector('.eq-end-label') || {}).textContent || '',
+    tooltipHidden: !tip || tip.hidden,
+    tooltip: tip ? tip.innerText : '',
+    userSelect: getComputedStyle(shell).userSelect,
+  };
+});
+if (!equityUi.ready || !/^\$/.test(equityUi.label)) failures.push('资产曲线缺少固定当前值标签：' + JSON.stringify(equityUi));
+if (equityUi.tooltipHidden || !/资产/.test(equityUi.tooltip) || !/净入金/.test(equityUi.tooltip) || !/收益率/.test(equityUi.tooltip)) failures.push('资产曲线悬停详情不完整：' + JSON.stringify(equityUi));
+if (equityUi.userSelect !== 'none') failures.push('资产曲线仍允许选择文字：' + equityUi.userSelect);
+await ev(() => document.querySelector('.tab-btn[data-tab="option"]').click());
+await p.waitForTimeout(350);
 await ev(() => document.querySelector('#trendChart [data-trendrange="2y"]').click());
 await p.waitForTimeout(450);
 const trend2y = await ev(() => ({

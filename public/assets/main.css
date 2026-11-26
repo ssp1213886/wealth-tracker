@@ -1774,6 +1774,10 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .ds-empty-compact .ds-empty-icon{width:24px;height:24px;border-radius:8px}
 .ds-empty-compact .ds-empty-icon svg{width:14px;height:14px}
 .ds-empty-compact .ds-empty-title{font-size:12.5px;font-weight:520;color:var(--muted)}
+.ds-empty.is-loading .ds-empty-icon{background:var(--accent-l);color:var(--accent-d)}
+.ds-empty.is-loading .ds-empty-icon svg{animation:dsChartSpin .9s linear infinite}
+.ds-empty.is-error .ds-empty-icon{background:color-mix(in srgb,var(--orange) 13%,transparent);color:var(--orange)}
+@keyframes dsChartSpin{to{transform:rotate(360deg)}}
 
 /* ===== Records tables · unified ===== */
 .trade-table,.res-table{font-size:12.5px}
@@ -2953,13 +2957,13 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 4px;color:var(--muted);font-size:10.5px}
 .trend-legend span{display:inline-flex;align-items:center;gap:4px}
 .trend-dot{display:inline-block;width:14px;height:2px;border-radius:2px;background:currentColor}
-.trend-dot.is-price{color:var(--fg)}
+.trend-dot.is-price{color:var(--accent)}
 .trend-dot.is-sma50{color:var(--blue)}
 .trend-dot.is-sma200{color:var(--orange)}
 .trend-svg{display:block;width:100%;height:auto;overflow:visible}
 .trend-grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:3 4}
 .trend-line{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.trend-line.is-price{stroke:var(--fg);stroke-width:1.7}
+.trend-line.is-price{stroke:var(--accent);stroke-width:1.7}
 .trend-line.is-sma50{stroke:var(--blue);stroke-width:1.25}
 .trend-line.is-sma200{stroke:var(--orange);stroke-width:1.25}
 .trend-state.is-bull{fill:var(--accent)}
@@ -2991,6 +2995,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-area{fill:url(#trendAreaFill);stroke:none}
 .trend-current-dot{fill:var(--accent);stroke:var(--card-bg);stroke-width:2;vector-effect:non-scaling-stroke}
 .trend-current-halo{fill:none;stroke:var(--accent);stroke-width:1;opacity:.25;vector-effect:non-scaling-stroke}
+.trend-current-price{fill:var(--accent-d);font:700 11px var(--font);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--card-bg);stroke-width:3px;stroke-linejoin:round}
 .trend-hit-area{fill:transparent;cursor:crosshair;touch-action:pan-y}
 .trend-hover{pointer-events:none}
 .trend-crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke;opacity:.72}
@@ -3006,10 +3011,12 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .trend-source{display:none}
   .trend-range-chips{margin-left:auto}
   .trend-range-chip{height:40px;min-width:44px;padding:0 9px}
+  .trend-axis-label.is-mobile-hide{display:none}
   .trend-tooltip{top:39px}
 }
 @media(max-width:560px){
   .trend-axis-label{font-size:16px}
+  .trend-current-price{font-size:20px}
 }
 /* ===== v336 被行权概率矩阵（v391 起列＝链上真实档位）===== */
 .mx-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
@@ -3108,10 +3115,20 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
    桌面 ≥801 是 12 栏网格 → 自己占满一行（和 #exposureSlot 同一个做法，自动排到显式行之后）；
    手机 ≤800 是 flex + order 排序 → order:5（夹在 CC 概览 4 与路线图 6 之间）。 */
 .equity-chart{height:96px;margin:4px 0 10px}
+.equity-chart .eq-shell{position:relative;height:100%;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
 .equity-chart .eq-svg{display:block;width:100%;height:96px}
 .equity-chart .eq-area{fill:color-mix(in srgb,var(--accent) 12%,transparent);stroke:none}
 .equity-chart .eq-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .equity-chart .eq-invested{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-dasharray:4 4;stroke-linecap:round;opacity:.9}
+.equity-chart .eq-crosshair{position:absolute;inset:0 auto 0 0;width:1px;border-left:1px dashed var(--muted);opacity:.65;pointer-events:none}
+.equity-chart .eq-crosshair[hidden],.equity-chart .eq-tooltip[hidden],.equity-chart .eq-end-label[hidden]{display:none}
+.equity-chart .eq-tooltip{position:absolute;z-index:3;top:2px;width:146px;padding:7px 8px;border:1px solid var(--rule);border-radius:9px;background:color-mix(in srgb,var(--card-bg) 94%,transparent);box-shadow:var(--shadow);backdrop-filter:blur(10px);pointer-events:none;font-variant-numeric:tabular-nums}
+.equity-chart .eq-tooltip strong{display:block;margin-bottom:3px;color:var(--fg);font-size:10px}
+.equity-chart .eq-tooltip span{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:9px;line-height:1.55}
+.equity-chart .eq-tooltip b{color:var(--fg);font-weight:650}
+.equity-chart .eq-tooltip b.pnl-pos{color:var(--ok)}
+.equity-chart .eq-tooltip b.pnl-neg{color:var(--red)}
+.equity-chart .eq-end-label{position:absolute;transform:translate(-100%,-50%);padding:2px 5px;border-radius:6px;background:var(--card-bg);color:var(--accent-d);font-size:9px;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px var(--rule);pointer-events:none;white-space:nowrap}
 .equity-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted)}
 .equity-meta b{color:var(--fg);font-weight:640;font-variant-numeric:tabular-nums}
 .equity-meta b.pnl-pos{color:var(--ok)}

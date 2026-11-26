@@ -64,7 +64,7 @@ import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, render
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, renderCashTotals} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
-import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveSvg} from './charts.js';
+import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveHtml, bindEquityCurve} from './charts.js';
 import {CRYPTO_NAMES, FALLBACK_NAMES, cleanName as cleanNameOf, quotePrice, historyOf, hi52Of, searchRowPrice, pricePillHTML} from './watch-view.js';
 import {TRADE_SYMBOLS, normalizeTrades as normalizeTradesIn, normalizeCashLogs as normalizeCashLogsIn, normalizeActivities as normalizeActivitiesIn, parseSchwabCSV as parseSchwabCSVIn, parseCSVRow, parseMoneyValue, csvSkipSummary} from './records-import.js';
 import {HOME_TIME_ZONE, MARKET_TIME_ZONE, MARKET_SESSION_LABELS, zonedDateParts, zonedDate, marketDate, marketClock, localDate, normalizeDateValue} from './time.js';
@@ -81,7 +81,7 @@ var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},trade
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v418';var APP_DATA_VERSION=5;
+var APP_BUILD='v419';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -533,17 +533,26 @@ function refreshEquityCurve(){
   if(!chart)return;
   var months=equityMonths();
   if(months.length<2){chart.innerHTML=emptyStateHTML({title:'还画不出曲线',hint:'记录第一笔交易后，这里会按月画出资产曲线'});renderEquityMeta(null);return}
+  var hasChart=!!chart.querySelector('.eq-shell');
+  if(!hasChart)chart.innerHTML=emptyStateHTML({state:'loading',title:'正在读取资产曲线',hint:'加载月度行情与持仓快照',compact:true});
   Promise.all(ETF_SYMS.map(function(s){return fetchMaxData(s).catch(function(){return null})})).then(function(list){
     try{
+      if(list.every(function(item){return !item})){
+        if(!hasChart){chart.innerHTML=emptyStateHTML({state:'error',title:'行情源暂不可用',hint:'资产曲线需要月度行情，恢复后会自动重试',compact:true});renderEquityMeta(null)}
+        return;
+      }
       var series=equitySeries({months:months,trades:trades,cashLog:cashLog,priceByMonth:buildPriceByMonth(list,ETF_SYMS,months)});
       var json=JSON.stringify([series.points,series.netInvested,series.ready]);
       if(json===equityJson)return;
       equityJson=json;
-      var svg=equityCurveSvg(series);
-      chart.innerHTML=svg||emptyStateHTML({title:'还画不出曲线',hint:'需要至少 2 个月的行情数据'});
+      var html=equityCurveHtml(series);
+      chart.innerHTML=html||emptyStateHTML({state:'empty',title:'还画不出曲线',hint:'需要至少 2 个月的有效行情数据'});
+      if(html)bindEquityCurve(chart);
       renderEquityMeta(series);
     }catch(e){logSwallowed("refreshEquityCurve",e)}
-  },function(){});
+  },function(){
+    if(!hasChart){chart.innerHTML=emptyStateHTML({state:'error',title:'行情源暂不可用',hint:'资产曲线加载失败，稍后会自动重试',compact:true});renderEquityMeta(null)}
+  });
 }
 
 function renderLogHeatmap(){
@@ -1161,7 +1170,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=418',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=419',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1877,7 +1886,7 @@ function renderMarketRegimeForTab(){
   var loading=regimeStatus.loading||(!info&&!regimeStatus.error);
   try{renderMarketRegime(document,probTab,info,{loading:loading,error:regimeStatus.error})}
   catch(e){logSwallowed("renderMarketRegime",e)}
-  try{renderTrendChart(document,info,probTab,OPTION_SYMS,trendRange)}
+  try{renderTrendChart(document,info,probTab,OPTION_SYMS,trendRange,{loading:loading,error:regimeStatus.error})}
   catch(e){logSwallowed("renderTrendChart",e)}
 }
 function renderFreshnessCard(){

@@ -1,8 +1,8 @@
-import { escapeHtml } from './render.js';
+import { emptyStateHTML, escapeHtml } from './render.js';
 
 const CHART_W = 720;
 const CHART_H = 300;
-const PLOT = { left: 18, right: 676, top: 20, bottom: 222 };
+const PLOT = { left: 46, right: 694, top: 20, bottom: 222 };
 const HISTORY_TOP = 232;
 const HISTORY_H = 16;
 const RANGE_POINTS = { '6m': 126, '1y': 252, '2y': 504 };
@@ -142,11 +142,11 @@ function chartMarkup(rows, counts, range, symbol) {
       '" y="' + HISTORY_TOP + '" width="' + Math.max(1, stripW + 0.15).toFixed(2) +
       '" height="' + HISTORY_H + '"></rect>';
   }).join('');
-  const yTicks = [0, 1, 2, 3].map(function (i) {
-    const value = min + (max - min) * (i / 3);
+  const yTicks = [0, 1, 2, 3, 4].map(function (i) {
+    const value = min + (max - min) * (i / 4);
     const y = yAt(value, min, max);
     return '<line class="trend-grid" x1="' + PLOT.left + '" y1="' + y.toFixed(1) + '" x2="' + PLOT.right + '" y2="' + y.toFixed(1) + '"></line>' +
-      '<text class="trend-axis-label" x="' + (CHART_W - 2) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end">' + priceLabel(value) + '</text>';
+      '<text class="trend-axis-label' + (i % 2 ? ' is-mobile-hide' : '') + '" x="4" y="' + (y + 3).toFixed(1) + '" text-anchor="start">' + priceLabel(value) + '</text>';
   }).join('');
   const xTicks = [0, 0.5, 1].map(function (ratio) {
     const x = PLOT.left + (PLOT.right - PLOT.left) * ratio;
@@ -154,6 +154,7 @@ function chartMarkup(rows, counts, range, symbol) {
   }).join('');
   const currentX = xAt(rows.length - 1, rows.length);
   const currentY = yAt(rows[rows.length - 1].price, min, max);
+  const currentLabelY = currentY < PLOT.top + 18 ? currentY + 18 : currentY - 10;
   const payload = encodeURIComponent(JSON.stringify(rows.map(function (row) {
     return [row.ts, Number(row.price.toFixed(4)), Number(row.sma50.toFixed(4)), Number(row.sma200.toFixed(4)), row.regime];
   })));
@@ -176,6 +177,7 @@ function chartMarkup(rows, counts, range, symbol) {
       '<path class="trend-line is-price" d="' + pricePath + '"></path>' +
       '<circle class="trend-current-dot" cx="' + currentX.toFixed(2) + '" cy="' + currentY.toFixed(2) + '" r="4"></circle>' +
       '<circle class="trend-current-halo" cx="' + currentX.toFixed(2) + '" cy="' + currentY.toFixed(2) + '" r="8"></circle>' +
+      '<text class="trend-current-price" x="' + (currentX - 8).toFixed(1) + '" y="' + currentLabelY.toFixed(1) + '" text-anchor="end">' + priceLabel(rows[rows.length - 1].price) + '</text>' +
       strip +
       '<g class="trend-hover" visibility="hidden"><line class="trend-crosshair"></line>' +
         '<circle class="trend-hover-dot is-sma200"></circle><circle class="trend-hover-dot is-sma50"></circle>' +
@@ -188,10 +190,33 @@ function chartMarkup(rows, counts, range, symbol) {
   '</div>';
 }
 
-export function trendChartHtml(info, symbol, range) {
+export function trendChartHtml(info, symbol, range, status) {
   const data = buildTrendData(info, range);
   const rows = data.rows;
-  if (rows.length < 2) return '<div class="trend-empty">历史日线不足，暂时无法绘制趋势图</div>';
+  if (rows.length < 2) {
+    if (status && status.loading) {
+      return emptyStateHTML({
+        state: 'loading',
+        title: '正在读取趋势数据',
+        hint: '准备 200 日均线所需的历史日线',
+        compact: true,
+      });
+    }
+    if (status && status.error) {
+      return emptyStateHTML({
+        state: 'error',
+        title: '行情源暂不可用',
+        hint: String(status.error).slice(0, 120),
+        compact: true,
+      });
+    }
+    return emptyStateHTML({
+      state: 'empty',
+      title: '历史日线不足',
+      hint: '至少需要 200 个交易日才能绘制趋势图',
+      compact: true,
+    });
+  }
   return chartMarkup(rows, data.counts, data.range, String(symbol || '').toUpperCase());
 }
 
@@ -274,14 +299,19 @@ function bindTrendChart(el) {
   shell.addEventListener('dragstart', blockNativeSelection);
 }
 
-export function renderTrendChart(doc, info, symbol, symbols, range) {
+export function renderTrendChart(doc, info, symbol, symbols, range, status) {
   const el = doc.getElementById('trendChart');
   const sym = doc.getElementById('trendSymbol');
+  const rangeEl = doc.getElementById('trendRangeLabel');
+  const asOfEl = doc.getElementById('trendAsOf');
   const tabs = doc.getElementById('trendTabs');
+  const data = buildTrendData(info, range);
   if (sym) sym.textContent = String(symbol || '').toUpperCase();
+  if (rangeEl) rangeEl.textContent = RANGE_LABELS[data.range] || RANGE_LABELS['1y'];
+  if (asOfEl) asOfEl.textContent = data.rows.length ? dateLabel(data.rows[data.rows.length - 1].ts) : '—';
   if (tabs) tabs.innerHTML = trendTabsHtml(symbol, symbols);
   if (el) {
-    el.innerHTML = trendChartHtml(info, symbol, range);
+    el.innerHTML = trendChartHtml(info, symbol, range, status);
     bindTrendChart(el);
   }
 }

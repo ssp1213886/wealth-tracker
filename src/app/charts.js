@@ -412,3 +412,105 @@ export function equityCurveSvg(series) {
     '<path class="eq-line" d="' + line.trim() + '" vector-effect="non-scaling-stroke"/>' +
     '</svg>';
 }
+
+function equityMoney(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+function equitySignedMoney(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+export function equityCurveHtml(series) {
+  const svg = equityCurveSvg(series);
+  if (!svg) return '';
+  const pts = series.points;
+  const usable = pts.filter(function (p) { return !p.gap; });
+  let min = Infinity;
+  let max = -Infinity;
+  usable.forEach(function (p) {
+    min = Math.min(min, Number(p.value) || 0, Number(p.netInvested) || 0);
+    max = Math.max(max, Number(p.value) || 0, Number(p.netInvested) || 0);
+  });
+  const span = max - min > 0 ? max - min : 1;
+  const lastIndex = pts.reduce(function (found, p, i) { return p.gap ? found : i; }, 0);
+  const xPct = pts.length <= 1 ? 50 : 4 / 300 * 100 + (lastIndex / (pts.length - 1)) * (292 / 300 * 100);
+  const yPct = (96 - 4 - ((Number(pts[lastIndex].value) || 0) - min) / span * (96 - 8)) / 96 * 100;
+  const payload = encodeURIComponent(JSON.stringify(pts.map(function (p) {
+    return [String(p.ym || '').replace(/[^0-9-]/g, ''), Number(p.value) || 0, Number(p.netInvested) || 0, !!p.gap];
+  })));
+  return '<div class="eq-shell" data-eq-points="' + payload + '">' +
+    svg +
+    '<i class="eq-crosshair" hidden></i>' +
+    '<div class="eq-tooltip" role="status" hidden></div>' +
+    '<span class="eq-end-label" style="left:' + xPct.toFixed(2) + '%;top:' + yPct.toFixed(2) + '%">' +
+      equityMoney(pts[lastIndex].value) +
+    '</span>' +
+  '</div>';
+}
+
+export function bindEquityCurve(host) {
+  if (!host || typeof host.querySelector !== 'function') return;
+  const shell = host.querySelector('.eq-shell');
+  const svg = shell && shell.querySelector('.eq-svg');
+  const tooltip = shell && shell.querySelector('.eq-tooltip');
+  const crosshair = shell && shell.querySelector('.eq-crosshair');
+  if (!shell || !svg || !tooltip || !crosshair) return;
+  let points;
+  try {
+    points = JSON.parse(decodeURIComponent(shell.getAttribute('data-eq-points') || ''));
+  } catch (e) {
+    return;
+  }
+  if (!Array.isArray(points) || !points.length) return;
+  function hide() {
+    tooltip.hidden = true;
+    crosshair.hidden = true;
+  }
+  function show(event) {
+    const rect = svg.getBoundingClientRect();
+    if (!(rect.width > 0)) return;
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const index = Math.round(ratio * (points.length - 1));
+    const point = points[index];
+    const x = (4 + ratio * 292) / 300;
+    const left = Math.max(6, Math.min(rect.width - 156, x * rect.width + (x > 0.56 ? -154 : 8)));
+    crosshair.style.left = (x * 100).toFixed(2) + '%';
+    crosshair.hidden = false;
+    if (point[3]) {
+      tooltip.innerHTML = '<strong>' + point[0] + '</strong><span>当月缺少行情，未绘制数值</span>';
+    } else {
+      const prev = index > 0 ? points[index - 1] : null;
+      let gain = null;
+      if (prev && !prev[3]) {
+        gain = point[1] - prev[1] - (point[2] - prev[2]);
+      }
+      const pct = prev && prev[1] > 0 && gain != null ? gain / prev[1] * 100 : null;
+      const gainClass = gain == null ? '' : gain >= 0 ? ' class="pnl-pos"' : ' class="pnl-neg"';
+      tooltip.innerHTML = '<strong>' + point[0] + '</strong>' +
+        '<span>资产 <b>' + equityMoney(point[1]) + '</b></span>' +
+        '<span>净入金 <b>' + equityMoney(point[2]) + '</b></span>' +
+        '<span>较上月收益 <b' + gainClass + '>' + (gain == null ? '—' : equitySignedMoney(gain)) + '</b></span>' +
+        '<span>收益率 <b' + gainClass + '>' + (pct == null ? '—' : (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%') + '</b></span>';
+    }
+    tooltip.style.left = left.toFixed(1) + 'px';
+    tooltip.hidden = false;
+  }
+  function blockNativeSelection(event) {
+    event.preventDefault();
+  }
+  svg.addEventListener('pointermove', show);
+  svg.addEventListener('pointerdown', function (event) {
+    try { svg.setPointerCapture(event.pointerId); } catch (e) {}
+    show(event);
+  });
+  svg.addEventListener('pointerleave', hide);
+  svg.addEventListener('pointercancel', hide);
+  shell.addEventListener('selectstart', blockNativeSelection);
+  shell.addEventListener('contextmenu', blockNativeSelection);
+  shell.addEventListener('dragstart', blockNativeSelection);
+}
