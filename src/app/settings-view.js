@@ -233,7 +233,7 @@ export function initMobileSettingsDrawer() {
       overlay = document.createElement('div');
       overlay.className = 'sb-overlay';
       overlay.id = 'sbSettingsOverlay';
-      overlay.addEventListener('click', function () { close(); });
+      overlay.addEventListener('click', returnToSidebar);
       document.body.appendChild(overlay);
     }
     return overlay;
@@ -254,12 +254,20 @@ export function initMobileSettingsDrawer() {
     entry.setAttribute('aria-expanded', 'false');
     if (overlay) overlay.classList.remove('show');
   }
+  function returnToSidebar() {
+    close();
+    if (window.innerWidth <= 800) setMobileSettings(true);
+  }
+  function back() {
+    if (closeAdvancedSettings()) return;
+    returnToSidebar();
+  }
   entry.addEventListener('click', open);
-  if (panelHead) panelHead.addEventListener('click', function () { closeAdvancedSettings(); });
+  if (panelHead) panelHead.addEventListener('click', back);
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       const sec = panel();
-      if (sec && sec.classList.contains('open')) { e.preventDefault(); close(); }
+      if (sec && sec.classList.contains('open')) { e.preventDefault(); back(); }
     }
   });
 }

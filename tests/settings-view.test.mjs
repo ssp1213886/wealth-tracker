@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   configureSettingsView, resolveDarkTheme, flipTheme, themeMetaColor, themeLabel, hapticPattern,
   updateThemeMeta, toggleTheme, loadTheme, setAccent, loadAccent,
-  setMobileSettings, openMobileSettings, togglePrivacy, placeSettingsPanel,
+  setMobileSettings, openMobileSettings, togglePrivacy, placeSettingsPanel, initMobileSettingsDrawer,
 } from '../src/app/settings-view.js';
 import { KEYS } from '../src/app/store.js';
 
@@ -35,6 +35,11 @@ function makeEl(extra) {
     setAttribute(k, v) { this.attrs[k] = v; },
     getAttribute(k) { return this.attrs[k] === undefined ? null : this.attrs[k]; },
     appendChild(c) { c.parentElement = this; this.children.push(c); return c; },
+    listeners: {},
+    addEventListener(type, fn) { this.listeners[type] = fn; },
+    emit(type, event) { if (this.listeners[type]) this.listeners[type](event || {}); },
+    querySelectorAll() { return []; },
+    scrollTop: 0,
     querySelector() { return null; },
     closest() { return null; },
   }, extra || {});
@@ -50,7 +55,9 @@ function withEnv(els, opts, fn) {
     querySelector: (sel) => ((opts && opts.query && opts.query[sel]) || els['@' + sel] || null),
     querySelectorAll: (sel) => ((opts && opts.queryAll && opts.queryAll[sel]) || []),
     createElement: () => makeEl(),
-    addEventListener() {},
+    listeners: {},
+    addEventListener(type, fn) { this.listeners[type] = fn; },
+    emit(type, event) { if (this.listeners[type]) this.listeners[type](event || { preventDefault() {} }); },
     activeElement: { blur() {} },
   };
   const win = {
@@ -260,4 +267,38 @@ test('togglePrivacy：给 body 切 privacy-mode', () => {
     togglePrivacy();
     assert.deepEqual(doc.body.classList._all(), []);
   });
+});
+
+test('移动端设置返回：二级页回根页，根页返回侧栏', () => {
+  const sidebar = makeEl();
+  const sidebarOverlay = makeEl();
+  const hamburger = makeEl();
+  const entry = makeEl();
+  const back = makeEl();
+  const settings = makeEl();
+  settings.classList.add('open');
+  withEnv(
+    { sbSettingsEntry: entry, sbSettingsBack: back, sbOverlay: sidebarOverlay, mobHamburger: hamburger },
+    {
+      width: 390,
+      query: {
+        '.sidebar': sidebar,
+        '.sb-section.sb-settings': settings,
+      },
+    },
+    ({ doc }) => {
+      initMobileSettingsDrawer();
+
+      settings.classList.add('is-detail');
+      back.emit('click');
+      assert.deepEqual(settings.classList._all().sort(), ['open'], '二级页返回只回到设置根页');
+      assert.deepEqual(sidebar.classList._all(), [], '仍停留在设置根页');
+
+      back.emit('click');
+      assert.deepEqual(settings.classList._all(), [], '根页再次返回会关闭设置页');
+      assert.ok(sidebar.classList.contains('open'), '关闭设置后应恢复侧栏');
+      assert.ok(doc.body.classList.contains('drawer-open'));
+      assert.ok(sidebarOverlay.classList.contains('show'));
+    },
+  );
 });

@@ -125,6 +125,71 @@ const drawerOpen = await ev(() => {
 });
 if (!drawerOpen.open) failures.push('tap 汉堡按钮没能打开侧栏抽屉');
 else notes.push('触摸端抽屉：open=' + drawerOpen.open + '·aria-expanded=' + drawerOpen.expanded);
+
+// 设置是侧栏内的第二层；返回按钮必须遵守「二级页 → 设置根页 → 侧栏」。
+await p.tap('#sbSettingsEntry').catch(async () => { await ev(() => document.getElementById('sbSettingsEntry').click()); });
+await p.waitForTimeout(500);
+const settingsRoot = await ev(() => ({
+  open: document.querySelector('.sb-section.sb-settings')?.classList.contains('open') || false,
+  detail: document.querySelector('.sb-section.sb-settings')?.classList.contains('is-detail') || false,
+  sidebarOpen: document.querySelector('.sidebar')?.classList.contains('open') || false,
+}));
+if (!settingsRoot.open || settingsRoot.detail || settingsRoot.sidebarOpen) {
+  failures.push('触摸端设置根页没有正确覆盖侧栏：' + JSON.stringify(settingsRoot));
+}
+const syncEntry = p.locator('.sb-quick-menu button').filter({ hasText: '云端同步' }).first();
+await syncEntry.tap().catch(async () => {
+  await ev(() => [...document.querySelectorAll('.sb-quick-menu button')].find((b) => b.textContent.includes('云端同步'))?.click());
+});
+await p.waitForTimeout(400);
+const quickSettings = await ev(() => {
+  const button = [...document.querySelectorAll('.sb-quick-menu button')].find((b) => b.textContent.includes('云端同步'));
+  const wrap = button?.nextElementSibling;
+  return {
+    buttonOpen: !!button?.classList.contains('is-open'),
+    accordionVisible: !!wrap && wrap.classList.contains('quick-acc') && !wrap.hidden,
+    syncVisible: !!document.getElementById('settingsSync')?.offsetParent,
+  };
+});
+if (!quickSettings.buttonOpen || !quickSettings.accordionVisible || !quickSettings.syncVisible) {
+  failures.push('触摸端云端同步快捷设置没有展开：' + JSON.stringify(quickSettings));
+}
+await p.tap('#sbSettingsBack').catch(async () => { await ev(() => document.getElementById('sbSettingsBack').click()); });
+await p.waitForTimeout(400);
+const settingsBackSidebar = await ev(() => ({
+  settingsOpen: document.querySelector('.sb-section.sb-settings')?.classList.contains('open') || false,
+  sidebarOpen: document.querySelector('.sidebar')?.classList.contains('open') || false,
+  sidebarOverlay: document.getElementById('sbOverlay')?.classList.contains('show') || false,
+}));
+if (settingsBackSidebar.settingsOpen || !settingsBackSidebar.sidebarOpen || !settingsBackSidebar.sidebarOverlay) {
+  failures.push('触摸端设置根页没有返回侧栏：' + JSON.stringify(settingsBackSidebar));
+}
+
+// 数据健康入口会直接进入具体设置二级页；返回应先回设置根页，再回侧栏。
+await p.tap('#sbCloudRow').catch(async () => { await ev(() => document.getElementById('sbCloudRow').click()); });
+await p.waitForTimeout(500);
+const healthSettingsDetail = await ev(() => ({
+  open: document.querySelector('.sb-section.sb-settings')?.classList.contains('open') || false,
+  detail: document.querySelector('.sb-section.sb-settings')?.classList.contains('is-detail') || false,
+  syncVisible: !!document.getElementById('settingsSync')?.offsetParent,
+  quickAccordion: [...document.querySelectorAll('.sb-quick-menu .quick-acc')].some((w) => !w.hidden),
+}));
+if (!healthSettingsDetail.open || !healthSettingsDetail.syncVisible ||
+  (!healthSettingsDetail.detail && !healthSettingsDetail.quickAccordion)) {
+  failures.push('触摸端数据健康入口没有打开同步设置：' + JSON.stringify(healthSettingsDetail));
+}
+await p.tap('#sbSettingsBack').catch(async () => { await ev(() => document.getElementById('sbSettingsBack').click()); });
+await p.waitForTimeout(400);
+const settingsAfterDetailBack = await ev(() => ({
+  settingsOpen: document.querySelector('.sb-section.sb-settings')?.classList.contains('open') || false,
+  sidebarOpen: document.querySelector('.sidebar')?.classList.contains('open') || false,
+  sidebarOverlay: document.getElementById('sbOverlay')?.classList.contains('show') || false,
+}));
+if (settingsAfterDetailBack.settingsOpen || !settingsAfterDetailBack.sidebarOpen || !settingsAfterDetailBack.sidebarOverlay) {
+  failures.push('触摸端设置二级页最终没有返回侧栏：' + JSON.stringify(settingsAfterDetailBack));
+}
+notes.push('设置层级：快捷手风琴正常；数据健康 → 二级页 → 设置根页 → 侧栏，返回正常');
+
 // 关闭抽屉：触摸端的真实操作是点那个已经变成「×」的汉堡按钮。
 // 顺带记录遮罩状态——全屏抽屉时遮罩会被侧栏完全盖住（elementFromPoint 命中的是侧栏内容），属预期，不是 bug。
 const closeInfo = await ev(() => {
