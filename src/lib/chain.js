@@ -12,6 +12,7 @@ import { edgeGetJson, edgePutJson } from './edge-cache.js';
 // IBIT 在 CBOE 有链（实测近月 IV≈36%，与 SMH 同量级），所以卖 CALL 的标的里有它
 const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'IBIT']);
 const CACHE_TTL_SECONDS = 30 * 60;
+const STALE_TTL_SECONDS = 24 * 60 * 60;
 const MAX_DTE = 200;          // 只留半年内的到期日
 // 24 档足够装下 200 天内的全部到期日（SMH 有 16 档、VGT 只有 6 档）。
 // 这里**不能**像 v326 那样"每月只留第三个周五"：节奏虽然统一成月度（v388），但链里仍保留周度档 ——
@@ -184,6 +185,19 @@ async function fetchWithTimeout(url, options, timeoutMs) {
   }
 }
 
+async function fetchSourceWithRetry(fetcher) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await fetcher();
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise(function (resolve) { setTimeout(resolve, 250); });
+    }
+  }
+  throw lastError;
+}
+
 /** CBOE 延迟报价：一次拿到全链，字段齐全。 */
 async function fetchFromCboe(sym, now) {
   const response = await fetchWithTimeout(
@@ -303,21 +317,36 @@ export async function handleChain(request, url) {
   if (!ALLOWED_SYMBOLS.has(sym)) return { status: 400, body: { ok: false, error: 'Unsupported symbol' } };
   const now = Math.floor(Date.now() / 1000);
   const cacheKey = 'chain:v2:' + sym;
+  const staleKey = 'chain:stale:v2:' + sym;
   const cached = await edgeGetJson(url.origin, cacheKey);
   if (cached && cached.ok) return { status: 200, body: cached };
   const failures = [];
   const sources = [fetchFromCboe, fetchFromYahoo];
   for (let i = 0; i < sources.length; i += 1) {
     try {
-      const chain = await sources[i](sym, now);
+      const chain = await fetchSourceWithRetry(function () { return sources[i](sym, now); });
       if (!chain.expiries.length) throw new Error('empty chain');
-      const body = { ok: true, chain: chain };
+      const body = { ok: true, chain: chain, cachedAt: Date.now() };
       // 必须 await：Worker 一返回响应，没跑完的异步写入会被取消
-      await edgePutJson(url.origin, cacheKey, body, CACHE_TTL_SECONDS);
+      await Promise.all([
+        edgePutJson(url.origin, cacheKey, body, CACHE_TTL_SECONDS),
+        edgePutJson(url.origin, staleKey, body, STALE_TTL_SECONDS),
+      ]);
       return { status: 200, body: body };
     } catch (error) {
       failures.push((i === 0 ? 'cboe' : 'yahoo') + ': ' + error.message);
     }
+  }
+  const stale = await edgeGetJson(url.origin, staleKey);
+  if (stale && stale.ok) {
+    return {
+      status: 200,
+      body: Object.assign({}, stale, {
+        stale: true,
+        staleAt: Number(stale.cachedAt) || 0,
+        staleReason: failures.join(' | '),
+      }),
+    };
   }
   return { status: 502, body: { ok: false, error: 'Chain unavailable', detail: failures.join(' | ') } };
 }

@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=424');
+  assert.equal(manifest.start_url, '/?v=425');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v424/);
+  assert.match(serviceWorker, /wealth-v425/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=424',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=425',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -948,6 +948,15 @@ test('资产配置同时展示目标与实际占比，回撤卡包含金额口�
   assert.match(html, /id="sbIbitCurrent"/);
   assert.match(appSource, /Current'\)/);
   assert.match(portfolioView, /class="drawdown-value">[^<]*<small>/);
+});
+
+test('期权链失败会保留旧数据并自动重试', () => {
+  const appSource = fs.readFileSync('src/app/index.js', 'utf8');
+  assert.match(appSource, /chainRetryAttempt===0\?10000:30000/);
+  assert.match(appSource, /使用旧数据/);
+  const chainSource = fs.readFileSync('src/lib/chain.js', 'utf8');
+  assert.match(chainSource, /STALE_TTL_SECONDS = 24 \* 60 \* 60/);
+  assert.match(chainSource, /fetchSourceWithRetry/);
 });
 
 test('v370：到期提醒角标 —— 开关、权限申请、"只数需要动手的提醒"都接好了', () => {
