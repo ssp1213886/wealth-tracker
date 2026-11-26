@@ -105,19 +105,24 @@ const apiProbe = await ev(async (base) => {
 if (!apiProbe.body) failures.push('GET /api/quotes 返回的不是 JSON（HTTP ' + apiProbe.status + '）');
 else notes.push('/api/quotes 无 token → HTTP ' + apiProbe.status + '（' + JSON.stringify(apiProbe.body).slice(0, 70) + '…）');
 
-/* ---- ②b 数据安全：云同步接口**必须**要鉴权（这条比行情重要得多） ---- */
+/* ---- ②b 数据安全：云同步接口**必须**要鉴权（明确省略会话 Cookie） ---- */
 const syncProbe = await ev(async (base) => {
-  const r = await fetch(base + 'api/sync', { method: 'GET', headers: { 'X-Auth-Token': '' } });
+  const r = await fetch(base + 'api/sync', {
+    method: 'GET',
+    credentials: 'omit',
+    cache: 'no-store',
+    headers: { 'X-Auth-Token': '' },
+  });
   let body = null;
   try { body = await r.json(); } catch (e) { body = null; }
   return { status: r.status, body: body };
 }, BASE);
 if (syncProbe.status !== 401 && syncProbe.status !== 403) {
-  failures.push('GET /api/sync 无 token 竟然返回 ' + syncProbe.status + '（应为 401/403）——云端数据可能没被保护');
+  failures.push('GET /api/sync 无凭证竟然返回 ' + syncProbe.status + '（应为 401/403）——云端数据可能没被保护');
 } else {
-  notes.push('/api/sync 无 token → HTTP ' + syncProbe.status + '（已正确拒绝）');
+  notes.push('/api/sync 无凭证 → HTTP ' + syncProbe.status + '（已正确拒绝）');
 }
-if (syncProbe.body && syncProbe.body.data) failures.push('GET /api/sync 无 token 时竟然返回了数据体');
+if (syncProbe.body && syncProbe.body.data) failures.push('GET /api/sync 无凭证时竟然返回了数据体');
 
 /* ---- ②c 行情接口的入参防护：非法代码不该被当成合法请求 ---- */
 const badProbe = await ev(async (base) => {
