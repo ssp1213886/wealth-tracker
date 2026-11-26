@@ -366,6 +366,7 @@ test('equityCurveSvg：两条线（净值实线 + 净入金虚线）与淡填充
   assert.ok(svg.includes('class="eq-area"'), '没有断点时画填充');
   assert.ok(svg.includes('class="eq-line"'), '净值线');
   assert.ok(svg.includes('class="eq-invested"'), '净入金参考线');
+  assert.ok(svg.includes('class="eq-grid"'), '资产曲线需要统一网格背景');
   assert.ok(svg.includes('vector-effect="non-scaling-stroke"'), '线宽不能被横向拉伸拉粗');
   assert.equal((svg.match(/class="eq-line"/g) || []).length, 1);
 });

@@ -401,7 +401,12 @@ export function equityCurveSvg(series) {
   const area = hasGap ? '' : '<path class="eq-area" d="' + line +
     'L' + xAt(pts.length - 1).toFixed(2) + ' ' + (VH - PAD) +
     ' L' + xAt(0).toFixed(2) + ' ' + (VH - PAD) + ' Z"/>';
+  const grid = [0.25, 0.5, 0.75].map(function (ratio) {
+    const y = (PAD + ratio * (VH - PAD * 2)).toFixed(2);
+    return '<line class="eq-grid" x1="' + PAD + '" y1="' + y + '" x2="' + (VW - PAD) + '" y2="' + y + '"></line>';
+  }).join('');
   return '<svg class="eq-svg" viewBox="0 0 ' + VW + ' ' + VH + '" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+    grid +
     area +
     '<path class="eq-invested" d="' + invested.trim() + '" vector-effect="non-scaling-stroke"/>' +
     '<path class="eq-line" d="' + line.trim() + '" vector-effect="non-scaling-stroke"/>' +

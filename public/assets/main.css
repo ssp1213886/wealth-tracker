@@ -2972,6 +2972,44 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-counts .is-bear{color:var(--orange)}
 .trend-empty{color:var(--muted);font-size:11.5px;padding:8px 0}
 .trend-card .prob-chip{min-width:44px}
+.trend-chart-shell{position:relative;min-width:0}
+.trend-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:2px 0 4px}
+.trend-toolbar .trend-legend{margin:0}
+.trend-source{margin-left:auto;color:var(--muted);font-size:9.5px;font-weight:520}
+.trend-range-chips{display:flex;align-items:center;gap:3px;padding:2px;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+.trend-range-chip{height:24px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--muted);font:600 9.5px var(--font);cursor:pointer}
+.trend-range-chip.is-on{background:var(--accent-l);color:var(--accent-d);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent)}
+.trend-axis-label{fill:var(--muted);font:500 9px var(--font);font-variant-numeric:tabular-nums}
+.trend-grid.is-vertical{opacity:.42}
+.trend-regime-band{opacity:.045}
+.trend-regime-band.is-bull{fill:var(--accent)}
+.trend-regime-band.is-neutral{fill:var(--muted)}
+.trend-regime-band.is-bear{fill:var(--orange)}
+.trend-area-top{stop-color:var(--accent);stop-opacity:.22}
+.trend-area-bottom{stop-color:var(--accent);stop-opacity:0}
+.trend-area{fill:url(#trendAreaFill);stroke:none}
+.trend-current-dot{fill:var(--accent);stroke:var(--card-bg);stroke-width:2;vector-effect:non-scaling-stroke}
+.trend-current-halo{fill:none;stroke:var(--accent);stroke-width:1;opacity:.25;vector-effect:non-scaling-stroke}
+.trend-hit-area{fill:transparent;cursor:crosshair;touch-action:pan-y}
+.trend-hover{pointer-events:none}
+.trend-crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke;opacity:.72}
+.trend-hover-dot{stroke:var(--card-bg);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.trend-hover-dot.is-price{fill:var(--fg)}.trend-hover-dot.is-sma50{fill:var(--blue)}.trend-hover-dot.is-sma200{fill:var(--orange)}
+.trend-tooltip{position:absolute;z-index:3;top:43px;width:146px;padding:8px 9px;border:1px solid var(--rule);border-radius:9px;background:color-mix(in srgb,var(--card-bg) 94%,transparent);box-shadow:var(--shadow);backdrop-filter:blur(10px);pointer-events:none;font-variant-numeric:tabular-nums}
+.trend-tooltip[hidden]{display:none}.trend-tooltip strong{display:block;margin-bottom:4px;color:var(--fg);font-size:10px}.trend-tooltip span{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:9px;line-height:1.55}.trend-tooltip b{color:var(--fg);font-weight:650}.trend-tooltip em{align-self:flex-start;display:inline-block;margin-top:4px;color:var(--muted);font-size:8.5px;font-style:normal}
+.equity-chart .eq-grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 5;opacity:.55;vector-effect:non-scaling-stroke}
+.equity-chart .eq-end-dot{fill:var(--accent);stroke:var(--card-bg);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.equity-chart .eq-end-ring{fill:none;stroke:var(--accent);stroke-width:1;opacity:.22;vector-effect:non-scaling-stroke}
+@media(max-width:800px){
+  .trend-toolbar{gap:7px}
+  .trend-source{display:none}
+  .trend-range-chips{margin-left:auto}
+  .trend-range-chip{height:28px}
+  .trend-tooltip{top:39px}
+}
+@media(max-width:560px){
+  .trend-axis-label{font-size:16px}
+}
 /* ===== v336 被行权概率矩阵（v391 起列＝链上真实档位）===== */
 .mx-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .mx-table thead th{text-align:right;padding:6px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}

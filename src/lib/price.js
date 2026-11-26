@@ -1,14 +1,14 @@
 import { edgeGetJson, edgePutJson } from './edge-cache.js';
 
 const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'IBIT', 'SGOV']);
-const ALLOWED_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']);
+const ALLOWED_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '3y', '5y', '10y', 'ytd', 'max']);
 
 /** 实时价 60 秒；近期历史必须覆盖最新收盘，远期为控制回源量保留长缓存。 */
 const LIVE_TTL_SECONDS = 60;
 const SHORT_HISTORY_TTL_SECONDS = 15 * 60;
 const LONG_HISTORY_TTL_SECONDS = 24 * 60 * 60;
-const HISTORY_RANGES = new Set(['1y', '2y', '5y', '10y', 'ytd', 'max']);
-const SHORT_HISTORY_RANGES = new Set(['1y', '2y', 'ytd']);
+const HISTORY_RANGES = new Set(['1y', '2y', '3y', '5y', '10y', 'ytd', 'max']);
+const SHORT_HISTORY_RANGES = new Set(['1y', '2y', '3y', 'ytd']);
 const PRICE_CACHE_VERSION = 'v3';
 
 /** 近期区间的缓存时长；其它历史区间维持一天。 */

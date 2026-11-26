@@ -5,6 +5,7 @@ import { priceHistoryTtlSeconds, priceCacheKey, mergeLatestQuote } from '../src/
 test('近期历史行情缓存 15 分钟，远期历史缓存一天', () => {
   assert.equal(priceHistoryTtlSeconds('1y'), 15 * 60);
   assert.equal(priceHistoryTtlSeconds('2y'), 15 * 60);
+  assert.equal(priceHistoryTtlSeconds('3y'), 15 * 60);
   assert.equal(priceHistoryTtlSeconds('ytd'), 15 * 60);
   assert.equal(priceHistoryTtlSeconds('5y'), 24 * 60 * 60);
   assert.equal(priceHistoryTtlSeconds('max'), 24 * 60 * 60);

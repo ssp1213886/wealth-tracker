@@ -178,14 +178,19 @@ const chartUi = await ev(() => ({
   sma50: !!document.querySelector('#trendChart .trend-line.is-sma50'),
   sma200: !!document.querySelector('#trendChart .trend-line.is-sma200'),
   states: document.querySelectorAll('#trendChart .trend-state').length,
+  yLabels: document.querySelectorAll('#trendChart .trend-axis-label').length,
+  rangeTabs: document.querySelectorAll('#trendChart [data-trendrange]').length,
+  area: !!document.querySelector('#trendChart .trend-area'),
+  hoverLayer: !!document.querySelector('#trendChart .trend-hover'),
   trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
   activeTrend: (document.querySelector('#trendTabs .prob-chip.is-on') || {}).textContent || '',
   rangeLabels: [...document.querySelectorAll('#trendChart .trend-range span')].map((el) => el.textContent || ''),
   optionCards: [...document.querySelectorAll('#tab-option > .card')].map((el) => el.classList.contains('trend-card') ? 'trend' : el.classList.contains('prob-card') ? 'prob' : ''),
   freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
 }));
-if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200) failures.push('趋势图三条线没有完整渲染');
+if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200 || !chartUi.area) failures.push('趋势图线条或面积没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
+if (chartUi.yLabels !== 4 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
 if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
 const rangeDates = chartUi.rangeLabels.map((label) => (label.match(/\d{4}\/(0[1-9]|1[0-2])\/\d{2}/) || [])[0] || '');
 if (chartUi.rangeLabels.length !== 2 || !/^开始 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[0]) || !/^截至 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[1]) || rangeDates.some((date) => date.endsWith('/01/21')) || rangeDates[0] === rangeDates[1]) {
@@ -197,6 +202,31 @@ if (chartUi.optionCards.indexOf('trend') < 0 || chartUi.optionCards.indexOf('pro
 if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {
   failures.push('数据新鲜度信息不完整：' + chartUi.freshness);
 }
+await ev(() => {
+  const svg = document.querySelector('#trendChart .trend-svg');
+  const rect = svg.getBoundingClientRect();
+  svg.dispatchEvent(new PointerEvent('pointermove', {
+    bubbles: true, pointerId: 1, pointerType: 'mouse',
+    clientX: rect.left + rect.width * 0.58, clientY: rect.top + rect.height * 0.45,
+  }));
+});
+await p.waitForTimeout(80);
+const trendHover = await ev(() => {
+  const tip = document.querySelector('#trendChart .trend-tooltip');
+  return { hidden: !tip || tip.hidden, text: tip ? tip.innerText : '' };
+});
+if (trendHover.hidden || !/VGT/.test(trendHover.text) || !/\$/.test(trendHover.text) || !/50 日/.test(trendHover.text) || !/200 日/.test(trendHover.text)) {
+  failures.push('趋势图悬停提示不完整：' + JSON.stringify(trendHover));
+}
+await ev(() => document.querySelector('#trendChart [data-trendrange="2y"]').click());
+await p.waitForTimeout(450);
+const trend2y = await ev(() => ({
+  active: (document.querySelector('#trendChart [data-trendrange].is-on') || {}).dataset?.trendrange || '',
+  states: document.querySelectorAll('#trendChart .trend-state').length,
+}));
+if (trend2y.active !== '2y' || trend2y.states < 480) failures.push('趋势图 2 年窗口异常：' + JSON.stringify(trend2y));
+await ev(() => document.querySelector('#trendChart [data-trendrange="1y"]').click());
+await p.waitForTimeout(300);
 await ev(() => document.querySelector('#trendTabs [data-trendtab="IBIT"]').click());
 await p.waitForTimeout(600);
 const trendSwitch = await ev(() => ({
