@@ -2785,8 +2785,9 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 /* 快捷操作面板：从下滑入（它本来是"啪"地出现） */
 .qa-sheet{position:fixed;inset:0;z-index:10001;display:none;align-items:flex-end;justify-content:center}
 .qa-sheet.open{display:flex}
-.qa-sheet.open .qa-panel{animation:sheetSlideUp 340ms var(--ease-drawer) both}
-@keyframes sheetSlideUp{from{transform:translateY(102%)}to{transform:translateY(0)}}
+.qa-sheet.open{animation:sheetFadeIn 160ms ease-out both}
+.qa-sheet.open .qa-panel{animation:none}
+@keyframes sheetFadeIn{from{opacity:0}to{opacity:1}}
 .qa-panel{touch-action:none}
 /* ===== v293 原生手感：页面切换 ===== */
 .tab-panel.active{animation:tabEnter 260ms var(--ease-out) both}
@@ -2794,7 +2795,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .nav-item.is-on .nav-icon,.bb-item.is-on .nav-icon{animation:tabIconPop 260ms var(--ease-out)}
 @keyframes tabIconPop{0%{transform:scale(.86)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){
-  .qa-sheet.open .qa-panel,.tab-panel.active,.nav-item.is-on .nav-icon,.bb-item.is-on .nav-icon{animation:none}
+  .qa-sheet.open,.qa-sheet.open .qa-panel,.tab-panel.active,.nav-item.is-on .nav-icon,.bb-item.is-on .nav-icon{animation:none}
 }
 
 /* ===== v294 原生手感：控件与展开动画 ===== */

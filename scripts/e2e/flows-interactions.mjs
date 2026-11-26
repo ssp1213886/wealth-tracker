@@ -286,17 +286,23 @@ const consoleSheets = await ev(async () => {
   document.getElementById('btnTradeSheet').click(); await sleep(500);
   const tradeOpen = !!t && t.classList.contains('open');
   const tradeHasForm = !!(t && t.querySelector('#btnAddTrade') && t.querySelector('#tfPrice'));
+  const tradeRect = t ? t.querySelector('.qa-panel').getBoundingClientRect() : { top: 0, bottom: 0 };
   closeTradeSheet(); await sleep(300);
   document.getElementById('btnCashSheet').click(); await sleep(500);
   const cashOpen = !!c && c.classList.contains('open');
   const cashHasForm = !!(c && c.querySelector('#hmDeposit') && c.querySelector('#hmCashAmt'));
+  const cashRect = c ? c.querySelector('.qa-panel').getBoundingClientRect() : { top: 0, bottom: 0 };
   closeCashSheet(); await sleep(200);
-  return { tradeOpen, tradeHasForm, cashOpen, cashHasForm };
+  return { tradeOpen, tradeHasForm, cashOpen, cashHasForm, tradeRect: { top: tradeRect.top, bottom: tradeRect.bottom }, cashRect: { top: cashRect.top, bottom: cashRect.bottom }, viewport: innerHeight };
 });
 if (!consoleSheets.tradeOpen) failures.push('点「＋ 记录」没有打开买卖弹层');
 if (!consoleSheets.tradeHasForm) failures.push('买卖弹层里没有找到录入表单');
 if (!consoleSheets.cashOpen) failures.push('点「＋ 记一笔」没有打开现金弹层');
 if (!consoleSheets.cashHasForm) failures.push('现金弹层里没有找到现金表单');
+if (consoleSheets.tradeRect.top >= consoleSheets.viewport || consoleSheets.tradeRect.bottom > consoleSheets.viewport + 1 ||
+  consoleSheets.cashRect.top >= consoleSheets.viewport || consoleSheets.cashRect.bottom > consoleSheets.viewport + 1) {
+  failures.push('移动端录入弹层未进入视口：' + JSON.stringify(consoleSheets));
+}
 
 /* 桌面端不能只检查 open 类：曾经弹层加了 open，但基础 fixed/flex 规则只在手机媒体查询内，
    面板实际落在视口下方，用户看到的就是“点记录没反应”。 */
@@ -316,7 +322,7 @@ const desktopTrade = await ev(async () => {
   const shares = document.getElementById('tfShares');
   if (price) { price.value = '100'; price.dispatchEvent(new Event('input', { bubbles: true })); }
   if (shares) { shares.value = '1'; shares.dispatchEvent(new Event('input', { bubbles: true })); }
-  const result = {
+  const tradeResult = {
     open: !!sheet && sheet.classList.contains('open'),
     display: style.display || '',
     position: style.position || '',
@@ -328,11 +334,32 @@ const desktopTrade = await ev(async () => {
     shares: shares ? shares.value : '',
   };
   closeTradeSheet();
-  return result;
+  await sleep(200);
+  document.getElementById('btnCashSheet').click();
+  await sleep(500);
+  const cashSheet = document.getElementById('cashSheet');
+  const cashPanel = cashSheet && cashSheet.querySelector('.qa-panel');
+  const cashStyle = cashSheet ? getComputedStyle(cashSheet) : {};
+  const cashRect = cashPanel ? cashPanel.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+  const cashInput = document.getElementById('hmCashAmt');
+  if (cashInput) cashInput.value = '100';
+  const cashResult = {
+    open: !!cashSheet && cashSheet.classList.contains('open'),
+    display: cashStyle.display || '',
+    position: cashStyle.position || '',
+    top: cashRect.top,
+    bottom: cashRect.bottom,
+    height: cashRect.height,
+    input: cashInput ? cashInput.value : '',
+  };
+  closeCashSheet();
+  return { trade: tradeResult, cash: cashResult };
 });
-if (!desktopTrade.open || desktopTrade.display !== 'flex' || desktopTrade.position !== 'fixed' ||
-  desktopTrade.top >= desktopTrade.viewportHeight || desktopTrade.height <= 0 ||
-  desktopTrade.price !== '100' || desktopTrade.shares !== '1') {
+if (!desktopTrade.trade.open || desktopTrade.trade.display !== 'flex' || desktopTrade.trade.position !== 'fixed' ||
+  desktopTrade.trade.top >= desktopTrade.trade.viewportHeight || desktopTrade.trade.height <= 0 ||
+  desktopTrade.trade.price !== '100' || desktopTrade.trade.shares !== '1' ||
+  !desktopTrade.cash.open || desktopTrade.cash.display !== 'flex' || desktopTrade.cash.position !== 'fixed' ||
+  desktopTrade.cash.top >= desktopTrade.trade.viewportHeight || desktopTrade.cash.height <= 0 || desktopTrade.cash.input !== '100') {
   failures.push('桌面端买卖弹层不可见或不可录入：' + JSON.stringify(desktopTrade));
 }
 await p.setViewportSize({ width: 390, height: 844 });
