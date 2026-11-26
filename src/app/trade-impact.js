@@ -83,6 +83,8 @@ export function tradeImpact(input) {
     cashBeforePct: cashBeforePct,
     cashAfterPct: cashAfterPct,
     cashTargetPct: cashTargetPct,
+    cashBeforeDeviation: cashBeforeDeviation,
+    cashAfterDeviation: cashAfterDeviation,
     cashImprovement: Math.abs(cashBeforeDeviation) - Math.abs(cashAfterDeviation),
     totalBefore: totalBefore,
     totalAfter: totalAfter,

@@ -1041,7 +1041,7 @@ function renderTradeImpact(p){
   rows+='<div class="ti-weight-row is-cash"><i></i><strong>现金</strong><span>'+fmtImpactPct(p.cashBeforePct)+' → '+fmtImpactPct(p.cashAfterPct)+'</span><b class="'+cashCls+'">'+fmtImpactPp(p.cashBeforeDeviation)+' → '+fmtImpactPp(p.cashAfterDeviation)+'</b></div>';
   var note;
   if(!p.hasTrade)note='输入数量和价格后显示交易后配比';
-  else if(p.type==='buy')note='预计支出 '+fmtFull(p.amount)+' · 剩余现金 '+fmtFull(p.cashAfter);
+  else if(p.type==='buy')note=p.cashAfter<0?('现金不足 · 缺少 '+fmtFull(Math.abs(p.cashAfter))+' · 预计支出 '+fmtFull(p.amount)):('预计支出 '+fmtFull(p.amount)+' · 剩余现金 '+fmtFull(p.cashAfter));
   else note='预计回收 '+fmtFull(p.amount)+' · 剩余 '+p.remainingShares.toFixed(2)+' 股';
   if(p.missingPrices&&p.missingPrices.length)note+=' · 等待 '+p.missingPrices.join('/')+' 实时价';
   el.innerHTML='<div class="ti-head"><span>交易影响</span><strong class="'+(p.hasTrade&&p.cashAfter<0?'is-bad':'')+'">'+note+'</strong></div>'+

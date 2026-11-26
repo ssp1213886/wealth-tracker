@@ -23,6 +23,8 @@ test('tradeImpact：买入显示交易前后占比、现金变化与目标偏离
   assert.equal(p.rows[0].afterPct, 60);
   assert.equal(p.rows[0].beforeDeviation, 0);
   assert.equal(p.rows[0].afterDeviation, 10);
+  assert.equal(p.cashBeforeDeviation, 15);
+  assert.equal(p.cashAfterDeviation, 5);
   assert.ok(p.cashImprovement > 0);
 });
 
