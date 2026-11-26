@@ -317,7 +317,7 @@ const desktopTrade = await ev(async () => {
   const sheet = document.getElementById('tradeSheet');
   const panel = sheet && sheet.querySelector('.qa-panel');
   const style = sheet ? getComputedStyle(sheet) : {};
-  const rect = panel ? panel.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+  const rect = panel ? panel.getBoundingClientRect() : { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 };
   const price = document.getElementById('tfPrice');
   const shares = document.getElementById('tfShares');
   if (price) { price.value = '100'; price.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -329,18 +329,26 @@ const desktopTrade = await ev(async () => {
     top: rect.top,
     bottom: rect.bottom,
     height: rect.height,
+    left: rect.left,
+    right: rect.right,
+    width: rect.width,
     viewportHeight: innerHeight,
+    viewportWidth: innerWidth,
+    bodyLocked: document.body.classList.contains('sheet-open'),
     price: price ? price.value : '',
     shares: shares ? shares.value : '',
   };
-  closeTradeSheet();
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  await sleep(100);
+  tradeResult.escapeClosed = !sheet.classList.contains('open');
+  tradeResult.bodyUnlocked = !document.body.classList.contains('sheet-open');
   await sleep(200);
   document.getElementById('btnCashSheet').click();
   await sleep(500);
   const cashSheet = document.getElementById('cashSheet');
   const cashPanel = cashSheet && cashSheet.querySelector('.qa-panel');
   const cashStyle = cashSheet ? getComputedStyle(cashSheet) : {};
-  const cashRect = cashPanel ? cashPanel.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+  const cashRect = cashPanel ? cashPanel.getBoundingClientRect() : { top: 0, bottom: 0, height: 0, left: 0, right: 0, width: 0 };
   const cashInput = document.getElementById('hmCashAmt');
   if (cashInput) cashInput.value = '100';
   const cashResult = {
@@ -350,6 +358,9 @@ const desktopTrade = await ev(async () => {
     top: cashRect.top,
     bottom: cashRect.bottom,
     height: cashRect.height,
+    left: cashRect.left,
+    right: cashRect.right,
+    width: cashRect.width,
     input: cashInput ? cashInput.value : '',
   };
   closeCashSheet();
@@ -357,10 +368,15 @@ const desktopTrade = await ev(async () => {
 });
 if (!desktopTrade.trade.open || desktopTrade.trade.display !== 'flex' || desktopTrade.trade.position !== 'fixed' ||
   desktopTrade.trade.top >= desktopTrade.trade.viewportHeight || desktopTrade.trade.height <= 0 ||
+  desktopTrade.trade.width > 421 || desktopTrade.trade.right !== desktopTrade.trade.viewportWidth ||
+  desktopTrade.trade.left < desktopTrade.trade.viewportWidth - 421 || !desktopTrade.trade.bodyLocked ||
+  !desktopTrade.trade.escapeClosed || !desktopTrade.trade.bodyUnlocked ||
   desktopTrade.trade.price !== '100' || desktopTrade.trade.shares !== '1' ||
   !desktopTrade.cash.open || desktopTrade.cash.display !== 'flex' || desktopTrade.cash.position !== 'fixed' ||
-  desktopTrade.cash.top >= desktopTrade.trade.viewportHeight || desktopTrade.cash.height <= 0 || desktopTrade.cash.input !== '100') {
-  failures.push('桌面端买卖弹层不可见或不可录入：' + JSON.stringify(desktopTrade));
+  desktopTrade.cash.top >= desktopTrade.trade.viewportHeight || desktopTrade.cash.height <= 0 ||
+  desktopTrade.cash.width > 421 || desktopTrade.cash.right !== desktopTrade.trade.viewportWidth ||
+  desktopTrade.cash.left < desktopTrade.trade.viewportWidth - 421 || desktopTrade.cash.input !== '100') {
+  failures.push('桌面端右侧录入抽屉不可见或不可录入：' + JSON.stringify(desktopTrade));
 }
 await p.setViewportSize({ width: 390, height: 844 });
 

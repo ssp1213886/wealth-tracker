@@ -2788,6 +2788,11 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .qa-sheet.open{animation:sheetFadeIn 160ms ease-out both}
 .qa-sheet.open .qa-panel{animation:none}
 @keyframes sheetFadeIn{from{opacity:0}to{opacity:1}}
+body.sheet-open{overflow:hidden}
+@media(min-width:801px){
+  .qa-sheet{align-items:stretch;justify-content:flex-end;background:rgba(0,0,0,.28);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+  .qa-sheet.open .qa-panel{width:min(420px,100vw)!important;height:100dvh;max-height:100dvh;padding:24px 22px;overflow-y:auto;border-radius:18px 0 0 18px;background:var(--card-bg);box-shadow:-18px 0 48px rgba(0,0,0,.2)}
+}
 .qa-panel{touch-action:none}
 /* ===== v293 原生手感：页面切换 ===== */
 .tab-panel.active{animation:tabEnter 260ms var(--ease-out) both}
