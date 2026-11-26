@@ -10,6 +10,7 @@ import { logSwallowed, sparklinePath } from './util.js';
 import { brandBadgeHTML } from './brand-mark.js';
 import { KEYS, readRaw , LS } from './store.js';
 import { HOME_TIME_ZONE } from './time.js';
+import { CORE_SYMBOLS, ETF_NAMES } from './portfolio-config.js';
 
 /**
  * 宿主接口（index.js 注入）：
@@ -18,7 +19,7 @@ import { HOME_TIME_ZONE } from './time.js';
  */
 let S = {
   watchList: [], watchQuotes: {}, holdingsData: {},
-  watchFetchedAt: 0, watchInvalid: [], watchMissing: [], ETF_SYMS: [], liveQuoteData: {},
+  watchFetchedAt: 0, watchInvalid: [], watchMissing: [], ETF_SYMS: CORE_SYMBOLS.slice(), liveQuoteData: {},
   trades: [], livePrices: {}, watchCaps: {},
   saveWatch() {}, refreshMarket() {}, showToast() {},
   ensureCap() {},
@@ -57,7 +58,7 @@ var cap=document.getElementById('watchStatus');if(cap){var bad=S.watchMissing.le
 function renderWatchManage(){var box=document.getElementById('watchManageList');if(!box)return;var wrap=document.getElementById('watchManage');if(wrap&&wrap.hidden)return;box.innerHTML=normalizeWatchlist(S.watchList).map(function(item,i){return '<div class="watch-mrow"><label class="watch-mcheck"><input type="checkbox" data-watch-toggle="'+item.sym+'"'+(item.enabled?' checked':'')+'><span>'+escapeHtml(item.sym)+'</span></label><span class="watch-mtools"><button type="button" class="watch-mbtn" data-watch-move="'+item.sym+'" data-dir="-1" aria-label="上移">↑</button><button type="button" class="watch-mbtn" data-watch-move="'+item.sym+'" data-dir="1" aria-label="下移">↓</button><button type="button" class="watch-mbtn" data-watch-remove="'+item.sym+'" aria-label="移除">×</button></span></div>'}).join('')}
 
 function renderHoldings() {
-  ['VGT','SMH'].forEach(function(sym) {
+  S.ETF_SYMS.forEach(function(sym) {
     var box=document.getElementById('hold'+sym);if(!box)return;
     var data=S.holdingsData[sym];
     if(!data||!data.list||!data.list.length){box.innerHTML='<div class="hold-title">'+sym+' 前十大</div><div class="table-empty">暂无数据</div>';return}
@@ -68,9 +69,9 @@ function renderHoldings() {
   if(!exBox){var hb=document.getElementById('exposureSlot')||document.querySelector('#holdingsCard .collapsible-body');if(hb){exBox=document.createElement('div');exBox.id='holdExpose';exBox.className='card hold-block';hb.appendChild(exBox)}}
   if(!exBox)return;
   var shx={};S.trades.forEach(function(t){shx[t.symbol]=(shx[t.symbol]||0)+Number(t.shares||0)});
-  var vV=(shx.VGT||0)*(S.livePrices.VGT||0),vS=(shx.SMH||0)*(S.livePrices.SMH||0),vI=(shx.IBIT||0)*(S.livePrices.IBIT||0);
-  var ex=toExposureRows(S.holdingsData,{VGT:vV,SMH:vS},10,[{sym:'比特币',amount:vI,note:'IBIT（iShares Bitcoin Trust）· 1:1 跟踪比特币'}]);
-  var conc=concentrationSummary({rows:ex.allRows||ex.rows,etfRest:ex.etfRest,base:ex.base,valueByEtf:{VGT:vV,SMH:vS}});
+  var valueByEtf={};S.ETF_SYMS.forEach(function(sym){valueByEtf[sym]=(shx[sym]||0)*(S.livePrices[sym]||0)});
+  var ex=toExposureRows(S.holdingsData,valueByEtf,10,[]);
+  var conc=concentrationSummary({rows:ex.allRows||ex.rows,etfRest:ex.etfRest,base:ex.base,valueByEtf:valueByEtf});
   var m$=function(n){return '$'+Math.round(n).toLocaleString('en-US')};
   var rh=function(label,note,amount,share,cls,sym){
     var direct=String(note||'').indexOf('\u76f4\u63a5\u6301\u6709')>=0||String(note||'').indexOf('1:1')>=0;
@@ -78,10 +79,10 @@ function renderHoldings() {
     var bar=(typeof share==='number'&&share>0)?'<span class="exp-bar"><i style="width:'+Math.min(100,share)+'%"></i></span>':'';
     return '<div class="hold-row '+cls+'" data-kind="'+kind+'" data-sym="'+escapeHtml(sym||'')+'" data-src="'+escapeHtml(note||'')+'" data-amount="'+Math.round(amount)+'" data-share="'+(typeof share==='number'?share:'')+'">'+(sym?brandBadgeHTML(sym):'')+'<span class="hold-sym">'+escapeHtml(label)+bar+'</span><span class="hold-price">≈ '+m$(amount)+'</span><span class="watch-chg is-flat">'+(typeof share==='number'?share+'%':(share||''))+'</span></div>'
   };
-  var eb=ex.rows.map(function(r){return rh(r.sym,r.parts.join(' + '),r.amount,r.share,'exp-row',(r.sym==='\u6bd4\u7279\u5e01'?'BTC':r.sym))}).join('');
-  ex.etfRest.forEach(function(r){eb+=rh(r.label,'榜单外 '+r.missPct+'%',r.amount,r.share,'exp-rest')});
+  var eb=ex.rows.map(function(r){return rh(r.sym,r.parts.join(' + '),r.amount,r.share,'exp-row',r.sym)}).join('');
+  ex.etfRest.forEach(function(r){eb+=rh(r.label,r.sourceText||('榜单外 '+r.missPct+'%'),r.amount,r.share,'exp-rest')});
   if(ex.restCount)eb+=rh('其余 '+ex.restCount+' 只','',ex.rest,ex.restShare,'exp-rest');
-  exBox.innerHTML='<div class="hold-title">底层资产敞口<small>含穿透估算</small></div>'+concentrationHtml(conc)+eb+'<div class="watch-meta expo-note">分母 = 持仓市值合计 '+m$(ex.base)+'（不含现金）'+(function(){var srcs=[];['VGT','SMH'].forEach(function(k){var d=S.holdingsData[k];if(d&&d.list&&d.list.length){var nm=(d.source==='stockanalysis'?'stockanalysis':d.source==='yahoo'?'Yahoo':'手工榜')+(d.asOf?' · '+shortAsOf(d.asOf):'');if(srcs.indexOf(nm)<0)srcs.push(nm)}});return srcs.length?' · 榜单 '+srcs.join(' / '):''})()+'</div>'
+  exBox.innerHTML='<div class="hold-title">底层资产敞口<small>含穿透估算</small></div>'+(ex.unavailableEtfs.length?'<div class="ds-empty is-error ds-empty-compact" role="status"><span class="ds-empty-title">成分股数据不完整</span><span class="ds-empty-hint">'+escapeHtml(ex.unavailableEtfs.join(' / '))+' 暂未取到榜单；相关市值暂按“其余成分”保留，集中度仅供参考。</span></div>':'')+concentrationHtml(conc)+eb+'<div class="watch-meta expo-note">分母 = 持仓市值合计 '+m$(ex.base)+'（不含现金）'+(function(){var srcs=[];S.ETF_SYMS.forEach(function(k){var d=S.holdingsData[k];if(d&&d.list&&d.list.length){var nm=(d.source==='stockanalysis'?'stockanalysis':d.source==='yahoo'?'Yahoo':'手工榜')+(d.asOf?' · '+shortAsOf(d.asOf):'');if(srcs.indexOf(nm)<0)srcs.push(nm)}});return srcs.length?' · 榜单 '+srcs.join(' / '):''})()+'</div>'
 }
 
 /* 首次抓行情：开屏要遮 1.5 秒，这段时间正好用来拉数据——
@@ -94,7 +95,45 @@ function initWatchUI(){var more=document.getElementById('btnWatchMore'),menu=doc
 function formatChinaTime(d){d=d||new Date();try{return new Intl.DateTimeFormat('zh-CN',{timeZone:HOME_TIME_ZONE,month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)}catch(e){return d.toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}}
 
 /** 侧边栏「市场行情」那一块：每支标的的价格行 + 迷你走势 + 更新时间。 */
-function updateSidebarPrices(){var c={};try{c=JSON.parse(readRaw(KEYS.prices)||'{}')}catch(e){logSwallowed("updateSidebarPrices",e)}var migrated=false;for(var k in c){if(c[k]&&c[k].ts&&!c[k].time){c[k].time=c[k].ts;migrated=true}}if(migrated)try{LS.setItem(KEYS.prices,JSON.stringify(c))}catch(e){logSwallowed("updateSidebarPrices",e)}var names={VGT:'Vanguard 信息科技',SMH:'VanEck 半导体',BTC:'Bitcoin ETF'},h='',hasAnyHistory=false;S.ETF_SYMS.forEach(function(s){var d=S.liveQuoteData[s]||c[s],name=names[s]||s;if(d&&d.price){var ch2=Number(d.change)||0,prev=d.price-ch2,pct=prev>0?ch2/prev*100:0,isFlat=Math.abs(ch2)<.0001,chClr=isFlat?'var(--muted)':ch2>0?'var(--ok)':'var(--red)',chSign=ch2>0?'+':'',sparkPath=sparklinePath(d.history),hasHistory=!!sparkPath,title=hasHistory?'近一月真实日线收盘走势':'暂无历史走势';hasAnyHistory=hasAnyHistory||hasHistory;h+='<div class="sb-price-row"><span class="spr-id"><strong>'+brandBadgeHTML(s)+s+'</strong><small>'+name+'</small></span>'+(hasHistory?'<svg class="spr-spark" viewBox="0 0 58 22" role="img" aria-label="'+title+'" style="color:'+chClr+'"><path d="'+sparkPath+'"/></svg>':'')+'<span class="spr-quote"><b class="spr-price">$'+Number(d.price).toFixed(2)+'</b><small class="spr-chg" style="color:'+chClr+'">'+chSign+pct.toFixed(2)+'%</small></span></div>'}else{h+='<div class="sb-price-row"><span class="spr-id"><strong>'+brandBadgeHTML(s)+s+'</strong><small>'+name+'</small></span><span class="spr-quote"><b class="spr-price">--</b><small class="spr-chg">等待报价</small></span></div>'}});var live=document.getElementById('sbLivePrices');if(live)live.innerHTML=h||'暂无';var quoteValues=Object.values(Object.assign({},c,S.liveQuoteData)),t=quoteValues.map(function(d){return d&&(d.time||d.ts)}).filter(Boolean).sort().pop(),age='',ts='',m=Infinity;if(t){m=Math.max(0,Math.round((Date.now()-t)/60000));var relative=m<1?'刚刚':m<60?m+'分钟前':m<1440?Math.floor(m/60)+'小时前':Math.floor(m/1440)+'天前';age=m>5?'数据延迟 · '+relative:relative;ts=formatChinaTime(new Date(t))}var marketTime=document.getElementById('sbMarketTime');if(marketTime)marketTime.textContent=!t?'等待':m>5?'延迟':'已更新';var meta=document.getElementById('sbPriceMeta');if(meta)meta.textContent=t?'北京时间 '+ts+' ('+age+') · '+(hasAnyHistory?'近一月日线':'历史曲线待更新'):'曲线等待历史数据';var pt=document.getElementById('hmPriceTime');if(pt)pt.textContent=t?'北京时间 '+ts+' ('+age+')':''}
+function updateSidebarPrices(){
+  var c={};
+  try{c=JSON.parse(readRaw(KEYS.prices)||'{}')}catch(e){logSwallowed("updateSidebarPrices",e)}
+  var migrated=false;
+  for(var k in c){if(c[k]&&c[k].ts&&!c[k].time){c[k].time=c[k].ts;migrated=true}}
+  if(migrated)try{LS.setItem(KEYS.prices,JSON.stringify(c))}catch(e){logSwallowed("updateSidebarPrices",e)}
+  var h='',hasAnyHistory=false;
+  S.ETF_SYMS.forEach(function(s){
+    var d=S.liveQuoteData[s]||c[s],name=ETF_NAMES[s]||s;
+    if(d&&d.price){
+      var ch2=Number(d.change)||0,prev=d.price-ch2,pct=prev>0?ch2/prev*100:0;
+      var isFlat=Math.abs(ch2)<.0001,chClr=isFlat?'var(--muted)':ch2>0?'var(--ok)':'var(--red)';
+      var chSign=ch2>0?'+':'',sparkPath=sparklinePath(d.history),hasHistory=!!sparkPath;
+      var title=hasHistory?'近一月真实日线收盘走势':'暂无历史走势';
+      hasAnyHistory=hasAnyHistory||hasHistory;
+      h+='<div class="sb-price-row"><span class="spr-id"><strong>'+brandBadgeHTML(s)+s+'</strong><small>'+name+'</small></span>'+
+        (hasHistory?'<svg class="spr-spark" viewBox="0 0 58 22" role="img" aria-label="'+title+'" style="color:'+chClr+'"><path d="'+sparkPath+'"/></svg>':'')+
+        '<span class="spr-quote"><b class="spr-price">$'+Number(d.price).toFixed(2)+'</b><small class="spr-chg" style="color:'+chClr+'">'+chSign+pct.toFixed(2)+'%</small></span></div>';
+    }else{
+      h+='<div class="sb-price-row"><span class="spr-id"><strong>'+brandBadgeHTML(s)+s+'</strong><small>'+name+'</small></span><span class="spr-quote"><b class="spr-price">--</b><small class="spr-chg">等待报价</small></span></div>';
+    }
+  });
+  var live=document.getElementById('sbLivePrices');
+  if(live)live.innerHTML=h||'暂无';
+  var quoteValues=Object.values(Object.assign({},c,S.liveQuoteData));
+  var t=quoteValues.map(function(d){return d&&(d.time||d.ts)}).filter(Boolean).sort().pop(),age='',ts='',m=Infinity;
+  if(t){
+    m=Math.max(0,Math.round((Date.now()-t)/60000));
+    var relative=m<1?'刚刚':m<60?m+'分钟前':m<1440?Math.floor(m/60)+'小时前':Math.floor(m/1440)+'天前';
+    age=m>5?'数据延迟 · '+relative:relative;
+    ts=formatChinaTime(new Date(t));
+  }
+  var marketTime=document.getElementById('sbMarketTime');
+  if(marketTime)marketTime.textContent=!t?'等待':m>5?'延迟':'已更新';
+  var meta=document.getElementById('sbPriceMeta');
+  if(meta)meta.textContent=t?'北京时间 '+ts+' ('+age+') · '+(hasAnyHistory?'近一月日线':'历史曲线待更新'):'曲线等待历史数据';
+  var pt=document.getElementById('hmPriceTime');
+  if(pt)pt.textContent=t?'北京时间 '+ts+' ('+age+')':'';
+}
 
 /** 渲染后注入品牌徽标（插在整行开头，与整行垂直居中）。
     代码优先读行上的 data-sym（观察列表的行都带），再退回子元素里的文本节点 / 第一个元素子节点。

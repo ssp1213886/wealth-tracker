@@ -24,14 +24,14 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_trades_v2', JSON.stringify([
     { id: 1, date: '2026-09-01', symbol: 'VGT', shares: 8.62, price: 116.01 },
     { id: 2, date: '2026-09-05', symbol: 'SMH', shares: 1.02, price: 584.08 },
-    { id: 3, date: '2026-09-10', symbol: 'BTC', shares: 13.62, price: 29.38 },
+    { id: 3, date: '2026-09-10', symbol: 'QQQM', shares: 2, price: 250 },
   ]));
   localStorage.setItem('wealth_cash_v2', '34000');
   // NVDA 不在持仓里，只用来验证排序；SKHYV 故意不给市值，应该排最后
   localStorage.setItem('wealth_watchlist_v1', JSON.stringify([
     { sym: 'IWM', enabled: true, order: 0 }, { sym: 'NVDA', enabled: true, order: 1 },
     { sym: 'SKHYV', enabled: true, order: 2 }, { sym: 'VGT', enabled: true, order: 3 },
-    { sym: 'SMH', enabled: true, order: 4 },
+    { sym: 'SMH', enabled: true, order: 4 }, { sym: 'QQQM', enabled: true, order: 5 },
   ]));
 });
 await p.goto(BASE + '?mcap=' + Date.now(), { waitUntil: 'domcontentloaded' });
@@ -101,7 +101,7 @@ else {
   // 关注组：NVDA 5.48T 最大排第一；没有市值的 SKHYV 必须垫底
   if (watchGroup.rows[0] !== 'NVDA') failures.push('按市值排序后关注组第一行应为 NVDA，实际 ' + watchGroup.rows.join(','));
   if (watchGroup.rows[watchGroup.rows.length - 1] !== 'SKHYV') failures.push('没有市值的 SKHYV 应该排最后，实际 ' + watchGroup.rows.join(','));
-  // 持仓组：SMH 78.5B > VGT 7.0B
+  // 持仓组：SMH 78.5B > QQQM 39.8B > VGT 7.0B
   if (held.rows[0] !== 'SMH') failures.push('按市值排序后持仓组第一行应为 SMH，实际 ' + held.rows.join(','));
   if (!sorted.on) failures.push('「市值」按钮没有点亮');
 }
@@ -199,7 +199,7 @@ if (!cacheHadNvda) failures.push('市值缓存里没有 NVDA，无法验证「�
 await p.route('**/api/marketcap*', (route) => route.fulfill({
   status: 200,
   contentType: 'application/json',
-  body: JSON.stringify({ ok: true, caps: {}, missing: ['IWM', 'NVDA', 'SKHYV', 'VGT', 'SMH'], deferred: [], ts: Date.now() }),
+  body: JSON.stringify({ ok: true, caps: {}, missing: ['IWM', 'NVDA', 'SKHYV', 'QQQM', 'VGT', 'SMH'], deferred: [], ts: Date.now() }),
 }));
 await p.reload({ waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(7000);

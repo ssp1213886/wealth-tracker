@@ -33,7 +33,7 @@
 <h2>投资策略</h2>
 <p>本工具围绕长期核心仓、持续定投和年度再平衡设计：</p>
 <ul>
-  <li><strong>核心仓</strong>：VGT / SMH / IBIT 按月定投，侧边栏可调节分配比例</li>
+  <li><strong>核心仓</strong>：QQQM / VGT / SMH 按月定投，当前固定目标为 50% / 30% / 20%</li>
   <li><strong>长期持有</strong>：不以短期回撤作为减仓依据</li>
   <li><strong>年度再平衡</strong>：每年只在 12 月 31 日窗口调整一次</li>
 </ul>
@@ -46,7 +46,7 @@
 <h3>📊 仪表盘</h3>
 <ul>
   <li><strong>总资产指标</strong>：账户现金、持仓市值、浮动盈亏、总盈亏</li>
-  <li><strong>📋 本月定投目标</strong>：VGT/SMH/IBIT 动态金额 + 完成/待执行状态</li>
+  <li><strong>📋 本月定投目标</strong>：QQQM/VGT/SMH 动态金额 + 完成/待执行状态</li>
   <li><strong>🗺 20年旅程</strong>：时间进度条（可配置起始日期和年龄）</li>
   <li><strong>💎 路线图</strong>：20 年时间旅程 + 财务目标进度，两条轴并排（时间 / 资金）</li>
   <li><strong>📈 仓位盈亏</strong>：按标的汇总盈亏</li>
@@ -55,7 +55,7 @@
 
 <h3>🕹️ 操作台</h3>
 <ul>
-  <li><strong>买卖录入</strong>：手动录入交易（日期、标的、数量、价格），支持 VGT/SMH/IBIT</li>
+  <li><strong>买卖录入</strong>：手动录入交易（日期、标的、数量、价格），支持 QQQM/VGT/SMH</li>
   <li><strong>实时价格胶囊</strong>：点击后快速带入交易价格</li>
   <li><strong>现金管理</strong>：入金、出金、现金修正和股息</li>
   <li><strong>⚖️ 年度再平衡</strong>：仅 12月31日解锁执行，其他日期可预览计算结果（换仓/注资两种模式）</li>
@@ -64,7 +64,7 @@
 <h3>📈 分析</h3>
 <ul>
   <li><strong>观察列表</strong>：持仓与关注标的行情、涨跌和市值排序，支持添加、管理和详情展开</li>
-  <li><strong>标的切换</strong>：VGT / SMH / IBIT 切换查看</li>
+  <li><strong>标的切换</strong>：QQQM / VGT / SMH 切换查看</li>
   <li><strong>趋势图</strong>：价格、50 日均线、200 日均线和市场状态历史</li>
   <li><strong>时间范围</strong>：6 个月 / 1 年 / 2 年</li>
   <li><strong>判断规则</strong>：仅描述强势、中性和弱势，不包含买卖建议</li>
@@ -96,8 +96,8 @@
 <p>点左上角 ☰ / 或顶部「My Portfolio」打开。移动端是从左侧滑入的抽屉，点「设置」会推入第二层抽屉。</p>
 <ul>
   <li><strong>资产概览</strong>：总资产 + 今日收益 + 持仓市值 / 可用现金 + 下次定投日期</li>
-  <li><strong>目标配比</strong>：环形图 + VGT/SMH/IBIT 目标比例</li>
-  <li><strong>市场行情</strong>：VGT/SMH/IBIT 实时行情（标注来源与更新时间）</li>
+  <li><strong>目标配比</strong>：环形图 + QQQM/VGT/SMH 目标比例</li>
+  <li><strong>市场行情</strong>：QQQM/VGT/SMH 实时行情（标注来源与更新时间）</li>
   <li><strong>数据健康</strong>：最近成功下载 / 上次成功上传 / 最近备份 / 冲突状态，附「重试」「强制上传」按钮（下载 = 云端拉到本机，上传 = 本机推到云端，两条通道独立记录）</li>
   <li>⚙️ <strong>设置</strong>（第二层抽屉）：
     <ul>
@@ -133,7 +133,7 @@
   <li><strong>拖拽</strong>：CSV 文件拖到页面任意位置（显示拖放覆盖层）</li>
   <li><strong>按钮</strong>：侧边栏 → 设置 → 数据与备份 → 「导入券商 CSV」</li>
   <li>支持买入和卖出记录自动识别</li>
-  <li>导入 VGT / SMH / IBIT</li>
+  <li>导入 QQQM / VGT / SMH</li>
   <li><strong>没进来说得清</strong>：无法识别的行会按原因统计并告诉你，例如「已导入 1 笔交易（跳过 3 行：标的不在核心仓 1、价格无效 1、与已有记录重复 1）」，不会静默少几笔</li>
 </ul>
 
@@ -163,7 +163,7 @@
 
 <h2>6.5 股息记录</h2>
 <ul>
-  <li>数据页「现金管理」新增<strong>股息</strong>录入：选择标的（VGT / SMH；IBIT 无股息）、填写金额、点「记录股息」</li>
+  <li>数据页「现金管理」新增<strong>股息</strong>录入：选择标的（QQQM / VGT / SMH）、填写金额、点「记录股息」</li>
   <li>股息即时计入账户现金余额，并在资金流水生成独立记录（橙色「股息+VGT」标签）</li>
   <li>股息<strong>仅</strong>影响现金余额与资金流水，<strong>不</strong>计入月度定投（DCA）完成度指标，也不生成 trades</li>
 </ul>
@@ -195,7 +195,7 @@
 <p>日志页<b>纪律打卡</b>卡片下方展示 20 年年度复盘热力矩阵：</p>
 <ul>
   <li><strong>热力着色</strong>：每格背景色表示当年投入相对最高投入年度的完成度</li>
-  <li><strong>每格信息</strong>：年份 → 投入完成度 → 年末持仓（VGT/SMH/IBIT 股数）→ 总买入</li>
+  <li><strong>每格信息</strong>：年份 → 投入完成度 → 年末持仓（QQQM/VGT/SMH 股数）→ 总买入</li>
   <li><strong>右侧长线数据</strong>：总入金 / 当前总资产 / 长期CAGR / 目标差额</li>
   <li><strong>年份起点</strong>：从首笔买入或入金记录的实际年份开始，最多 20 年</li>
   <li><strong>移动端</strong>：自动切换 2 列网格 + 统计面板 2×2 紧凑排列</li>
@@ -206,7 +206,7 @@
 <p>数据页「📈 年度归因」卡片，选择年份（默认当前年，可回溯到首笔入金年份）查看当年总收益拆解：</p>
 <ul>
   <li><strong>总收益</strong>：年初资产 → 年末资产的净增长</li>
-  <li><strong>拆解条形图</strong>：VGT 增值 / SMH 增值 / IBIT 增值 / 股息 / 其他，每项标注占总收益百分比</li>
+  <li><strong>拆解条形图</strong>：QQQM 增值 / VGT 增值 / SMH 增值 / 股息 / 其他，每项标注占总收益百分比</li>
   <li><strong>明细</strong>：年初资产 → 年末资产 · 当年净入金</li>
   <li>数据口径：年初持仓取当年 1/1 前累计，年初价取 Yahoo 当年 1/1 收盘价；股息取自当年股息流水</li>
   <li><strong>价格不可用</strong>：若 Yahoo API 异常无法获取价格，归因结果会显示「⚠️ 价格数据不可用，结果可能不准确」警告，不再返回 0 导致归因失真</li>
@@ -236,7 +236,7 @@
   <li><strong>输入框</strong>：聚焦时显示主色光环，并自动滚动进视口（键盘不会挡住正在填的格子）</li>
   <li><strong>主色可换</strong>：以上主色随侧边栏「配色」选择变化（森林 / 海洋 / 暖阳 / 梅紫 / 极简）</li>
   <li><strong>删除确认统一</strong>：删除交易和清空记录走同一个确认卡，确认后仍可撤销</li>
-  <li><strong>目标配比</strong>：VGT 50% / SMH 30% / IBIT 20%，在侧边栏「目标配比」与仪表盘读取，目前为固定基准不提供滑块</li>
+  <li><strong>目标配比</strong>：QQQM 50% / VGT 30% / SMH 20%，在侧边栏「目标配比」与仪表盘读取，目前为固定基准不提供滑块</li>
 </ul>
 <h2>16. 数据安全</h2>
 <ul>

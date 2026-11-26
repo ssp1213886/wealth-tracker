@@ -1,4 +1,5 @@
 import { emptyStateHTML, escapeHtml } from './render.js';
+import { CORE_SYMBOLS } from './portfolio-config.js';
 
 const CHART_W = 720;
 const CHART_H = 300;
@@ -223,7 +224,7 @@ export function trendChartHtml(info, symbol, range, status) {
 }
 
 export function trendTabsHtml(current, symbols) {
-  const list = Array.isArray(symbols) && symbols.length ? symbols : ['VGT', 'SMH', 'IBIT'];
+  const list = Array.isArray(symbols) && symbols.length ? symbols : CORE_SYMBOLS;
   const active = String(current || '').toUpperCase();
   return list.map(function (symbol) {
     const sym = String(symbol || '').toUpperCase();

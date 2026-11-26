@@ -30,14 +30,14 @@ test('normalizeTrades：非白名单标的/坏日期/零股数/非正价格一�
   assert.deepEqual(rows, []);
   assert.deepEqual(normalizeTrades('not-an-array'), []);
   assert.equal(normalizeTrades([{ symbol: 'VGT', date: '2026-07-18', shares: 1, price: 1 }]).length, 1, '不传白名单时用默认三只');
-  assert.deepEqual(TRADE_SYMBOLS, ['VGT', 'SMH', 'IBIT']);
+  assert.deepEqual(TRADE_SYMBOLS, ['QQQM', 'VGT', 'SMH']);
 });
 
 test('normalizeTrades：id 缺失或重复时自动补一个唯一值', () => {
   const rows = normalizeTrades([
     { id: 7, symbol: 'VGT', date: '2026-07-18', shares: 1, price: 100 },
     { id: 7, symbol: 'SMH', date: '2026-07-18', shares: 1, price: 100 },
-    { symbol: 'IBIT', date: '2026-07-18', shares: 1, price: 100 },
+    { symbol: 'QQQM', date: '2026-07-18', shares: 1, price: 100 },
   ]);
   const ids = rows.map((r) => r.id);
   assert.equal(new Set(ids).size, 3, '三行 id 必须互不相同');
@@ -79,14 +79,14 @@ test('parseCSVRow / parseMoneyValue：引号、逗号、货币符号', () => {
 test('parseSchwabCSV：英文表头 + 买/卖 + 去重 + 白名单过滤', () => {
   const csv = [
     'Date,Action,Symbol,Quantity,Price',
-    '07/18/2026,Buy,IBIT,10,"$28.38"',
+    '07/18/2026,Buy,QQQM,10,"$261.05"',
     '07/18/2026,Sell,VGT,1,"$113.10"',
     '07/18/2026,Buy,SPY,1,"$500.00"',      // 不在白名单 → 跳过
-    '07/18/2026,Buy,IBIT,10,"$28.38"',     // 与上一行重复 → 跳过
+    '07/18/2026,Buy,QQQM,10,"$261.05"',    // 与上一行重复 → 跳过
   ].join('\n');
   const out = parseSchwabCSV(csv, { symbols: TRADE_SYMBOLS, existingTrades: [], now: new Date('2026-09-29T02:00:00Z') });
   assert.equal(out.imported, 2);
-  assert.equal(out.rows[0].symbol, 'IBIT');
+  assert.equal(out.rows[0].symbol, 'QQQM');
   assert.equal(out.rows[0].shares, 10);
   assert.equal(out.rows[1].symbol, 'VGT');
   assert.equal(out.rows[1].shares, -1, 'Sell 记负股数');
@@ -94,13 +94,13 @@ test('parseSchwabCSV：英文表头 + 买/卖 + 去重 + 白名单过滤', () =>
 });
 
 test('parseSchwabCSV：中文表头识别；缺表头时报错；与已有交易去重', () => {
-  const cn = ['日期,方向,代码,数量,成交价', '2026/7/18,买入,IBIT,10,28.38'].join('\n');
+  const cn = ['日期,方向,代码,数量,成交价', '2026/7/18,买入,QQQM,10,261.05'].join('\n');
   const out = parseSchwabCSV(cn);
   assert.equal(out.imported, 1);
-  assert.equal(out.rows[0].symbol, 'IBIT');
+  assert.equal(out.rows[0].symbol, 'QQQM');
   assert.equal(out.rows[0].shares, 10);
   assert.throws(() => parseSchwabCSV('foo,bar\n1,2'), /未找到 Date、Symbol、Quantity、Price 列/);
-  const dup = parseSchwabCSV(cn, { existingTrades: [{ date: '2026-07-18', symbol: 'IBIT', shares: 10, price: 28.38 }] });
+  const dup = parseSchwabCSV(cn, { existingTrades: [{ date: '2026-07-18', symbol: 'QQQM', shares: 10, price: 261.05 }] });
   assert.equal(dup.imported, 0, '与已有交易重复时不重复导入');
 });
 
@@ -108,11 +108,11 @@ test('parseSchwabCSV：中文表头识别；缺表头时报错；与已有交易
 test('parseSchwabCSV：跳过原因分类统计（标的不支持 / 价格无效 / 重复）', () => {
   const csv = [
     'Date,Action,Symbol,Quantity,Price',
-    '07/18/2026,Buy,IBIT,10,"$28.38"',  // 正常
+    '07/18/2026,Buy,QQQM,10,"$261.05"', // 正常
     '07/18/2026,Buy,SPY,1,"$500.00"',   // 不在白名单
     '07/18/2026,Buy,VGT,1,"$0.00"',     // 价格无效
     '07/18/2026,Buy,VGT,1,"$0"',        // 价格无效（零价）
-    '07/18/2026,Buy,IBIT,10,"$28.38"',  // 与第 1 行重复
+    '07/18/2026,Buy,QQQM,10,"$261.05"', // 与第 1 行重复
   ].join('\n');
   const out = parseSchwabCSV(csv, { symbols: TRADE_SYMBOLS, existingTrades: [] });
   assert.equal(out.imported, 1);

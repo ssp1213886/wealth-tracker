@@ -199,7 +199,7 @@ if (chartNative.userSelect !== 'none' || chartNative.webkitUserSelect !== 'none'
   !chartNative.contextmenuBlocked || !chartNative.selectstartBlocked) {
   failures.push('趋势图仍可能触发长按选择或复制：' + JSON.stringify(chartNative));
 }
-if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
+if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'QQQM') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
 const rangeDates = chartUi.rangeLabels.map((label) => (label.match(/\d{4}\/(0[1-9]|1[0-2])\/\d{2}/) || [])[0] || '');
 if (chartUi.rangeLabels.length !== 2 || !/^开始 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[0]) || !/^截至 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[1]) || rangeDates.some((date) => date.endsWith('/01/21')) || rangeDates[0] === rangeDates[1]) {
   failures.push('趋势图日期标签异常：' + JSON.stringify(chartUi.rangeLabels));
@@ -256,17 +256,17 @@ for (const theme of ['light', 'dark']) {
   if (!rows.length || rows[0].sma50Dash === rows[0].sma200Dash) failures.push('趋势图均线缺少不同线型：' + JSON.stringify(rows));
 }
 await p.waitForFunction(() => {
-  const el = document.getElementById('sbVgtCurrent');
+  const el = document.getElementById('sbQqqmCurrent');
   return el && /^当前 \d+\.\d%$/.test(el.textContent || '');
 }, null, { timeout: 8000 }).catch(() => {});
 const visualSummary = await ev(() => ({
-  vgtCurrent: (document.getElementById('sbVgtCurrent') || {}).textContent || '',
+  qqqmCurrent: (document.getElementById('sbQqqmCurrent') || {}).textContent || '',
   drawdownGap: (document.querySelector('#hmDrawdown .drawdown-value small') || {}).textContent || '',
-  sidebarCurrentHtml: (document.getElementById('sbVgtCurrent') || {}).outerHTML || '',
+  sidebarCurrentHtml: (document.getElementById('sbQqqmCurrent') || {}).outerHTML || '',
   hasSidebar: !!document.querySelector('.sidebar'),
   sidebarLegendHtml: (document.querySelector('.sb-mini-legend') || {}).outerHTML || '',
 }));
-if (visualSummary.sidebarCurrentHtml && !/^当前 \d+\.\d%$/.test(visualSummary.vgtCurrent)) {
+if (visualSummary.sidebarCurrentHtml && !/^当前 \d+\.\d%$/.test(visualSummary.qqqmCurrent)) {
   failures.push('资产配置没有显示当前实际占比：' + JSON.stringify(visualSummary));
 }
 if (!/^-\$/.test(visualSummary.drawdownGap)) failures.push('回撤卡没有显示距 52 周高点的金额：' + JSON.stringify(visualSummary));
@@ -291,7 +291,7 @@ const trendHover = await ev(() => {
     readoutBelowChart: !!(readout && svg && readout.getBoundingClientRect().top >= svg.getBoundingClientRect().bottom),
   };
 });
-if (trendHover.hidden || !/VGT/.test(trendHover.text) || !/\$/.test(trendHover.text) || !/50 日/.test(trendHover.text) || !/200 日/.test(trendHover.text)) {
+if (trendHover.hidden || !/QQQM/.test(trendHover.text) || !/\$/.test(trendHover.text) || !/50 日/.test(trendHover.text) || !/200 日/.test(trendHover.text)) {
   failures.push('趋势图悬停提示不完整：' + JSON.stringify(trendHover));
 }
 if (trendHover.tooltipDisplay !== 'none' || !/现价/.test(trendHover.readoutText) || !/50 日/.test(trendHover.readoutText) || !trendHover.readoutBelowChart) {
@@ -330,13 +330,13 @@ const trend2y = await ev(() => ({
 if (trend2y.active !== '2y' || trend2y.states < 480) failures.push('趋势图 2 年窗口异常：' + JSON.stringify(trend2y));
 await ev(() => document.querySelector('#trendChart [data-trendrange="1y"]').click());
 await p.waitForTimeout(300);
-await ev(() => document.querySelector('#trendTabs [data-trendtab="IBIT"]').click());
+await ev(() => document.querySelector('#trendTabs [data-trendtab="VGT"]').click());
 await p.waitForTimeout(600);
 const trendSwitch = await ev(() => ({
   symbol: (document.getElementById('trendSymbol') || {}).textContent || '',
 }));
-if (trendSwitch.symbol !== 'IBIT') failures.push('趋势图切换没有同步 IBIT：' + JSON.stringify(trendSwitch));
-await ev(() => document.querySelector('#trendTabs [data-trendtab="VGT"]').click());
+if (trendSwitch.symbol !== 'VGT') failures.push('趋势图切换没有同步 VGT：' + JSON.stringify(trendSwitch));
+await ev(() => document.querySelector('#trendTabs [data-trendtab="QQQM"]').click());
 await p.waitForTimeout(400);
 await ev(() => document.getElementById('bbAnalysis').click());
 await p.waitForTimeout(400);

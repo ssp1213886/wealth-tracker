@@ -139,7 +139,7 @@ const failures = [...problems];
 // 启动期（第一步之前）的报错不会被"每步增量"统计到，这里兜住
 if (consoleErrors.length) failures.push('控制台报错 ' + consoleErrors.length + ' 条：' + consoleErrors.slice(0, 3).join(' | '));
 if (summary.bootFailed) failures.push('页面出现「启动失败」兜底页');
-if (summary.watchRows < 15) failures.push('观察列表没渲染出来（' + summary.watchRows + ' 行）');
+if (summary.watchRows < 12) failures.push('观察列表没渲染出来（' + summary.watchRows + ' 行）');
 if (summary.activityRows < 2) failures.push('操作日志没渲染出来（' + summary.activityRows + ' 行）');
 if (!summary.trendRendered) failures.push('仪表盘市场趋势图没有渲染');
 if (searchTop !== 'BRK-B') failures.push('搜索 berkshire 第一行应为 BRK-B，实际 ' + searchTop);

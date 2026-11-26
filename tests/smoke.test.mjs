@@ -28,9 +28,10 @@ const syncViewSource = fs.readFileSync('src/app/sync-view.js', 'utf8').replace(/
 const portfolioViewSource = fs.readFileSync('src/app/portfolio-view.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 // 待办提醒视图层已抽到 alerts-view.js（v253）：normalizeAlerts 等按函数名切片做断言
 const alertsViewSource = fs.readFileSync('src/app/alerts-view.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
+const portfolioConfigSource = fs.readFileSync('src/app/portfolio-config.js', 'utf8').replace(/^export /gm, '');
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
-  utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
+  utilSource + '\n' + calcSource + '\n' + portfolioConfigSource + '\n' + storeSource + '\n' + syncSource + '\n' +
   renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + syncViewSource + '\n' + portfolioViewSource + '\n' + alertsViewSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
@@ -60,8 +61,8 @@ const context = vm.createContext({
   isNaN,
   HOME_TIME_ZONE: 'Asia/Shanghai',
   MARKET_TIME_ZONE: 'America/New_York',
-  ETF_SYMS: ['VGT', 'SMH', 'IBIT'],
-  TRADE_SYMBOLS: ['VGT', 'SMH', 'IBIT'],
+  ETF_SYMS: ['QQQM', 'VGT', 'SMH'],
+  TRADE_SYMBOLS: ['QQQM', 'VGT', 'SMH'],
   trades: [],
   tradeIdCounter: 1,
 });
@@ -109,36 +110,36 @@ test('US market dates do not roll over at Beijing midnight', () => {
   assert.equal(context.marketDate(new Date('2026-08-01T00:30:00+08:00')).slice(0, 7), '2026-07');
 });
 
-test('trade normalization accepts IBIT ticker and rejects spot symbols', () => {
+test('trade normalization accepts QQQM ticker and rejects retired symbols', () => {
   const rows = context.normalizeTrades([
-    { id: 1, symbol: 'ibit', date: '2026-07-18', shares: 10, price: 28.38 },
+    { id: 1, symbol: 'qqqm', date: '2026-07-18', shares: 10, price: 261.05 },
     { id: 2, symbol: 'BTC-USD', date: '2026-07-18', shares: 1, price: 118000 },
     { id: 3, symbol: 'BTC', date: '2026-07-18', shares: 1, price: 118000 },
   ]);
   assert.equal(rows.length, 1, '现货 BTC / BTC-USD 都不该通过白名单');
-  assert.equal(rows[0].symbol, 'IBIT');
-  assert.equal(rows[0].price, 28.38);
+  assert.equal(rows[0].symbol, 'QQQM');
+  assert.equal(rows[0].price, 261.05);
 });
 
 test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', () => {
   const csv = [
     'Date,Action,Symbol,Quantity,Price',
-    '07/18/2026,Buy,IBIT,10,"$28.38"',
+    '07/18/2026,Buy,QQQM,10,"$261.05"',
     '07/18/2026,Sell,VGT,1,"$113.10"',
     '07/18/2026,Buy,BTC-USD,1,"$118,000.00"',
-    '07/18/2026,Buy,IBIT,10,"$28.38"',
+    '07/18/2026,Buy,QQQM,10,"$261.05"',
   ].join('\n');
   // v244：解析已抽到 records-import.js（纯函数，返回待插入的行；id 与写入留给 index.js 的包装层）
-  const parsed = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'IBIT'], existingTrades: [] });
+  const parsed = context.parseSchwabCSV(csv, { symbols: ['QQQM', 'VGT', 'SMH'], existingTrades: [] });
   assert.equal(parsed.imported, 2, '重复行与非白名单代码应被剔除');
   assert.equal(parsed.rows.length, 2);
-  assert.equal(parsed.rows[0].symbol, 'IBIT');
+  assert.equal(parsed.rows[0].symbol, 'QQQM');
   assert.equal(parsed.rows[0].shares, 10, 'Buy 记正股数');
   assert.equal(parsed.rows[1].symbol, 'VGT');
   assert.equal(parsed.rows[1].shares, -1, 'Sell 记负股数');
   assert.ok(parsed.rows.every((r) => r.id === undefined), '纯函数不分配 id');
   // 与已有交易按「日期|代码|股数|价格」去重
-  const dup = context.parseSchwabCSV(csv, { symbols: ['VGT', 'SMH', 'IBIT'], existingTrades: [{ date: '2026-07-18', symbol: 'IBIT', shares: 10, price: 28.38 }] });
+  const dup = context.parseSchwabCSV(csv, { symbols: ['QQQM', 'VGT', 'SMH'], existingTrades: [{ date: '2026-07-18', symbol: 'QQQM', shares: 10, price: 261.05 }] });
   assert.equal(dup.imported, 1);
   // 包装层仍负责分配 id 并写入 trades（结构性断言）
   assert.match(indexSource, /parseSchwabCSVIn\(text,\{symbols:ETF_SYMS,existingTrades:trades\}\)/);
@@ -152,9 +153,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=432');
+  assert.equal(manifest.start_url, '/?v=433');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v432/);
+  assert.match(serviceWorker, /wealth-v433/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -168,7 +169,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=432',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=433',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -573,12 +574,11 @@ test('desktop UI states stay data-consistent and scrollable', () => {
   assert.match(appMarkup, /disciplineMonths\(\{trades:trades,dca:dca,symbols:ETF_SYMS\}\)/);
   // v254：display:grid 的 !important 同上被去掉；base 规则（第 885 行）本来就是 display:grid
   assert.match(appMarkup, /#logHeatmap\{display:grid/);
-  // v384：第三腿从 Grayscale 的 BTC ETF 换成 iShares IBIT —— 钉住关键点，防止回退成 BTC 口径
-  assert.doesNotMatch(appMarkup, /\['VGT','SMH','BTC'\]/, '不应该再有写死 BTC 的三腿数组');
-  assert.doesNotMatch(appMarkup, /sym==='BTC'\?state\.btc/, '第三腿的目标配比不能再按 BTC 取');
-  assert.match(appMarkup, /\['VGT','SMH','IBIT','SGOV'\]/, '首页行情行应含 IBIT');
-  assert.match(appMarkup, /function legTargets\(\)/, '第三腿目标配比要走 legTargets()（键名收敛在一处）');
-  assert.doesNotMatch(appMarkup, /sym==='IBIT'\?state\.btc/, '别再散落写死的第三腿三元');
+  // v433：核心仓统一从 portfolio-config.js 派生，不能再写死旧三腿或 state.btc。
+  assert.doesNotMatch(appMarkup, /\['VGT','SMH','BTC'\]/);
+  assert.doesNotMatch(appMarkup, /sym==='IBIT'\?state\.btc/);
+  assert.match(appMarkup, /CORE_PORTFOLIO/);
+  assert.match(appMarkup, /function legTargets\(\)/);
   assert.match(appMarkup, /#holdMetrics\{[^}]*grid-template-columns:1\.12fr repeat\(3,1fr\)!important[^}]*gap:0!important/);
   assert.match(appMarkup, /#holdMetrics \.metric\+\.metric\{border-left:1px solid var\(--rule\)!important\}/);
   assert.match(appMarkup, /美股非交易时段/);
@@ -694,7 +694,7 @@ test('资产配置同时展示目标与实际占比，回撤卡包含金额口�
   const portfolioView = fs.readFileSync('src/app/portfolio-view.js', 'utf8');
   assert.match(html, /id="sbVgtCurrent"/);
   assert.match(html, /id="sbSmhCurrent"/);
-  assert.match(html, /id="sbIbitCurrent"/);
+  assert.match(html, /id="sbQqqmCurrent"/);
   assert.match(appSource, /Current'\)/);
   assert.match(portfolioView, /class="drawdown-value">[^<]*<small>/);
 });

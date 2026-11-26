@@ -22,18 +22,6 @@ await p.evaluate(async () => {
   localStorage.removeItem('wealth_sync_state');
 });
 await p.goto(BASE + '?full=' + Date.now(), { waitUntil: 'domcontentloaded' });
-await p.waitForFunction(
-  () => window.__wealthReady && typeof window.switchTab === 'function' && typeof window.toggleTheme === 'function',
-  null,
-  { timeout: 15000 },
-).catch(async () => {
-  await p.reload({ waitUntil: 'domcontentloaded' });
-  await p.waitForFunction(
-    () => window.__wealthReady && typeof window.switchTab === 'function' && typeof window.toggleTheme === 'function',
-    null,
-    { timeout: 15000 },
-  );
-});
 
 async function ev(fn, arg) {
   let last = null;
@@ -61,19 +49,48 @@ const gateProbe = await ev(async (base) => {
   out.swStatus = sw.status;
   return out;
 }, BASE);
-if (gateProbe.loginForm && !process.env.WT_TOKEN) {
-  if (gateProbe.syncStatus !== 401 && gateProbe.syncStatus !== 403) failures.push('未登录访问 /api/sync 应回 401/403，实际 ' + gateProbe.syncStatus);
-  if (gateProbe.swStatus !== 200) failures.push('未登录也应能拿到 /sw.js，实际 ' + gateProbe.swStatus);
-  notes.push('未登录（未提供 WT_TOKEN）：只验门禁与静态资源 —— /api/sync → ' + gateProbe.syncStatus + ' · /sw.js → ' + gateProbe.swStatus);
-  console.log('线上完整验证（只读）· 未登录模式：');
-  notes.forEach((n) => console.log('  · ' + n));
-  if (failures.length) {
-    console.error('发现问题：\n  - ' + failures.join('\n  - '));
-    throw new Error('prod-full failed');
+if (gateProbe.loginForm) {
+  if (!process.env.WT_TOKEN) {
+    if (gateProbe.syncStatus !== 401 && gateProbe.syncStatus !== 403) failures.push('未登录访问 /api/sync 应回 401/403，实际 ' + gateProbe.syncStatus);
+    if (gateProbe.swStatus !== 200) failures.push('未登录也应能拿到 /sw.js，实际 ' + gateProbe.swStatus);
+    notes.push('未登录（未提供 WT_TOKEN）：只验门禁与静态资源 —— /api/sync → ' + gateProbe.syncStatus + ' · /sw.js → ' + gateProbe.swStatus);
+    console.log('线上完整验证（只读）· 未登录模式：');
+    notes.forEach((n) => console.log('  · ' + n));
+    if (failures.length) {
+      console.error('发现问题：\n  - ' + failures.join('\n  - '));
+      throw new Error('prod-full failed');
+    }
+    console.log('✓ 门禁生效：未登录只能看到登录页、/api 要鉴权（未提供 WT_TOKEN，跳过 App 断言）');
+    return;
   }
-  console.log('✓ 门禁生效：未登录只能看到登录页、/api 要鉴权（未提供 WT_TOKEN，跳过 App 断言）');
-  return;
+
+  const loginStatus = await ev(async ({ base, token }) => {
+    const res = await fetch(base + 'api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: token }),
+    });
+    return res.status;
+  }, { base: BASE, token: process.env.WT_TOKEN });
+  if (loginStatus !== 200) {
+    await p.close();
+    throw new Error('登录失败（HTTP ' + loginStatus + '），WT_TOKEN 是否正确？');
+  }
+  await p.goto(BASE + '?full=' + Date.now(), { waitUntil: 'domcontentloaded' });
 }
+
+await p.waitForFunction(
+  () => window.__wealthReady && typeof window.switchTab === 'function' && typeof window.toggleTheme === 'function',
+  null,
+  { timeout: 15000 },
+).catch(async () => {
+  await p.reload({ waitUntil: 'domcontentloaded' });
+  await p.waitForFunction(
+    () => window.__wealthReady && typeof window.switchTab === 'function' && typeof window.toggleTheme === 'function',
+    null,
+    { timeout: 15000 },
+  );
+});
 
 /* ---- ① 静态资源与 PWA ---- */
 // 注意：用页面里的 fetch（走浏览器网络栈/代理），不要用 p.request（它直连，本机会超时）

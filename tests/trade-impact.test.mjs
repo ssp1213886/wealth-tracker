@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { tradeImpact } from '../src/app/trade-impact.js';
 
 const BASE = {
-  symbols: ['VGT', 'SMH', 'IBIT'],
+  symbols: ['QQQM', 'VGT', 'SMH'],
   trades: [
     { symbol: 'VGT', shares: 10, price: 100 },
     { symbol: 'SMH', shares: 10, price: 50 },
-    { symbol: 'IBIT', shares: 10, price: 20 },
+    { symbol: 'QQQM', shares: 10, price: 260 },
   ],
-  prices: { VGT: 100, SMH: 50, IBIT: 20 },
-  targets: { VGT: 0.5, SMH: 0.3, IBIT: 0.2 },
+  prices: { QQQM: 260, VGT: 100, SMH: 50 },
+  targets: { QQQM: 0.5, VGT: 0.3, SMH: 0.2 },
   cash: 300,
 };
 
@@ -19,8 +19,8 @@ test('tradeImpact：买入显示交易前后占比与现金金额变化', () => 
   assert.equal(p.ready, true);
   assert.equal(p.amount, 200);
   assert.equal(p.cashAfter, 100);
-  assert.ok(Math.abs(p.rows[0].beforePct - 1000 / 1700 * 100) < 1e-12);
-  assert.ok(Math.abs(p.rows[0].afterPct - 1200 / 1900 * 100) < 1e-12);
+  assert.ok(Math.abs(p.rows[1].beforePct - 1000 / 4100 * 100) < 1e-12);
+  assert.ok(Math.abs(p.rows[1].afterPct - 1200 / 4300 * 100) < 1e-12);
   assert.equal(p.cashBefore, 300);
   assert.equal(p.cashAfter, 100);
   assert.equal(Object.hasOwn(p.rows[0], 'beforeDeviation'), false, '不再计算目标偏离');
@@ -32,8 +32,8 @@ test('tradeImpact：卖出显示回收现金与剩余股数', () => {
   assert.equal(p.amount, 250);
   assert.equal(p.cashAfter, 550);
   assert.equal(p.remainingShares, 5);
-  assert.ok(Math.abs(p.rows[1].beforePct - 500 / 1700 * 100) < 1e-12);
-  assert.ok(Math.abs(p.rows[1].afterPct - 250 / 1450 * 100) < 1e-12);
+  assert.ok(Math.abs(p.rows[2].beforePct - 500 / 4100 * 100) < 1e-12);
+  assert.ok(Math.abs(p.rows[2].afterPct - 250 / 3850 * 100) < 1e-12);
 });
 
 test('tradeImpact：空输入仍可展示当前配比，缺价会明确列出', () => {
@@ -45,5 +45,5 @@ test('tradeImpact：空输入仍可展示当前配比，缺价会明确列出', 
   const missing = tradeImpact(Object.assign({}, BASE, {
     prices: { VGT: 100 }, type: 'buy', symbol: 'VGT', shares: 1, price: 100,
   }));
-  assert.deepEqual(missing.missingPrices, ['SMH', 'IBIT']);
+  assert.deepEqual(missing.missingPrices, ['QQQM', 'SMH']);
 });

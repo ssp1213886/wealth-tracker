@@ -2,9 +2,10 @@
 // 不碰 DOM、不写存储；CSV 解析只返回待插入的行，id 与写入由调用方处理，因此可以离线单测。
 import { cleanText } from './util.js';
 import { normalizeDateValue } from './time.js';
+import { CORE_SYMBOLS } from './portfolio-config.js';
 
 /** 允许的交易标的（核心仓三只）。index.js 的 ETF_SYMS 也引用这里，避免两处维护。 */
-export const TRADE_SYMBOLS = ['VGT', 'SMH', 'IBIT'];
+export const TRADE_SYMBOLS = CORE_SYMBOLS;
 
 /**
  * 规整交易记录：标的必须在允许名单内、日期合法、股数非 0、价格 > 0，否则整条丢弃。

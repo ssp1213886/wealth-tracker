@@ -3,13 +3,11 @@
 
 // 用户指定的观察标的：GOLD = 金价（后端映射成 COMEX 黄金期货 GC=F），BTC/ETH/BNB/HYPE = 现货
 export const WATCH_DEFAULTS = [
+  { sym: 'QQQM', kind: 'stock' },
   { sym: 'VGT', kind: 'stock' },
   { sym: 'SMH', kind: 'stock' },
-  { sym: 'BTC', kind: 'crypto' },
-  { sym: 'IBIT', kind: 'stock' },
   { sym: 'VOO', kind: 'stock' },
   { sym: 'GOLD', kind: 'gold' },
-  { sym: 'QQQM', kind: 'stock' },
   { sym: 'NVDA', kind: 'stock' },
   { sym: 'AAPL', kind: 'stock' },
   { sym: 'GOOGL', kind: 'stock' },
@@ -290,18 +288,21 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
     row.sourceText = item.note || '直接持有';
     map.set(key, row);
   });
-  const etfRest = Object.keys(holdingsBySymbol || {}).map((etf) => {
+  const etfKeys = Array.from(new Set(Object.keys(holdingsBySymbol || {}).concat(Object.keys(valueByEtf || {}))));
+  const etfRest = etfKeys.map((etf) => {
     const value = Number((valueByEtf && valueByEtf[etf]) || 0);
+    const hasList = !!((holdingsBySymbol && holdingsBySymbol[etf] && holdingsBySymbol[etf].list) || []).length;
     // 金额用未舍入的覆盖度算（否则四舍五入会在合计上对不上分母），显示时才取 1 位小数
     const rawSum = ((holdingsBySymbol[etf] && holdingsBySymbol[etf].list) || [])
       .reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
     const missPct = Math.max(0, 100 - rawSum);
     return {
-      label: etf + ' 其余成分股',
+      label: hasList ? etf + ' 其余成分股' : etf + ' 成分股数据不可用',
       amount: (value * missPct) / 100,
       missPct: Number(missPct.toFixed(1)),
       kind: 'rest',
-      sourceText: '榜单外 ' + Number(missPct.toFixed(1)) + '%',
+      unavailable: !hasList,
+      sourceText: hasList ? ('榜单外 ' + Number(missPct.toFixed(1)) + '%') : '成分股数据不可用',
     };
   }).filter((row) => row.amount > 0);
   const all = Array.from(map.values()).sort((a, b) => b.amount - a.amount);
@@ -323,6 +324,7 @@ export function toExposureRows(holdingsBySymbol, valueByEtf, limit = 10, extras 
     restShare: all.length > limit ? shareOf(restAmount) : null,
     // 其余成分股也要给出"占我持仓的比例"（之前漏了，只给了"榜单外 X%"，两者含义不同）
     etfRest: etfRest.map((row) => ({ ...row, share: shareOf(row.amount) })),
+    unavailableEtfs: etfKeys.filter((etf) => !((holdingsBySymbol && holdingsBySymbol[etf] && holdingsBySymbol[etf].list) || []).length),
     covered,
     base,
   };

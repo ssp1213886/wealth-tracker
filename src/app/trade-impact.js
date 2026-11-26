@@ -1,4 +1,6 @@
-const DEFAULT_SYMBOLS = ['VGT', 'SMH', 'IBIT'];
+import { CORE_SYMBOLS } from './portfolio-config.js';
+
+const DEFAULT_SYMBOLS = CORE_SYMBOLS;
 
 function num(value) {
   const n = Number(value);

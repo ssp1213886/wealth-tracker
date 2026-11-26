@@ -215,7 +215,7 @@ await fetch(CLOUD + '/_seed', {
   body: JSON.stringify({
     state: {
       monthlyDCA: 4321, dcaOverride: { month: '', amount: 0 }, roadmapStart: '2025-01', roadmapAge: 27,
-      sgovTarget: 0, targetGoal: 2500000, vgt: 0.5, smh: 0.3, btc: 0.2, plan: null,
+      targetGoal: 2500000, qqqm: 0.5, vgt: 0.3, smh: 0.2, plan: null,
     },
   }),
 });
@@ -390,6 +390,50 @@ if (!refreshFeedback.btnDimmed) failures.push('刷新时按钮没有变灰');
 await p.waitForTimeout(1500);
 const afterRefresh = await ev(() => document.getElementById('hmPricesCompact').querySelectorAll('.price-pill').length);
 if (afterRefresh < 1) failures.push('刷新结束后行情胶囊没回填（剩 ' + afterRefresh + ' 个）');
+
+/* 核心仓迁移：v432 的旧测试数据必须先归档，再以 QQQM/VGT/SMH 空仓启动。 */
+await ev(() => {
+  localStorage.clear();
+  localStorage.setItem('wealth_schema_v1', '3');
+  localStorage.setItem('wealth_dashboard_v2', JSON.stringify({ monthlyDCA: 2000, targetGoal: 2500000, vgt: 0.5, smh: 0.3, btc: 0.2 }));
+  localStorage.setItem('wealth_trades_v2', JSON.stringify([{ id: 1, date: '2026-09-01', symbol: 'IBIT', shares: 10, price: 30 }]));
+  localStorage.setItem('wealth_cash_v2', '1000');
+  localStorage.setItem('wealth_cashlog_v2', JSON.stringify([{ id: 2, date: '2026-09-01', type: '入金', amount: 1000 }]));
+  localStorage.setItem('wealth_watchlist_v1', JSON.stringify([{ sym: 'BTC', enabled: true, order: 0 }, { sym: 'IBIT', enabled: true, order: 1 }, { sym: 'VGT', enabled: true, order: 2 }]));
+  localStorage.setItem('wealth_sync_state', JSON.stringify({ dirty: {}, cloudTs: { state: 1, trades: 1 }, pendingConflicts: [] }));
+});
+await p.reload({ waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(3000);
+const migrated = await ev(() => {
+  const state = JSON.parse(localStorage.getItem('wealth_dashboard_v2') || '{}');
+  const watch = JSON.parse(localStorage.getItem('wealth_watchlist_v1') || '[]');
+  const sync = JSON.parse(localStorage.getItem('wealth_sync_state') || '{}');
+  return {
+    schema: localStorage.getItem('wealth_schema_v1'),
+    state,
+    trades: localStorage.getItem('wealth_trades_v2'),
+    archive: localStorage.getItem('wealth_legacy_core_v4'),
+    watch: watch.map((item) => item.sym),
+    dirty: sync.dirty || {},
+  };
+});
+if (migrated.schema !== '4') failures.push('v432 数据没有迁移到 schema 4：' + migrated.schema);
+if (migrated.state.qqqm !== 0.5 || migrated.state.vgt !== 0.3 || migrated.state.smh !== 0.2 || 'btc' in migrated.state) {
+  failures.push('迁移后的目标配置不正确：' + JSON.stringify(migrated.state));
+}
+if (migrated.trades !== null) failures.push('旧 IBIT 测试交易没有从活动仓剔除：' + migrated.trades);
+if (!migrated.archive || !/IBIT/.test(migrated.archive)) failures.push('旧核心仓数据没有归档');
+if (migrated.watch.includes('BTC') || migrated.watch.includes('IBIT') || !migrated.watch.includes('QQQM')) {
+  failures.push('迁移后的观察列表不正确：' + migrated.watch.join(','));
+}
+const migrationCloud = await (await fetch(CLOUD + '/_log')).json();
+const cloudState = migrationCloud.store && migrationCloud.store.state;
+const cloudTrades = migrationCloud.store && migrationCloud.store.trades;
+const migrationPushed = cloudState && cloudState.qqqm === 0.5 && cloudState.vgt === 0.3 && cloudState.smh === 0.2 &&
+  Array.isArray(cloudTrades) && cloudTrades.length === 0;
+if (!migrationPushed && (!migrated.dirty.trades || !migrated.dirty.state)) {
+  failures.push('迁移既没有推送到云端，也没有保留待推送标记：' + JSON.stringify(migrated.dirty));
+}
 
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');

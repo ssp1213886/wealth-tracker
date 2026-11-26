@@ -498,18 +498,33 @@ function decodeEntities(text) {
  * 页面里还有 "as of Sep 26, 2026" 这样的日期，一并带出来给前端显示。
  */
 function parseStockanalysisHoldings(html) {
-  const itemRe = /<td class="rrpad [^"]*">(\d+)<\/td>[\s\S]*?<a href="\/stocks\/[^"]*"\s*>([A-Z0-9.\-]+)<\/a>[\s\S]*?<td class="shr [^"]*">([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d.]+)%<\/td>/g;
-  const items = [];
+  const currentRe = /<td class="svelte-[^"]+">(\d+)<\/td>[\s\S]*?<td class="sym [^"]*">[\s\S]*?<a href="\/stocks\/[^"]*"\s*>([A-Z0-9.\-]+)<\/a>[\s\S]*?<td class="slw [^"]*">([^<]*)<\/td>[\s\S]*?<td class="svelte-[^"]+">([\d.]+)%<\/td>/g;
+  const legacyRe = /<td class="rrpad [^"]*">(\d+)<\/td>[\s\S]*?<a href="\/stocks\/[^"]*"\s*>([A-Z0-9.\-]+)<\/a>[\s\S]*?<td class="shr [^"]*">([^<]*)<\/td>[\s\S]*?<td[^>]*>([\d.]+)%<\/td>/g;
+  let items = [];
   let hit;
-  while ((hit = itemRe.exec(html))) {
+  while ((hit = currentRe.exec(html))) {
     const weight = Number(hit[4]);
     if (!Number.isFinite(weight) || weight <= 0) continue;
     const raw = String(hit[2]).toUpperCase();
     items.push({ sym: HOLDING_SYM_ALIAS[raw] || raw, name: decodeEntities(hit[3]).trim(), weight });
   }
+  if (!items.length) {
+    while ((hit = legacyRe.exec(html))) {
+      const weight = Number(hit[4]);
+      if (!Number.isFinite(weight) || weight <= 0) continue;
+      const raw = String(hit[2]).toUpperCase();
+      items.push({ sym: HOLDING_SYM_ALIAS[raw] || raw, name: decodeEntities(hit[3]).trim(), weight });
+    }
+  }
   if (!items.length) return null;
-  // 页面上是 " As of Sep 26, 2026 "（首字母大写）
-  const dateMatch = html.match(/as of ([A-Z][a-z]+ \d{1,2}, \d{4})/i);
+  const bySym = new Map();
+  items.forEach((item) => {
+    if (!bySym.has(item.sym)) bySym.set(item.sym, item);
+  });
+  items = Array.from(bySym.values());
+  // 兼容旧页面的 "As of Sep 26, 2026" 和新页面脚本里的 Updated:"Nov 23, 2026"。
+  const dateMatch = html.match(/as of ([A-Z][a-z]+ \d{1,2}, \d{4})/i)
+    || html.match(/Updated:"([A-Z][a-z]+ \d{1,2}, \d{4})"/i);
   return { list: items.sort((a, b) => b.weight - a.weight).slice(0, 10), asOf: dateMatch ? dateMatch[1] : null };
 }
 

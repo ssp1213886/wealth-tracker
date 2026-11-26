@@ -2,6 +2,7 @@
 // 只做"算数据"，画布/HTML 仍留在 index.js；因此这些数字可以离线单测。
 import { marketDate } from './time.js';
 import { cashSigned } from './util.js';
+import { CORE_SYMBOLS } from './portfolio-config.js';
 
 /**
  * 纪律热力图：最近 N 个月（默认 12）的定投完成情况 + 连续完成月数。
@@ -15,7 +16,7 @@ export function disciplineMonths(input) {
   const curYM = o.ym || marketDate().slice(0, 7);
   const dca = Number(o.dca) || 0;
   const count = Number(o.count) || 12;
-  const symbols = Array.isArray(o.symbols) && o.symbols.length ? o.symbols : ['VGT', 'SMH', 'IBIT'];
+  const symbols = Array.isArray(o.symbols) && o.symbols.length ? o.symbols : CORE_SYMBOLS;
   const base = new Date(Number(curYM.slice(0, 4)), Number(curYM.slice(5, 7)) - 1, 1);
   const months = [];
   for (let i = -(count - 1); i <= 0; i += 1) {
@@ -210,7 +211,7 @@ export function annualMatrix(input) {
   const trades = Array.isArray(o.trades) ? o.trades : [];
   const cashLog = Array.isArray(o.cashLog) ? o.cashLog : [];
   const prices = o.prices || {};
-  const symbols = Array.isArray(o.symbols) && o.symbols.length ? o.symbols : ['VGT', 'SMH', 'IBIT'];
+  const symbols = Array.isArray(o.symbols) && o.symbols.length ? o.symbols : CORE_SYMBOLS;
   const netCash = Number(o.netCash) || 0;
   const targetGoal = Number(o.targetGoal) || 0;
   const now = o.now instanceof Date ? o.now : new Date();
@@ -232,9 +233,10 @@ export function annualMatrix(input) {
       ym: ys,
       dca: dcaTotal,
       rate: 0,
-      vgt: Math.max(0, endHolds.VGT || 0),
-      smh: Math.max(0, endHolds.SMH || 0),
-      ibit: Math.max(0, endHolds.IBIT || 0),
+      holdings: symbols.reduce(function (out, sym) {
+        out[sym] = Math.max(0, endHolds[sym] || 0);
+        return out;
+      }, {}),
       hasData: dcaTotal > 0,
     });
   }

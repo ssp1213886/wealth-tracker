@@ -1,4 +1,5 @@
 // 本地存储基础设施：key 常量、统一读写（带容错）、数据版本迁移。
+import { CORE_SYMBOLS, TARGET_STATE, RETIRED_CORE_SYMBOLS } from './portfolio-config.js';
 // 只做"存取"这一件事，不掺业务副作用（同步、备份、刷新 UI 仍由 index.js 负责）。
 
 
@@ -47,6 +48,7 @@ export const KEYS = {
   trades: 'wealth_trades_v2',
   cash: 'wealth_cash_v2',
   cashLog: 'wealth_cashlog_v2',
+  watchlist: 'wealth_watchlist_v1',
   activity: 'wealth_activity_v1',
   syncState: 'wealth_sync_state',
   syncConfig: 'wealth_sync_cfg',
@@ -54,6 +56,8 @@ export const KEYS = {
   firstTime: 'wealth_first_time',
   alertSeen: 'wealth_alert_seen_v1',
   schema: 'wealth_schema_v1',
+  legacyCoreV4: 'wealth_legacy_core_v4',
+  coreMigrationV4: 'wealth_core_migration_v4_pending',
 };
 
 // 浏览器存储超限（Safari 无痕模式、配额用尽）统一走这里判断
@@ -107,7 +111,7 @@ export function writeJSON(key, value) {
   }
 }
 
-export const DATA_SCHEMA = 3;
+export const DATA_SCHEMA = 4;
 
 // 迁移链：每次数据结构变化时，往 steps 里加一个新版本号对应的函数即可。
 // onError 用于把迁移异常交给上层上报（store 本身不依赖具体的日志实现）。
@@ -122,6 +126,65 @@ export function runMigrations(onError) {
     2: () => {
       ['wealth_options_v2', 'otmSettings', 'ccSchedule', 'wealth_opt_ping_v1', 'otm76_migrated_v1', 'cc_schedule_reset_v2']
         .forEach((key) => removeKey(key));
+    },
+    // v3 → v4：核心仓改为 QQQM/VGT/SMH。旧测试数据先归档，再让新组合从空仓开始；
+    // 定投、路线图和目标等参数保留，避免把一次标的迁移扩大成“恢复出厂设置”。
+    4: () => {
+      const current = readJSON(KEYS.dashboard, null);
+      // 全新安装没有旧 dashboard 时不能把测试种子/首次数据当“旧核心仓”清掉。
+      if (from < 3 && (!current || typeof current !== 'object' || 'qqqm' in current)) return;
+      const archive = {
+        archivedAt: new Date().toISOString(),
+        state: readRaw(KEYS.dashboard),
+        trades: readRaw(KEYS.trades),
+        cashBalance: readRaw(KEYS.cash),
+        cashLog: readRaw(KEYS.cashLog),
+        watchlist: readRaw(KEYS.watchlist),
+        prices: readRaw(KEYS.prices),
+      };
+      writeRaw(KEYS.legacyCoreV4, JSON.stringify(archive));
+
+      const nextState = Object.assign({}, current && typeof current === 'object' ? current : {}, TARGET_STATE);
+      delete nextState.btc;
+      delete nextState.sgovTarget;
+      writeRaw(KEYS.dashboard, JSON.stringify(nextState));
+
+      [KEYS.trades, KEYS.cash, KEYS.cashLog].forEach((key) => removeKey(key));
+
+      const rawWatch = readJSON(KEYS.watchlist, null);
+      if (Array.isArray(rawWatch)) {
+        const removed = new Set([...RETIRED_CORE_SYMBOLS, 'BTC']);
+        const watch = rawWatch
+          .filter((item) => item && !removed.has(String(item.sym || '').toUpperCase()))
+          .map((item) => Object.assign({}, item));
+        if (!watch.some((item) => String(item.sym || '').toUpperCase() === 'QQQM')) {
+          watch.unshift({ sym: 'QQQM', kind: 'stock', enabled: true, order: 0 });
+        }
+        watch.forEach((item, index) => { item.order = index; });
+        writeRaw(KEYS.watchlist, JSON.stringify(watch));
+      }
+
+      const prices = readJSON(KEYS.prices, null);
+      if (prices && typeof prices === 'object') {
+        const cleaned = Object.assign({}, prices);
+        [...RETIRED_CORE_SYMBOLS, 'BTC'].forEach((sym) => { delete cleaned[sym]; });
+        writeRaw(KEYS.prices, JSON.stringify(cleaned));
+      }
+
+      // 新组合需要主动写回云端；清掉旧版本号可避免旧设备/旧云端目标反向覆盖。
+      const syncState = readJSON(KEYS.syncState, null);
+      if (syncState && typeof syncState === 'object') {
+        const next = Object.assign({}, syncState);
+        next.dirty = Object.assign({}, syncState.dirty || {});
+        next.cloudTs = Object.assign({}, syncState.cloudTs || {});
+        ['trades', 'cashBalance', 'cashLog', 'state', 'watchlist', 'prices'].forEach((key) => {
+          next.dirty[key] = true;
+          delete next.cloudTs[key];
+        });
+        writeRaw(KEYS.syncState, JSON.stringify(next));
+        // 已登录的老用户：下一次 autoPull 先推新组合，避免旧云端数据触发假冲突。
+        writeRaw(KEYS.coreMigrationV4, '1');
+      }
     },
   };
 

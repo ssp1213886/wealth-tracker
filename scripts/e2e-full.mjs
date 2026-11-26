@@ -65,7 +65,7 @@ const boot = await page.evaluate(() => ({
   err: window.__lastError || null,
 }));
 check("页面正常启动", boot.ready);
-check("数据迁移标记写入", eq(boot.schema, "3"), boot.schema);
+check("数据迁移标记写入", eq(boot.schema, "4"), boot.schema);
 check("迁移清理遗留键", boot.legacyGone);
 check("启动无未捕获错误", boot.err === null, boot.err || "");
 

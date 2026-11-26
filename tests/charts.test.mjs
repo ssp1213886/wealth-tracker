@@ -209,23 +209,23 @@ test('annualMatrix：按第一笔买入/入金起算，逐年给出投入完成�
       buy('2026-03-01', 'SMH', 2, 500),
     ],
     cashLog: [{ date: '2025-02-01', type: '入金', amount: 5000 }, { date: '2026-05-01', type: '出金', amount: 1000 }],
-    prices: { VGT: 130, SMH: 600, IBIT: 0 },
+    prices: { QQQM: 260, VGT: 130, SMH: 600 },
     netCash: 2000,
     targetGoal: 2500000,
-    symbols: ['VGT', 'SMH', 'IBIT'],
+    symbols: ['QQQM', 'VGT', 'SMH'],
     now,
   });
   assert.equal(out.empty, false);
   assert.deepEqual(out.cells.map((c) => c.ym), ['2025', '2026']);
   assert.equal(out.cells[0].dca, 1000);
   assert.equal(out.cells[0].rate, 62.5);
-  assert.equal(out.cells[0].vgt, 10);
+  assert.equal(out.cells[0].holdings.VGT, 10);
   assert.equal(out.cells[1].dca, 1600, '2026 年买入 5×120 + 2×500');
   assert.equal(out.cells[1].rate, 100);
-  assert.equal(out.cells[1].vgt, 15, '年末持股是累计值');
-  assert.equal(out.cells[1].smh, 2);
-  assert.equal(out.cells[1].ibit, 0, 'v384：第三腿字段由 btc 改名成 ibit（界面读 c.ibit）');
-  assert.ok(!('btc' in out.cells[1]), '旧的 btc 字段不该再存在');
+  assert.equal(out.cells[1].holdings.VGT, 15, '年末持股是累计值');
+  assert.equal(out.cells[1].holdings.SMH, 2);
+  assert.equal(out.cells[1].holdings.QQQM, 0);
+  assert.ok(!('btc' in out.cells[1].holdings), '旧的 btc 字段不该再存在');
   assert.equal(out.totalInvested, 5000, '只统计入金');
   assert.equal(out.activeYears, 2);
   assert.equal(out.totalMktV, 15 * 130 + 2 * 600);

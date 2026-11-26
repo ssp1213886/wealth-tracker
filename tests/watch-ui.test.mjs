@@ -60,6 +60,7 @@ function host(over) {
     watchFetchedAt: 0,
     watchInvalid: [],
     watchMissing: [],
+    ETF_SYMS: ['QQQM', 'VGT', 'SMH'],
     trades: [],
     livePrices: {},
     saveWatch() {},
@@ -69,9 +70,9 @@ function host(over) {
 }
 
 const LIST3 = [
+  { sym: 'QQQM', enabled: true },
   { sym: 'VGT', enabled: true },
   { sym: 'SMH', enabled: true },
-  { sym: 'NVDA', enabled: true },
 ];
 
 test('renderWatch：没配置过时回落到默认观察名单', () => {
@@ -151,7 +152,7 @@ test('renderWatch：按涨幅排序时高的在前（点两次排序按钮的行
     // 默认排序：按列表顺序
     renderWatch();
     const first = box.innerHTML.slice(0, box.innerHTML.indexOf('</div>'));
-    assert.match(first, /VGT/, '默认按加入顺序');
+    assert.match(first, /QQQM/, '默认按加入顺序');
     // 切到涨幅排序：模拟点排序按钮
     const btns = ['chg', 'price', 'default'].map((k) => makeEl({ 'data-watch-sort': null }));
     btns.forEach((b, i) => { b.getAttribute = () => ['chg', 'price', 'default'][i]; });
@@ -196,32 +197,39 @@ test('paintWatchSort：只点亮当前排序方式那一颗', () => {
 test('renderHoldings：ETF 前十大 + 底层资产敞口（含分母说明）', () => {
   configureWatchUI(host({
     watchList: LIST3,
+    ETF_SYMS: ['QQQM', 'VGT', 'SMH'],
     holdingsData: {
+      QQQM: { symbol: 'QQQM', source: 'stockanalysis', asOf: '2026-11-25', list: [{ sym: 'AMZN', name: 'Amazon', weight: 4.8 }, { sym: 'NVDA', name: 'NVIDIA', weight: 6.6 }] },
       VGT: { symbol: 'VGT', source: 'yahoo', list: [{ sym: 'NVDA', name: 'NVIDIA', weight: 17.2 }, { sym: 'AAPL', name: 'Apple', weight: 15.1 }] },
       SMH: { symbol: 'SMH', source: 'static', asOf: '2026-06-30', list: [{ sym: 'NVDA', name: 'NVIDIA', weight: 19.5 }] },
     },
-    watchQuotes: { NVDA: { price: 186.4, changePct: 0.4, currency: 'USD' }, AAPL: { price: 231, changePct: -0.2, currency: 'USD' } },
-    trades: [{ symbol: 'VGT', shares: 8.62 }, { symbol: 'SMH', shares: 1.02 }, { symbol: 'IBIT', shares: 13.62 }],
-    livePrices: { VGT: 108.62, SMH: 402.1, IBIT: 29.38 },
+    watchQuotes: { NVDA: { price: 186.4, changePct: 0.4, currency: 'USD' }, AAPL: { price: 231, changePct: -0.2, currency: 'USD' }, AMZN: { price: 244, changePct: 0.2, currency: 'USD' } },
+    trades: [{ symbol: 'QQQM', shares: 4 }, { symbol: 'VGT', shares: 8.62 }, { symbol: 'SMH', shares: 1.02 }],
+    livePrices: { QQQM: 261.05, VGT: 108.62, SMH: 402.1 },
   }));
+  const qqqm = makeEl();
   const vgt = makeEl();
   const smh = makeEl();
   const expose = makeEl();
-  withDoc({ holdVGT: vgt, holdSMH: smh, holdExpose: expose }, () => renderHoldings());
+  withDoc({ holdQQQM: qqqm, holdVGT: vgt, holdSMH: smh, holdExpose: expose }, () => renderHoldings());
+  assert.match(qqqm.innerHTML, /QQQM 前十大/);
   assert.match(vgt.innerHTML, /VGT 前十大/);
   assert.match(vgt.innerHTML, /实时抓取/);
   assert.match(smh.innerHTML, /榜单 2026-06-30/);
   assert.match(vgt.innerHTML, /hold-row/);
   assert.match(expose.innerHTML, /底层资产敞口/);
   assert.match(expose.innerHTML, /分母 = 持仓市值合计/);
-  assert.match(expose.innerHTML, /比特币/);
+  assert.match(expose.innerHTML, /AMZN/);
+  assert.doesNotMatch(expose.innerHTML, /比特币/);
 });
 
 test('renderHoldings：没有数据时两块都显示空态，不抛错', () => {
   configureWatchUI(host());
+  const qqqm = makeEl();
   const vgt = makeEl();
   const smh = makeEl();
-  withDoc({ holdVGT: vgt, holdSMH: smh, holdExpose: makeEl() }, () => renderHoldings());
+  withDoc({ holdQQQM: qqqm, holdVGT: vgt, holdSMH: smh, holdExpose: makeEl() }, () => renderHoldings());
+  assert.match(qqqm.innerHTML, /暂无数据/);
   assert.match(vgt.innerHTML, /暂无数据/);
   assert.match(smh.innerHTML, /暂无数据/);
 });
@@ -245,7 +253,7 @@ function withStorage(store, fn) {
 
 test('updateSidebarPrices：渲染价格行（涨跌配色 / 迷你走势 / 等待报价）', () => {
   configureWatchUI(host({
-    ETF_SYMS: ['VGT', 'SMH', 'IBIT'],
+    ETF_SYMS: ['QQQM', 'VGT', 'SMH'],
     liveQuoteData: {
       VGT: { price: 108.62, change: 1.2, history: [100, 102, 101, 106, 108] },
       SMH: { price: 402.1, change: -3.5 },
@@ -260,12 +268,13 @@ test('updateSidebarPrices：渲染价格行（涨跌配色 / 迷你走势 / 等�
     () => updateSidebarPrices(),
   ));
   assert.equal((live.innerHTML.match(/class="sb-price-row"/g) || []).length, 3);
+  assert.match(live.innerHTML, /Invesco 纳指100/);
   assert.match(live.innerHTML, /Vanguard 信息科技/);
   assert.match(live.innerHTML, /\$108\.62/);
   assert.match(live.innerHTML, /spr-spark/, '有历史数据要画迷你走势');
   assert.match(live.innerHTML, /color:var\(--ok\)/, 'v385：上涨用固定语义绿（不随配色方案变）');
   assert.match(live.innerHTML, /color:var\(--red\)/, '下跌用红色');
-  assert.match(live.innerHTML, /等待报价/, 'IBIT 没数据给等待态');
+  assert.match(live.innerHTML, /等待报价/, 'QQQM/SMH 没数据给等待态');
   assert.equal((live.innerHTML.match(/spr-spark/g) || []).length, 1, '只有 VGT 带历史');
 });
 

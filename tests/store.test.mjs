@@ -106,3 +106,45 @@ test('runMigrations：迁移出错时通过回调上报而不是抛出', () => {
   assert.equal(result, DATA_SCHEMA);
   assert.equal(seen.length, 0, '正常情况下不该有迁移错误');
 });
+
+test('v4 核心仓迁移：归档旧数据、切到 QQQM/VGT/SMH、清理旧观察项并安排推送', () => {
+  reset();
+  writeRaw(KEYS.schema, '3');
+  writeRaw(KEYS.dashboard, JSON.stringify({ monthlyDCA: 2000, targetGoal: 2500000, vgt: 0.5, smh: 0.3, btc: 0.2 }));
+  writeRaw(KEYS.trades, JSON.stringify([{ id: 1, symbol: 'IBIT', date: '2026-09-01', shares: 10, price: 30 }]));
+  writeRaw(KEYS.cash, '1000');
+  writeRaw(KEYS.cashLog, JSON.stringify([{ id: 2, date: '2026-09-01', type: '入金', amount: 1000 }]));
+  writeRaw(KEYS.watchlist, JSON.stringify([{ sym: 'BTC', enabled: true, order: 0 }, { sym: 'IBIT', enabled: true, order: 1 }, { sym: 'VGT', enabled: true, order: 2 }]));
+  writeRaw(KEYS.prices, JSON.stringify({ BTC: { price: 83000 }, IBIT: { price: 30 }, VGT: { price: 120 } }));
+  writeRaw(KEYS.syncState, JSON.stringify({ dirty: {}, cloudTs: { state: 1, trades: 1 }, pendingConflicts: [] }));
+
+  assert.equal(runMigrations(), 4);
+  const state = JSON.parse(readRaw(KEYS.dashboard));
+  assert.equal(state.qqqm, 0.5);
+  assert.equal(state.vgt, 0.3);
+  assert.equal(state.smh, 0.2);
+  assert.equal('btc' in state, false);
+  assert.equal(state.monthlyDCA, 2000, '其它投资参数保留');
+
+  assert.equal(readRaw(KEYS.trades), null);
+  assert.equal(readRaw(KEYS.cash), null);
+  assert.equal(readRaw(KEYS.cashLog), null);
+  const archive = JSON.parse(readRaw(KEYS.legacyCoreV4));
+  assert.match(archive.trades, /IBIT/);
+  assert.match(archive.cashLog, /入金/);
+
+  const watch = JSON.parse(readRaw(KEYS.watchlist));
+  assert.deepEqual(watch.map((item) => item.sym), ['QQQM', 'VGT']);
+  const prices = JSON.parse(readRaw(KEYS.prices));
+  assert.equal(prices.QQQM, undefined);
+  assert.equal(prices.IBIT, undefined);
+  assert.equal(prices.BTC, undefined);
+  assert.equal(prices.VGT.price, 120);
+
+  const sync = JSON.parse(readRaw(KEYS.syncState));
+  ['trades', 'cashBalance', 'cashLog', 'state', 'watchlist', 'prices'].forEach((key) => {
+    assert.equal(sync.dirty[key], true, key + ' 应安排推送');
+    assert.equal(key in sync.cloudTs, false, key + ' 应忘掉旧云端版本');
+  });
+  assert.equal(readRaw(KEYS.coreMigrationV4), '1');
+});

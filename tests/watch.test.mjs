@@ -24,14 +24,14 @@ import {
   quotesStale,
 } from '../src/app/watch.js';
 
-test('默认观察列表覆盖用户指定的标的（含 IBIT 行）', () => {
+test('默认观察列表以新核心仓开头，旧 BTC/IBIT 不再自动播种', () => {
   const syms = WATCH_DEFAULTS.map((item) => item.sym);
-  assert.deepEqual(syms, ['VGT', 'SMH', 'BTC', 'IBIT', 'VOO', 'GOLD', 'QQQM', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
+  assert.deepEqual(syms, ['QQQM', 'VGT', 'SMH', 'VOO', 'GOLD', 'NVDA', 'AAPL', 'GOOGL', 'TSLA', 'MSTR', 'CRCL', 'ETH', 'BNB', 'HYPE']);
   assert.equal(kindOf('GOLD'), 'gold');
   assert.equal(kindOf('ETH'), 'crypto');
   assert.equal(kindOf('NVDA'), 'stock');
-  // IBIT：第三腿持仓（iShares Bitcoin Trust）；与加密现货 BTC 是两个不同的标的
-  assert.equal(kindOf('IBIT'), 'stock', 'IBIT 不算加密现货');
+  assert.ok(!syms.includes('BTC') && !syms.includes('IBIT'), '旧核心仓不自动进入观察列表');
+  assert.equal(kindOf('IBIT'), 'stock', '搜索里仍可手动添加 IBIT');
   assert.equal(labelOf('GOLD'), '金价');
   assert.equal(labelOf('BTC'), 'BTC 现货');
   assert.equal(labelOf('IBIT'), 'IBIT');
@@ -73,8 +73,8 @@ test('toggle / add / remove / move 的行为', () => {
   assert.ok(!removed.some((i) => i.sym === 'SMH'));
 
   const moved = moveWatch(list, 'SMH', -1);
-  assert.deepEqual(moved.slice(0, 2).map((i) => i.sym), ['SMH', 'VGT']);
-  assert.deepEqual(moveWatch(list, 'VGT', -1), normalizeWatchlist(list), '越界移动保持原样');
+  assert.deepEqual(moved.slice(0, 2).map((i) => i.sym), ['QQQM', 'SMH']);
+  assert.deepEqual(moveWatch(list, 'QQQM', -1), normalizeWatchlist(list), '越界移动保持原样');
 });
 
 test('toWatchRows：行情缺失也要出这一行，并给出方向与文案', () => {

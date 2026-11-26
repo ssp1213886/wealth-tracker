@@ -56,7 +56,7 @@ const readAll = () => page.evaluate(() => {
     定投已投: t('mobileDcaInvested'),
     定投目标: t('mobileDcaTarget'),
     定投完成率: t('mobileDcaPct'),
-    定投拆分: t('mobileDcaVgtAmt') + ' | ' + t('mobileDcaSmhAmt') + ' | ' + t('mobileDcaBtcAmt'),
+    定投拆分: t('mobileDcaQqqmAmt') + ' | ' + t('mobileDcaVgtAmt') + ' | ' + t('mobileDcaSmhAmt'),
     // 目标与回撤
     目标进度: t('prPct') + ' | 还差 ' + t('prGap'),
     最大回撤: t('hmDrawdownWorst') + ' | ' + t('hmDrawdown'),
@@ -100,8 +100,8 @@ const afterDca = await page.evaluate(() => {
     目标: t('mobileDcaTarget'),
     完成率: t('mobileDcaPct'),
     进度条宽: (document.getElementById('mobileDcaProgress') || {}).style ? document.getElementById('mobileDcaProgress').style.width : null,
-    拆分: t('mobileDcaVgtAmt') + ' | ' + t('mobileDcaSmhAmt') + ' | ' + t('mobileDcaBtcAmt'),
-    拆分布分比: t('mobileDcaVgtPct') + ' | ' + t('mobileDcaSmhPct') + ' | ' + t('mobileDcaBtcPct'),
+    拆分: t('mobileDcaQqqmAmt') + ' | ' + t('mobileDcaVgtAmt') + ' | ' + t('mobileDcaSmhAmt'),
+    拆分布分比: t('mobileDcaQqqmPct') + ' | ' + t('mobileDcaVgtPct') + ' | ' + t('mobileDcaSmhPct'),
   };
 });
 await page.screenshot({ path: OUT + '/ana-3-dca.png', fullPage: true });

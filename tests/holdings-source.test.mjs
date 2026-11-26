@@ -35,6 +35,11 @@ const html = (rows) => rows
     + `<td class="shr svelte-1">${r.name || r.sym}</td><td class="svelte-1">${r.weight}%</td>`)
   .join('') + '<p>as of Sep 26, 2026</p>';
 
+const currentHtml = (rows) => rows
+  .map((r, i) => `<td class="svelte-1">${i + 1}</td><td class="sym svelte-1"><a href="/stocks/${r.sym.toLowerCase()}/">${r.sym}</a></td>`
+    + `<td class="slw svelte-1">${r.name || r.sym}</td><td class="svelte-1">${r.weight}%</td>`)
+  .join('') + '<script>{"updated":"Nov 25, 2026"}</script>';
+
 test('validHoldingList：合格的榜单放行，错位/重复/离谱的一律拦下', () => {
   assert.equal(validHoldingList(OFFICIAL_SMH), true);
   assert.equal(validHoldingList(YAHOO_SMH), true, 'Yahoo 那份内部是自洽的——所以必须靠第二道防线');
@@ -100,6 +105,25 @@ test('handleHoldings(VGT)：主源抓失败时回落到 Yahoo，绝不返回空�
     assert.equal(result.body.source, 'yahoo');
     assert.equal(result.body.list[0].sym, 'NVDA');
     assert.equal(result.body.list[0].weight, 17.74);
+  });
+});
+
+test('handleHoldings(QQQM)：兼容新版 stockanalysis DOM 并保留前十大', async () => {
+  const rows = STATIC_HOLDINGS.QQQM.list;
+  const fake = (url) => {
+    if (String(url).includes('stockanalysis.com/etf/qqqm/holdings')) {
+      return Promise.resolve(new Response(currentHtml(rows), { status: 200 }));
+    }
+    return Promise.reject(new Error('不该请求 ' + url));
+  };
+  await withFetch(fake, async () => {
+    const url = new URL('https://example.com/api/holdings?symbol=QQQM');
+    const result = await handleHoldings(new Request(url), url);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.symbol, 'QQQM');
+    assert.equal(result.body.source, 'stockanalysis');
+    assert.equal(result.body.list.length, 10);
+    assert.deepEqual(result.body.list.map((item) => item.sym), ['AAPL', 'NVDA', 'MSFT', 'AMZN', 'TSLA', 'MU', 'AMD', 'WMT', 'META', 'GOOGL']);
   });
 });
 

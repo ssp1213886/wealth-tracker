@@ -1,6 +1,7 @@
 import { edgeGetJson, edgePutJson } from './edge-cache.js';
 
-const ALLOWED_SYMBOLS = new Set(['VGT', 'SMH', 'IBIT', 'SGOV']);
+// IBIT/SGOV 保留一个发布周期，给尚未自动更新的旧客户端宽限；新核心仓只使用 QQQM/VGT/SMH。
+const ALLOWED_SYMBOLS = new Set(['QQQM', 'VGT', 'SMH', 'IBIT', 'SGOV']);
 const ALLOWED_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '3y', '5y', '10y', 'ytd', 'max']);
 
 /** 实时价 60 秒；近期历史必须覆盖最新收盘，远期为控制回源量保留长缓存。 */
@@ -60,7 +61,7 @@ export function mergeLatestQuote(data) {
 
 // 东方财富市场号：107 = NYSE Arca（VGT/SMH 等 ETF），105 = 纳斯达克
 // IBIT 在 NYSE Arca（市场号 107），与 VGT 同市场
-const EASTMONEY_SECID = { VGT: '107.VGT', SMH: '105.SMH', IBIT: '107.IBIT', SGOV: '107.SGOV' };
+const EASTMONEY_SECID = { QQQM: '105.QQQM', VGT: '107.VGT', SMH: '105.SMH', IBIT: '107.IBIT', SGOV: '107.SGOV' };
 const EASTMONEY_TTL = 10 * 60 * 1000;
 const eastmoneyCache = new Map();
 
