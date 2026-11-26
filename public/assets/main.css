@@ -1483,6 +1483,28 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .trade-summary{display:flex;align-items:center;justify-content:space-between;min-height:48px;border:1px solid var(--rule);border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .trade-summary span{color:var(--muted);font-size:11.5px;font-weight:560}
 .trade-summary strong{color:var(--accent);font-size:13.5px;font-weight:680;font-variant-numeric:tabular-nums}
+.trade-impact{display:grid;gap:8px;padding:10px;border:1px solid var(--rule);border-radius:14px;background:color-mix(in srgb,var(--surface) 74%,transparent)}
+.ti-empty{color:var(--muted);font-size:11px;text-align:center;padding:2px 0}
+.ti-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ti-head>span{color:var(--fg);font-size:11.5px;font-weight:650}
+.ti-head>strong{color:var(--muted);font-size:10.5px;font-weight:560;text-align:right;font-variant-numeric:tabular-nums}
+.ti-head>strong.is-bad{color:var(--red)}
+.ti-bars{display:grid;gap:5px}
+.ti-bar-row{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:7px}
+.ti-bar-row>small{color:var(--muted);font-size:9.5px;font-weight:560}
+.ti-stack{display:flex;height:8px;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--fg) 7%,transparent)}
+.ti-stack>i{display:block;min-width:0;height:100%;border-right:1px solid color-mix(in srgb,var(--card-bg) 70%,transparent)}
+.ti-stack>i:last-child{border-right:0}
+.ti-weights{display:grid;gap:4px}
+.ti-weight-row{display:grid;grid-template-columns:7px 36px minmax(72px,1fr) auto;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.ti-weight-row>i{width:7px;height:7px;border-radius:50%}
+.ti-weight-row>strong{color:var(--fg);font-size:10.5px;font-weight:650}
+.ti-weight-row>span{white-space:nowrap}
+.ti-weight-row>b{font-size:9.5px;font-weight:620;text-align:right;white-space:nowrap}
+.ti-weight-row>b.is-good{color:var(--ok)}
+.ti-weight-row>b.is-worse{color:var(--orange)}
+.ti-weight-row>b.is-flat{color:var(--muted)}
+.ti-weight-row.is-cash>i{background:var(--muted);opacity:.55}
 .console-form .btn-pri,.option-form .btn-pri{min-height:var(--ds-primary-height);margin:0;border-radius:14px;font-size:13.5px;font-weight:650}
 
 /* Price list */

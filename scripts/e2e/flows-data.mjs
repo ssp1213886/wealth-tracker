@@ -83,6 +83,20 @@ await ev(() => {
   if (chip && !chip.classList.contains('active')) chip.click();
 });
 await p.waitForTimeout(400);
+const tradePreview = await ev(() => ({
+  text: (document.getElementById('tradeImpact') || {}).innerText || '',
+  bars: document.querySelectorAll('#tradeImpact .ti-stack').length,
+  rows: document.querySelectorAll('#tradeImpact .ti-weight-row').length,
+  width: (document.getElementById('tradeImpact') || { getBoundingClientRect: () => ({ width: 0 }) }).getBoundingClientRect().width,
+  bodyWidth: document.body.scrollWidth,
+  viewportWidth: innerWidth,
+}));
+if (!/交易前/.test(tradePreview.text) || !/交易后/.test(tradePreview.text) || !/剩余现金/.test(tradePreview.text) || !/VGT/.test(tradePreview.text)) {
+  failures.push('交易影响预览内容不完整：' + JSON.stringify(tradePreview));
+}
+if (tradePreview.bars !== 2 || tradePreview.rows !== 4 || tradePreview.bodyWidth > tradePreview.viewportWidth) {
+  failures.push('交易影响预览结构或移动端溢出异常：' + JSON.stringify(tradePreview));
+}
 await ev(() => document.getElementById('btnAddTrade').click());
 await p.waitForTimeout(2000);
 const afterBuy = await snap();
