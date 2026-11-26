@@ -251,6 +251,37 @@ if (!(pwa320.regimeWidth > 0 && pwa320.regimeWidth <= 320)) failures.push('320px
 if (!(pwa320.trendWidth > 0 && pwa320.trendWidth <= 320)) failures.push('320px 趋势图宽度异常：' + pwa320.trendWidth);
 if (pwa320.tabs !== 4) failures.push('320px 底部 PWA 导航数量异常：' + pwa320.tabs);
 
+await p.setViewportSize({ width: 1440, height: 1000 });
+await p.waitForTimeout(400);
+const desktopShell = await ev(() => ({
+  desktop: window.matchMedia('(min-width: 801px)').matches,
+  overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  tabs: [...document.querySelectorAll('.tab-btn')].map((b) => b.dataset.tab),
+  bottomBar: getComputedStyle(document.getElementById('bottomBar')).display,
+  mainWidth: document.querySelector('.main').getBoundingClientRect().width,
+}));
+if (!desktopShell.desktop) failures.push('1440px 场景没有命中桌面样式');
+if (desktopShell.overflow > 0) failures.push('1440px 出现横向溢出：' + desktopShell.overflow);
+if (desktopShell.tabs.join(',') !== 'holding,console,option,data') failures.push('桌面顶部导航异常：' + JSON.stringify(desktopShell.tabs));
+if (desktopShell.bottomBar !== 'none') failures.push('桌面不应显示移动底栏：' + desktopShell.bottomBar);
+if (!(desktopShell.mainWidth > 900)) failures.push('桌面主工作区宽度异常：' + desktopShell.mainWidth);
+for (const tab of ['holding', 'console', 'option', 'data']) {
+  await ev((name) => document.querySelector(`.tab-btn[data-tab="${name}"]`).click(), tab);
+  await p.waitForTimeout(180);
+  const state = await ev((name) => {
+    const panel = document.getElementById('tab-' + name);
+    return {
+      active: document.body.dataset.activeTab,
+      panel: panel && panel.classList.contains('active'),
+      width: panel ? panel.getBoundingClientRect().width : 0,
+      title: (document.getElementById('desktopPageTitle') || {}).textContent || '',
+    };
+  }, tab);
+  if (state.active !== tab || !state.panel || !(state.width > 800)) {
+    failures.push('桌面顶部切换失败：' + tab + ' · ' + JSON.stringify(state));
+  }
+}
+
 /* 云端是否真的收到 */
 await p.waitForTimeout(1500);
 const cloud = await (await fetch(CLOUD + '/_log')).json();
