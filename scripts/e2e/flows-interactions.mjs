@@ -298,6 +298,45 @@ if (!consoleSheets.tradeHasForm) failures.push('买卖弹层里没有找到录�
 if (!consoleSheets.cashOpen) failures.push('点「＋ 记一笔」没有打开现金弹层');
 if (!consoleSheets.cashHasForm) failures.push('现金弹层里没有找到现金表单');
 
+/* 桌面端不能只检查 open 类：曾经弹层加了 open，但基础 fixed/flex 规则只在手机媒体查询内，
+   面板实际落在视口下方，用户看到的就是“点记录没反应”。 */
+await p.setViewportSize({ width: 1440, height: 1000 });
+await p.waitForTimeout(300);
+const desktopTrade = await ev(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  switchTab('console');
+  await sleep(350);
+  document.getElementById('btnTradeSheet').click();
+  await sleep(500);
+  const sheet = document.getElementById('tradeSheet');
+  const panel = sheet && sheet.querySelector('.qa-panel');
+  const style = sheet ? getComputedStyle(sheet) : {};
+  const rect = panel ? panel.getBoundingClientRect() : { top: 0, bottom: 0, height: 0 };
+  const price = document.getElementById('tfPrice');
+  const shares = document.getElementById('tfShares');
+  if (price) { price.value = '100'; price.dispatchEvent(new Event('input', { bubbles: true })); }
+  if (shares) { shares.value = '1'; shares.dispatchEvent(new Event('input', { bubbles: true })); }
+  const result = {
+    open: !!sheet && sheet.classList.contains('open'),
+    display: style.display || '',
+    position: style.position || '',
+    top: rect.top,
+    bottom: rect.bottom,
+    height: rect.height,
+    viewportHeight: innerHeight,
+    price: price ? price.value : '',
+    shares: shares ? shares.value : '',
+  };
+  closeTradeSheet();
+  return result;
+});
+if (!desktopTrade.open || desktopTrade.display !== 'flex' || desktopTrade.position !== 'fixed' ||
+  desktopTrade.top >= desktopTrade.viewportHeight || desktopTrade.height <= 0 ||
+  desktopTrade.price !== '100' || desktopTrade.shares !== '1') {
+  failures.push('桌面端买卖弹层不可见或不可录入：' + JSON.stringify(desktopTrade));
+}
+await p.setViewportSize({ width: 390, height: 844 });
+
 /* 刷新按钮必须给出"进行中"的可见反馈（v307 曾把这层反馈静默改没）。
    同一次点击内同步就能看到骨架，所以这里不等网络、直接读 DOM。 */
 const refreshFeedback = await ev(() => {
