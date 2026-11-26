@@ -13,6 +13,13 @@ export function probColor(prob) {
   return 'var(--ok)';
 }
 
+export function probBand(prob) {
+  if (prob == null || !isFinite(prob)) return 'none';
+  if (prob >= 0.25) return 'high';
+  if (prob >= 0.10) return 'mid';
+  return 'low';
+}
+
 /** 概率文案：0.1475 → 「14.8%」；null → 「—」。 */
 export function fmtProb(prob) {
   if (prob == null || !isFinite(prob)) return '—';
@@ -268,10 +275,16 @@ export function probMatrixHtml(matrix, ctx) {
     : '';
   const sel = Number(m.selected);
   const selIdx = sel >= 0 && sel < cols.length ? sel : 0;
+  const selectedCol = cols[selIdx] || {};
+  const selectedOtm = selectedCol.otmPct == null ? '' : (selectedCol.otmPct >= 0 ? '+' : '') + (Number(selectedCol.otmPct) * 100).toFixed(1) + '%';
   const heldBy = c.holdings || {};
   /* 刻意不加 .prob-table：那套手机端规则是给「到期日历」用的 */
   /* 表头第一格写「到期日 / 年化」：行头第一行的右侧就是这个数，标一次比每行都写"年化"省地方 */
-  let html = dteWarning + '<table class="mx-table"><thead><tr><th>到期日<span class="mx-otm">年化</span></th>' +
+  let html = dteWarning +
+    '<div class="mx-risk-key"><span class="is-low"><i></i>&lt;10%</span><span class="is-mid"><i></i>10–25%</span><span class="is-high"><i></i>≥25%</span>' +
+    '<b class="mx-current-pick">当前档 $' + escapeHtml(String(selectedCol.strike || '—')) +
+      (selectedOtm ? '<small>' + escapeHtml(selectedOtm) + '</small>' : '') + '</b></div>' +
+    '<table class="mx-table"><thead><tr><th>到期日<span class="mx-otm">年化</span></th>' +
     cols.map(function (col, i) {
       const pct = col.otmPct == null ? '' : (col.otmPct >= 0 ? '+' : '') + (col.otmPct * 100).toFixed(1) + '%';
       const label = '选 $' + col.strike + (pct ? '（高于现价 ' + pct + '）' : '');
@@ -305,7 +318,11 @@ export function probMatrixHtml(matrix, ctx) {
         '<small class="prob-sub">' + r.dte + ' 天' + heldTag + '</small></td>' +
       cols.map(function (col, i) {
         const cellI = cells[i];
-        return '<td class="mx-cell' + (i === selIdx ? ' mx-on' : '') +
+        const band = probBand(cellI && cellI.prob);
+        const fill = cellI && cellI.prob != null ? Math.max(3, Math.min(100, Number(cellI.prob) * 200)) : 0;
+        return '<td class="mx-cell mx-heat is-' + band + (i === selIdx ? ' mx-on' : '') +
+          '" style="--mx-fill:' + fill.toFixed(1) + '%;--mx-risk:' +
+          (band === 'high' ? 'var(--red)' : band === 'mid' ? 'var(--orange)' : 'var(--ok)') +
           '" title="' + escapeHtml(cellTitle(cellI)) + '">' + matrixCellHtml(cellI) + '</td>';
       }).join('') +
       '</tr>';

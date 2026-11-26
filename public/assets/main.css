@@ -2954,26 +2954,28 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .cc-due{color:var(--accent-d);font-weight:700}
 .cc-streak{color:var(--accent-d)}
 .cc-missed{color:var(--orange)}
+:root{--chart-sma50:#2f6fd6;--chart-sma200:#b56b1f;--chart-bull:#16834b;--chart-neutral:#7d8781;--chart-bear:#c2413a}
+[data-theme="dark"]{--chart-sma50:#78a9f5;--chart-sma200:#e7a64e;--chart-bull:#5cc48a;--chart-neutral:#96a19b;--chart-bear:#ef776f}
 .trend-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 4px;color:var(--muted);font-size:10.5px}
 .trend-legend span{display:inline-flex;align-items:center;gap:4px}
 .trend-dot{display:inline-block;width:14px;height:2px;border-radius:2px;background:currentColor}
 .trend-dot.is-price{color:var(--accent)}
-.trend-dot.is-sma50{color:var(--blue)}
-.trend-dot.is-sma200{color:var(--orange)}
+.trend-dot.is-sma50{color:var(--chart-sma50);background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 6px)}
+.trend-dot.is-sma200{color:var(--chart-sma200);background:repeating-linear-gradient(90deg,currentColor 0 1px,transparent 1px 3px)}
 .trend-svg{display:block;width:100%;height:auto;overflow:visible}
 .trend-grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:3 4}
 .trend-line{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .trend-line.is-price{stroke:var(--accent);stroke-width:1.7}
-.trend-line.is-sma50{stroke:var(--blue);stroke-width:1.25}
-.trend-line.is-sma200{stroke:var(--orange);stroke-width:1.25}
-.trend-state.is-bull{fill:var(--accent)}
-.trend-state.is-neutral{fill:var(--muted);opacity:.45}
-.trend-state.is-bear{fill:var(--orange)}
+.trend-line.is-sma50{stroke:var(--chart-sma50);stroke-width:1.35;stroke-dasharray:6 4}
+.trend-line.is-sma200{stroke:var(--chart-sma200);stroke-width:1.35;stroke-dasharray:2 4}
+.trend-state.is-bull{fill:var(--chart-bull)}
+.trend-state.is-neutral{fill:var(--chart-neutral);opacity:.45}
+.trend-state.is-bear{fill:var(--chart-bear)}
 .trend-range{display:flex;justify-content:space-between;margin-top:-2px;color:var(--muted);font-size:9.5px;font-variant-numeric:tabular-nums}
 .trend-counts{display:flex;gap:12px;flex-wrap:wrap;margin-top:7px;font-size:10.5px;font-weight:620}
-.trend-counts .is-bull{color:var(--accent-d)}
-.trend-counts .is-neutral{color:var(--muted)}
-.trend-counts .is-bear{color:var(--orange)}
+.trend-counts .is-bull{color:var(--chart-bull)}
+.trend-counts .is-neutral{color:var(--chart-neutral)}
+.trend-counts .is-bear{color:var(--chart-bear)}
 .trend-empty{color:var(--muted);font-size:11.5px;padding:8px 0}
 .trend-card .prob-chip{min-width:44px}
 .trend-chart-shell{position:relative;min-width:0}
@@ -2987,20 +2989,29 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-axis-label{fill:var(--muted);font:500 9px var(--font);font-variant-numeric:tabular-nums}
 .trend-grid.is-vertical{opacity:.42}
 .trend-regime-band{opacity:.045}
-.trend-regime-band.is-bull{fill:var(--accent)}
-.trend-regime-band.is-neutral{fill:var(--muted)}
-.trend-regime-band.is-bear{fill:var(--orange)}
+.trend-regime-band.is-bull{fill:var(--chart-bull)}
+.trend-regime-band.is-neutral{fill:var(--chart-neutral)}
+.trend-regime-band.is-bear{fill:var(--chart-bear)}
 .trend-area-top{stop-color:var(--accent);stop-opacity:.22}
 .trend-area-bottom{stop-color:var(--accent);stop-opacity:0}
 .trend-area{fill:url(#trendAreaFill);stroke:none}
 .trend-current-dot{fill:var(--accent);stroke:var(--card-bg);stroke-width:2;vector-effect:non-scaling-stroke}
 .trend-current-halo{fill:none;stroke:var(--accent);stroke-width:1;opacity:.25;vector-effect:non-scaling-stroke}
 .trend-current-price{fill:var(--accent-d);font:700 11px var(--font);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--card-bg);stroke-width:3px;stroke-linejoin:round}
+.trend-event{pointer-events:all}
+.trend-event>circle,.trend-event>rect,.trend-event>polygon{stroke:var(--card-bg);stroke-width:1.7;vector-effect:non-scaling-stroke}
+.trend-event.is-buy>circle{fill:var(--accent)}
+.trend-event.is-sell>polygon{fill:var(--red)}
+.trend-event.is-call>rect{fill:var(--violet)}
+.trend-event.is-ma>circle{fill:var(--card-bg);stroke:var(--chart-sma200);stroke-width:2}
+.trend-event.is-mixed>circle{fill:var(--fg)}
+.sb-mini-legend b small{display:block;margin-top:1px;color:var(--muted);font-size:9px;font-weight:520;white-space:nowrap}
+.drawdown-value small{display:block;margin-top:1px;color:var(--muted);font-size:8.5px;font-weight:550;white-space:nowrap}
 .trend-hit-area{fill:transparent;cursor:crosshair;touch-action:pan-y}
 .trend-hover{pointer-events:none}
 .trend-crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke;opacity:.72}
 .trend-hover-dot{stroke:var(--card-bg);stroke-width:1.5;vector-effect:non-scaling-stroke}
-.trend-hover-dot.is-price{fill:var(--fg)}.trend-hover-dot.is-sma50{fill:var(--blue)}.trend-hover-dot.is-sma200{fill:var(--orange)}
+.trend-hover-dot.is-price{fill:var(--fg)}.trend-hover-dot.is-sma50{fill:var(--chart-sma50)}.trend-hover-dot.is-sma200{fill:var(--chart-sma200)}
 .trend-tooltip{position:absolute;z-index:3;top:43px;width:146px;padding:8px 9px;border:1px solid var(--rule);border-radius:9px;background:color-mix(in srgb,var(--card-bg) 94%,transparent);box-shadow:var(--shadow);backdrop-filter:blur(10px);pointer-events:none;font-variant-numeric:tabular-nums}
 .trend-tooltip[hidden]{display:none}.trend-tooltip strong{display:block;margin-bottom:4px;color:var(--fg);font-size:10px}.trend-tooltip span{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:9px;line-height:1.55}.trend-tooltip b{color:var(--fg);font-weight:650}.trend-tooltip em{align-self:flex-start;display:inline-block;margin-top:4px;color:var(--muted);font-size:8.5px;font-style:normal}
 .equity-chart .eq-grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 5;opacity:.55;vector-effect:non-scaling-stroke}
@@ -3026,6 +3037,17 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-table tbody td:first-child{text-align:left;font-weight:620}
 .mx-table tbody tr:last-child td{border-bottom:0}
 .mx-table td.mx-on{background:color-mix(in srgb,var(--accent) 13%,transparent)}
+.mx-cell{position:relative;isolation:isolate}
+.mx-cell.mx-heat::before{content:'';position:absolute;z-index:-1;left:2px;right:2px;bottom:5px;height:3px;border-radius:999px;background:color-mix(in srgb,var(--mx-risk) 22%,transparent)}
+.mx-cell.mx-heat::after{content:'';position:absolute;z-index:-1;left:2px;bottom:5px;max-width:calc(100% - 4px);width:var(--mx-fill);height:3px;border-radius:999px;background:var(--mx-risk);opacity:.78}
+.mx-risk-key{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 7px;color:var(--muted);font-size:10px}
+.mx-risk-key>span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.mx-risk-key i{display:inline-block;width:7px;height:7px;border-radius:50%}
+.mx-risk-key .is-low i{background:var(--ok)}
+.mx-risk-key .is-mid i{background:var(--orange)}
+.mx-risk-key .is-high i{background:var(--red)}
+.mx-risk-key .mx-current-pick{margin-left:auto;padding:2px 7px;border-radius:7px;background:var(--accent-l);color:var(--accent-d);font-weight:700;font-variant-numeric:tabular-nums}
+.mx-risk-key .mx-current-pick small{margin-left:4px;color:var(--accent-d);font-size:9.5px;font-weight:600}
 /* 每格两行：上行概率（按风险着色）+ 下行权利金（灰字）—— 不用再切视角 */
 .mx-cell .mx-prob{display:block;font-weight:640;font-variant-numeric:tabular-nums}
 .mx-cell .mx-prem{display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-top:2px}

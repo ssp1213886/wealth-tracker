@@ -320,7 +320,8 @@ const server = http.createServer((req, res) => {
     if (['VGT', 'SMH', 'IBIT'].includes(sym)) {
       const rangeName = url.searchParams.get('range');
       const length = rangeName === 'max' ? 1400 : rangeName === '3y' ? 751 : rangeName === '2y' ? 501 : 251;
-      const start = Date.UTC(rangeName === 'max' ? 2023 : 2024, 0, 1);
+      const end = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+      const start = end - (length - 1) * 86400000;
       const closes = Array.from({ length }, (_, i) => (rangeName === 'max' ? 100 + i * 0.015 : (i < length - 100 ? 100 : 120)));
       const timestamps = Array.from({ length }, (_, i) => (start + i * 86400000) / 1000);
       res.writeHead(200, cors);

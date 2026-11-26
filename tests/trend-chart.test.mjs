@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildTrendData, trendChartHtml, trendTabsHtml, renderTrendChart } from '../src/app/trend-chart.js';
+import { buildTrendData, buildTrendEvents, trendChartHtml, trendTabsHtml, renderTrendChart } from '../src/app/trend-chart.js';
 
 function info(unit) {
   const closes = [];
@@ -45,9 +45,44 @@ test('趋势图加载与错误状态使用统一组件', () => {
   assert.match(trendChartHtml(null, 'VGT', '1y', { error: 'HTTP 503' }), /ds-empty.*is-error.*行情源暂不可用/);
 });
 
+test('趋势图事件：买卖、卖出 CALL 与均线穿越映射到交易日', () => {
+  const rows = buildTrendData(info()).rows;
+  const date = new Date(rows[10].ts).toISOString().slice(0, 10);
+  const events = buildTrendEvents(rows, {
+    trades: [{ symbol: 'VGT', date: date, shares: 2, price: rows[10].price }],
+    optionTrades: [{ sym: 'VGT', added: date, type: 'CALL', strike: 120, contracts: 1 }],
+    maCrosses: [{ symbol: 'VGT', triggeredAt: rows[10].ts, period: 200, toSide: 'ABOVE' }],
+  }, 'VGT');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].kind, 'mixed');
+  assert.equal(events[0].items.length, 3);
+  assert.match(trendChartHtml(info(), 'VGT', '1y', null, {
+    trades: [{ symbol: 'VGT', date: date, shares: 2, price: rows[10].price }],
+  }), /class="trend-event is-buy"/);
+});
+
+test('趋势图事件用形状区分，不只依赖颜色', () => {
+  const rows = buildTrendData(info()).rows;
+  const day = (index) => new Date(rows[index].ts).toISOString().slice(0, 10);
+  const html = trendChartHtml(info(), 'VGT', '1y', null, {
+    trades: [
+      { symbol: 'VGT', date: day(5), shares: -2, price: rows[5].price },
+    ],
+    optionTrades: [{ sym: 'VGT', added: day(8), type: 'CALL', strike: 120, contracts: 1 }],
+    maCrosses: [{ symbol: 'VGT', triggeredAt: rows[12].ts, period: 200, toSide: 'ABOVE' }],
+  });
+  assert.match(html, /class="trend-event is-sell"><title>[\s\S]*?<polygon/);
+  assert.match(html, /class="trend-event is-call"><title>[\s\S]*?<rect/);
+  assert.match(html, /class="trend-event is-ma"><title>[\s\S]*?<circle/);
+});
+
 test('趋势图禁止长按选择、复制与移动端 callout', () => {
   const css = readFileSync('public/assets/main.css', 'utf8');
   assert.match(css, /\.trend-chart-shell,\.trend-chart-shell \*\{[^}]*-webkit-user-select:none;user-select:none;-webkit-touch-callout:none/);
+  assert.match(css, /\.trend-line\.is-sma50\{stroke:var\(--chart-sma50\)[^}]*stroke-dasharray:6 4/);
+  assert.match(css, /\.trend-line\.is-sma200\{stroke:var\(--chart-sma200\)[^}]*stroke-dasharray:2 4/);
+  assert.match(css, /\.trend-state\.is-bull\{fill:var\(--chart-bull\)\}/);
+  assert.match(css, /\.trend-state\.is-bear\{fill:var\(--chart-bear\)\}/);
 });
 
 test('趋势图支持 6 个月 / 1 年 / 2 年窗口', () => {

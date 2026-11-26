@@ -184,6 +184,7 @@ const chartUi = await ev(() => ({
   rangeHeights: [...document.querySelectorAll('#trendChart [data-trendrange]')].map((el) => el.getBoundingClientRect().height),
   area: !!document.querySelector('#trendChart .trend-area'),
   currentPriceLabel: (document.querySelector('#trendChart .trend-current-price') || {}).textContent || '',
+  eventDots: document.querySelectorAll('#trendChart .trend-event').length,
   hoverLayer: !!document.querySelector('#trendChart .trend-hover'),
   trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
   activeTrend: (document.querySelector('#trendTabs .prob-chip.is-on') || {}).textContent || '',
@@ -213,6 +214,7 @@ if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200 || !char
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
 if (chartUi.yLabels !== 5 || chartUi.visibleYLabels !== 3 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
 if (!/^\$/.test(chartUi.currentPriceLabel)) failures.push('趋势图缺少当前价标签：' + JSON.stringify(chartUi.currentPriceLabel));
+if (chartUi.eventDots < 1) failures.push('趋势图没有渲染交易事件：' + chartUi.eventDots);
 if (!/^(6 个月|1 年|2 年)$/.test(chartUi.titleRange) || !/^\d{4}\/\d{2}\/\d{2}$/.test(chartUi.titleAsOf)) failures.push('趋势图标题缺少范围或数据截至日期：' + JSON.stringify({ range: chartUi.titleRange, asOf: chartUi.titleAsOf }));
 if (chartUi.rangeHeights.some((height) => height < 40)) failures.push('移动端趋势范围按钮触控高度不足：' + JSON.stringify(chartUi.rangeHeights));
 if (chartNative.userSelect !== 'none' || chartNative.webkitUserSelect !== 'none' ||
@@ -231,6 +233,81 @@ if (chartUi.optionCards.indexOf('trend') < 0 || chartUi.optionCards.indexOf('pro
 if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {
   failures.push('数据新鲜度信息不完整：' + chartUi.freshness);
 }
+const paletteAudit = await ev(() => {
+  const root = document.documentElement;
+  const oldTheme = root.dataset.theme;
+  const oldAccent = root.dataset.accent;
+  const priceLine = document.querySelector('#trendChart .trend-line.is-price');
+  const sma50 = document.querySelector('#trendChart .trend-line.is-sma50');
+  const sma200 = document.querySelector('#trendChart .trend-line.is-sma200');
+  const probe = document.createElement('span');
+  probe.style.display = 'none';
+  document.body.appendChild(probe);
+  const rgb = (value) => { probe.style.color = value; return getComputedStyle(probe).color; };
+  const accents = ['forest', 'ocean', 'warm', 'plum', 'mono'];
+  const themes = ['light', 'dark'];
+  const out = {};
+  themes.forEach((theme) => {
+    root.dataset.theme = theme;
+    const rows = accents.map((accent) => {
+      root.dataset.accent = accent;
+      const style = getComputedStyle(root);
+      const accentRgb = getComputedStyle(priceLine).stroke;
+      const sma50Rgb = getComputedStyle(sma50).stroke;
+      const sma200Rgb = getComputedStyle(sma200).stroke;
+      return {
+        accent,
+        accentRgb,
+        sma50Rgb,
+        sma200Rgb,
+        chartBull: rgb(style.getPropertyValue('--chart-bull').trim()),
+        chartBear: rgb(style.getPropertyValue('--chart-bear').trim()),
+        sma50Dash: getComputedStyle(sma50).strokeDasharray,
+        sma200Dash: getComputedStyle(sma200).strokeDasharray,
+      };
+    });
+    out[theme] = rows;
+  });
+  probe.remove();
+  root.dataset.theme = oldTheme;
+  root.dataset.accent = oldAccent;
+  return out;
+});
+for (const theme of ['light', 'dark']) {
+  const rows = paletteAudit[theme] || [];
+  const unique = (key) => new Set(rows.map((row) => row[key])).size;
+  const conflicts = rows.filter((row) => row.accentRgb === row.sma50Rgb || row.accentRgb === row.sma200Rgb ||
+    row.accentRgb === row.chartBull || row.accentRgb === row.chartBear || row.chartBull === row.chartBear).map((row) => row.accent);
+  if (rows.length !== 5 || unique('sma50Rgb') !== 1 || unique('sma200Rgb') !== 1 ||
+    unique('chartBull') !== 1 || unique('chartBear') !== 1 || conflicts.length) {
+    failures.push('趋势图固定语义色冲突（' + theme + '）：' + JSON.stringify({ rows, conflicts }));
+  }
+  if (!rows.length || rows[0].sma50Dash === rows[0].sma200Dash) failures.push('趋势图均线缺少不同线型：' + JSON.stringify(rows));
+}
+await p.waitForFunction(() => !!document.querySelector('#probMatrix .mx-table'), null, { timeout: 10000 }).catch(() => {});
+await p.waitForFunction(() => {
+  const el = document.getElementById('sbVgtCurrent');
+  return el && /^当前 \d+\.\d%$/.test(el.textContent || '');
+}, null, { timeout: 8000 }).catch(() => {});
+const visualSummary = await ev(() => ({
+  heatCells: document.querySelectorAll('#probMatrix .mx-cell.mx-heat').length,
+  riskKey: !!document.querySelector('#probMatrix .mx-risk-key'),
+  currentStrike: (document.querySelector('#probMatrix .mx-current-pick') || {}).textContent || '',
+  vgtCurrent: (document.getElementById('sbVgtCurrent') || {}).textContent || '',
+  drawdownGap: (document.querySelector('#hmDrawdown .drawdown-value small') || {}).textContent || '',
+  probText: (document.getElementById('probMatrix') || {}).innerText || '',
+  sidebarCurrentHtml: (document.getElementById('sbVgtCurrent') || {}).outerHTML || '',
+  hasSidebar: !!document.querySelector('.sidebar'),
+  sidebarLegendHtml: (document.querySelector('.sb-mini-legend') || {}).outerHTML || '',
+}));
+if (!/期权链暂不可用/.test(visualSummary.probText) &&
+  (visualSummary.heatCells < 3 || !visualSummary.riskKey || !/当前档/.test(visualSummary.currentStrike))) {
+  failures.push('被行权概率缺少热力图或当前档摘要：' + JSON.stringify(visualSummary));
+}
+if (visualSummary.sidebarCurrentHtml && !/^当前 \d+\.\d%$/.test(visualSummary.vgtCurrent)) {
+  failures.push('资产配置没有显示当前实际占比：' + JSON.stringify(visualSummary));
+}
+if (!/^-\$/.test(visualSummary.drawdownGap)) failures.push('回撤卡没有显示距 52 周高点的金额：' + JSON.stringify(visualSummary));
 await ev(() => {
   const svg = document.querySelector('#trendChart .trend-svg');
   const rect = svg.getBoundingClientRect();

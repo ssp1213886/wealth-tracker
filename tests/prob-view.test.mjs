@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  probColor, fmtProb, fmtIv,
+  probColor, probBand, fmtProb, fmtIv,
   expiryCalendarHtml, noteHtml, renderProbUnavailable,
   probMatrixHtml, probTabsHtml, matrixCellHtml,
   parseMarketTime, fmtChainTime, fmtChainTimeShort,
@@ -21,6 +21,14 @@ test('probColor：按 10% / 25% 分级（绿 → 橙 → 红）', () => {
   assert.equal(probColor(0.25), 'var(--red)', '25% 归红');
   assert.equal(probColor(null), 'var(--muted)');
   assert.equal(probColor(NaN), 'var(--muted)');
+});
+
+test('probBand：热力档位与概率颜色口径一致', () => {
+  assert.equal(probBand(0.05), 'low');
+  assert.equal(probBand(0.10), 'mid');
+  assert.equal(probBand(0.249), 'mid');
+  assert.equal(probBand(0.25), 'high');
+  assert.equal(probBand(null), 'none');
 });
 
 test('fmtProb / fmtIv：缺值显示「—」而不是 NaN', () => {
@@ -125,6 +133,9 @@ const MX = { columns: MX_COLS, rows: MX_ROWS, ladder: [130, 135, 138, 145, 152, 
 
 test('probMatrixHtml：列头是真实行权价按钮（第二行 OTM%），当前列整列高亮；每行都给年化', () => {
   const html = probMatrixHtml(MX, {});
+  assert.match(html, /mx-risk-key/);
+  assert.match(html, /mx-heat is-high/);
+  assert.match(html, /当前档 \$/);
   // v355：剩余天数并进到期日格（第二行小字），少一列 —— 手机上才不用横滑
   assert.match(html, /<thead><tr><th>到期日<span class="mx-otm">年化<\/span><\/th><th><button/);
   /* v392：行头两行 —— 第一行「到期日 + 右侧年化」（表头那格写一次「年化」当标注），第二行剩余天数等 */
