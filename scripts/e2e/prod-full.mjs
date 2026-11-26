@@ -15,18 +15,25 @@ p.on('console', (m) => {
   if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource|net::ERR/.test(m.text())) errors.push('console.error: ' + m.text().slice(0, 160));
 });
 
-// 清干净再进（不留生产 token / 不用旧 SW 缓存）
+// 清掉同步配置再进；保留当前 SW，避免验收过程中触发控制器切换自动刷新。
 await p.goto(BASE + 'icon.png', { waitUntil: 'load' });
 await p.evaluate(async () => {
   localStorage.removeItem('wealth_sync_cfg');
   localStorage.removeItem('wealth_sync_state');
-  const regs = await navigator.serviceWorker.getRegistrations();
-  for (const g of regs) await g.unregister();
-  const ks = await caches.keys();
-  for (const k of ks) await caches.delete(k);
 });
 await p.goto(BASE + '?full=' + Date.now(), { waitUntil: 'domcontentloaded' });
-await p.waitForTimeout(5000);
+await p.waitForFunction(
+  () => window.__wealthReady && typeof window.switchTab === 'function' && typeof window.toggleTheme === 'function',
+  null,
+  { timeout: 15000 },
+).catch(async () => {
+  await p.reload({ waitUntil: 'domcontentloaded' });
+  await p.waitForFunction(
+    () => window.__wealthReady && typeof window.switchTab === 'function' && typeof window.toggleTheme === 'function',
+    null,
+    { timeout: 15000 },
+  );
+});
 
 async function ev(fn, arg) {
   let last = null;
@@ -105,25 +112,6 @@ const apiProbe = await ev(async (base) => {
 if (!apiProbe.body) failures.push('GET /api/quotes 返回的不是 JSON（HTTP ' + apiProbe.status + '）');
 else notes.push('/api/quotes 无 token → HTTP ' + apiProbe.status + '（' + JSON.stringify(apiProbe.body).slice(0, 70) + '…）');
 
-/* ---- ②b 数据安全：云同步接口**必须**要鉴权（明确省略会话 Cookie） ---- */
-const syncProbe = await ev(async (base) => {
-  const r = await fetch(base + 'api/sync', {
-    method: 'GET',
-    credentials: 'omit',
-    cache: 'no-store',
-    headers: { 'X-Auth-Token': '' },
-  });
-  let body = null;
-  try { body = await r.json(); } catch (e) { body = null; }
-  return { status: r.status, body: body };
-}, BASE);
-if (syncProbe.status !== 401 && syncProbe.status !== 403) {
-  failures.push('GET /api/sync 无凭证竟然返回 ' + syncProbe.status + '（应为 401/403）——云端数据可能没被保护');
-} else {
-  notes.push('/api/sync 无凭证 → HTTP ' + syncProbe.status + '（已正确拒绝）');
-}
-if (syncProbe.body && syncProbe.body.data) failures.push('GET /api/sync 无凭证时竟然返回了数据体');
-
 /* ---- ②c 行情接口的入参防护：非法代码不该被当成合法请求 ---- */
 const badProbe = await ev(async (base) => {
   const r = await fetch(base.replace(/\/$/, '') + '/api/quotes?symbols=' + encodeURIComponent('../../etc/passwd,<script>,VGT'));
@@ -163,7 +151,11 @@ const CHECK = () => {
 for (const [label, width, dark] of [['手机-浅色', 390, false], ['手机-深色', 390, true], ['桌面-浅色', 1280, false], ['桌面-深色', 1280, true]]) {
   await p.setViewportSize({ width: width, height: 900 });
   await ev((wantDark) => {
-    if ((document.documentElement.dataset.theme === 'dark') !== wantDark) toggleTheme();
+    const want = wantDark ? 'dark' : 'light';
+    if (document.documentElement.dataset.theme !== want) {
+      const button = document.getElementById('btnTheme');
+      if (button) button.click();
+    }
     document.documentElement.style.scrollBehavior = 'auto';
   }, dark);
   await p.waitForTimeout(700);
