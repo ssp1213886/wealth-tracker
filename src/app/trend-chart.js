@@ -108,7 +108,7 @@ export function trendChartHtml(info, symbol) {
       '<path class="trend-line is-price" d="' + pricePath + '"></path>' +
       strip +
     '</svg>' +
-    '<div class="trend-range"><span>' + escapeHtml(dateLabel(rows[0].ts)) + '</span><span>' + escapeHtml(dateLabel(rows[rows.length - 1].ts)) + '</span></div>' +
+    '<div class="trend-range"><span>开始 ' + escapeHtml(dateLabel(rows[0].ts)) + '</span><span>截至 ' + escapeHtml(dateLabel(rows[rows.length - 1].ts)) + '</span></div>' +
     '<div class="trend-counts"><span class="is-bull">强势 ' + data.counts.bull + ' 天</span><span class="is-neutral">中性 ' + data.counts.neutral + ' 天</span><span class="is-bear">弱势 ' + data.counts.bear + ' 天</span></div>';
 }
 

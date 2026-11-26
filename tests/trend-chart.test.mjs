@@ -37,8 +37,8 @@ test('时间戳：Unix 秒与毫秒都显示真实月份，不会落到 1970 年
   assert.ok(secondsData.rows[0].ts >= 1e12, '秒级时间戳应归一化为毫秒');
   const secondsHtml = trendChartHtml(info('seconds'), 'VGT');
   const msHtml = trendChartHtml(info(), 'VGT');
-  assert.match(secondsHtml, />2025\/07\/19<\/span><span>2025\/09\/17<\/span>/);
-  assert.match(msHtml, />2025\/07\/19<\/span><span>2025\/09\/17<\/span>/);
+  assert.match(secondsHtml, />开始 2025\/07\/19<\/span><span>截至 2025\/09\/17<\/span>/);
+  assert.match(msHtml, />开始 2025\/07\/19<\/span><span>截至 2025\/09\/17<\/span>/);
   assert.doesNotMatch(secondsHtml, /01\/21/);
   assert.doesNotMatch(msHtml, /01\/21/);
 });

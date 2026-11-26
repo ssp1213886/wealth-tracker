@@ -181,13 +181,18 @@ const chartUi = await ev(() => ({
   trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
   activeTrend: (document.querySelector('#trendTabs .prob-chip.is-on') || {}).textContent || '',
   rangeLabels: [...document.querySelectorAll('#trendChart .trend-range span')].map((el) => el.textContent || ''),
+  optionCards: [...document.querySelectorAll('#tab-option > .card')].map((el) => el.classList.contains('trend-card') ? 'trend' : el.classList.contains('prob-card') ? 'prob' : ''),
   freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
 }));
 if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200) failures.push('趋势图三条线没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
 if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
-if (chartUi.rangeLabels.length !== 2 || chartUi.rangeLabels.some((label) => !/^\d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(label) || label.endsWith('/01/21')) || chartUi.rangeLabels[0] === chartUi.rangeLabels[1]) {
+const rangeDates = chartUi.rangeLabels.map((label) => (label.match(/\d{4}\/(0[1-9]|1[0-2])\/\d{2}/) || [])[0] || '');
+if (chartUi.rangeLabels.length !== 2 || !/^开始 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[0]) || !/^截至 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[1]) || rangeDates.some((date) => date.endsWith('/01/21')) || rangeDates[0] === rangeDates[1]) {
   failures.push('趋势图日期标签异常：' + JSON.stringify(chartUi.rangeLabels));
+}
+if (chartUi.optionCards.indexOf('trend') < 0 || chartUi.optionCards.indexOf('prob') < 0 || chartUi.optionCards.indexOf('trend') + 1 !== chartUi.optionCards.indexOf('prob')) {
+  failures.push('趋势图没有紧挨在被行权概率卡片上方：' + JSON.stringify(chartUi.optionCards));
 }
 if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {
   failures.push('数据新鲜度信息不完整：' + chartUi.freshness);

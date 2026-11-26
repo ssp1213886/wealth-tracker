@@ -172,9 +172,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=411');
+  assert.equal(manifest.start_url, '/?v=412');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v411/);
+  assert.match(serviceWorker, /wealth-v412/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +188,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=411',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=412',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -848,6 +848,9 @@ test('期权页：两张卡的分工写在标题上，节奏 ★ 只在「被行
   assert.match(html, /<h3>被行权概率<\/h3>/, 'v389：概率卡标题不再写该卖哪一档（该卖整套判定已取消）');
   assert.doesNotMatch(html, /probSummary/, '结论块的元素也一并删掉');
   assert.match(html, /<h3>到期日历<span class="card-sub">市场有哪些到期日<\/span><\/h3>/, '日历卡要写清它是资料卡');
+  const trendCardAt = html.indexOf('<div class="card option-card trend-card">');
+  const probCardAt = html.indexOf('<div class="card option-card prob-card">');
+  assert.ok(trendCardAt >= 0 && probCardAt >= 0 && trendCardAt < probCardAt, '趋势图要放在被行权概率卡片正上方');
   assert.doesNotMatch(html, /★ = 按固定节奏该卖的档位/, '日历卡里不再重复 ★ 的说明');
   assert.doesNotMatch(indexSource, /fixed\[sym\]/, '日历卡不再收「节奏那一档」——★ 归概率卡');
   // indexSource 是剥掉 import 行的版本，所以这里只能钉"在用它"（唯一来源由 audit 的跨模块 import 规则兜底）
