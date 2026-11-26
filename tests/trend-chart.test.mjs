@@ -33,6 +33,7 @@ test('trendChartHtml：输出三条线、状态条与近一年统计', () => {
   assert.match(html, /trend-axis-label/);
   assert.match(html, /trend-current-dot/);
   assert.match(html, /trend-current-price/);
+  assert.match(html, /trend-mobile-readout/);
   assert.match(html, /trend-tooltip/);
   assert.match(html, /data-trend-points=/);
   assert.match(html, /data-trendrange="6m"/);

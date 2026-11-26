@@ -13,7 +13,6 @@ export function tradeImpact(input) {
   const o = input || {};
   const symbols = (Array.isArray(o.symbols) && o.symbols.length ? o.symbols : DEFAULT_SYMBOLS).map(String);
   const trades = Array.isArray(o.trades) ? o.trades : [];
-  const targets = o.targets || {};
   const prices = o.prices || {};
   const symbol = String(o.symbol || symbols[0]).toUpperCase();
   const type = o.type === 'sell' ? 'sell' : 'buy';
@@ -45,45 +44,30 @@ export function tradeImpact(input) {
   });
   const holdingsBefore = symbols.reduce(function (sum, sym) { return sum + beforeValues[sym]; }, 0);
   const holdingsAfter = symbols.reduce(function (sum, sym) { return sum + afterValues[sym]; }, 0);
-  const totalBefore = holdingsBefore + cashBefore;
-  const totalAfter = holdingsAfter + cashAfter;
   const rows = symbols.map(function (sym) {
     const beforePct = pct(beforeValues[sym], holdingsBefore);
     const afterPct = pct(afterValues[sym], holdingsAfter);
-    const targetPct = Math.max(0, num(targets[sym])) * 100;
-    const beforeDeviation = beforePct - targetPct;
-    const afterDeviation = afterPct - targetPct;
     return {
       sym: sym,
       beforeValue: beforeValues[sym],
       afterValue: afterValues[sym],
       beforePct: beforePct,
       afterPct: afterPct,
-      targetPct: targetPct,
-      beforeDeviation: beforeDeviation,
-      afterDeviation: afterDeviation,
-      improvement: Math.abs(beforeDeviation) - Math.abs(afterDeviation),
     };
   });
-  const cashBeforePct = pct(cashBefore, totalBefore);
-  const cashAfterPct = pct(cashAfter, totalAfter);
   return {
     type: type,
     symbol: symbol,
     shares: shares,
     price: price,
     hasTrade: hasTrade,
-    ready: totalBefore > 0 || hasTrade,
+    ready: holdingsBefore > 0 || holdingsAfter > 0 || cashBefore > 0 || hasTrade,
     missingPrices: missingPrices,
     amount: tradeAmount,
     cashBefore: cashBefore,
     cashAfter: cashAfter,
-    cashBeforePct: cashBeforePct,
-    cashAfterPct: cashAfterPct,
     holdingsBefore: holdingsBefore,
     holdingsAfter: holdingsAfter,
-    totalBefore: totalBefore,
-    totalAfter: totalAfter,
     rows: rows,
     remainingShares: type === 'sell' ? Math.max(0, heldAfter[symbol] || 0) : null,
   };

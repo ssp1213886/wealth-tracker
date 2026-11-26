@@ -185,6 +185,7 @@ function chartMarkup(rows, counts, range, symbol) {
       '<rect class="trend-hit-area" x="' + PLOT.left + '" y="' + PLOT.top + '" width="' + (PLOT.right - PLOT.left) +
         '" height="' + (PLOT.bottom - PLOT.top) + '"></rect>' +
     '</svg>' +
+    '<div class="trend-mobile-readout" aria-live="polite"><span class="tmr-empty">长按图表查看某日数据</span></div>' +
     '<div class="trend-range"><span>开始 ' + escapeHtml(dateLabel(rows[0].ts)) + '</span><span>截至 ' + escapeHtml(dateLabel(rows[rows.length - 1].ts)) + '</span></div>' +
     '<div class="trend-counts"><span class="is-bull">强势 ' + counts.bull + ' 天</span><span class="is-neutral">中性 ' + counts.neutral + ' 天</span><span class="is-bear">弱势 ' + counts.bear + ' 天</span></div>' +
   '</div>';
@@ -237,6 +238,7 @@ function bindTrendChart(el) {
   const svg = shell && shell.querySelector('.trend-svg');
   const hover = shell && shell.querySelector('.trend-hover');
   const tooltip = shell && shell.querySelector('.trend-tooltip');
+  const readout = shell && shell.querySelector('.trend-mobile-readout');
   if (!shell || !svg || !hover || !tooltip) return;
   let points;
   try {
@@ -284,6 +286,12 @@ function bindTrendChart(el) {
     tooltip.innerHTML = '<strong>' + dateLabel(point[0]) + '</strong><span>' +
       escapeHtml(symbolText) + ' <b>' + priceLabel(point[1]) + '</b></span><span>50 日 <b>' + priceLabel(point[2]) +
       '</b></span><span>200 日 <b>' + priceLabel(point[3]) + '</b></span><em>' + regime + '</em>';
+    if (readout) {
+      readout.innerHTML = '<div class="tmr-head"><b>' + dateLabel(point[0]) + '</b><em class="is-' +
+        point[4] + '">' + regime + '</em></div><div class="tmr-values"><span>现价 <b>' + priceLabel(point[1]) +
+        '</b></span><span>50 日 <b>' + priceLabel(point[2]) + '</b></span><span>200 日 <b>' + priceLabel(point[3]) +
+        '</b></span></div>';
+    }
     tooltip.style.left = Math.max(8, Math.min(rect.width - 154, chartX / CHART_W * rect.width)) + 'px';
     tooltip.hidden = false;
     hover.setAttribute('visibility', 'visible');

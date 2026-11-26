@@ -87,6 +87,8 @@ const tradePreview = await ev(() => ({
   text: (document.getElementById('tradeImpact') || {}).innerText || '',
   bars: document.querySelectorAll('#tradeImpact .ti-stack').length,
   rows: document.querySelectorAll('#tradeImpact .ti-weight-row').length,
+  cashText: (document.querySelector('#tradeImpact .ti-weight-row.is-cash') || {}).innerText || '',
+  deviationCells: document.querySelectorAll('#tradeImpact .ti-weight-row b').length,
   width: (document.getElementById('tradeImpact') || { getBoundingClientRect: () => ({ width: 0 }) }).getBoundingClientRect().width,
   bodyWidth: document.body.scrollWidth,
   viewportWidth: innerWidth,
@@ -95,6 +97,9 @@ if (!/交易前/.test(tradePreview.text) || !/交易后/.test(tradePreview.text)
   failures.push('交易影响预览内容不完整：' + JSON.stringify(tradePreview));
 }
 if (/pp/.test(tradePreview.text)) failures.push('交易影响预览仍在使用不直观的 pp 单位：' + JSON.stringify(tradePreview));
+if (/%/.test(tradePreview.cashText) || !/\$/.test(tradePreview.cashText) || tradePreview.deviationCells !== 0) {
+  failures.push('现金或目标偏离展示不符合要求：' + JSON.stringify(tradePreview));
+}
 if (tradePreview.bars !== 2 || tradePreview.rows !== 4 || tradePreview.bodyWidth > tradePreview.viewportWidth) {
   failures.push('交易影响预览结构或移动端溢出异常：' + JSON.stringify(tradePreview));
 }
@@ -332,10 +337,21 @@ await ev(() => {
 await p.waitForTimeout(80);
 const trendHover = await ev(() => {
   const tip = document.querySelector('#trendChart .trend-tooltip');
-  return { hidden: !tip || tip.hidden, text: tip ? tip.innerText : '' };
+  const readout = document.querySelector('#trendChart .trend-mobile-readout');
+  const svg = document.querySelector('#trendChart .trend-svg');
+  return {
+    hidden: !tip || tip.hidden,
+    text: tip ? tip.innerText : '',
+    tooltipDisplay: tip ? getComputedStyle(tip).display : '',
+    readoutText: readout ? readout.innerText : '',
+    readoutBelowChart: !!(readout && svg && readout.getBoundingClientRect().top >= svg.getBoundingClientRect().bottom),
+  };
 });
 if (trendHover.hidden || !/VGT/.test(trendHover.text) || !/\$/.test(trendHover.text) || !/50 日/.test(trendHover.text) || !/200 日/.test(trendHover.text)) {
   failures.push('趋势图悬停提示不完整：' + JSON.stringify(trendHover));
+}
+if (trendHover.tooltipDisplay !== 'none' || !/现价/.test(trendHover.readoutText) || !/50 日/.test(trendHover.readoutText) || !trendHover.readoutBelowChart) {
+  failures.push('移动端趋势读数仍遮挡图表或内容不完整：' + JSON.stringify(trendHover));
 }
 await ev(() => document.querySelector('.tab-btn[data-tab="holding"]').click());
 await p.waitForTimeout(350);

@@ -14,18 +14,17 @@ const BASE = {
   cash: 300,
 };
 
-test('tradeImpact：买入显示交易前后占比、现金变化与目标偏离', () => {
+test('tradeImpact：买入显示交易前后占比与现金金额变化', () => {
   const p = tradeImpact(Object.assign({}, BASE, { type: 'buy', symbol: 'VGT', shares: 2, price: 100 }));
   assert.equal(p.ready, true);
   assert.equal(p.amount, 200);
   assert.equal(p.cashAfter, 100);
   assert.ok(Math.abs(p.rows[0].beforePct - 1000 / 1700 * 100) < 1e-12);
   assert.ok(Math.abs(p.rows[0].afterPct - 1200 / 1900 * 100) < 1e-12);
-  assert.ok(Math.abs(p.rows[0].beforeDeviation - (1000 / 1700 * 100 - 50)) < 1e-12);
-  assert.ok(Math.abs(p.rows[0].afterDeviation - (1200 / 1900 * 100 - 50)) < 1e-12);
-  assert.equal(p.cashBeforePct, 15);
-  assert.equal(p.cashAfterPct, 5);
-  assert.equal(Object.hasOwn(p, 'cashBeforeDeviation'), false, '现金不参与目标偏离');
+  assert.equal(p.cashBefore, 300);
+  assert.equal(p.cashAfter, 100);
+  assert.equal(Object.hasOwn(p.rows[0], 'beforeDeviation'), false, '不再计算目标偏离');
+  assert.equal(Object.hasOwn(p, 'cashBeforePct'), false, '现金不显示占比');
 });
 
 test('tradeImpact：卖出显示回收现金与剩余股数', () => {
@@ -35,7 +34,6 @@ test('tradeImpact：卖出显示回收现金与剩余股数', () => {
   assert.equal(p.remainingShares, 5);
   assert.ok(Math.abs(p.rows[1].beforePct - 500 / 1700 * 100) < 1e-12);
   assert.ok(Math.abs(p.rows[1].afterPct - 250 / 1450 * 100) < 1e-12);
-  assert.ok(p.rows[1].improvement < 0);
 });
 
 test('tradeImpact：空输入仍可展示当前配比，缺价会明确列出', () => {
@@ -43,7 +41,7 @@ test('tradeImpact：空输入仍可展示当前配比，缺价会明确列出', 
   assert.equal(idle.ready, true);
   assert.equal(idle.hasTrade, false);
   assert.equal(idle.rows[0].beforePct, idle.rows[0].afterPct);
-  assert.equal(idle.cashBeforePct, 300 / 2000 * 100);
+  assert.equal(idle.cashBefore, 300);
   const missing = tradeImpact(Object.assign({}, BASE, {
     prices: { VGT: 100 }, type: 'buy', symbol: 'VGT', shares: 1, price: 100,
   }));

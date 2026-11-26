@@ -1497,14 +1497,10 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .ti-stack>i:last-child{border-right:0}
 .ti-target-note{color:var(--muted);font-size:9px;text-align:right;line-height:1.35}
 .ti-weights{display:grid;gap:4px}
-.ti-weight-row{display:grid;grid-template-columns:7px 36px minmax(72px,1fr) auto;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.ti-weight-row{display:grid;grid-template-columns:7px 36px minmax(0,1fr);align-items:center;gap:7px;color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}
 .ti-weight-row>i{width:7px;height:7px;border-radius:50%}
 .ti-weight-row>strong{color:var(--fg);font-size:10.5px;font-weight:650}
-.ti-weight-row>span{white-space:nowrap}
-.ti-weight-row>b{font-size:9.5px;font-weight:620;text-align:right;white-space:nowrap}
-.ti-weight-row>b.is-good{color:var(--ok)}
-.ti-weight-row>b.is-worse{color:var(--orange)}
-.ti-weight-row>b.is-flat{color:var(--muted)}
+.ti-weight-row>span{text-align:right;white-space:nowrap}
 .ti-weight-row.is-cash>i{background:var(--muted);opacity:.55}
 .console-form .btn-pri,.option-form .btn-pri{min-height:var(--ds-primary-height);margin:0;border-radius:14px;font-size:13.5px;font-weight:650}
 
@@ -3029,6 +3025,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke;opacity:.72}
 .trend-hover-dot{stroke:var(--card-bg);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .trend-hover-dot.is-price{fill:var(--fg)}.trend-hover-dot.is-sma50{fill:var(--chart-sma50)}.trend-hover-dot.is-sma200{fill:var(--chart-sma200)}
+.trend-mobile-readout{display:none}
 .trend-tooltip{position:absolute;z-index:3;top:43px;width:146px;padding:8px 9px;border:1px solid var(--rule);border-radius:9px;background:color-mix(in srgb,var(--card-bg) 94%,transparent);box-shadow:var(--shadow);backdrop-filter:blur(10px);pointer-events:none;font-variant-numeric:tabular-nums}
 .trend-tooltip[hidden]{display:none}.trend-tooltip strong{display:block;margin-bottom:4px;color:var(--fg);font-size:10px}.trend-tooltip span{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:9px;line-height:1.55}.trend-tooltip b{color:var(--fg);font-weight:650}.trend-tooltip em{align-self:flex-start;display:inline-block;margin-top:4px;color:var(--muted);font-size:8.5px;font-style:normal}
 .equity-chart .eq-grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 5;opacity:.55;vector-effect:non-scaling-stroke}
@@ -3040,7 +3037,17 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .trend-range-chips{margin-left:auto}
   .trend-range-chip{height:40px;min-width:44px;padding:0 9px}
   .trend-axis-label.is-mobile-hide{display:none}
-  .trend-tooltip{top:39px}
+  .trend-tooltip{display:none!important}
+  .trend-mobile-readout{display:block;min-height:43px;margin:7px 0 1px;padding:7px 9px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);font-variant-numeric:tabular-nums}
+  .trend-mobile-readout .tmr-empty{display:block;color:var(--muted);font-size:10px;text-align:center;line-height:27px}
+  .trend-mobile-readout .tmr-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
+  .trend-mobile-readout .tmr-head>b{color:var(--fg);font-size:10px}
+  .trend-mobile-readout .tmr-head>em{padding:1px 6px;border-radius:6px;font-size:9px;font-style:normal;font-weight:650;background:color-mix(in srgb,var(--chart-neutral) 14%,transparent);color:var(--chart-neutral)}
+  .trend-mobile-readout .tmr-head>em.is-bull{background:color-mix(in srgb,var(--chart-bull) 13%,transparent);color:var(--chart-bull)}
+  .trend-mobile-readout .tmr-head>em.is-bear{background:color-mix(in srgb,var(--chart-bear) 13%,transparent);color:var(--chart-bear)}
+  .trend-mobile-readout .tmr-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;color:var(--muted);font-size:9.5px}
+  .trend-mobile-readout .tmr-values>span{display:flex;justify-content:space-between;gap:4px;min-width:0;white-space:nowrap}
+  .trend-mobile-readout .tmr-values b{color:var(--fg);font-weight:650}
 }
 @media(max-width:560px){
   .trend-axis-label{font-size:16px}
