@@ -79,7 +79,26 @@ await step('仪表盘', clickId, 1600, 'bbHoldings');
 await step('操作台', clickId, 1600, 'bbConsole');
 await step('记录', clickId, 1600, 'bbData');
 await step('记录-日志', () => { const b = Array.from(document.querySelectorAll('#recordSeg .record-seg')).filter((x) => x.getAttribute('data-seg') === 'log')[0]; if (b) b.click(); }, 1300);
+const logSwitch = await ev(() => ({
+  active: (document.querySelector('#recordSeg .record-seg.active') || {}).getAttribute?.('data-seg') || '',
+  selected: document.querySelector('#recordTabLog')?.getAttribute('aria-selected'),
+  dataHidden: document.getElementById('recordPanelData')?.hidden,
+  logVisible: !!document.getElementById('recordPanelLog')?.offsetParent,
+  activityRows: document.querySelectorAll('#activityLog .activity-item').length,
+}));
+if (logSwitch.active !== 'log' || logSwitch.selected !== 'true' || logSwitch.dataHidden !== true || !logSwitch.logVisible) {
+  problems.push('记录-日志 → 没有切换到日志面板：' + JSON.stringify(logSwitch));
+}
+if (logSwitch.activityRows < 2) problems.push('记录-日志 → 操作日志没有渲染：' + logSwitch.activityRows);
 await step('记录-明细', () => { const b = Array.from(document.querySelectorAll('#recordSeg .record-seg')).filter((x) => x.getAttribute('data-seg') === 'data')[0]; if (b) b.click(); }, 1300);
+const dataSwitch = await ev(() => ({
+  active: (document.querySelector('#recordSeg .record-seg.active') || {}).getAttribute?.('data-seg') || '',
+  dataVisible: !!document.getElementById('recordPanelData')?.offsetParent,
+  logHidden: document.getElementById('recordPanelLog')?.hidden,
+}));
+if (dataSwitch.active !== 'data' || !dataSwitch.dataVisible || dataSwitch.logHidden !== true) {
+  problems.push('记录-明细 → 没有切回明细面板：' + JSON.stringify(dataSwitch));
+}
 await step('设置抽屉', () => { if (typeof openMobileSettings === 'function') openMobileSettings(); }, 900);
 for (const sec of ['sync', 'price', 'data', 'preferences']) {
   await step('设置-' + sec, (s) => { if (typeof openAdvancedSettings === 'function') openAdvancedSettings(s); }, 700, sec);

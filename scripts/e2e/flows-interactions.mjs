@@ -69,6 +69,57 @@ await ev(() => {
   if (dataTab) dataTab.click();
 });
 await p.waitForTimeout(300);
+
+/* B2) 记录页“明细 / 日志”必须真正切换，并记住上次分段。 */
+await ev(() => document.querySelector('#recordSeg [data-seg="log"]').click());
+await p.waitForTimeout(350);
+const logSegment = await ev(() => ({
+  active: (document.querySelector('#recordSeg .record-seg.active') || {}).getAttribute?.('data-seg') || '',
+  selected: document.querySelector('#recordTabLog')?.getAttribute('aria-selected'),
+  dataHidden: document.getElementById('recordPanelData')?.hidden,
+  logHidden: document.getElementById('recordPanelLog')?.hidden,
+  logVisible: !!document.getElementById('recordPanelLog')?.offsetParent,
+  activityItems: document.querySelectorAll('#activityLog .activity-item').length,
+  stored: localStorage.getItem('wealth_records_segment_v1'),
+}));
+if (logSegment.active !== 'log' || logSegment.selected !== 'true' || logSegment.logHidden || !logSegment.logVisible) {
+  failures.push('点击「日志」没有切换到日志面板：' + JSON.stringify(logSegment));
+}
+if (logSegment.dataHidden !== true) failures.push('切到日志后明细面板仍然可见');
+if (logSegment.activityItems < 1) failures.push('日志面板里没有操作记录');
+if (logSegment.stored !== 'log') failures.push('日志分段没有持久化：' + logSegment.stored);
+
+await ev(() => {
+  const logTab = document.getElementById('recordTabLog');
+  logTab.focus();
+  logTab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+});
+await p.waitForTimeout(250);
+const keyboardSegment = await ev(() => ({
+  active: (document.querySelector('#recordSeg .record-seg.active') || {}).getAttribute?.('data-seg') || '',
+  focused: document.activeElement?.id || '',
+}));
+if (keyboardSegment.active !== 'data' || keyboardSegment.focused !== 'recordTabData') {
+  failures.push('记录分段的键盘方向键切换异常：' + JSON.stringify(keyboardSegment));
+}
+
+await ev(() => document.getElementById('recordTabLog').click());
+await p.waitForTimeout(250);
+await p.reload({ waitUntil: 'domcontentloaded' });
+await p.waitForFunction(() => window.__wealthReady, null, { timeout: 15000 }).catch(() => {});
+await p.waitForTimeout(2200);
+await ev(() => document.getElementById('bbData').click());
+await p.waitForTimeout(500);
+const persistedSegment = await ev(() => ({
+  active: (document.querySelector('#recordSeg .record-seg.active') || {}).getAttribute?.('data-seg') || '',
+  logVisible: !!document.getElementById('recordPanelLog')?.offsetParent,
+}));
+if (persistedSegment.active !== 'log' || !persistedSegment.logVisible) {
+  failures.push('刷新后没有恢复日志分段：' + JSON.stringify(persistedSegment));
+}
+await ev(() => document.getElementById('recordTabData').click());
+await p.waitForTimeout(250);
+
 // 记录页顶部汇总（v236 改用 rows.js 的 dataPageTotals 计算）
 const totals = await ev(() => ({
   dep: (document.getElementById('dataDep') || {}).textContent,
