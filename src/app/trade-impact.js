@@ -43,13 +43,13 @@ export function tradeImpact(input) {
     beforeValues[sym] = heldBefore[sym] * priceOf(sym);
     afterValues[sym] = heldAfter[sym] * priceOf(sym);
   });
-  const totalBefore = symbols.reduce(function (sum, sym) { return sum + beforeValues[sym]; }, cashBefore);
-  const totalAfter = symbols.reduce(function (sum, sym) { return sum + afterValues[sym]; }, cashAfter);
-  const targetSum = symbols.reduce(function (sum, sym) { return sum + Math.max(0, num(targets[sym])); }, 0);
-  const cashTargetPct = Math.max(0, (1 - targetSum) * 100);
+  const holdingsBefore = symbols.reduce(function (sum, sym) { return sum + beforeValues[sym]; }, 0);
+  const holdingsAfter = symbols.reduce(function (sum, sym) { return sum + afterValues[sym]; }, 0);
+  const totalBefore = holdingsBefore + cashBefore;
+  const totalAfter = holdingsAfter + cashAfter;
   const rows = symbols.map(function (sym) {
-    const beforePct = pct(beforeValues[sym], totalBefore);
-    const afterPct = pct(afterValues[sym], totalAfter);
+    const beforePct = pct(beforeValues[sym], holdingsBefore);
+    const afterPct = pct(afterValues[sym], holdingsAfter);
     const targetPct = Math.max(0, num(targets[sym])) * 100;
     const beforeDeviation = beforePct - targetPct;
     const afterDeviation = afterPct - targetPct;
@@ -67,8 +67,6 @@ export function tradeImpact(input) {
   });
   const cashBeforePct = pct(cashBefore, totalBefore);
   const cashAfterPct = pct(cashAfter, totalAfter);
-  const cashBeforeDeviation = cashBeforePct - cashTargetPct;
-  const cashAfterDeviation = cashAfterPct - cashTargetPct;
   return {
     type: type,
     symbol: symbol,
@@ -82,10 +80,8 @@ export function tradeImpact(input) {
     cashAfter: cashAfter,
     cashBeforePct: cashBeforePct,
     cashAfterPct: cashAfterPct,
-    cashTargetPct: cashTargetPct,
-    cashBeforeDeviation: cashBeforeDeviation,
-    cashAfterDeviation: cashAfterDeviation,
-    cashImprovement: Math.abs(cashBeforeDeviation) - Math.abs(cashAfterDeviation),
+    holdingsBefore: holdingsBefore,
+    holdingsAfter: holdingsAfter,
     totalBefore: totalBefore,
     totalAfter: totalAfter,
     rows: rows,

@@ -82,7 +82,7 @@ var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},trade
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v425';var APP_DATA_VERSION=5;
+var APP_BUILD='v426';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1020,7 +1020,7 @@ function updateMobStatusBar(){
 
 
 function fmtImpactPct(value){return (Number(value)||0).toFixed(1)+'%'}
-function fmtImpactPp(value){var n=Number(value)||0;return (n>=0?'+':'')+n.toFixed(1)+'pp'}
+function fmtImpactPoints(value){var n=Number(value)||0;return (n>=0?'+':'')+n.toFixed(1)}
 function tradeImpactBarHtml(label,items){
   return '<div class="ti-bar-row"><small>'+label+'</small><div class="ti-stack" role="img" aria-label="'+label+'资产配比">'+
     items.map(function(item){return '<i style="width:'+Math.max(0,Math.min(100,item.pct)).toFixed(2)+'%;background:'+item.color+'" title="'+item.sym+' '+fmtImpactPct(item.pct)+'"></i>'}).join('')+
@@ -1035,10 +1035,9 @@ function renderTradeImpact(p){
     var cls=Math.abs(row.improvement)<.05?'is-flat':row.improvement>0?'is-good':'is-worse';
     return '<div class="ti-weight-row"><i style="background:'+getAssetColor(row.sym)+'"></i><strong>'+row.sym+'</strong>'+
       '<span>'+fmtImpactPct(row.beforePct)+' → '+fmtImpactPct(row.afterPct)+'</span>'+
-      '<b class="'+cls+'" title="相对目标 '+fmtImpactPct(row.targetPct)+'">'+fmtImpactPp(row.beforeDeviation)+' → '+fmtImpactPp(row.afterDeviation)+'</b></div>';
+      '<b class="'+cls+'" title="相对目标 '+fmtImpactPct(row.targetPct)+'">'+fmtImpactPoints(row.beforeDeviation)+' → '+fmtImpactPoints(row.afterDeviation)+'</b></div>';
   }).join('');
-  var cashCls=Math.abs(p.cashImprovement)<.05?'is-flat':p.cashImprovement>0?'is-good':'is-worse';
-  rows+='<div class="ti-weight-row is-cash"><i></i><strong>现金</strong><span>'+fmtImpactPct(p.cashBeforePct)+' → '+fmtImpactPct(p.cashAfterPct)+'</span><b class="'+cashCls+'">'+fmtImpactPp(p.cashBeforeDeviation)+' → '+fmtImpactPp(p.cashAfterDeviation)+'</b></div>';
+  rows+='<div class="ti-weight-row is-cash"><i></i><strong>现金</strong><span>'+fmtImpactPct(p.cashBeforePct)+' → '+fmtImpactPct(p.cashAfterPct)+'</span><b class="is-flat">不计偏离</b></div>';
   var note;
   if(!p.hasTrade)note='输入数量和价格后显示交易后配比';
   else if(p.type==='buy')note=p.cashAfter<0?('现金不足 · 缺少 '+fmtFull(Math.abs(p.cashAfter))+' · 预计支出 '+fmtFull(p.amount)):('预计支出 '+fmtFull(p.amount)+' · 剩余现金 '+fmtFull(p.cashAfter));
@@ -1046,10 +1045,12 @@ function renderTradeImpact(p){
   if(p.missingPrices&&p.missingPrices.length)note+=' · 等待 '+p.missingPrices.join('/')+' 实时价';
   el.innerHTML='<div class="ti-head"><span>交易影响</span><strong class="'+(p.hasTrade&&p.cashAfter<0?'is-bad':'')+'">'+note+'</strong></div>'+
     '<div class="ti-bars">'+tradeImpactBarHtml('交易前',items)+tradeImpactBarHtml('交易后',after)+'</div>'+
+    '<div class="ti-target-note">资产占比按持仓市值计算 · 偏离单位为百分点</div>'+
     '<div class="ti-weights">'+rows+'</div>';
 }
 function updateTradeEstimate(){
-  var shares=parseFloat(document.getElementById('tfShares').value),price=parseFloat(document.getElementById('tfPrice').value),out=document.getElementById('tfEstimated');
+  var assetEl=document.getElementById('tfAsset'),priceEl=document.getElementById('tfPrice'),shares=parseFloat(document.getElementById('tfShares').value),price=priceEl?parseFloat(priceEl.value):NaN,out=document.getElementById('tfEstimated');
+  if(assetEl&&priceEl){var reference=Number(livePrices[assetEl.value])||0;priceEl.placeholder=reference>0?('参考价 $'+reference.toFixed(2)):'输入成交价'}
   if(out)out.textContent=shares>0&&price>0?fmtFull(shares*price):'$0.00';
   try{renderTradeImpact(tradeImpact({symbols:ETF_SYMS,trades:trades,cash:getNetCash(),prices:livePrices,targets:legTargets(),type:document.getElementById('tfType').value,symbol:document.getElementById('tfAsset').value,shares:shares,price:price}))}catch(e){logSwallowed('tradeImpact',e)}
 }
@@ -1202,7 +1203,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=425',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=426',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */

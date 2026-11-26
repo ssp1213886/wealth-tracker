@@ -94,6 +94,7 @@ const tradePreview = await ev(() => ({
 if (!/交易前/.test(tradePreview.text) || !/交易后/.test(tradePreview.text) || !/剩余现金/.test(tradePreview.text) || !/VGT/.test(tradePreview.text)) {
   failures.push('交易影响预览内容不完整：' + JSON.stringify(tradePreview));
 }
+if (/pp/.test(tradePreview.text)) failures.push('交易影响预览仍在使用不直观的 pp 单位：' + JSON.stringify(tradePreview));
 if (tradePreview.bars !== 2 || tradePreview.rows !== 4 || tradePreview.bodyWidth > tradePreview.viewportWidth) {
   failures.push('交易影响预览结构或移动端溢出异常：' + JSON.stringify(tradePreview));
 }

@@ -1495,6 +1495,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .ti-stack{display:flex;height:8px;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--fg) 7%,transparent)}
 .ti-stack>i{display:block;min-width:0;height:100%;border-right:1px solid color-mix(in srgb,var(--card-bg) 70%,transparent)}
 .ti-stack>i:last-child{border-right:0}
+.ti-target-note{color:var(--muted);font-size:9px;text-align:right;line-height:1.35}
 .ti-weights{display:grid;gap:4px}
 .ti-weight-row{display:grid;grid-template-columns:7px 36px minmax(72px,1fr) auto;align-items:center;gap:7px;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
 .ti-weight-row>i{width:7px;height:7px;border-radius:50%}
