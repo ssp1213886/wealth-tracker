@@ -2998,13 +2998,6 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-current-dot{fill:var(--accent);stroke:var(--card-bg);stroke-width:2;vector-effect:non-scaling-stroke}
 .trend-current-halo{fill:none;stroke:var(--accent);stroke-width:1;opacity:.25;vector-effect:non-scaling-stroke}
 .trend-current-price{fill:var(--accent-d);font:700 11px var(--font);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--card-bg);stroke-width:3px;stroke-linejoin:round}
-.trend-event{pointer-events:all}
-.trend-event>circle,.trend-event>rect,.trend-event>polygon{stroke:var(--card-bg);stroke-width:1.7;vector-effect:non-scaling-stroke}
-.trend-event.is-buy>circle{fill:var(--accent)}
-.trend-event.is-sell>polygon{fill:var(--red)}
-.trend-event.is-call>rect{fill:var(--violet)}
-.trend-event.is-ma>circle{fill:var(--card-bg);stroke:var(--chart-sma200);stroke-width:2}
-.trend-event.is-mixed>circle{fill:var(--fg)}
 .sb-mini-legend b small{display:block;margin-top:1px;color:var(--muted);font-size:9px;font-weight:520;white-space:nowrap}
 .drawdown-value small{display:block;margin-top:1px;color:var(--muted);font-size:8.5px;font-weight:550;white-space:nowrap}
 .trend-hit-area{fill:transparent;cursor:crosshair;touch-action:pan-y}
@@ -3038,8 +3031,10 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .mx-table tbody tr:last-child td{border-bottom:0}
 .mx-table td.mx-on{background:color-mix(in srgb,var(--accent) 13%,transparent)}
 .mx-cell{position:relative;isolation:isolate}
-.mx-cell.mx-heat::before{content:'';position:absolute;z-index:-1;left:2px;right:2px;bottom:5px;height:3px;border-radius:999px;background:color-mix(in srgb,var(--mx-risk) 22%,transparent)}
-.mx-cell.mx-heat::after{content:'';position:absolute;z-index:-1;left:2px;bottom:5px;max-width:calc(100% - 4px);width:var(--mx-fill);height:3px;border-radius:999px;background:var(--mx-risk);opacity:.78}
+.mx-cell.mx-heat.is-low{background:color-mix(in srgb,var(--ok) 7%,transparent)}
+.mx-cell.mx-heat.is-mid{background:color-mix(in srgb,var(--orange) 9%,transparent)}
+.mx-cell.mx-heat.is-high{background:color-mix(in srgb,var(--red) 10%,transparent)}
+.mx-cell.mx-on{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 42%,transparent)}
 .mx-risk-key{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 7px;color:var(--muted);font-size:10px}
 .mx-risk-key>span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .mx-risk-key i{display:inline-block;width:7px;height:7px;border-radius:50%}

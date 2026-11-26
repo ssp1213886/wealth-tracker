@@ -184,7 +184,6 @@ const chartUi = await ev(() => ({
   rangeHeights: [...document.querySelectorAll('#trendChart [data-trendrange]')].map((el) => el.getBoundingClientRect().height),
   area: !!document.querySelector('#trendChart .trend-area'),
   currentPriceLabel: (document.querySelector('#trendChart .trend-current-price') || {}).textContent || '',
-  eventDots: document.querySelectorAll('#trendChart .trend-event').length,
   hoverLayer: !!document.querySelector('#trendChart .trend-hover'),
   trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
   activeTrend: (document.querySelector('#trendTabs .prob-chip.is-on') || {}).textContent || '',
@@ -214,7 +213,6 @@ if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200 || !char
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
 if (chartUi.yLabels !== 5 || chartUi.visibleYLabels !== 3 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
 if (!/^\$/.test(chartUi.currentPriceLabel)) failures.push('趋势图缺少当前价标签：' + JSON.stringify(chartUi.currentPriceLabel));
-if (chartUi.eventDots < 1) failures.push('趋势图没有渲染交易事件：' + chartUi.eventDots);
 if (!/^(6 个月|1 年|2 年)$/.test(chartUi.titleRange) || !/^\d{4}\/\d{2}\/\d{2}$/.test(chartUi.titleAsOf)) failures.push('趋势图标题缺少范围或数据截至日期：' + JSON.stringify({ range: chartUi.titleRange, asOf: chartUi.titleAsOf }));
 if (chartUi.rangeHeights.some((height) => height < 40)) failures.push('移动端趋势范围按钮触控高度不足：' + JSON.stringify(chartUi.rangeHeights));
 if (chartNative.userSelect !== 'none' || chartNative.webkitUserSelect !== 'none' ||

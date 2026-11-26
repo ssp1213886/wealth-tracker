@@ -319,10 +319,7 @@ export function probMatrixHtml(matrix, ctx) {
       cols.map(function (col, i) {
         const cellI = cells[i];
         const band = probBand(cellI && cellI.prob);
-        const fill = cellI && cellI.prob != null ? Math.max(3, Math.min(100, Number(cellI.prob) * 200)) : 0;
         return '<td class="mx-cell mx-heat is-' + band + (i === selIdx ? ' mx-on' : '') +
-          '" style="--mx-fill:' + fill.toFixed(1) + '%;--mx-risk:' +
-          (band === 'high' ? 'var(--red)' : band === 'mid' ? 'var(--orange)' : 'var(--ok)') +
           '" title="' + escapeHtml(cellTitle(cellI)) + '">' + matrixCellHtml(cellI) + '</td>';
       }).join('') +
       '</tr>';

@@ -136,6 +136,7 @@ test('probMatrixHtml：列头是真实行权价按钮（第二行 OTM%），当�
   assert.match(html, /mx-risk-key/);
   assert.match(html, /mx-heat is-high/);
   assert.match(html, /当前档 \$/);
+  assert.doesNotMatch(html, /--mx-fill/);
   // v355：剩余天数并进到期日格（第二行小字），少一列 —— 手机上才不用横滑
   assert.match(html, /<thead><tr><th>到期日<span class="mx-otm">年化<\/span><\/th><th><button/);
   /* v392：行头两行 —— 第一行「到期日 + 右侧年化」（表头那格写一次「年化」当标注），第二行剩余天数等 */

@@ -89,77 +89,10 @@ function dateLabel(ms) {
   return d.getUTCFullYear() + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + String(d.getUTCDate()).padStart(2, '0');
 }
 
-function eventDateKey(value) {
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  const ms = timestampMs(value);
-  if (!Number.isFinite(ms)) return '';
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
 function priceLabel(value) {
   const n = Number(value);
   if (!(n > 0)) return '—';
   return '$' + (n >= 1000 ? n.toFixed(0) : n >= 100 ? n.toFixed(1) : n.toFixed(2));
-}
-
-export function buildTrendEvents(rows, input, symbol) {
-  const list = Array.isArray(rows) ? rows : [];
-  const data = input || {};
-  const sym = String(symbol || '').toUpperCase();
-  const rowKeys = list.map(function (row) { return eventDateKey(row.ts); });
-  const events = [];
-  function add(date, kind, label) {
-    const target = eventDateKey(date);
-    if (!target) return;
-    let index = rowKeys.indexOf(target);
-    if (index < 0) {
-      let best = -1;
-      let distance = Infinity;
-      rowKeys.forEach(function (key, i) {
-        if (!key) return;
-        const d = Math.abs(Date.parse(key) - Date.parse(target));
-        if (d < distance) { distance = d; best = i; }
-      });
-      if (best < 0 || distance > 7 * 86400000) return;
-      index = best;
-    }
-    events.push({ index: index, kind: kind, label: label });
-  }
-  (Array.isArray(data.trades) ? data.trades : []).forEach(function (trade) {
-    if (String(trade && trade.symbol).toUpperCase() !== sym || !(Number(trade.price) > 0)) return;
-    const shares = Number(trade.shares) || 0;
-    if (!shares) return;
-    const qty = Math.abs(shares);
-    if (shares > 0) add(trade.date, 'buy', '买入 ' + sym + ' ' + qty + ' 股 @ ' + priceLabel(trade.price));
-    else add(trade.date, 'sell', (trade.tag === 'assign' ? 'CALL 行权卖出 ' : '卖出 ') + sym + ' ' + qty + ' 股 @ ' + priceLabel(trade.price));
-  });
-  (Array.isArray(data.optionTrades) ? data.optionTrades : []).forEach(function (option) {
-    if (String(option && option.sym).toUpperCase() !== sym) return;
-    const strike = Number(option.strike);
-    if (!(strike > 0)) return;
-    add(option.added, 'call', '卖出 ' + String(option.type || 'CALL') + ' ' + sym + ' $' +
-      strike.toFixed(0) + ' × ' + (Number(option.contracts) || 1) + ' 张');
-  });
-  (Array.isArray(data.maCrosses) ? data.maCrosses : []).forEach(function (event) {
-    if (String(event && event.symbol).toUpperCase() !== sym) return;
-    const direction = String(event.toSide || '').toUpperCase() === 'ABOVE' ? '上穿' : '下穿';
-    add(event.triggeredAt, 'ma', sym + ' ' + (Number(event.period) || 200) + ' 日均线' + direction);
-  });
-  const grouped = {};
-  events.forEach(function (event) {
-    if (!grouped[event.index]) grouped[event.index] = [];
-    grouped[event.index].push(event);
-  });
-  return Object.keys(grouped).map(Number).sort(function (a, b) { return a - b; }).map(function (index) {
-    const items = grouped[index];
-    const kinds = Array.from(new Set(items.map(function (item) { return item.kind; })));
-    return {
-      index: index,
-      date: rowKeys[index],
-      kind: kinds.length === 1 ? kinds[0] : 'mixed',
-      items: items.map(function (item) { return item.label; }),
-    };
-  });
 }
 
 function regimeBands(rows) {
@@ -187,7 +120,7 @@ function chartAria(rows, counts, range, symbol) {
     counts.bull + ' 天、中性 ' + counts.neutral + ' 天、弱势 ' + counts.bear + ' 天';
 }
 
-function chartMarkup(rows, counts, range, symbol, events) {
+function chartMarkup(rows, counts, range, symbol) {
   const bounds = yRange(rows);
   const min = bounds.min;
   const max = bounds.max;
@@ -222,22 +155,6 @@ function chartMarkup(rows, counts, range, symbol, events) {
   const currentX = xAt(rows.length - 1, rows.length);
   const currentY = yAt(rows[rows.length - 1].price, min, max);
   const currentLabelY = currentY < PLOT.top + 18 ? currentY + 18 : currentY - 10;
-  const eventMarkup = (Array.isArray(events) ? events : []).map(function (event) {
-    const x = xAt(event.index, rows.length);
-    const y = yAt(rows[event.index].price, min, max);
-    const title = event.date + '\n' + event.items.join('\n');
-    const size = event.items.length > 1 ? 4.2 : 3.4;
-    let shape = '<circle cx="' + x.toFixed(2) + '" cy="' + y.toFixed(2) + '" r="' + size + '"></circle>';
-    if (event.kind === 'sell') {
-      shape = '<polygon points="' + x.toFixed(2) + ',' + (y - size).toFixed(2) + ' ' +
-        (x + size).toFixed(2) + ',' + y.toFixed(2) + ' ' + x.toFixed(2) + ',' + (y + size).toFixed(2) + ' ' +
-        (x - size).toFixed(2) + ',' + y.toFixed(2) + '"></polygon>';
-    } else if (event.kind === 'call') {
-      shape = '<rect x="' + (x - size).toFixed(2) + '" y="' + (y - size).toFixed(2) +
-        '" width="' + (size * 2).toFixed(2) + '" height="' + (size * 2).toFixed(2) + '" rx="1"></rect>';
-    }
-    return '<g class="trend-event is-' + event.kind + '"><title>' + escapeHtml(title) + '</title>' + shape + '</g>';
-  }).join('');
   const payload = encodeURIComponent(JSON.stringify(rows.map(function (row) {
     return [row.ts, Number(row.price.toFixed(4)), Number(row.sma50.toFixed(4)), Number(row.sma200.toFixed(4)), row.regime];
   })));
@@ -267,14 +184,13 @@ function chartMarkup(rows, counts, range, symbol, events) {
         '<circle class="trend-hover-dot is-price"></circle></g>' +
       '<rect class="trend-hit-area" x="' + PLOT.left + '" y="' + PLOT.top + '" width="' + (PLOT.right - PLOT.left) +
         '" height="' + (PLOT.bottom - PLOT.top) + '"></rect>' +
-      eventMarkup +
     '</svg>' +
     '<div class="trend-range"><span>开始 ' + escapeHtml(dateLabel(rows[0].ts)) + '</span><span>截至 ' + escapeHtml(dateLabel(rows[rows.length - 1].ts)) + '</span></div>' +
     '<div class="trend-counts"><span class="is-bull">强势 ' + counts.bull + ' 天</span><span class="is-neutral">中性 ' + counts.neutral + ' 天</span><span class="is-bear">弱势 ' + counts.bear + ' 天</span></div>' +
   '</div>';
 }
 
-export function trendChartHtml(info, symbol, range, status, eventInput) {
+export function trendChartHtml(info, symbol, range, status) {
   const data = buildTrendData(info, range);
   const rows = data.rows;
   if (rows.length < 2) {
@@ -302,7 +218,7 @@ export function trendChartHtml(info, symbol, range, status, eventInput) {
     });
   }
   const sym = String(symbol || '').toUpperCase();
-  return chartMarkup(rows, data.counts, data.range, sym, buildTrendEvents(rows, eventInput, sym));
+  return chartMarkup(rows, data.counts, data.range, sym);
 }
 
 export function trendTabsHtml(current, symbols) {
@@ -384,7 +300,7 @@ function bindTrendChart(el) {
   shell.addEventListener('dragstart', blockNativeSelection);
 }
 
-export function renderTrendChart(doc, info, symbol, symbols, range, status, eventInput) {
+export function renderTrendChart(doc, info, symbol, symbols, range, status) {
   const el = doc.getElementById('trendChart');
   const sym = doc.getElementById('trendSymbol');
   const rangeEl = doc.getElementById('trendRangeLabel');
@@ -396,7 +312,7 @@ export function renderTrendChart(doc, info, symbol, symbols, range, status, even
   if (asOfEl) asOfEl.textContent = data.rows.length ? dateLabel(data.rows[data.rows.length - 1].ts) : '—';
   if (tabs) tabs.innerHTML = trendTabsHtml(symbol, symbols);
   if (el) {
-    el.innerHTML = trendChartHtml(info, symbol, range, status, eventInput);
+    el.innerHTML = trendChartHtml(info, symbol, range, status);
     bindTrendChart(el);
   }
 }
