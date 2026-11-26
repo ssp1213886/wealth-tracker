@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { buildTrendData, trendChartHtml, trendTabsHtml, renderTrendChart } from '../src/app/trend-chart.js';
 
 function info(unit) {
@@ -36,6 +37,11 @@ test('trendChartHtml：输出三条线、状态条与近一年统计', () => {
   assert.match(html, /data-trendrange="6m"/);
   assert.match(html, /强势 \d+ 天/);
   assert.match(html, /VGT 1 年趋势，共 61 个交易日/);
+});
+
+test('趋势图禁止长按选择、复制与移动端 callout', () => {
+  const css = readFileSync('public/assets/main.css', 'utf8');
+  assert.match(css, /\.trend-chart-shell,\.trend-chart-shell \*\{[^}]*-webkit-user-select:none;user-select:none;-webkit-touch-callout:none/);
 });
 
 test('趋势图支持 6 个月 / 1 年 / 2 年窗口', () => {

@@ -2973,6 +2973,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .trend-empty{color:var(--muted);font-size:11.5px;padding:8px 0}
 .trend-card .prob-chip{min-width:44px}
 .trend-chart-shell{position:relative;min-width:0}
+.trend-chart-shell,.trend-chart-shell *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .trend-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:2px 0 4px}
 .trend-toolbar .trend-legend{margin:0}
 .trend-source{margin-left:auto;color:var(--muted);font-size:9.5px;font-weight:520}

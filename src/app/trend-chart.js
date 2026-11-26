@@ -230,6 +230,9 @@ function bindTrendChart(el) {
     hover.setAttribute('visibility', 'hidden');
     tooltip.hidden = true;
   }
+  function blockNativeSelection(event) {
+    event.preventDefault();
+  }
   function show(event) {
     const rect = svg.getBoundingClientRect();
     if (!(rect.width > 0)) return;
@@ -266,6 +269,9 @@ function bindTrendChart(el) {
   });
   svg.addEventListener('pointerleave', hide);
   svg.addEventListener('pointercancel', hide);
+  shell.addEventListener('selectstart', blockNativeSelection);
+  shell.addEventListener('contextmenu', blockNativeSelection);
+  shell.addEventListener('dragstart', blockNativeSelection);
 }
 
 export function renderTrendChart(doc, info, symbol, symbols, range) {

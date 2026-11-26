@@ -189,10 +189,31 @@ const chartUi = await ev(() => ({
   optionCards: [...document.querySelectorAll('#tab-option > .card')].map((el) => el.classList.contains('trend-card') ? 'trend' : el.classList.contains('prob-card') ? 'prob' : ''),
   freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
 }));
+const chartNative = await ev(() => {
+  const shell = document.querySelector('#trendChart .trend-chart-shell');
+  const contextmenu = new Event('contextmenu', { bubbles: true, cancelable: true });
+  const selectstart = new Event('selectstart', { bubbles: true, cancelable: true });
+  shell.dispatchEvent(contextmenu);
+  shell.dispatchEvent(selectstart);
+  const style = getComputedStyle(shell);
+  return {
+    userSelect: style.userSelect,
+    webkitUserSelect: style.webkitUserSelect || '',
+    touchCallout: style.webkitTouchCallout || '',
+    touchCalloutSupported: CSS.supports('-webkit-touch-callout', 'none'),
+    contextmenuBlocked: contextmenu.defaultPrevented,
+    selectstartBlocked: selectstart.defaultPrevented,
+  };
+});
 if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200 || !chartUi.area) failures.push('趋势图线条或面积没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
 if (chartUi.yLabels !== 4 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
 if (chartUi.rangeHeights.some((height) => height < 40)) failures.push('移动端趋势范围按钮触控高度不足：' + JSON.stringify(chartUi.rangeHeights));
+if (chartNative.userSelect !== 'none' || chartNative.webkitUserSelect !== 'none' ||
+  (chartNative.touchCalloutSupported && chartNative.touchCallout !== 'none') ||
+  !chartNative.contextmenuBlocked || !chartNative.selectstartBlocked) {
+  failures.push('趋势图仍可能触发长按选择或复制：' + JSON.stringify(chartNative));
+}
 if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
 const rangeDates = chartUi.rangeLabels.map((label) => (label.match(/\d{4}\/(0[1-9]|1[0-2])\/\d{2}/) || [])[0] || '');
 if (chartUi.rangeLabels.length !== 2 || !/^开始 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[0]) || !/^截至 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[1]) || rangeDates.some((date) => date.endsWith('/01/21')) || rangeDates[0] === rangeDates[1]) {
