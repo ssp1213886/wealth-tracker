@@ -37,10 +37,6 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_cash_v2', '34000');
   localStorage.setItem('wealth_cashlog_v2', JSON.stringify([{ id: 11, date: '2026-09-02', type: '入金', amount: 5000 }]));
   localStorage.setItem('wealth_activity_v1', JSON.stringify([{ id: 101, date: '2026-09-20', time: '10:00', action: '买入 VGT', detail: '10 股 @ 100' }]));
-  /* v394：到期日相对今天（+10 天），别写死（过期后这颗 CALL 会变"已到期"，交互态会漂） */
-  const exp = (() => { const d = new Date(); d.setDate(d.getDate() + 10); const p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); })();
-  localStorage.setItem('wealth_options_v2', JSON.stringify([{ id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: exp, added: '2026-09-20' }]));
-  localStorage.setItem('otmSettings', JSON.stringify({ vgt: 7, smh: 5 }));
   localStorage.setItem('exit_portfolio', '测试退出策略');
 });
 await p.goto(BASE + '?ii=' + Date.now(), { waitUntil: 'domcontentloaded' });
@@ -58,7 +54,7 @@ const ev = async (fn, arg) => {
   throw last;
 };
 
-for (const tab of ['bbHoldings', 'bbConsole', 'bbOption', 'bbData']) {
+for (const tab of ['bbHoldings', 'bbConsole', 'bbAnalysis', 'bbData']) {
   await ev((id) => { const b = document.getElementById(id); if (b) b.click(); }, tab);
   await p.waitForTimeout(600);
 }

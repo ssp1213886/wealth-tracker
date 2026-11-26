@@ -32,7 +32,6 @@ await p.evaluate(async () => {
     { id: 3, date: '2026-09-10', symbol: 'BTC', shares: 13.62, price: 29.38 },
   ]));
   localStorage.setItem('wealth_cash_v2', '34000');
-  localStorage.setItem('wealth_options_v2', JSON.stringify([{ id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: '2026-10-16', added: '2026-09-20' }]));
 });
 await p.goto(BASE + '?soak=' + Date.now(), { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(4000);

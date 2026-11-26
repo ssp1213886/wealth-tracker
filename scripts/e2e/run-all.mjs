@@ -75,10 +75,9 @@ const mainSuite = await runNode([path.join(HERE, 'run.mjs')], { E2E_PORT: '8790'
 if (mainSuite.out) console.log(mainSuite.out);
 all.push({ name: '主套件 npm run e2e', ok: mainSuite.code === 0 });
 
-// ② 全站回归 + 三个专项（共用 8788 的假云端）
+// ② 全站回归 + 两个专项（共用 8788 的假云端）
 all.push(...await stage('回归与专项（共用 8788）', { port: 8788 }, [
-  { name: '全站回归（52 项）', driver: DRIVER, file: path.join(ROOT, 'scripts', 'e2e-full.mjs') },
-  { name: '专项：期权', driver: DRIVER, file: path.join(ROOT, 'scripts', 'test-options.mjs') },
+  { name: '全站回归', driver: DRIVER, file: path.join(ROOT, 'scripts', 'e2e-full.mjs') },
   { name: '专项：备份', driver: DRIVER, file: path.join(ROOT, 'scripts', 'test-backup.mjs') },
   { name: '专项：分析卡', driver: DRIVER, file: path.join(ROOT, 'scripts', 'test-analytics.mjs') },
 ]));

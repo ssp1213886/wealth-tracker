@@ -1,4 +1,4 @@
-// e2e：核心数据流——买入 / 入金 / 卖 CALL 是否既落库又推上（假）云端。
+// e2e：核心数据流——买入 / 入金是否既落库又推上（假）云端。
 // 断言：本地增量正确、dirty 被清掉、假云端收到对应的键。
 const BASE = (process.env.E2E_BASE || 'http://127.0.0.1:8790/');
 const CLOUD = BASE.replace(/\/$/, '');
@@ -24,7 +24,6 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_cash_v2', '34000');
   localStorage.setItem('wealth_cashlog_v2', '[]');
   localStorage.setItem('wealth_activity_v1', '[]');
-  localStorage.setItem('wealth_options_v2', '[]');
 });
 await fetch(CLOUD + '/_reset').catch(() => {});
 await p.goto(BASE + '?flow=' + Date.now(), { waitUntil: 'domcontentloaded' });
@@ -46,7 +45,6 @@ const snap = () => ev(() => ({
   cash: Number(localStorage.getItem('wealth_cash_v2') || '0'),
   cashLog: JSON.parse(localStorage.getItem('wealth_cashlog_v2') || '[]').length,
   activities: JSON.parse(localStorage.getItem('wealth_activity_v1') || '[]').length,
-  options: JSON.parse(localStorage.getItem('wealth_options_v2') || '[]').length,
 }));
 const failures = [];
 
@@ -123,53 +121,16 @@ const afterDep = await snap();
 if (afterDep.cash - beforeDep.cash !== 5000) failures.push('入金没有加进现金（' + beforeDep.cash + ' → ' + afterDep.cash + '）');
 if (afterDep.cashLog - beforeDep.cashLog !== 1) failures.push('入金没有写资金流水');
 
-/* 卖 CALL VGT @130 x1，权利金 120/张 */
-await ev(() => document.getElementById('bbOption').click());
-await p.waitForTimeout(1800);
-const beforeOpt = await snap();
-await ev(() => {
-  const set = (id, v) => { const el = document.getElementById(id); if (!el) return; el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
-  set('otype', 'CALL');
-  set('osym', 'VGT');
-  /* v394：到期日不要写死 —— 写死的日期一过期，这张 CALL 就变"已到期"，断言半年后自己坏掉 */
-  const d = new Date(); d.setDate(d.getDate() + 10);
-  const pad = (n) => String(n).padStart(2, '0');
-  set('oexpiry', d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()));
-  set('ostrike', '130');
-  set('opremium', '120');
-  set('ocontracts', '1');
-});
+/* 仪表盘：市场状态仍保留，但不再包含期权或 OTM 建议 */
+await ev(() => document.getElementById('bbAnalysis').click());
 await p.waitForTimeout(500);
-await ev(() => document.getElementById('btnAddOption').click());
-await p.waitForTimeout(2500);
-const afterOpt = await snap();
-if (afterOpt.options - beforeOpt.options !== 1) failures.push('卖 CALL 没有落库');
-if (afterOpt.cash - beforeOpt.cash !== 120) failures.push('卖 CALL 的权利金没有入账（+' + (afterOpt.cash - beforeOpt.cash) + '，应为 +120）');
-
-/* 期权页：权利金汇总 + 行内状态（v238 把这块计算抽到了 options.js） */
-await ev(() => document.getElementById('bbOption').click());
-await p.waitForTimeout(1500);
-const optUi = await ev(() => ({
-  total: (document.getElementById('trev') || {}).textContent,
-  month: (document.getElementById('mrev') || {}).textContent,
-  status: (document.getElementById('optStatus') || {}).textContent,
-  calls: (document.getElementById('ccSub') || {}).textContent,
-  nearest: (document.getElementById('ccNearest') || {}).textContent,
-  market: (document.getElementById('marketRegime') || {}).textContent,
-  rows: document.querySelectorAll('#tab-option tbody tr').length,
+const marketUi = await ev(() => ({
+  text: (document.getElementById('marketRegime') || {}).textContent || '',
+  trend: !!document.querySelector('#trendChart .trend-chart-shell'),
 }));
-if (optUi.total !== '$120.00') failures.push('累计权利金应为 $120.00，实际 ' + optUi.total);
-if (optUi.month !== '$120.00') failures.push('本月权利金应为 $120.00，实际 ' + optUi.month);
-if (!/天/.test(optUi.status || '')) failures.push('期权状态没显示剩余天数：' + optUi.status);
-if (!/CALL/.test(optUi.calls || '')) failures.push('"复投核心仓"那行没显示 CALL 张数：' + optUi.calls);
-if (optUi.rows < 1) failures.push('期权行没渲染出来');
-if (!/市场状态/.test(optUi.market || '')) failures.push('期权页没显示市场状态提示：' + optUi.market);
-if (!/强势/.test(optUi.market || '') || !/10% OTM/.test(optUi.market || '')) {
-  failures.push('市场状态没按 2 年日线给出强势/VGT 10% OTM：' + optUi.market);
-}
-if (!/200 日均线/.test(optUi.market || '') || /200D/.test(optUi.market || '')) {
-  failures.push('市场状态还要显示 200D 这种旧文案：' + optUi.market);
-}
+if (!/市场状态/.test(marketUi.text)) failures.push('仪表盘没显示市场状态：' + marketUi.text);
+if (/OTM|卖 Call|卖 CALL/.test(marketUi.text)) failures.push('市场状态仍含期权建议：' + marketUi.text);
+if (!marketUi.trend) failures.push('仪表盘市场趋势图没有渲染');
 const regimeExplain = await ev(() => {
   const details = document.querySelector('#marketRegime details.regime-rules');
   const summary = details && details.querySelector('summary');
@@ -210,8 +171,6 @@ const chartUi = await ev(() => ({
   rangeLabels: [...document.querySelectorAll('#trendChart .trend-range span')].map((el) => el.textContent || ''),
   titleRange: (document.getElementById('trendRangeLabel') || {}).textContent || '',
   titleAsOf: (document.getElementById('trendAsOf') || {}).textContent || '',
-  optionCards: [...document.querySelectorAll('#tab-option > .card')].map((el) => el.classList.contains('trend-card') ? 'trend' : el.classList.contains('prob-card') ? 'prob' : ''),
-  freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
 }));
 const chartNative = await ev(() => {
   const shell = document.querySelector('#trendChart .trend-chart-shell');
@@ -244,12 +203,6 @@ if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋
 const rangeDates = chartUi.rangeLabels.map((label) => (label.match(/\d{4}\/(0[1-9]|1[0-2])\/\d{2}/) || [])[0] || '');
 if (chartUi.rangeLabels.length !== 2 || !/^开始 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[0]) || !/^截至 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[1]) || rangeDates.some((date) => date.endsWith('/01/21')) || rangeDates[0] === rangeDates[1]) {
   failures.push('趋势图日期标签异常：' + JSON.stringify(chartUi.rangeLabels));
-}
-if (chartUi.optionCards.indexOf('trend') < 0 || chartUi.optionCards.indexOf('prob') < 0 || chartUi.optionCards.indexOf('trend') + 1 !== chartUi.optionCards.indexOf('prob')) {
-  failures.push('趋势图没有紧挨在被行权概率卡片上方：' + JSON.stringify(chartUi.optionCards));
-}
-if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {
-  failures.push('数据新鲜度信息不完整：' + chartUi.freshness);
 }
 const paletteAudit = await ev(() => {
   const root = document.documentElement;
@@ -302,26 +255,17 @@ for (const theme of ['light', 'dark']) {
   }
   if (!rows.length || rows[0].sma50Dash === rows[0].sma200Dash) failures.push('趋势图均线缺少不同线型：' + JSON.stringify(rows));
 }
-await p.waitForFunction(() => !!document.querySelector('#probMatrix .mx-table'), null, { timeout: 10000 }).catch(() => {});
 await p.waitForFunction(() => {
   const el = document.getElementById('sbVgtCurrent');
   return el && /^当前 \d+\.\d%$/.test(el.textContent || '');
 }, null, { timeout: 8000 }).catch(() => {});
 const visualSummary = await ev(() => ({
-  heatCells: document.querySelectorAll('#probMatrix .mx-cell.mx-heat').length,
-  riskKey: !!document.querySelector('#probMatrix .mx-risk-key'),
-  currentStrike: (document.querySelector('#probMatrix .mx-current-pick') || {}).textContent || '',
   vgtCurrent: (document.getElementById('sbVgtCurrent') || {}).textContent || '',
   drawdownGap: (document.querySelector('#hmDrawdown .drawdown-value small') || {}).textContent || '',
-  probText: (document.getElementById('probMatrix') || {}).innerText || '',
   sidebarCurrentHtml: (document.getElementById('sbVgtCurrent') || {}).outerHTML || '',
   hasSidebar: !!document.querySelector('.sidebar'),
   sidebarLegendHtml: (document.querySelector('.sb-mini-legend') || {}).outerHTML || '',
 }));
-if (!/期权链暂不可用/.test(visualSummary.probText) &&
-  (visualSummary.heatCells < 3 || !visualSummary.riskKey || !/当前档/.test(visualSummary.currentStrike))) {
-  failures.push('被行权概率缺少热力图或当前档摘要：' + JSON.stringify(visualSummary));
-}
 if (visualSummary.sidebarCurrentHtml && !/^当前 \d+\.\d%$/.test(visualSummary.vgtCurrent)) {
   failures.push('资产配置没有显示当前实际占比：' + JSON.stringify(visualSummary));
 }
@@ -353,7 +297,7 @@ if (trendHover.hidden || !/VGT/.test(trendHover.text) || !/\$/.test(trendHover.t
 if (trendHover.tooltipDisplay !== 'none' || !/现价/.test(trendHover.readoutText) || !/50 日/.test(trendHover.readoutText) || !trendHover.readoutBelowChart) {
   failures.push('移动端趋势读数仍遮挡图表或内容不完整：' + JSON.stringify(trendHover));
 }
-await ev(() => document.querySelector('.tab-btn[data-tab="holding"]').click());
+await ev(() => document.querySelector('.tab-btn[data-tab="analysis"]').click());
 await p.waitForTimeout(350);
 await p.waitForFunction(() => !!document.querySelector('#equityChart .eq-shell'), null, { timeout: 12000 }).catch(() => {});
 const equityUi = await ev(() => {
@@ -377,8 +321,6 @@ const equityUi = await ev(() => {
 if (!equityUi.ready || !/^\$/.test(equityUi.label)) failures.push('资产曲线缺少固定当前值标签：' + JSON.stringify(equityUi));
 if (equityUi.tooltipHidden || !/资产/.test(equityUi.tooltip) || !/净入金/.test(equityUi.tooltip) || !/收益率/.test(equityUi.tooltip)) failures.push('资产曲线悬停详情不完整：' + JSON.stringify(equityUi));
 if (equityUi.userSelect !== 'none') failures.push('资产曲线仍允许选择文字：' + equityUi.userSelect);
-await ev(() => document.querySelector('.tab-btn[data-tab="option"]').click());
-await p.waitForTimeout(350);
 await ev(() => document.querySelector('#trendChart [data-trendrange="2y"]').click());
 await p.waitForTimeout(450);
 const trend2y = await ev(() => ({
@@ -392,34 +334,11 @@ await ev(() => document.querySelector('#trendTabs [data-trendtab="IBIT"]').click
 await p.waitForTimeout(600);
 const trendSwitch = await ev(() => ({
   symbol: (document.getElementById('trendSymbol') || {}).textContent || '',
-  probabilityTab: (document.querySelector('#probTabs .prob-chip.is-on') || {}).textContent || '',
 }));
-if (trendSwitch.symbol !== 'IBIT' || trendSwitch.probabilityTab !== 'IBIT') failures.push('趋势图切换没有同步 IBIT：' + JSON.stringify(trendSwitch));
+if (trendSwitch.symbol !== 'IBIT') failures.push('趋势图切换没有同步 IBIT：' + JSON.stringify(trendSwitch));
 await ev(() => document.querySelector('#trendTabs [data-trendtab="VGT"]').click());
 await p.waitForTimeout(400);
-await ev(() => document.getElementById('bbHoldings').click());
-await p.waitForTimeout(400);
-const maBefore = await ev(() => {
-  const list = document.getElementById('mobileAlerts');
-  const ack = list && list.querySelector('[data-alert-dismiss="macross:9001"]');
-  return {
-    text: list ? list.innerText : '',
-    ack: !!ack,
-    ackHeight: ack ? ack.getBoundingClientRect().height : 0,
-  };
-});
-if (!/VGT 上穿 200 日均线/.test(maBefore.text || '')) failures.push('均线穿越提醒没有显示：' + maBefore.text);
-if (!maBefore.ack) failures.push('均线穿越提醒缺少确认按钮');
-if (!(maBefore.ackHeight >= 40)) failures.push('移动端均线提醒按钮触控高度不足：' + maBefore.ackHeight);
-await ev(() => { const b = document.querySelector('#mobileAlerts [data-alert-dismiss="macross:9001"]'); if (b) b.click(); });
-await p.waitForTimeout(700);
-const maAfter = await ev(() => ({
-  text: (document.getElementById('mobileAlerts') || {}).textContent || '',
-}));
-if (/VGT 上穿 200 日均线/.test(maAfter.text)) {
-  failures.push('确认均线穿越后列表没有清空：' + JSON.stringify(maAfter));
-}
-await ev(() => document.getElementById('bbOption').click());
+await ev(() => document.getElementById('bbAnalysis').click());
 await p.waitForTimeout(400);
 await p.setViewportSize({ width: 320, height: 700 });
 await p.waitForTimeout(300);
@@ -446,7 +365,7 @@ if (pwa320.tabs !== 4) failures.push('320px 底部 PWA 导航数量异常：' + 
 await p.waitForTimeout(1500);
 const cloud = await (await fetch(CLOUD + '/_log')).json();
 const keys = Object.keys(cloud.store);
-['trades', 'cashBalance', 'cashLog', 'activities', 'optionTrades'].forEach((k) => {
+['trades', 'cashBalance', 'cashLog', 'activities'].forEach((k) => {
   if (!keys.includes(k)) failures.push('假云端没收到 ' + k + '（收到：' + keys.join(',') + '）');
 });
 const pushes = cloud.log.map((x) => x.keys.join('+'));
@@ -458,12 +377,11 @@ await p.evaluate(() => {
 });
 await p.close();
 
-console.log('数据流：买入 ' + beforeBuy.trades + '→' + afterBuy.trades + ' 笔 · 现金 ' + beforeDep.cash + '→' + afterDep.cash + ' · 期权 ' + beforeOpt.options + '→' + afterOpt.options);
-console.log('期权页：累计权利金 ' + optUi.total + ' · 本月 ' + optUi.month + ' · 状态 "' + optUi.status + '" · 市场 "' + optUi.market + '" · 最近到期 "' + optUi.nearest + '"');
+console.log('数据流：买入 ' + beforeBuy.trades + '→' + afterBuy.trades + ' 笔 · 现金 ' + beforeDep.cash + '→' + afterDep.cash + ' · 市场趋势 ' + (marketUi.trend ? '正常' : '缺失'));
 console.log('推送记录：' + pushes.join('  |  '));
 if (errors.length) failures.push('页面报错：' + errors.join(' | '));
 if (failures.length) {
   console.error('数据流测试失败：\n  - ' + failures.join('\n  - '));
   throw new Error('flows-data failed');
 }
-console.log('✓ 买入 / 入金 / 卖 CALL 都正确落库并同步');
+console.log('✓ 买入 / 入金 / 市场趋势都正确落库并同步');

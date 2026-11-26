@@ -38,7 +38,6 @@ async function boot(ctx, token, seedTrades, seedPrices) {
     localStorage.setItem('wealth_cash_v2', '34000');
     localStorage.setItem('wealth_cashlog_v2', '[]');
     localStorage.setItem('wealth_activity_v1', '[]');
-    localStorage.setItem('wealth_options_v2', '[]');
     if (args.prices) localStorage.setItem('wealth_prices_v2', JSON.stringify(args.prices));
   }, { base: CLOUD, token: token, seed: seedTrades || [], prices: seedPrices || null });
   await page.goto(BASE + '?dev=' + Date.now() + Math.random(), { waitUntil: 'domcontentloaded' });
@@ -211,8 +210,6 @@ await fetch(CLOUD + '/_seed', {
     cashBalance: 1000,
     cashLog: [],
     activities: [],
-    optionTrades: [],
-    otmSettings: { vgt: 7, smh: 6 },
     exit_portfolio: '',
     prices: { VGT: { price: 500, prevClose: 500, change: 0, time: PRICE_OLD, source: 'yahoo' } },
   }),

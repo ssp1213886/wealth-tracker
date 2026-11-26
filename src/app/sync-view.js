@@ -9,8 +9,6 @@ export const SYNC_KEY_LABELS = {
   cashLog: '资金流水',
   state: '投资参数',
   activities: '操作日志',
-  optionTrades: '期权持仓',
-  otmSettings: 'OTM百分比',
   exit_portfolio: '退出策略',
   watchlist: '观察列表',
 };

@@ -5,11 +5,10 @@ const KEEP_PER_USER = 5;
 
 function summarize(payload) {
   const num = (v) => (Number(v) || 0);
-  let trades = 0, options = 0, cash = 0;
+  let trades = 0, cash = 0;
   try { const t = JSON.parse(payload.trades); if (Array.isArray(t)) trades = t.length } catch { /* 忽略坏值 */ }
-  try { const o = JSON.parse(payload.optionTrades); if (Array.isArray(o)) options = o.length } catch { /* 忽略坏值 */ }
   try { cash = num(JSON.parse(payload.cashBalance)) } catch { /* 忽略坏值 */ }
-  return JSON.stringify({ trades, options, cash, keys: Object.keys(payload).length });
+  return JSON.stringify({ trades, cash, keys: Object.keys(payload).length });
 }
 
 /** 把某个账号当前的数据行整体存成一份快照；没有数据就不存。返回 {id, createdAt, summary} 或 null。 */

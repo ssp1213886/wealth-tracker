@@ -32,9 +32,6 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_watchlist_v1', JSON.stringify([
     { sym: 'VGT', enabled: true, order: 0 }, { sym: 'SMH', enabled: true, order: 1 }, { sym: 'IWM', enabled: true, order: 2 },
   ]));
-  localStorage.setItem('wealth_options_v2', JSON.stringify([
-    { id: 301, sym: 'VGT', type: 'CALL', strike: 100, premium: 120, contracts: 1, expiry: '2026-08-21', added: '2026-08-01' },
-  ]));
 });
 await p.goto(BASE + '?fx=' + Date.now(), { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(4000);
@@ -67,6 +64,11 @@ if (rebalBefore === rebalAfter) failures.push('再平衡切到「注资」后内
 /* B) 记录页搜索：必须真的隐藏不匹配的行（手机端曾经被 !important 盖掉） */
 await ev(() => document.getElementById('bbData').click());
 await p.waitForTimeout(1500);
+await ev(() => {
+  const dataTab = document.querySelector('#recordSeg [data-seg="data"]');
+  if (dataTab) dataTab.click();
+});
+await p.waitForTimeout(300);
 // 记录页顶部汇总（v236 改用 rows.js 的 dataPageTotals 计算）
 const totals = await ev(() => ({
   dep: (document.getElementById('dataDep') || {}).textContent,
@@ -126,19 +128,6 @@ await p.waitForTimeout(1500);
 const undone = await ev(() => JSON.parse(localStorage.getItem('wealth_trades_v2') || '[]').length);
 if (undone !== tradesBefore) failures.push('撤销清空没把交易恢复（' + undone + ' vs ' + tradesBefore + '）');
 
-/* D) 期权：过期那张应能「结算」（原生 confirm 已在上面自动确认） */
-await ev(() => document.getElementById('bbOption').click());
-await p.waitForTimeout(1800);
-const settleBtns = await ev(() => document.querySelectorAll('#tab-option .opt-settle').length);
-if (settleBtns < 1) failures.push('过期期权没有出现「结算」按钮');
-await ev(() => {
-  const b = document.querySelector('#tab-option .opt-settle');
-  if (b) b.click();
-});
-await p.waitForTimeout(2000);
-const settled = await ev(() => JSON.parse(localStorage.getItem('wealth_options_v2') || '[]').filter((o) => o.settled).length);
-if (settled < 1) failures.push('点结算后没有标记为已结算');
-
 /* E) 备份结构：必须含观察列表（曾经漏掉） */
 const backup = await ev(() => {
   const d = createBackupData();
@@ -184,6 +173,8 @@ if (planAfter.rate !== 3.5) failures.push('提款滑杆没写进 state.plan.wd.r
 if (!planAfter.annual || planAfter.annual === '$0.00') failures.push('提款模拟没算出年提款额');
 
 /* G) 观察列表状态机：添加一只标的 → 落库 + 进「关注」组 + 推到云端（v237 抽到 watch.js） */
+await ev(() => document.getElementById('bbAnalysis').click());
+await p.waitForTimeout(700);
 const watchBefore = await ev(() => JSON.parse(localStorage.getItem('wealth_watchlist_v1') || '[]').map((x) => x.sym));
 await ev(() => document.getElementById('btnWatchAddOpen').click());
 await p.waitForTimeout(500);
@@ -406,7 +397,7 @@ await p.evaluate(() => {
 });
 await p.close();
 
-console.log('交互流：搜索 ' + search.total + ' 行→可见 ' + search.visible + '（隐藏 ' + search.hidden + '）· 清空 ' + tradesBefore + '→' + cleared + '→撤销 ' + undone + ' · 结算按钮 ' + settleBtns + ' 个 · 备份含观察列表 ' + backup.hasWatchlist);
+console.log('交互流：搜索 ' + search.total + ' 行→可见 ' + search.visible + '（隐藏 ' + search.hidden + '）· 清空 ' + tradesBefore + '→' + cleared + '→撤销 ' + undone + ' · 备份含观察列表 ' + backup.hasWatchlist);
 console.log('记录页汇总：累计入金 ' + totals.dep + ' · 累计买入 ' + totals.buy + ' · 累计卖出 ' + totals.sel);
 console.log('入口体验：现金不足提示="' + cashGuard.toast.slice(0, 40) + '" 焦点=' + cashGuard.focused + ' · 移动端同步面板可见=' + healthJump.panelVisible + ' · 连接配置展开=' + healthJump.syncPanelOpen);
 console.log('策略工具：档位=' + planAfter.tier0 + ' · 提款率=' + planAfter.rate + '% · 年提款=' + planAfter.annual + ' · 耗尽=' + planAfter.deplete + (planBefore ? '' : '（此前无 plan）'));
@@ -418,5 +409,5 @@ if (failures.length) {
   console.error('交互流测试失败：\n  - ' + failures.join('\n  - '));
   throw new Error('flows-interactions failed');
 }
-console.log('✓ 搜索过滤 / 清空撤销 / 期权结算 / 备份结构 全部正常');
+console.log('✓ 搜索过滤 / 清空撤销 / 备份结构 全部正常');
 

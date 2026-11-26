@@ -41,13 +41,6 @@ await p.evaluate(async () => {
     { id: 101, date: '2026-09-20', time: '10:00', action: '买入 VGT', detail: '10 股 @ 100' },
     { id: 102, date: '2026-09-21', time: '11:00', action: '入金', detail: '$2,000' },
   ]));
-  /* v394：期权到期日改成"相对今天 +10 天" —— 写死日期一过期，这张 CALL 就变"已到期"，
-     爬查/断言会在某一天之后自己变红（flows-data 就是这么坏的） */
-  const exp = (() => { const d = new Date(); d.setDate(d.getDate() + 10); const p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); })();
-  localStorage.setItem('wealth_options_v2', JSON.stringify([
-    { id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: exp, added: '2026-09-20' },
-  ]));
-  localStorage.setItem('otmSettings', JSON.stringify({ vgt: 7, smh: 5 }));
   localStorage.setItem('exit_portfolio', '测试退出策略');
 });
 await p.goto(BASE + '?crawl=' + Date.now(), { waitUntil: 'domcontentloaded' });
@@ -84,7 +77,6 @@ const clickId = (tabId) => document.getElementById(tabId).click();
 
 await step('仪表盘', clickId, 1600, 'bbHoldings');
 await step('操作台', clickId, 1600, 'bbConsole');
-await step('期权', clickId, 1600, 'bbOption');
 await step('记录', clickId, 1600, 'bbData');
 await step('记录-日志', () => { const b = Array.from(document.querySelectorAll('#recordSeg .record-seg')).filter((x) => x.getAttribute('data-seg') === 'log')[0]; if (b) b.click(); }, 1300);
 await step('记录-明细', () => { const b = Array.from(document.querySelectorAll('#recordSeg .record-seg')).filter((x) => x.getAttribute('data-seg') === 'data')[0]; if (b) b.click(); }, 1300);
@@ -122,7 +114,7 @@ await step('观察-行详情', () => document.querySelector('#watchRows .watch-r
 await step('提醒面板', () => { const b = Array.from(document.querySelectorAll('[onclick*="qaToggle"], .ms-bell')).filter((el) => el.offsetParent)[0]; if (b) b.click(); }, 900);
 await step('主题切换', () => { if (typeof toggleTheme === 'function') toggleTheme(); }, 700);
 await step('主题切回', () => { if (typeof toggleTheme === 'function') toggleTheme(); }, 700);
-for (const tab of ['bbHoldings', 'bbConsole', 'bbOption', 'bbData']) {
+for (const tab of ['bbHoldings', 'bbConsole', 'bbAnalysis', 'bbData']) {
   await ev((id) => document.getElementById(id).click(), tab);
   await p.waitForTimeout(1300);
   await step(tab + '-展开全部折叠卡', () => {
@@ -135,7 +127,7 @@ const summary = await ev(() => ({
   bootFailed: document.body.innerText.indexOf('页面启动失败') >= 0,
   watchRows: document.querySelectorAll('#watchRows .watch-row').length,
   activityRows: document.querySelectorAll('#activityLog .activity-item').length,
-  optionRows: document.querySelectorAll('#tab-option tbody tr').length,
+  trendRendered: !!document.querySelector('#trendChart .trend-chart-shell'),
 }));
 await p.evaluate(() => {
   localStorage.removeItem('wealth_sync_cfg');
@@ -149,12 +141,12 @@ if (consoleErrors.length) failures.push('控制台报错 ' + consoleErrors.lengt
 if (summary.bootFailed) failures.push('页面出现「启动失败」兜底页');
 if (summary.watchRows < 15) failures.push('观察列表没渲染出来（' + summary.watchRows + ' 行）');
 if (summary.activityRows < 2) failures.push('操作日志没渲染出来（' + summary.activityRows + ' 行）');
-if (summary.optionRows < 1) failures.push('期权持仓没渲染出来（' + summary.optionRows + ' 行）');
+if (!summary.trendRendered) failures.push('仪表盘市场趋势图没有渲染');
 if (searchTop !== 'BRK-B') failures.push('搜索 berkshire 第一行应为 BRK-B，实际 ' + searchTop);
 if (!healthText.state) failures.push('数据健康的「同步状态」没有渲染');
 if (!healthText.conflict) failures.push('数据健康的「冲突状态」没有渲染');
 if (!healthText.cloud) failures.push('数据健康的「最近下载」没有渲染');
-console.log('爬查完成：' + summary.build + ' · 观察 ' + summary.watchRows + ' 行 · 日志 ' + summary.activityRows + ' 行 · 期权 ' + summary.optionRows + ' 行');
+console.log('爬查完成：' + summary.build + ' · 观察 ' + summary.watchRows + ' 行 · 日志 ' + summary.activityRows + ' 行 · 趋势图 ' + (summary.trendRendered ? '正常' : '缺失'));
 if (failures.length) {
   console.error('爬查发现问题 ' + failures.length + ' 条：\n  - ' + failures.join('\n  - '));
   throw new Error('crawl failed');

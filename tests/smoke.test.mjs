@@ -18,8 +18,6 @@ const rowsSource = fs.readFileSync('src/app/rows.js', 'utf8').replace(/^export /
 const timeSource = fs.readFileSync('src/app/time.js', 'utf8').replace(/^export /gm, '');
 // 观察列表搜索名单已抽到 symbols.js（v234）；断言仍按"源码里能看到名单"来钉，所以这里要带上它
 const symbolsSource = fs.readFileSync('src/app/symbols.js', 'utf8').replace(/^export /gm, '');
-// 期权纯计算已抽到 options.js（v238）；它按函数名切片做断言，所以要一起拼进来
-const optionsSource = fs.readFileSync('src/app/options.js', 'utf8').replace(/^export /gm, '');
 // 记录域规整与 CSV 解析已抽到 records-import.js（v244），同样按函数名切片
 const recordsSource = fs.readFileSync('src/app/records-import.js', 'utf8').replace(/^export /gm, '').replace(/^import .*$/gm, '');
 // 图表数据整形已抽到 charts.js（v245）
@@ -33,7 +31,7 @@ const alertsViewSource = fs.readFileSync('src/app/alerts-view.js', 'utf8').repla
 const indexSource = fs.readFileSync('src/app/index.js', 'utf8').replace(/^import .*$/gm, '');
 const appSource =
   utilSource + '\n' + calcSource + '\n' + storeSource + '\n' + syncSource + '\n' +
-  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + optionsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + syncViewSource + '\n' + portfolioViewSource + '\n' + alertsViewSource + '\n' + indexSource;
+  renderSource + '\n' + rowsSource + '\n' + timeSource + '\n' + symbolsSource + '\n' + recordsSource + '\n' + chartsSource + '\n' + syncViewSource + '\n' + portfolioViewSource + '\n' + alertsViewSource + '\n' + indexSource;
 const appMarkup = html + '\n' + css + '\n' + appSource;
 
 function extractFunction(name) {
@@ -76,13 +74,10 @@ for (const name of [
   'chinaDate',
   'marketClock',
   'dateOrdinal',
-  'optionExpiryState',
-  'isActiveOption',
   'cleanText',
   'escapeHtml',
   'normalizeDateValue',
   'normalizeTrades',
-  'normalizeOptions',
   'parseCSVRow',
   'parseMoneyValue',
   'parseSchwabCSV',
@@ -109,14 +104,8 @@ test('US market dates do not roll over at Beijing midnight', () => {
   assert.equal(context.chinaDate(beijingAfterMidnight), '2026-07-19');
   assert.equal(context.marketDate(beijingAfterMidnight), '2026-07-18');
   assert.equal(context.marketClock(beijingAfterMidnight), '12:30');
-  assert.deepEqual(
-    JSON.parse(JSON.stringify(context.optionExpiryState('2026-07-18', beijingAfterMidnight))),
-    { days: 0, expired: false },
-  );
   const afterMarketClose = new Date('2026-07-19T05:00:00+08:00');
-  assert.equal(context.optionExpiryState('2026-07-18', afterMarketClose).expired, true);
-  assert.equal(context.isActiveOption({ expiry: '2026-07-18' }, beijingAfterMidnight), true);
-  assert.equal(context.isActiveOption({ expiry: '2026-07-18' }, afterMarketClose), false);
+  assert.equal(context.marketDate(afterMarketClose), '2026-07-18');
   assert.equal(context.marketDate(new Date('2026-08-01T00:30:00+08:00')).slice(0, 7), '2026-07');
 });
 
@@ -129,15 +118,6 @@ test('trade normalization accepts IBIT ticker and rejects spot symbols', () => {
   assert.equal(rows.length, 1, '现货 BTC / BTC-USD 都不该通过白名单');
   assert.equal(rows[0].symbol, 'IBIT');
   assert.equal(rows[0].price, 28.38);
-});
-
-test('option IDs cannot inject markup or inline handlers', () => {
-  const rows = context.normalizeOptions([
-    { id: '\" onclick=alert(1)', sym: 'VGT', type: 'CALL', strike: 120, premium: 150, contracts: 1, expiry: '2026-08-21' },
-  ], ['VGT', 'SMH', 'IBIT']);
-  assert.equal(rows.length, 1);
-  assert.equal(typeof rows[0].id, 'number');
-  assert.ok(Number.isFinite(rows[0].id));
 });
 
 test('Schwab CSV parser handles quotes, sells, duplicates, and ETF allowlist', () => {
@@ -172,9 +152,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=430');
+  assert.equal(manifest.start_url, '/?v=431');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v430/);
+  assert.match(serviceWorker, /wealth-v431/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -188,7 +168,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=430',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=431',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -262,17 +242,18 @@ test('mobile drawer is explicit, scroll-safe, and uses vector icons', () => {
   assert.doesNotMatch(html, /class="btn-icon[^"]*" id="btn(?:ExportData|ImportData|ImportCSV)"/);
   // 底部栏定位取最终生效规则（历史覆盖层已在 v47 收敛，被遮蔽的重复声明已移除）
   assert.match(appMarkup, /#bottomBar\.bottom-bar\{left:0!important;right:0!important;bottom:0!important;height:calc\(72px \+ env\(safe-area-inset-bottom,0px\)\)!important;border-top:1px solid var\(--rule\)!important\}/);
-  assert.match(appMarkup, /#bottomBar\.bottom-bar\{display:grid!important;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/);
+  assert.match(appMarkup, /#bottomBar\.bottom-bar\{grid-template-columns:1fr 1fr 88px 1fr 1fr!important\}/);
   assert.match(appMarkup, /\.bb-btn\{position:static!important;top:auto!important;left:auto!important;width:100%!important;min-width:0!important;justify-self:stretch!important;height:68px!important;min-height:68px!important/);
   assert.match(appMarkup, /\.sidebar\.open\{transform:translate3d\(0,0,0\)!important\}/);
   assert.match(appMarkup, /transition:none!important\}/);
   // 快捷操作按钮占用底栏中间的独立槽位（左右各两个导航按钮），不再遮挡导航
   assert.match(appMarkup, /#qaFab\.qa-fab\{left:50%!important;right:auto!important;bottom:calc\(32px \+ env\(safe-area-inset-bottom,0px\)\)!important;transform:translateX\(-50%\)!important/);
-  assert.match(appMarkup, /#bottomBar #bbOption\{grid-column:4\}/);
+  assert.match(appMarkup, /#bottomBar #bbAnalysis\{grid-column:4\}/);
+  assert.match(appMarkup, /#bottomBar #bbData\{grid-column:5\}/);
   // v254：这条规则上的 !important 被 C1 证明冗余后去掉了（四种组合指纹零差异），断言改为只钉高度
   // v301：触控热区统一提到 ≥44px（Apple HIG）。这里不再钉死具体数值——
   // 钉住「不小于 44px」这条不变量，以后调尺寸不会再误报成回归。
-  assert.match(appMarkup, /#tab-option \.option-type-segment\{height:48px/);
+  assert.doesNotMatch(html, /data-tab="option"|id="bbOption"|id="tab-option"/);
   assert.match(appMarkup, /\.segmented-control\{height:48px;margin-bottom:10px;border-radius:14px\}/);
   const segH = Number((appMarkup.match(/\.segmented-control\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\);gap:2px;height:(\d+)px/) || [])[1]);
   assert.ok(segH >= 44, '分段控件高度必须 ≥44px（触控热区），实际 ' + segH);
@@ -475,14 +456,7 @@ test('同步失败不再挂死在 busy：没有 stall 兜底，失败原因说�
   const bareFetches = (indexSource.match(/(?<![a-zA-Z.])fetch\(/g) || []).length;
   assert.equal(bareFetches, 3, '裸 fetch 只允许 3 处，实际 ' + bareFetches + ' 处');
   assert.ok((indexSource.match(/fetchWithTimeout\(/g) || []).length >= 15, '其余网络调用都要走 fetchWithTimeout');
-  // v321：危险操作的"长按确认"对键盘同样成立 —— 以前 keydown 阻止默认 + keyup 直接 fire()，
-  // 等于键盘一次按键就执行了本该按住才生效的破坏性操作（读屏用户常用 Enter/Space 激活按钮）。
   assert.doesNotMatch(appSource, /keyup',function\(e\)\{if\(e\.key===' '\|\|e\.key==='Enter'\)\{e\.preventDefault\(\);fire\(\)\}\}/, '键盘不能一按就执行长按确认');
-  assert.match(appSource, /if\(!held\)startHold\(e\)/);
-  // 焦点管理：打开时记住、关闭时归还；Tab 圈在弹层里
-  assert.match(appSource, /var prevFocus=document\.activeElement/);
-  assert.match(appSource, /prevFocus\.focus\(\)/);
-  assert.match(appSource, /e\.key==='Tab'/);
 });
 
 test('sync feedback has a single channel per event', () => {
@@ -627,169 +601,16 @@ test('图表增强：趋势图 3 年数据、范围切换、十字线与资产�
  *
  * 两道防线都钉住：① 引导块必须等 DOMContentLoaded；② 它依赖的顶层变量必须声明在前面。
  */
-test('index.js：引导块不得在模块求值中读到未赋值的顶层变量（v336 点击无反应回归）', () => {
-  const lines = indexSource.split('\n');
-  const find = (re) => lines.findIndex((l) => re.test(l));
-  const initProb = find(/^\(function initProb/);
-  const otmSettings = find(/^var otmSettings=/);
-  assert.ok(initProb > 0, '找不到 initProb');
-  assert.ok(otmSettings > 0, '找不到 otmSettings');
-  assert.ok(otmSettings < initProb, 'otmSettings 必须先于 initProb 赋值（initProb 会同步调 updateOtm）');
-
-  // defer 场景下 readyState 是 'interactive'，只有 'complete'（脚本被动态注入）才允许立刻跑
-  const tail = lines.slice(initProb - 1);
-  const endIdx = tail.findIndex((l) => /^\}\)\(\);/.test(l));
-  const block = tail.slice(0, endIdx + 1).join('\n');
-  assert.ok(endIdx > 0, '找不到 initProb 的结尾');
-  assert.match(block, /if\(document\.readyState==='complete'\)run\(\);else document\.addEventListener\('DOMContentLoaded',run\)/,
-    'initProb 必须等 DOMContentLoaded —— 用「不是 loading 就立刻跑」会在 defer 下读到未赋值的变量');
-  assert.doesNotMatch(block, /readyState==='loading'\)\s*\{?\s*document\.addEventListener\('DOMContentLoaded',\s*run\)/,
-    '这种写法在 defer 下会同步执行，不要再回来');
-
-  // updateOtm 自身留了兜底：万一顺序又被人改坏，也不至于让整页死掉
-  assert.match(indexSource, /function updateOtm\(\)\{if\(!otmSettings\)otmSettings=\{\}/,
-    'updateOtm 要有 otmSettings 兜底，避免再次"读 undefined 直接崩"');
-  // v384：默认值表也必须在 initProb 之前赋值（updateOtm 会读它）
-  const otmDefaults = find(/^var OTM_DEFAULTS=/);
-  assert.ok(otmDefaults > 0, '找不到 OTM_DEFAULTS');
-  assert.ok(otmDefaults < initProb, 'OTM_DEFAULTS 必须先于 initProb 赋值（updateOtm 会读它）');
+test('index.js：市场趋势初始化等 DOMContentLoaded 后再读取顶层状态', () => {
+  assert.match(indexSource, /\(function initMarketTrend\(\)\{/);
+  assert.match(indexSource, /if\(document\.readyState==='complete'\)run\(\);else document\.addEventListener\('DOMContentLoaded',run\)/);
+  assert.doesNotMatch(indexSource, /initProb|otmSettings|OTM_DEFAULTS/);
 });
 
 /**
  * v384：第三腿换成 IBIT 后 "哪些标的能卖 CALL" 有三份名单：前端 OPTION_SYMS、
  * options.js 的兜底、worker 的链白名单。三者必须一致 —— 不一致就会出现
  * "概率卡看不到那一档""录了但持仓里不显示""接口直接 400"这类只在真机上才发现的怪毛病。
- */
-test('v384：期权标的三处名单必须一致（OPTION_SYMS / options.js 兜底 / chain.js 白名单）', () => {
-  const pick = (src, re, label) => {
-    const m = src.match(re);
-    assert.ok(m, '找不到 ' + label);
-    return m[1].split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, ''));
-  };
-  const fromIndex = pick(indexSource, /var OPTION_SYMS=\[([^\]]+)\]/, 'index.js OPTION_SYMS');
-  const fromOptions = pick(optionsSource, /DEFAULT_OPTION_SYMBOLS = \[([^\]]+)\]/, 'options.js 兜底名单');
-  const fromChain = pick(fs.readFileSync('src/lib/chain.js', 'utf8'), /const ALLOWED_SYMBOLS = new Set\(\[([^\]]+)\]\)/, 'chain.js 白名单');
-  assert.deepEqual(fromIndex, ['VGT', 'SMH', 'IBIT']);
-  assert.deepEqual(fromOptions, fromIndex, 'options.js 的兜底必须与 OPTION_SYMS 一致');
-  assert.deepEqual(fromChain, fromIndex, 'worker 的链白名单必须与 OPTION_SYMS 一致');
-  // 门禁不许再写死标的名
-  assert.doesNotMatch(optionsSource, /sym !== 'VGT' && sym !== 'SMH'/, 'options.js 该走 allowed 名单');
-  // 概率卡的 tab 必须由 OPTION_SYMS 生成
-  assert.match(indexSource, /probTabsHtml\(probTab,OPTION_SYMS\)/, 'renderProbCard 要把 OPTION_SYMS 传进去');
-  // 期权域里具体的"写死两只"模式，逐一钉死（[VGT,SMH].forEach 在持仓/敞口那几处是合法保留的，
-  // 因为 IBIT 没有成分股，不能一刀切）
-  assert.doesNotMatch(indexSource, /probTabsHtml\(probTab\);/, '概率卡的旧调用签名不该还在');
-  assert.doesNotMatch(indexSource, /calTab!=='VGT'&&calTab!=='SMH'/, '到期日历的标的白名单该走 OPTION_SYMS');
-  assert.match(indexSource, /Promise\.all\(OPTION_SYMS\.map\(fetchChain\)\)/, '期权链请求要按 OPTION_SYMS 发');
-  assert.doesNotMatch(indexSource, /Promise\.all\(\['VGT','SMH'\]\.map\(fetchChain\)/, '期权链请求不该再写死两只');
-  // v388：三条腿统一到月度（原来 VGT 月度 / SMH+IBIT 每 3 周）
-  assert.match(indexSource, /var ccSchedule=\{VGT:\{rule:'monthly3'\},SMH:\{rule:'monthly3'\},IBIT:\{rule:'monthly3'\}\}/,
-    '三条腿的节奏都应该是 monthly3');
-  assert.doesNotMatch(indexSource, /every3w'\}/, '代码里不该再配置 every3w');
-  assert.match(indexSource, /var OTM_DEFAULTS=\{vgt:7,smh:6,ibit:10\}/, 'OTM 默认值表要有 IBIT 10%');
-  // v385：观察列表的迷你走势必须跟"同一行的涨跌"同色 —— 原来按"近一月历史首末"另算一套，
-  // SMH 月线向下时就会出现「当天 +1.00% 是绿的、走势图却是红的」
-  assert.match(indexSource, /_dir=chgEl\?\(chgEl\.classList\.contains\('is-up'\)/,
-    '走势图方向要读同一行涨跌元素的 is-up/is-down');
-  assert.doesNotMatch(indexSource, /_hist\[_hist\.length-1\]>_hist\[0\]/,
-    '别再按历史首末算走势图颜色（会和同一行的涨跌打架）');
-  // v384：年度归因卡的第三腿也要跟着换（原来写死 capGains.BTC → 渲染出 "BTC 增值 $0.00 NaN%"）
-  assert.match(indexSource, /\{label:'IBIT 增值',val:r\.capGains\.IBIT\}/, '归因卡第三腿标签要改成 IBIT');
-  assert.doesNotMatch(indexSource, /capGains\.BTC/, '归因卡不该再读 capGains.BTC（那个键已经不存在了）');
-  assert.match(indexSource, /isFinite\(it\.val\)/, '归因占比要有 NaN 防护');
-  // v384：switchTab 会把 'log' 归一成 'data'，用 tab==='log' 判分支等于永不执行
-  assert.doesNotMatch(indexSource, /if\(tab==='log'\)/, '别再拿 tab===' + "'log'" + ' 判分支（它已经被归一成 data）');
-  assert.match(indexSource, /if\(tab==='data'\)\{renderActivity\(\);renderLogHeatmap\(\);renderAnnualMatrix\(\)\}/,
-    '打开「记录」要重渲染年度复盘卡，否则一直是开机时的旧值');
-  // v384：删期权的现金口径 —— 走 planOptionDelete（连带撤流水），不许再"新写一条退回"
-  assert.match(indexSource, /planOptionDelete\(o,cashLog\)/, 'delOpt 要走 planOptionDelete');
-  assert.doesNotMatch(indexSource, /type:"权利金退回-"/, 'delOpt 不该再新写"退回"流水（会让现金退两次）');
-});
-
-test('v384：IBIT 在两个 select 与两组胶囊里都在（漏一个就会"点了不高亮"）', () => {
-  // 按 id 抓出那个 select 再断言内部 —— 宽泛的 /<option value="IBIT">/ 会被交易表满足（假阳性）
-  const osym = html.match(/<select id="osym"[^>]*>([\s\S]*?)<\/select>/);
-  assert.ok(osym, '找不到 #osym');
-  assert.match(osym[1], /<option value="IBIT">/, '#osym 必须有 IBIT：少了它 asset.value="IBIT" 会被浏览器置空 → 胶囊不高亮');
-  const tf = html.match(/<select id="tfAsset"[^>]*>([\s\S]*?)<\/select>/);
-  assert.ok(tf, '找不到 #tfAsset');
-  assert.match(tf[1], /<option value="IBIT">/, '#tfAsset 必须有 IBIT');
-  assert.doesNotMatch(tf[1], /value="BTC"/, '交易表不该再有 BTC');
-  assert.match(html, /data-option-asset="IBIT"/, '期权胶囊要有一颗 IBIT');
-  assert.match(html, /data-asset="IBIT"/, '交易胶囊要有一颗 IBIT');
-  assert.doesNotMatch(html, /data-asset="BTC"/, '交易胶囊不该再有 BTC');
-  // 页面壳里也不许再留 BTC：图例 / 定投三栏 / 交易历史筛选 / og 描述都得是 IBIT
-  // （小写 class="btc" 是配色钩子，大小写敏感匹配不会误伤）
-  assert.doesNotMatch(html, /BTC/, 'index.html 里不该再有第三腿的 BTC 文案');
-  assert.match(html, /id="dcaIBIT"/, '桌面定投栏的第三腿 id 要能按 IBIT 派生（JS 读 dca+符号）');
-  assert.match(html, /id="mobileDcaIbitPct"/, '移动定投栏的第三腿 id 同上');
-  assert.match(html, /id="sbIbitPct"/, '侧栏目标配比的第三腿 id 要跟着改');
-  // 期权状态卡：以前只有 VGT/SMH 两格，第三腿没地方显示
-  assert.match(html, /id="oi"/, '期权状态卡要有第三腿（持股数）的格子');
-  assert.match(html, /id="oci"/, '期权状态卡要有第三腿（可卖张数）的格子');
-  assert.match(indexSource, /var LEG_METRIC_IDS=\{VGT:\['ov','ocv'\],SMH:\['vd','ocs'\],IBIT:\['oi','oci'\]\}/, '三腿 → 状态卡格子的映射');
-  assert.match(indexSource, /Object\.keys\(LEG_METRIC_IDS\)\.forEach/, '状态卡要按腿循环渲染，不是写死两栏');
-  assert.doesNotMatch(indexSource, /o\.sym==="VGT"&&o\.type==="CALL"/, '别再写死单腿的 CALL 统计');
-});
-
-/**
- * v339 曾在方案里写下「点列头直接设 OTM，去掉 +/- 按钮」，结果只剩下 3/5/7/10/15 五档，
- * 想设 6%/8% 就没辙了 —— 用户马上报「没有加减号」。两个入口各有各的用处，都留着：
- *   · 加减号 = 微调（每次 1%，adjOtm 钳到 1~20%）
- *   · 点列头 = 快速跳到五档预设
- * 删掉哪一个，用户都会再报一次「调不了 OTM」。
- */
-test('期权页：OTM 加减号与「看什么」视角都在，且加减号接回 adjOtm', () => {
-  ['probOtmSym', 'probOtmMinus', 'probOtmVal', 'probOtmPlus', 'probSpot', 'probNote'].forEach((id) => {
-    assert.match(html, new RegExp('id="' + id + '"'), '缺了 #' + id);
-  });
-  // v359：OTM% / 列头目标价 / 格里的实际档位全是相对现价算的，把现价摆在 OTM 旁边当参照
-  assert.match(indexSource, /getElementById\('probSpot'\)/, '要渲染现价');
-  assert.match(indexSource, /现价 \$/, '现价文案要写明是"现价"');
-  // 接线：两个按钮都要真的调 adjOtm（少了它按钮就是个点了没反应的 <button>）
-  assert.match(indexSource, /getElementById\('probOtmMinus'\)[\s\S]{0,140}adjOtm\(probTab,-1\)/,
-    '减号没接回 adjOtm');
-  assert.match(indexSource, /getElementById\('probOtmPlus'\)[\s\S]{0,140}adjOtm\(probTab,1\)/,
-    '加号没接回 adjOtm');
-  // 切 VGT / SMH 时标签与数值要跟着变，否则 SMH 那页会顶着「VGT OTM」
-  /* v391：控件说的是"你选中的那一档**真实合约**"；v392 现价搬到同一行左边，标签简化成「行权价」 */
-  assert.match(indexSource, /getElementById\('probOtmSym'\)[\s\S]{0,120}textContent='行权价'/, '标签是「行权价」（标的由上面那排 tab 高亮）');
-  assert.match(indexSource, /getElementById\('probOtmVal'\)[\s\S]{0,1400}fmtStrike\(selCol\.strike\)/, '数值要写真实行权价，别退回百分比');
-});
-
-/**
- * v328–v335 有过「节奏设置」界面，点「月度」会把 ccSchedule 写进本机存储；v336 把入口删了，
- * 但那份值还留在老设备上 —— 于是 SMH 会被算成 10-16 该处理 / 11-20 该卖 / 持有 35 天
- * （正确值是 10-30 → 11-20 = 21 天）。v343 起一次性清掉它，回落到代码里的固定策略。
- */
-test('index.js：清掉残留的「节奏设置」本机缓存（SMH 被算成月度 35 天的根因）', () => {
-  // v388：节奏不再从存储读 —— 老设备存过的 every3w 也改不动它；另外用新版标记再清一次残留。
-  const reset = indexSource.indexOf("CC_RESET_KEY='cc_schedule_reset_v2'");
-  assert.ok(reset > 0, '找不到一次性清理块');
-  assert.match(indexSource, /LS\.removeItem\(CC_KEY\)/, '要真的把残留删掉，只写标记没用');
-  assert.doesNotMatch(indexSource, /ccSchedule\[s\]\.rule=c\.rule/, '不许再从存储覆盖节奏（否则老设备的 every3w 会改回来）');
-  assert.doesNotMatch(indexSource, /function loadCcSchedule|function saveCcSchedule/, '这两个函数已经不需要了');
-  // 只清本机偏好，不许顺手把投资数据一起干掉
-  assert.doesNotMatch(indexSource.slice(reset, reset + 300), /removeItem\('(trades|cashLog|state|optionTrades)'\)/,
-    '清理块只能碰 ccSchedule');
-});
-
-/**
- * 手机上矩阵列多，要横向滚动。但滚动必须由**外层容器**承担：
- * 一旦把 .mx-table 设成 display:block、再让 thead/tbody 各自 display:table，
- * 两个表格盒会各算一遍列宽，表头与数据列错位（v344 实测最大差 40px）。
- */
-test('CSS：概率矩阵的横向滚动挂在外层容器，表格本身不许拆成两个表格盒', () => {
-  assert.match(css, /#probMatrix\{overflow-x:auto/, '横向滚动要挂在 #probMatrix 上');
-  assert.doesNotMatch(css, /\.mx-table\{min-width:/, '不要再给矩阵写 min-width —— 它会强制多滚一截，放得下就该不滚');
-  assert.doesNotMatch(css, /\.mx-table\{display:block/, '把表格设成 block 会让表头和数据各算一遍列宽');
-  assert.doesNotMatch(css, /\.mx-table thead,\.mx-table tbody\{display:table/, 'thead/tbody 不许各自变成表格盒');
-});
-
-/**
- * v394：累计收益率。口径只有一处（portfolioTotals，分母＝累计入金），显示有两处
- * （手机汇总条 + 桌面金额旁的胶囊）。这条守卫盯的是本项目最常见的两类事故：
- *   ① 两处各算一遍 → 数字对不上；② `[hidden]` 被 display 规则顶掉 → "藏起来的元素"照样显示。
  */
 test('v394：累计收益率＝一处口径两处显示（累计入金为分母）', () => {
   assert.match(html, /id="msPnlPct"/, '手机汇总条要有百分比元素');
@@ -801,44 +622,15 @@ test('v394：累计收益率＝一处口径两处显示（累计入金为分母�
   assert.match(css, /\.ms-summary\{min-height:56px/, '汇总条不能写死高度（多一行会被裁）');
 });
 
-/**
- * v391：矩阵的列＝**链上真实挂牌档位**（以前是 5/6/7/8 那四档 OTM% 目标）。
- * 钉住三件事：① 列由 prob.js 的阶梯算出来，index.js 不许自己编 % 当列；
- * ② 指针（± / 点列头）走的是真实档位，写回设置时换算成那一档真实的 OTM%；
- * ③ 指针要缓存下来给 ± 用，不能靠读 DOM。
- */
-test('index.js：矩阵列来自链上真实档位，± 在真实档位之间移动（v391）', () => {
-  assert.match(indexSource, /probMatrix\(chain,\{otm:otm,minDte:14,maxRows:5,cols:cols\}\)/, '要把 OTM% 与列数交给 probMatrix');
-  /* v392：手机上 3 列（每格 ~68px）、桌面 4 列；跨断点重画，但不跟着 iOS 地址栏伸缩反复重绘 */
-  assert.match(indexSource, /function probCols\(\)\{return window\.innerWidth<=800\?3:4\}/, '列数按视口宽定：手机 3 列');
-  assert.match(indexSource, /if\(probCols\(\)!==lastProbCols\)renderProbCard\(\)/, '跨断点才重画');
-  /* v392：现价包成胶囊，和「行权价 − 值 +」并排在同一行两端（B 版排版）；
-     "这一档 +X%" 不再重复写 —— 选中列头那格下方就写着它 */
-  assert.match(indexSource, /mx-pill is-spot">现价 \$/, '现价要包成胶囊');
-  assert.doesNotMatch(indexSource, /mx-pill is-pick/, '"这一档 +X%" 已去掉（选中列头已有）');
-  assert.match(html, /prob-controls[\s\S]{0,200}id="probSpot"[\s\S]{0,300}id="probOtmSym"/, '现价要在行首（B 版：现价在行权价左边）');
-  assert.doesNotMatch(indexSource, /function matrixOtms/, '旧的"按 % 造列"已经删掉');
-  assert.match(indexSource, /lastProb=\{sym:probTab,ladder:[\s\S]{0,80}selected:mx\?Number\(mx\.selectedAbs\)/, '要缓存**完整阶梯里的下标**（selectedAbs），不是窗口内的下标');
-  const fn = indexSource.slice(indexSource.indexOf('function adjOtm'));
-  const body = fn.slice(0, fn.indexOf('\n}') + 2);
-  assert.match(body, /lastProb\.ladder/, '± 要沿着真实阶梯走');
-  assert.match(body, /\(lad\[i\]\/sp-1\)\*100/, '写回设置的是那一档真实的 OTM%');
-  assert.match(body, /i<0\|\|i>=lad\.length/, '走到阶梯两端就不动，不许绕回另一头');
-  assert.match(indexSource, /data-probstrike/, '列头点击要带上真实行权价');
-});
-
-/**
- * v346：观察列表移到操作台最前面（一进操作页先看到行情，而不是先看到录入表）。
- * 顺序纯靠 HTML 位置决定，挪回去不会有任何报错、只会静静地变回原样，所以要钉住。
- */
-test('操作台：观察列表置顶，顺序为 观察列表 → 买卖操作录入 → 现金管理 → 年度再平衡', () => {
-  const panel = html.slice(html.indexOf('id="tab-console"'), html.indexOf('id="tab-option"'));
-  assert.ok(panel.length > 0, '找不到操作台面板');
-  const at = (needle) => panel.indexOf(needle);
-  assert.ok(at('id="watchCard"') > 0, '操作台里没有观察列表');
-  assert.ok(at('id="watchCard"') < at('console-entry-card'), '观察列表要排在「买卖操作录入」之前');
-  assert.ok(at('console-entry-card') < at('现金管理'), '「买卖操作录入」在「现金管理」之前');
-  assert.ok(at('现金管理') < at('id="yearRebalanceCard"'), '「现金管理」在「年度再平衡」之前');
+test('操作台只负责交易，观察列表和趋势图属于分析页', () => {
+  const consolePanel = html.slice(html.indexOf('id="tab-console"'), html.indexOf('id="tab-analysis"'));
+  const analysisPanel = html.slice(html.indexOf('id="tab-analysis"'), html.indexOf('id="tab-data"'));
+  assert.ok(consolePanel.length > 0 && analysisPanel.length > 0, '找不到操作台或分析页');
+  assert.equal(consolePanel.indexOf('id="watchCard"'), -1, '观察列表不应继续留在操作台');
+  assert.ok(analysisPanel.indexOf('id="watchCard"') > 0, '分析页缺少观察列表');
+  assert.ok(analysisPanel.indexOf('id="watchCard"') < analysisPanel.indexOf('market-trend-card'), '观察列表应在市场趋势之前');
+  assert.ok(consolePanel.indexOf('console-entry-card') < consolePanel.indexOf('现金管理'), '「买卖操作录入」在「现金管理」之前');
+  assert.ok(consolePanel.indexOf('现金管理') < consolePanel.indexOf('id="yearRebalanceCard"'), '「现金管理」在「年度再平衡」之前');
   assert.equal((html.match(/id="watchCard"/g) || []).length, 1, '观察列表只能有一块（搬家用的是剪切，不是复制）');
 });
 
@@ -853,24 +645,6 @@ test('操作台：观察列表置顶，顺序为 观察列表 → 买卖操作�
  *   被行权概率 = 决策卡（该卖哪一档，★ 只在这儿）
  *   到期日历   = 资料卡（市场有哪些到期日：月度/周度、间距、我的持仓），不再标 ★
  */
-test('期权页：两张卡的分工写在标题上，节奏 ★ 只在「被行权概率」卡', () => {
-  assert.match(html, /<h3>被行权概率<\/h3>/, 'v389：概率卡标题不再写该卖哪一档（该卖整套判定已取消）');
-  assert.doesNotMatch(html, /probSummary/, '结论块的元素也一并删掉');
-  assert.match(html, /<h3>到期日历<span class="card-sub">市场有哪些到期日<\/span><\/h3>/, '日历卡要写清它是资料卡');
-  const trendCardAt = html.indexOf('<div class="card option-card trend-card">');
-  const probCardAt = html.indexOf('<div class="card option-card prob-card">');
-  assert.ok(trendCardAt >= 0 && probCardAt >= 0 && trendCardAt < probCardAt, '趋势图要放在被行权概率卡片正上方');
-  assert.doesNotMatch(html, /★ = 按固定节奏该卖的档位/, '日历卡里不再重复 ★ 的说明');
-  assert.doesNotMatch(indexSource, /fixed\[sym\]/, '日历卡不再收「节奏那一档」——★ 归概率卡');
-  // indexSource 是剥掉 import 行的版本，所以这里只能钉"在用它"（唯一来源由 audit 的跨模块 import 规则兜底）
-  assert.match(indexSource, /isMonthlyExpiry/, 'isMonthlyExpiry 已抽到 prob.js，矩阵行头与日历卡共用同一份判断');
-});
-
-/**
- * v353：卡片上的日期是纯日历推算（每月第三个周五 / 每 3 周），但市场并不总照日历走
- * —— 假期周会把周五的到期日挪到周四，那天市场上根本没有合约。
- * 所以两个日期（该卖的到期日、卖出日）都必须先吸附到链里真实挂牌的档位上。
- */
 test('「组合值多少钱」只有一处口径：月末快照与年度归因都走 portfolioStateAt', () => {
   assert.match(indexSource, /portfolioStateAt\(\{trades:trades,cashLog:cashLog,end:\(Number\(year\)-1\)\+'-12-31'\}\)/, '年度归因的年初快照要用共享实现');
   assert.match(indexSource, /portfolioStateAt\(\{trades:trades,cashLog:cashLog,end:yE\}\)/, '年末快照同理');
@@ -878,31 +652,6 @@ test('「组合值多少钱」只有一处口径：月末快照与年度归因�
   assert.match(indexSource, /sbTotals=portfolioTotals\(/, '侧边栏总资产也要走共享口径');
   assert.doesNotMatch(indexSource, /hasAny\?totalV\+nc:nc/, '不要再内联算 totalV+nc');
 });
-
-test('可卖 CALL 张数只有一处口径：期权状态卡的"可卖 N 张" 与 卖 CALL 提醒门槛 共用 freeCallContracts', () => {
-  // v384：状态卡改成按腿循环（LEG_METRIC_IDS），但"可卖张数"仍然只走 freeCallContracts 这一处口径
-  assert.match(indexSource, /Object\.keys\(LEG_METRIC_IDS\)\.forEach[\s\S]{0,520}freeCallContracts\(sh,calls\)/,
-    '期权状态卡的每一腿都要用共享口径');
-  assert.doesNotMatch(indexSource, /Math\.floor\(vsh\/100\)-vVGTcalls/, '不要再自己算一份');
-  const alertsSource = fs.readFileSync('src/app/alerts-view.js', 'utf8');
-  assert.match(alertsSource, /freeCallContracts\(sh,used\)/, '提醒门槛也要用同一个函数');
-  assert.doesNotMatch(alertsSource, /Math\.floor\(sh\/100\)-used/, '不要再自己算一份');
-});
-
-
-/**
- * v387：卖出日原来取"下一个节奏日"，相位不巧时会指到 3 周后
- * （实测 2026-10-11 时 SMH/IBIT 显示"10-30 卖出，还有 19 天"——而节奏的本意是
- * "手上那张到期那天卖下一档"，空仓则随时可卖）。现在改成跟实际持仓走。
- */
-
-/**
- * v356：到期日历原本默认只筛「月度档」，可 VGT 和 SMH 的市场月度档**本来就是同几天**
- * （每月第三个周五）—— 于是两张标的的日历看起来一模一样，SMH 的周度档全被滤掉了。
- * 改成：默认列**周五档**的前 3 个，并且永远带上该标的的节奏档。
- */
-
-/* ===== v370 的四条源码钉子 ===== */
 
 test('v370：行情自动刷新 —— 定时器与"切回前台"都要刷（不能只刷加密那条链路）', () => {
   assert.match(indexSource, /setInterval\(autoRefreshQuotes,300000\)/, '定时器必须接 autoRefreshQuotes');
@@ -935,8 +684,8 @@ test('v370：资产曲线卡挂在仪表盘，且复用 range=max 的历史（�
     '曲线必须走共享的 equitySeries + 同一份月度价格（口径只有一处）');
   assert.match(appSource, /Promise\.all\(ETF_SYMS\.map\(function\(s\)\{return fetchMaxData\(s\)/,
     '历史只认 fetchMaxData（请求级缓存，页面开一次只打一次）');
-  assert.match(css, /@media\(max-width:800px\)\{#tab-holding \.equity-card\{order:5\}\}/,
-    '手机端排在 CC 概览(4) 与路线图(6) 之间');
+  assert.match(css, /#tab-analysis \.equity-card\{grid-column:1\/-1/,
+    '资产曲线应作为分析页的整行卡片');
 });
 
 test('资产配置同时展示目标与实际占比，回撤卡包含金额口径', () => {
@@ -948,15 +697,6 @@ test('资产配置同时展示目标与实际占比，回撤卡包含金额口�
   assert.match(html, /id="sbIbitCurrent"/);
   assert.match(appSource, /Current'\)/);
   assert.match(portfolioView, /class="drawdown-value">[^<]*<small>/);
-});
-
-test('期权链失败会保留旧数据并自动重试', () => {
-  const appSource = fs.readFileSync('src/app/index.js', 'utf8');
-  assert.match(appSource, /chainRetryAttempt===0\?10000:30000/);
-  assert.match(appSource, /使用旧数据/);
-  const chainSource = fs.readFileSync('src/lib/chain.js', 'utf8');
-  assert.match(chainSource, /STALE_TTL_SECONDS = 24 \* 60 \* 60/);
-  assert.match(chainSource, /fetchSourceWithRetry/);
 });
 
 test('交易影响预览：只显示占比变化，现金只显示金额', () => {
@@ -982,7 +722,7 @@ test('v370：到期提醒角标 —— 开关、权限申请、"只数需要动�
 
 test('v371：角标数 = 提醒列表条数（不许再按 severity 过滤 —— v370 就是这么错的）', () => {
   /* 注意：alertsViewSource 里的 `export ` 前缀已经被剥掉了（见文件头的拼装方式） */
-  assert.match(alertsViewSource, /function badgeCountOf\(alerts\)\{return \(alerts\|\|\[\]\)\.filter\(Boolean\)\.length\}/,
+  assert.match(alertsViewSource, /function badgeCountOf\(alerts\)\s*\{\s*return \(alerts\s*\|\|\s*\[\]\)\.filter\(Boolean\)\.length;?\s*\}/,
     'badgeCountOf 必须直接数条目');
   /* 只切函数体来断言（不能整文件匹配：updateBellBadge 里本来就有 severity==='critical'，
      那是给铃铛加红点用的，跟角标计数无关） */
@@ -990,27 +730,6 @@ test('v371：角标数 = 提醒列表条数（不许再按 severity 过滤 —�
   const badgeBody = alertsViewSource.slice(badgeStart, alertsViewSource.indexOf('}', badgeStart) + 1);
   assert.doesNotMatch(badgeBody, /severity/,
     'badgeCountOf 里不许出现 severity：它是排序/配色用的，不是催办判据（v370 就是这么错的）');
-  assert.match(alertsViewSource, /var items=list\|\|\[\],count=badgeCountOf\(items\)/,
+  assert.match(alertsViewSource, /const items = list \|\| \[\];[\s\S]*?const count = badgeCountOf\(items\)/,
     '手机端铃铛角标必须与主屏角标共用同一个计数函数');
-});
-
-test('v372：待办只放要动手的 —— 纯信息汇总条彻底移除，只留"含除息"的风险条', () => {
-  assert.doesNotMatch(alertsViewSource, /callSummaries|symBusy|markSym/,
-    'v371 那套"按需补汇总条"必须删掉：它会让"叉掉今天不再提醒"之后冒出新的条目当替身');
-  assert.doesNotMatch(alertsViewSource, /id:'call:'\+sym/, "不许再有'已卖 N 张 Call'这类信息条");
-  assert.match(alertsViewSource, /id:'callrisk:'\+sym/, '含除息的实值风险条要保留（那是真要动手的）');
-  assert.match(alertsViewSource, /cp>_k&&_ex&&_ex<=nearest\.expiry/, '只有除息落在本轮周期内才算风险');
-});
-
-test('v372：两种"今天不再提醒"的键在点击入口归一成期权 id（opt-expiry- / opt-due-）', () => {
-  assert.match(appSource, /replace\(\/\^opt-\(\?:expiry\|due\)-\/,''\)/,
-    '× 的键要同时认 opt-expiry-<id> 与 opt-due-<id>');
-  assert.match(alertsViewSource, /dismiss:'opt-due-'\+a\.id/, '"今天到期"也要能今天不再提醒');
-  assert.match(alertsViewSource, /ctx\.pingMap&&ctx\.pingMap\[a\.id\]===todayKey/, '"今天到期"要真的尊重已忽略');
-  assert.match(alertsViewSource, /var pingMap=ctx\.pingMap\|\|\{\}/, 'pingMap 缺省给空对象（调用方忘了传也不炸）');
-});
-
-test('v371：到期预告不许再出现双美元符（strikeText 已经带 $）', () => {
-  assert.doesNotMatch(alertsViewSource, /' \$'\+strikeText/, "标题里不能自己再拼一个 $（那会变成 $$130）");
-  assert.match(alertsViewSource, /title:o\.sym\+' '\+o\.type\+' '\+strikeText\(o\.strike\)\+' 还剩 '/, '到期预告要用 strikeText 自带的 $');
 });

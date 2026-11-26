@@ -30,7 +30,6 @@ await page.evaluate(() => {
     { id: 5004, date: plus(-61), time: '09:00', type: '入金', amount: 10000 },
   ]));
   localStorage.setItem('wealth_cash_v2', JSON.stringify(6800)); // 10000 - 3200
-  localStorage.setItem('wealth_options_v2', JSON.stringify([]));
   localStorage.setItem('wealth_prices_v2', JSON.stringify({
     VGT: { price: 150, change: 1.0, source: 'manual', history: [140, 145, 130, 138, 150] },
     SMH: { price: 250, change: 0, source: 'manual', history: [250, 250, 250] },
@@ -64,8 +63,6 @@ const readAll = () => page.evaluate(() => {
     // 分布与持仓
     甜甜圈图例: t('donutLegend'),
     持仓列表: t('pnlSummary'),
-    // Covered Call
-    CoveredCall: t('ccActive') + ' | ' + t('ccMonthly') + ' | ' + t('ccSub'),
     // 提醒
     待办: t('mobileAlertMeta'),
   };

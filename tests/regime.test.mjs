@@ -1,9 +1,9 @@
-// 市场状态提示：50/200 日均线、强势/弱势/中性判定、按标的给出的 OTM 建议。
+// 市场状态提示：50/200 日均线与强势/弱势/中性判定。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cleanCloses, simpleMovingAverage, classifyRegime, regimeFromChartPayload,
-  seriesFromChartPayload, adviceForRegime, regimeReason, REGIME_LABELS,
+  seriesFromChartPayload, regimeReason, REGIME_LABELS,
 } from '../src/app/regime.js';
 
 function series(before, after, split) {
@@ -49,15 +49,6 @@ test('regimeFromChartPayload：兼容 /api/price 的 {ok,data} 包装', () => {
   assert.equal(info.timestamps.length, 200);
   assert.deepEqual(seriesFromChartPayload(wrapped).timestamps.slice(0, 2), [1000, 1000 + 86400]);
   assert.equal(regimeFromChartPayload(null).regime, 'unknown');
-});
-
-test('adviceForRegime：强牛市 IBIT 不卖 Call，其余标的给对应 OTM', () => {
-  assert.deepEqual(adviceForRegime('VGT', 'bull'), { otm: 10, text: '建议 10% OTM' });
-  assert.deepEqual(adviceForRegime('SMH', 'bull'), { otm: 8, text: '建议 8% OTM' });
-  assert.deepEqual(adviceForRegime('IBIT', 'bull'), { otm: null, text: '暂不卖 Call' });
-  assert.equal(adviceForRegime('IBIT', 'neutral').text, '建议 12%～15% OTM');
-  assert.equal(adviceForRegime('IBIT', 'bear').otm, 10);
-  assert.equal(adviceForRegime('VGT', 'unknown').otm, null);
 });
 
 test('regimeReason：说明当前状态，尤其解释中性为何不是弱势', () => {

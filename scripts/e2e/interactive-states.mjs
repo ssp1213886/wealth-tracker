@@ -23,8 +23,6 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_cfg_v2', '{}');
   localStorage.setItem('wealth_trades_v2', JSON.stringify([{ id: 1, date: '2026-09-01', symbol: 'VGT', shares: 8.62, price: 116.01 }]));
   localStorage.setItem('wealth_cash_v2', '34000');
-  localStorage.setItem('wealth_options_v2', JSON.stringify([{ id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: '2026-10-16', added: '2026-09-20' }]));
-  localStorage.setItem('otmSettings', JSON.stringify({ vgt: 7, smh: 5 }));
 });
 await p.goto(BASE + '?is=' + Date.now(), { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(4000);
@@ -98,12 +96,11 @@ else {
   if (!dimmed) failures.push('disabled 控件看不出被禁用（opacity=' + disabledReport.opacity + ' cursor=' + disabledReport.cursor + '）');
 }
 
-/* ---- ④ 键盘可达性：Tab 能到达的行数 + Enter 能激活一个分段控件 ---- */
-await p.evaluate(() => { document.getElementById('bbOption').click(); });
+/* ---- ④ 键盘可达性：Enter 能激活交易分段控件 ---- */
+await p.evaluate(() => { document.getElementById('bbConsole').click(); });
 await p.waitForTimeout(1200);
-const before = await p.evaluate(() => document.getElementById('toptType') ? document.getElementById('toptType').value : null);
 const seg = await p.evaluate(() => {
-  const el = document.querySelector('#tab-option .segment');
+  const el = document.querySelector('#tab-console .segment');
   if (!el) return null;
   el.focus();
   return { tag: el.tagName, text: el.textContent.trim().slice(0, 12) };

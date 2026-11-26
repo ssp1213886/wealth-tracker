@@ -76,7 +76,7 @@ const snap = () => ev(() => ({
   lastError: window.__lastError || null,
 }));
 const dashboard = await snap();
-for (const tab of ['bbConsole', 'bbOption', 'bbData', 'bbHoldings']) {
+for (const tab of ['bbConsole', 'bbAnalysis', 'bbData', 'bbHoldings']) {
   await ev((id) => document.getElementById(id).click(), tab);
   await p.waitForTimeout(1400);
 }

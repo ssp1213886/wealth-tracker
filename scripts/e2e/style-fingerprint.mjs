@@ -51,10 +51,6 @@ await p.evaluate(async () => {
     { id: 101, date: '2026-09-20', time: '10:00', action: '买入 VGT', detail: '10 股 @ 100' },
     { id: 102, date: '2026-09-21', time: '11:00', action: '入金', detail: '$2,000' },
   ]));
-  localStorage.setItem('wealth_options_v2', JSON.stringify([
-    { id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: '2026-10-16', added: '2026-09-20' },
-  ]));
-  localStorage.setItem('otmSettings', JSON.stringify({ vgt: 7, smh: 5 }));
   localStorage.setItem('exit_portfolio', '测试退出策略');
 });
 await p.goto(BASE + '?fp=' + Date.now(), { waitUntil: 'domcontentloaded' });
@@ -98,7 +94,7 @@ for (const [name, width, theme] of combos) {
       if ((document.documentElement.dataset.theme === 'dark') !== want) toggleTheme();
       document.documentElement.style.scrollBehavior = 'auto';
     }, theme);
-    for (const tab of ['bbHoldings', 'bbConsole', 'bbOption', 'bbData']) {
+    for (const tab of ['bbHoldings', 'bbConsole', 'bbAnalysis', 'bbData']) {
       await ev((id) => document.getElementById(id).click(), tab);
       await p.waitForTimeout(900);
     }

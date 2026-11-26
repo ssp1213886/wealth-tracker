@@ -47,14 +47,12 @@ export const KEYS = {
   trades: 'wealth_trades_v2',
   cash: 'wealth_cash_v2',
   cashLog: 'wealth_cashlog_v2',
-  options: 'wealth_options_v2',
   activity: 'wealth_activity_v1',
   syncState: 'wealth_sync_state',
   syncConfig: 'wealth_sync_cfg',
   recordsSegment: 'wealth_records_segment_v1',
   firstTime: 'wealth_first_time',
   alertSeen: 'wealth_alert_seen_v1',
-  optPing: 'wealth_opt_ping_v1',
   schema: 'wealth_schema_v1',
 };
 
@@ -109,7 +107,7 @@ export function writeJSON(key, value) {
   }
 }
 
-export const DATA_SCHEMA = 2;
+export const DATA_SCHEMA = 3;
 
 // 迁移链：每次数据结构变化时，往 steps 里加一个新版本号对应的函数即可。
 // onError 用于把迁移异常交给上层上报（store 本身不依赖具体的日志实现）。
@@ -120,6 +118,11 @@ export function runMigrations(onError) {
   const steps = {
     // v1 → v2：清掉早期用 localStorage 持久化的"提醒已读"标记（现在改成仅本次会话有效）
     1: () => removeKey(KEYS.alertSeen),
+    // v2 → v3：移除已退役的期权模块，只清测试数据，不动交易、现金和持仓。
+    2: () => {
+      ['wealth_options_v2', 'otmSettings', 'ccSchedule', 'wealth_opt_ping_v1', 'otm76_migrated_v1', 'cc_schedule_reset_v2']
+        .forEach((key) => removeKey(key));
+    },
   };
 
   for (let v = from + 1; v <= DATA_SCHEMA; v += 1) {

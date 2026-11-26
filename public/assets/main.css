@@ -1827,10 +1827,10 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
 .record-group.active{display:block}
 @media(hover:hover) and (pointer:fine){.record-seg:not(.active):hover{color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.record-seg{transition:none}}
-#bottomBar.bottom-bar{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+#bottomBar.bottom-bar{grid-template-columns:1fr 1fr 88px 1fr 1fr!important}
 #bottomBar #bbHoldings{grid-column:1}
 #bottomBar #bbConsole{grid-column:2}
-#bottomBar #bbOption{grid-column:4}
+#bottomBar #bbAnalysis{grid-column:4}
 #bottomBar #bbData{grid-column:5}
 
 /* 底栏实际底色，用于中间按钮的描边（与底栏无缝衔接，而不是挖出一个黑环） */
@@ -2595,49 +2595,49 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 #tab-holding .drawdown-card{grid-column:6/9;grid-row:4}
 }
 /* ===== v196：管理面板移到卡头下方（点了立刻可见）；成分股行可点 ===== */
-#tab-console #watchCard .watch-manage{margin:0 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent) 5%,transparent)}
-#tab-console #watchCard .watch-manage .watch-manage-add{margin-bottom:8px}
-#tab-console #watchCard #btnWatchManage.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
+#watchCard .watch-manage{margin:0 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent) 5%,transparent)}
+#watchCard .watch-manage .watch-manage-add{margin-bottom:8px}
+#watchCard #btnWatchManage.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
 /* ===== v199 观察列表升级：持仓/关注分组 + 英文全名 + 迷你走势 ===== */
-#tab-console #watchCard .watch-group+.watch-group{margin-top:14px}
-#tab-console #watchCard .watch-group-head{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 2px;padding:0;border:0;background:transparent;color:var(--fg);font-size:12.5px;font-weight:660;letter-spacing:.01em;cursor:pointer;text-align:left}
-#tab-console #watchCard .watch-group-head small{font-weight:560;opacity:.85}
-#tab-console #watchCard .watch-group-arrow{font-weight:500;transition:transform .18s ease}
-#tab-console #watchCard .watch-group-head.is-open .watch-group-arrow{transform:rotate(180deg)}
-#tab-console #watchCard .watch-group-body.is-collapsed{display:none}
-#tab-console #watchCard .watch-group-body>.watch-row:first-child{border-top:0}
+#watchCard .watch-group+.watch-group{margin-top:14px}
+#watchCard .watch-group-head{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 2px;padding:0;border:0;background:transparent;color:var(--fg);font-size:12.5px;font-weight:660;letter-spacing:.01em;cursor:pointer;text-align:left}
+#watchCard .watch-group-head small{font-weight:560;opacity:.85}
+#watchCard .watch-group-arrow{font-weight:500;transition:transform .18s ease}
+#watchCard .watch-group-head.is-open .watch-group-arrow{transform:rotate(180deg)}
+#watchCard .watch-group-body.is-collapsed{display:none}
+#watchCard .watch-group-body>.watch-row:first-child{border-top:0}
 /* 名字独占第一行，走势与副标题共用第二行（原来 4 列时名字只剩 ~95px，被截太狠） */
-#tab-console #watchCard .watch-row{grid-template-columns:minmax(0,1fr) 76px 60px;align-items:center;row-gap:3px;column-gap:8px;padding:11px 0}
-#tab-console #watchCard .watch-sym{grid-column:1;grid-row:1/3;flex-direction:row;align-items:center;flex-wrap:wrap;gap:0 6px}
-#tab-console #watchCard .watch-sym small{flex:1 1 100%;margin-top:2px}
-#tab-console #watchCard .watch-price{grid-column:2;grid-row:1}
-#tab-console #watchCard .watch-chg{grid-column:3;grid-row:1}
-#tab-console #watchCard .watch-spark{grid-column:2/4;grid-row:2;justify-self:end;align-self:center;margin-top:2px}
-#tab-console #watchCard .watch-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%}
-#tab-console #watchCard .watch-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:600;line-height:1.15}
-#tab-console #watchCard .watch-spark{display:flex;align-items:center;justify-content:flex-end}
-#tab-console #watchCard .watch-spark svg{width:56px;height:20px}
-#tab-console #watchCard .watch-spark path{fill:none;stroke:color-mix(in srgb,var(--fg) 34%,transparent);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}#tab-console #watchCard .watch-spark.is-up path{stroke:var(--ok)}#tab-console #watchCard .watch-spark.is-down path{stroke:var(--danger)}
-#tab-console #watchCard .watch-spark-none{display:block;width:56px;height:1px;background:color-mix(in srgb,var(--fg) 9%,transparent)}
-#tab-console #watchCard .watch-detail .row-detail-grid{margin-top:8px}
-#tab-console #watchCard .watch-detail .btn{margin-top:2px}
+#watchCard .watch-row{grid-template-columns:minmax(0,1fr) 76px 60px;align-items:center;row-gap:3px;column-gap:8px;padding:11px 0}
+#watchCard .watch-sym{grid-column:1;grid-row:1/3;flex-direction:row;align-items:center;flex-wrap:wrap;gap:0 6px}
+#watchCard .watch-sym small{flex:1 1 100%;margin-top:2px}
+#watchCard .watch-price{grid-column:2;grid-row:1}
+#watchCard .watch-chg{grid-column:3;grid-row:1}
+#watchCard .watch-spark{grid-column:2/4;grid-row:2;justify-self:end;align-self:center;margin-top:2px}
+#watchCard .watch-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%}
+#watchCard .watch-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:600;line-height:1.15}
+#watchCard .watch-spark{display:flex;align-items:center;justify-content:flex-end}
+#watchCard .watch-spark svg{width:56px;height:20px}
+#watchCard .watch-spark path{fill:none;stroke:color-mix(in srgb,var(--fg) 34%,transparent);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}#watchCard .watch-spark.is-up path{stroke:var(--ok)}#watchCard .watch-spark.is-down path{stroke:var(--danger)}
+#watchCard .watch-spark-none{display:block;width:56px;height:1px;background:color-mix(in srgb,var(--fg) 9%,transparent)}
+#watchCard .watch-detail .row-detail-grid{margin-top:8px}
+#watchCard .watch-detail .btn{margin-top:2px}
 /* v205：关注组头做成明显按钮 + 52 周位置条 */
 /* v226：组标题 = 小节标题（标题 + 数量徽标 + 细分隔线 + 右侧展开开关），不再是方盒子 */
-#tab-console #watchCard .watch-group-head .wg-name{flex:0 0 auto}
-#tab-console #watchCard .watch-group-head .wg-count{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--muted);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
-#tab-console #watchCard .watch-group-head::after{content:'';flex:1 1 auto;height:1px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
-#tab-console #watchCard .watch-group-toggle{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-size:11.5px;font-weight:600}
+#watchCard .watch-group-head .wg-name{flex:0 0 auto}
+#watchCard .watch-group-head .wg-count{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 7px;border-radius:999px;background:color-mix(in srgb,var(--fg) 7%,transparent);color:var(--muted);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+#watchCard .watch-group-head::after{content:'';flex:1 1 auto;height:1px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
+#watchCard .watch-group-toggle{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-size:11.5px;font-weight:600}
 
-#tab-console #watchCard .watch-group-head.is-open .watch-group-toggle{color:var(--muted)}
-#tab-console #watchCard .watch-range{position:relative;height:5px;margin:8px 0 2px;border-radius:999px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
-#tab-console #watchCard .watch-range i{display:block;height:100%;border-radius:inherit;background:color-mix(in srgb,var(--accent) 55%,transparent)}
-#tab-console #watchCard .watch-range b{position:absolute;top:-2px;width:2px;height:9px;border-radius:2px;background:var(--accent);transform:translateX(-1px)}
+#watchCard .watch-group-head.is-open .watch-group-toggle{color:var(--muted)}
+#watchCard .watch-range{position:relative;height:5px;margin:8px 0 2px;border-radius:999px;background:color-mix(in srgb,var(--fg) 8%,transparent)}
+#watchCard .watch-range i{display:block;height:100%;border-radius:inherit;background:color-mix(in srgb,var(--accent) 55%,transparent)}
+#watchCard .watch-range b{position:absolute;top:-2px;width:2px;height:9px;border-radius:2px;background:var(--accent);transform:translateX(-1px)}
 /* v207：详情面板的分区标题 */
 #watchRows .watch-detail .rd-sec{margin:10px 0 -4px;font-size:11.5px;font-weight:640;letter-spacing:.04em;color:var(--muted)}
 #watchRows .watch-detail .row-detail-grid{margin-top:4px}
 #watchRows .watch-detail .watch-chg{font-size:12.5px}
 /* v215 search */
-#tab-console #watchCard #btnWatchSearch.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
+#watchCard #btnWatchSearch.is-open{border-color:color-mix(in srgb,var(--accent) 42%,var(--rule));background:color-mix(in srgb,var(--accent) 12%,transparent);color:color-mix(in srgb,var(--accent) 82%,var(--fg))}
 .watch-search{margin:0 0 12px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent) 4%,transparent)}
 .watch-search-head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .watch-search-head input{flex:1;min-width:0}
@@ -3267,3 +3267,31 @@ body.sheet-open{overflow:hidden}
   .main .card,.main .qa-alert-item,.desktop-theme,.desktop-copy,.tabs{
     box-shadow:0 0 0 1px color-mix(in srgb,var(--fg) 14%,transparent)!important}
 }
+
+/* ===== Market trend replaces the retired option workspace ===== */
+.market-trend-card{min-width:0;padding:var(--ds-card-padding);border:1px solid var(--rule);border-radius:var(--ds-card-radius);background:var(--card-bg);box-shadow:none}
+.market-trend-card .opt-card-head{margin-bottom:10px}
+.market-trend-card #trendChart{min-width:0;overflow:hidden}
+#qaSheet .qa-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(min-width:801px){
+  #tab-holding .goal-row{display:block!important}
+  #tab-analysis.active{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start;max-width:1180px}
+  #tab-analysis .analysis-section-heading{grid-column:1/-1}
+  #tab-analysis #watchCard{grid-column:1/5;margin:0}
+  #tab-analysis .market-trend-card{grid-column:5/-1;margin:0}
+  #tab-analysis .equity-card{grid-column:1/-1;margin:0}
+  #tab-analysis .analysis-risk-grid{grid-column:1/-1;display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr);gap:14px;align-items:start}
+  #tab-analysis .analysis-risk-grid>.card,#tab-analysis .analysis-risk-grid>#exposureSlot .card{margin:0}
+}
+@media(max-width:800px){
+  #tab-analysis.active{display:flex;flex-direction:column;gap:0}
+  #tab-analysis .analysis-section-heading{margin:8px 2px 10px}
+  #tab-analysis .analysis-risk-grid{display:flex;flex-direction:column;gap:0}
+  .market-trend-card .opt-card-head{align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .market-trend-card .card-sub{display:block;margin-top:3px}
+}
+@media(max-width:360px){#qaSheet .qa-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.analysis-section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:2px 2px 0;color:var(--fg)}
+.analysis-section-heading>span{font-size:14px;font-weight:650;letter-spacing:-.012em}
+.analysis-section-heading>small{color:var(--muted);font-size:11.5px;font-weight:500}

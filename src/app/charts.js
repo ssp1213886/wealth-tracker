@@ -201,14 +201,13 @@ export function monthlyPnl(input) {
 
 /**
  * 年度矩阵：从"第一笔买入或第一笔入金"那年开始，每年一格（最多 20 年）。
- *   每格：当年权利金、当年买入额、权利金贡献率、年末各标的持股
+ *   每格：当年买入额、相对最高投入年度的完成度、年末各标的持股
  *   汇总：累计入金、当前总资产、长期 CAGR（按有买入的年份数）、目标差额
  * 没有任何买入与入金时返回 empty=true，由界面显示空态。
  */
 export function annualMatrix(input) {
   const o = input || {};
   const trades = Array.isArray(o.trades) ? o.trades : [];
-  const optionTrades = Array.isArray(o.optionTrades) ? o.optionTrades : [];
   const cashLog = Array.isArray(o.cashLog) ? o.cashLog : [];
   const prices = o.prices || {};
   const symbols = Array.isArray(o.symbols) && o.symbols.length ? o.symbols : ['VGT', 'SMH', 'IBIT'];
@@ -226,23 +225,21 @@ export function annualMatrix(input) {
     const y = startYear + i;
     const ys = String(y);
     const yBuys = trades.filter(function (t) { return t.shares > 0 && t.date.slice(0, 4) === ys; });
-    const yPrem = optionTrades.filter(function (op) { return op.added && op.added.slice(0, 4) === ys; })
-      .reduce(function (sum, op) { return sum + (op.premium || 0) * (op.contracts || 1); }, 0);
     const dcaTotal = yBuys.reduce(function (sum, t) { return sum + t.shares * t.price; }, 0);
-    const premRate = dcaTotal > 0 ? yPrem / dcaTotal * 100 : 0;
     const endHolds = {};
     trades.filter(function (t) { return t.date.slice(0, 4) <= ys; }).forEach(function (t) { endHolds[t.symbol] = (endHolds[t.symbol] || 0) + t.shares; });
     cells.push({
       ym: ys,
-      prem: yPrem,
       dca: dcaTotal,
-      rate: premRate,
+      rate: 0,
       vgt: Math.max(0, endHolds.VGT || 0),
       smh: Math.max(0, endHolds.SMH || 0),
       ibit: Math.max(0, endHolds.IBIT || 0),
       hasData: dcaTotal > 0,
     });
   }
+  const maxYearDca = cells.reduce(function (max, cell) { return Math.max(max, cell.dca); }, 0);
+  cells.forEach(function (cell) { cell.rate = maxYearDca > 0 ? cell.dca / maxYearDca * 100 : 0; });
   const totalInvested = totalDeposits(cashLog);
   const activeYears = cells.filter(function (c) { return c.hasData; }).length;
   const totalHoldings = {};

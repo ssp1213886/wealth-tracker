@@ -200,7 +200,7 @@ test('disciplineMonths：连续月数从最近往回数，当月未完成不算�
   assert.equal(none.months.length, 12);
 });
 
-test('annualMatrix：按"第一笔买入/入金"起算，逐年给出权利金贡献率与年末持股', () => {
+test('annualMatrix：按第一笔买入/入金起算，逐年给出投入完成度与年末持股', () => {
   const now = new Date('2026-09-29T00:00:00');
   const out = annualMatrix({
     trades: [
@@ -208,7 +208,6 @@ test('annualMatrix：按"第一笔买入/入金"起算，逐年给出权利金�
       buy('2026-02-01', 'VGT', 5, 120),
       buy('2026-03-01', 'SMH', 2, 500),
     ],
-    optionTrades: [{ added: '2026-04-01', premium: 120, contracts: 1 }],
     cashLog: [{ date: '2025-02-01', type: '入金', amount: 5000 }, { date: '2026-05-01', type: '出金', amount: 1000 }],
     prices: { VGT: 130, SMH: 600, IBIT: 0 },
     netCash: 2000,
@@ -219,12 +218,10 @@ test('annualMatrix：按"第一笔买入/入金"起算，逐年给出权利金�
   assert.equal(out.empty, false);
   assert.deepEqual(out.cells.map((c) => c.ym), ['2025', '2026']);
   assert.equal(out.cells[0].dca, 1000);
-  assert.equal(out.cells[0].prem, 0);
-  assert.equal(out.cells[0].rate, 0);
+  assert.equal(out.cells[0].rate, 62.5);
   assert.equal(out.cells[0].vgt, 10);
   assert.equal(out.cells[1].dca, 1600, '2026 年买入 5×120 + 2×500');
-  assert.equal(out.cells[1].prem, 120);
-  assert.ok(Math.abs(out.cells[1].rate - 7.5) < 1e-9, '权利金贡献率 = 120/1600');
+  assert.equal(out.cells[1].rate, 100);
   assert.equal(out.cells[1].vgt, 15, '年末持股是累计值');
   assert.equal(out.cells[1].smh, 2);
   assert.equal(out.cells[1].ibit, 0, 'v384：第三腿字段由 btc 改名成 ibit（界面读 c.ibit）');

@@ -1,29 +1,11 @@
-// 市场状态提示的纯计算：用 1 年日线计算 50/200 日均线，并给出卖 CALL 的 OTM 建议。
-// 这里只产生"建议"，绝不写 otmSettings、交易或期权记录。
+// 市场状态提示的纯计算：用历史日线计算 50/200 日均线。
+// 这里只描述趋势，不产生交易建议。
 
 export const REGIME_LABELS = {
   bull: '强势',
   neutral: '中性',
   bear: '弱势',
   unknown: '数据不足',
-};
-
-const OTM_ADVICE = {
-  bull: {
-    VGT: { otm: 10, text: '建议 10% OTM' },
-    SMH: { otm: 8, text: '建议 8% OTM' },
-    IBIT: { otm: null, text: '暂不卖 Call' },
-  },
-  neutral: {
-    VGT: { otm: 7, text: '建议 7% OTM' },
-    SMH: { otm: 6, text: '建议 6% OTM' },
-    IBIT: { otm: 12, text: '建议 12%～15% OTM' },
-  },
-  bear: {
-    VGT: { otm: 7, text: '建议 7% OTM' },
-    SMH: { otm: 6, text: '建议 6% OTM' },
-    IBIT: { otm: 10, text: '建议 10% OTM；权利金合适再卖' },
-  },
 };
 
 /** 清掉空值/非有限值；不能用 0 占位，否则会把均线算歪。 */
@@ -107,13 +89,4 @@ export function regimeReason(info, regime) {
 export function regimeFromChartPayload(payload) {
   const series = seriesFromChartPayload(payload);
   return Object.assign(classifyRegime(series.closes), series);
-}
-
-/** 每只标的在不同状态下的建议（null 表示这轮不卖）。 */
-export function adviceForRegime(symbol, regime) {
-  const sym = String(symbol || '').toUpperCase();
-  const key = OTM_ADVICE[regime] ? regime : 'unknown';
-  if (key === 'unknown') return { otm: null, text: '使用当前 OTM 设置' };
-  const row = OTM_ADVICE[key][sym];
-  return row ? { otm: row.otm, text: row.text } : { otm: null, text: '使用当前 OTM 设置' };
 }

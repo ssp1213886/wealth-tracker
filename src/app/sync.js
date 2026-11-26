@@ -9,8 +9,6 @@ export const SYNC_FIELDS = [
   'cashLog',
   'state',
   'activities',
-  'optionTrades',
-  'otmSettings',
   'exit_portfolio',
   'watchlist',
 ];

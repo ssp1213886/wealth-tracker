@@ -33,8 +33,6 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_cash_v2', '34000');
   localStorage.setItem('wealth_cashlog_v2', JSON.stringify([{ id: 11, date: '2026-09-02', type: '入金', amount: 5000 }]));
   localStorage.setItem('wealth_activity_v1', JSON.stringify([{ id: 101, date: '2026-09-20', time: '10:00', action: '买入 VGT', detail: '10 股 @ 100' }]));
-  localStorage.setItem('wealth_options_v2', JSON.stringify([{ id: 201, sym: 'VGT', type: 'CALL', strike: 130, premium: 120, contracts: 1, expiry: '2026-10-16', added: '2026-09-20' }]));
-  localStorage.setItem('otmSettings', JSON.stringify({ vgt: 7, smh: 5 }));
 });
 await p.goto(BASE + '?m=' + Date.now(), { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(4500);
@@ -109,13 +107,13 @@ else {
 }
 
 /* ---- ④ 用 tap（触摸）而不是 click 走一遍关键交互 ---- */
-for (const [id, label] of [['bbConsole', '操作台'], ['bbOption', '期权'], ['bbData', '记录'], ['bbHoldings', '持仓']]) {
+for (const [id, label] of [['bbConsole', '操作台'], ['bbAnalysis', '分析'], ['bbData', '记录'], ['bbHoldings', '持仓']]) {
   await p.tap('#' + id).catch(async () => { await ev((x) => document.getElementById(x).click(), id); });
   await p.waitForTimeout(900);
 }
 const afterTabs = await ev(() => ({ active: document.body.dataset.activeTab || '', holdRows: document.querySelectorAll('#holdBody tr').length }));
 if (!afterTabs.active) failures.push('tap 切 tab 后没有 activeTab 标记');
-notes.push('tap 切四个 tab 正常（最后停在 ' + afterTabs.active + '，持仓 ' + afterTabs.holdRows + ' 行）');
+notes.push('tap 切四个页面入口正常（最后停在 ' + afterTabs.active + '，持仓 ' + afterTabs.holdRows + ' 行）');
 
 // 汉堡菜单（触摸端的抽屉入口）
 await p.tap('#mobHamburger').catch(() => {});
@@ -149,6 +147,8 @@ if (!drawerClosed) failures.push('点关闭按钮没能收起抽屉');
 else notes.push('抽屉关闭正常（按钮 ' + closeInfo.w + '×' + closeInfo.h + '·aria-label=' + closeInfo.label + '；遮罩中点被 ' + closeInfo.overlayTop + ' 覆盖，属全屏抽屉的预期）');
 
 // 点一行观察标的 → 内联详情（触摸端也要能展开）
+await p.tap('#bbAnalysis').catch(async () => { await ev(() => document.getElementById('bbAnalysis').click()); });
+await p.waitForTimeout(700);
 await p.tap('#watchRows .watch-row').catch(() => {});
 await p.waitForTimeout(600);
 const detail = await ev(() => document.querySelectorAll('#watchRows .row-detail').length);

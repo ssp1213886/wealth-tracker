@@ -146,10 +146,10 @@ const CHECK = () => {
     chartDonut: !!byId('chartDonut'),
     exposure: !!byId('holdExpose') || !!byId('exposureSlot'),
     watchRows: has('#watchRows .watch-row'),
+    analysisPanel: !!byId('tab-analysis'),
     alerts: !!byId('qaAlerts'),
     bell: has('.ms-bell'),
     sidebar: has('.sidebar'),
-    optionPanel: !!byId('tab-option'),
     dataPanel: !!byId('tab-data'),
     lastError: window.__lastError || null,
   };
@@ -162,7 +162,7 @@ for (const [label, width, dark] of [['手机-浅色', 390, false], ['手机-深�
     document.documentElement.style.scrollBehavior = 'auto';
   }, dark);
   await p.waitForTimeout(700);
-  for (const tab of ['bbConsole', 'bbOption', 'bbData', 'bbHoldings']) {
+  for (const tab of ['bbConsole', 'bbAnalysis', 'bbData', 'bbHoldings']) {
     await ev((id) => { const b = document.getElementById(id); if (b) b.click(); }, tab);
     await p.waitForTimeout(900);
   }
@@ -176,7 +176,7 @@ for (const [label, width, dark] of [['手机-浅色', 390, false], ['手机-深�
   if (!snap.exposure) failures.push(label + '：底层资产敞口卡不存在');
   if (snap.watchRows < 1) failures.push(label + '：观察列表没渲染');
   if (!snap.alerts) failures.push(label + '：待办容器不存在');
-  if (!snap.optionPanel || !snap.dataPanel) failures.push(label + '：期权/记录面板容器缺失');
+  if (!snap.dataPanel || !snap.analysisPanel) failures.push(label + '：分析/记录面板容器缺失');
   if (snap.lastError) failures.push(label + '：__lastError = ' + snap.lastError);
   if (label === '手机-浅色') {
     if (snap.bell < 1) failures.push('手机端：铃铛入口不存在');

@@ -20,7 +20,6 @@ const stores = new Map();
 //   除 /login /api/login /api/logout /sw.js /manifest.json /icon*.png /splash/* 之外，
 //   文档导航一律回登录页、/api/* 一律回 401；带着 wt_uid cookie 视为已登录。
 let gateOn = false;
-let maCrossAcked = false;
 const LOGIN_PAGE = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>登录 · Wealth Tracker</title></head>'
   + '<body><h1>请登录</h1><p>mock login page</p></body></html>';
 function isOpenPath(pathname) {
@@ -107,7 +106,6 @@ const server = http.createServer((req, res) => {
     stores.clear();
     log.length = 0;
     gateOn = false;
-    maCrossAcked = false;
     res.writeHead(200, cors);
     return res.end(JSON.stringify({ ok: true }));
   }
@@ -291,27 +289,6 @@ const server = http.createServer((req, res) => {
         { ts: now - 10800000, kind: 'login', detail: 'Mac · Chrome', username: 'lily', userId: 2 },
       ],
     }));
-  }
-  if (url.pathname === '/api/ma-cross' && req.method === 'GET') {
-    res.writeHead(200, cors);
-    return res.end(JSON.stringify({
-      ok: true,
-      events: maCrossAcked ? [] : [{
-        id: 9001,
-        symbol: 'VGT',
-        period: 200,
-        fromSide: 'BELOW',
-        toSide: 'ABOVE',
-        price: 120,
-        average: 105,
-        triggeredAt: Date.now(),
-      }],
-    }));
-  }
-  if (url.pathname === '/api/ma-cross/ack' && req.method === 'POST') {
-    maCrossAcked = true;
-    res.writeHead(200, cors);
-    return res.end(JSON.stringify({ ok: true, changed: true }));
   }
   // 趋势图与资产曲线测试专用：中长周期日线返回确定性行情。
   // 只拦这些范围，避免改变其它行情场景对 1mo / 实时快照的预期。

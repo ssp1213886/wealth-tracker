@@ -1,6 +1,6 @@
 // 备份纯逻辑的单测（v252 从 index.js 抽出）。
 // 覆盖：导出对象结构、导入校验（坏文件 / 版本过高）、缺字段沿用当前值、
-//       摘要文案、价格清洗白名单、主题配色白名单、OTM 裁剪。
+//       摘要文案、价格清洗白名单、主题配色白名单。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildBackupPayload, cleanBackupPrices, planBackupImport, ACCENT_CHOICES } from '../src/app/backup.js';
@@ -8,11 +8,9 @@ import { buildBackupPayload, cleanBackupPrices, planBackupImport, ACCENT_CHOICES
 const CTX = {
   appDataVersion: 5,
   etfSymbols: ['VGT', 'SMH', 'IBIT'],
-  optionSymbols: ['VGT', 'SMH', 'IBIT'],
   current: {
     trades: [{ id: 9, symbol: 'VGT' }],
     cashLog: [{ id: 8, type: '入金' }],
-    optionTradesRaw: [],
     activitiesRaw: [],
     watchlist: [{ sym: 'VGT', enabled: true }],
   },
@@ -23,16 +21,16 @@ const trade = (sym, shares, price, date) => ({ symbol: sym, shares, price, date:
 test('buildBackupPayload：固定住备份文件的字段（改名会直接破坏兼容）', () => {
   const out = buildBackupPayload({
     appDataVersion: 5, date: 'D', state: { a: 1 }, trades: [], cashBalance: 34000, cashLog: [],
-    activities: [], optionTrades: [], otmSettings: {}, exitPortfolio: 'x', watchlist: [], prices: {},
+    activities: [], exitPortfolio: 'x', watchlist: [], prices: {},
     theme: 'light', accent: 'forest',
   });
   assert.deepEqual(Object.keys(out), [
     'version', 'date', 'state', 'trades', 'cashBalance', 'cashLog', 'activities',
-    'optionTrades', 'otmSettings', 'exitPortfolio', 'watchlist', 'prices', 'theme', 'accent',
+    'exitPortfolio', 'watchlist', 'prices', 'theme', 'accent',
   ]);
   assert.equal(out.version, 5);
   assert.equal(out.exitPortfolio, 'x');
-  assert.deepEqual(buildBackupPayload(null), { version: undefined, date: undefined, state: undefined, trades: undefined, cashBalance: undefined, cashLog: undefined, activities: undefined, optionTrades: undefined, otmSettings: undefined, exitPortfolio: undefined, watchlist: undefined, prices: undefined, theme: undefined, accent: undefined });
+  assert.deepEqual(buildBackupPayload(null), { version: undefined, date: undefined, state: undefined, trades: undefined, cashBalance: undefined, cashLog: undefined, activities: undefined, exitPortfolio: undefined, watchlist: undefined, prices: undefined, theme: undefined, accent: undefined });
 });
 
 test('planBackupImport：不是对象 / 是数组 → 直接判为坏文件', () => {
@@ -75,11 +73,10 @@ test('planBackupImport：摘要写清每个域的数量', () => {
     version: 5,
     trades: [trade('VGT', 1, 100)],
     cashLog: [{ date: '2026-09-02', type: '入金', amount: 5000 }],
-    optionTrades: [],
     activities: [{ date: '2026-09-03', action: '买入 VGT', detail: 'x' }],
     watchlist: [{ sym: 'VGT' }, { sym: 'SMH' }],
   }, CTX);
-  assert.equal(plan.summary, '交易 1 笔\n资金流水 1 条\n期权 0 个\n操作日志 1 条\n观察列表 2 项');
+  assert.equal(plan.summary, '交易 1 笔\n资金流水 1 条\n操作日志 1 条\n观察列表 2 项');
 });
 
 test('planBackupImport：观察列表传成字符串数组会回落默认名单（既有行为，钉住以免误判）', () => {
@@ -99,18 +96,6 @@ test('planBackupImport：notes 当成操作日志、exit 两种键名都认', ()
   assert.equal(bySnake.exitValue, 'B');
   assert.equal(planBackupImport({ version: 5 }, CTX).exitValue, undefined);
   assert.equal(planBackupImport({ version: 5 }, CTX).has.exit, false);
-});
-
-test('planBackupImport：OTM 裁剪到 1~20，缺省 VGT 7% / SMH 6% / IBIT 10%（v384）', () => {
-  assert.deepEqual(planBackupImport({ version: 5, otmSettings: { vgt: 99, smh: 0 } }, CTX).otm, { vgt: 20, smh: 6, ibit: 10 });
-  assert.deepEqual(planBackupImport({ version: 5, otmSettings: {} }, CTX).otm, { vgt: 7, smh: 6, ibit: 10 });
-  assert.deepEqual(
-    planBackupImport({ version: 5, otmSettings: { vgt: 5, smh: 5, ibit: 12 } }, CTX).otm,
-    { vgt: 5, smh: 5, ibit: 12 },
-    'IBIT 的 OTM 要能真实带进来（不是永远回落 10）',
-  );
-  assert.equal(planBackupImport({ version: 5, otmSettings: 'nope' }, CTX).otm, null);
-  assert.equal(planBackupImport({ version: 5 }, CTX).has.otmSettings, false);
 });
 
 test('planBackupImport：主题与配色只认白名单', () => {

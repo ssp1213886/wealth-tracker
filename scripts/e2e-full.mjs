@@ -8,26 +8,6 @@ const page = await context.newPage();
 await page.route("**/assets/*", (route) =>
   route.continue({ headers: { ...route.request().headers(), "cache-control": "no-cache", pragma: "no-cache" } }),
 );
-/* v391：`#probOtmVal` 现在显示的是"选中那一档的**真实行权价**" —— 没有期权链时它是「—」，
-   而 ± 是按链上阶梯移动指针的（没有链就无处可走）。所以这里注入一条最小真实链，
-   让下面那条"步进可调整"真的在验"在链上相邻档之间移动"，而不是"两次都读到同一个空值"
-   （v389 的教训：读空值比大小的断言，永远绿）。 */
-const mkCalls = (spot) => [1.02, 1.04, 1.06, 1.08, 1.1, 1.12].map((mult) => {
-  const k = Math.round(spot * mult * 100) / 100;
-  const mid = Math.max(0.2, (Number(spot) * 0.14 - (k - spot)) * 0.25);
-  return { k, b: +(mid - 0.1).toFixed(2), a: +(mid + 0.1).toFixed(2), lp: +mid.toFixed(2), iv: 0.22, oi: 50, v: 3 };
-});
-await page.route("**/api/chain**", (route) => {
-  const sym = String(new URL(route.request().url()).searchParams.get("sym") || "").toUpperCase();
-  const spot = { VGT: 150, SMH: 300, IBIT: 45 }[sym];
-  const body = spot
-    ? { ok: true, chain: { sym, spot, source: "e2e", updated: "", iv30: 22, expiries: [
-      { date: "2026-11-20", ts: 1, dte: 40, gapPct: 2, calls: mkCalls(spot) },
-      { date: "2026-12-18", ts: 2, dte: 68, gapPct: 2, calls: mkCalls(spot) },
-    ] } }
-    : { ok: false, error: "unsupported" };
-  route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-});
 await page.setViewportSize({ width: 390, height: 844 });
 const consoleErrors = [];
 page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 120)); });
@@ -44,7 +24,7 @@ await page.evaluate(async () => {
 }).catch(() => {});
 await page.waitForTimeout(3000);
 
-// ---- 数据准备：10@100 + 10@120 - 5@150（VGT）、2@250（SMH）；期权两条；现金流入出 ----
+// ---- 数据准备：10@100 + 10@120 - 5@150（VGT）、2@250（SMH）；现金流入出 ----
 for (let i = 0; i < 3; i++) {
   try {
     await page.evaluate(() => {
@@ -56,10 +36,6 @@ for (let i = 0; i < 3; i++) {
         { id: 4002, symbol: "VGT", date: plus(-20), time: "11:02", shares: 10, price: 120, tag: "" },
         { id: 4003, symbol: "VGT", date: plus(-10), time: "09:31", shares: -5, price: 150, tag: "" },
         { id: 4004, symbol: "SMH", date: plus(-15), time: "14:20", shares: 2, price: 250, tag: "" },
-      ]));
-      localStorage.setItem("wealth_options_v2", JSON.stringify([
-        { id: 4005, sym: "VGT", type: "CALL", strike: 130, premium: 1.25, contracts: 1, expiry: plus(2), added: plus(-20), settled: false, archived: false },
-        { id: 4006, sym: "SMH", type: "CALL", strike: 300, premium: 2.4, contracts: 2, expiry: plus(5), added: plus(-30), settled: false, archived: true },
       ]));
       localStorage.setItem("wealth_cashlog_v2", JSON.stringify([
         { id: 4007, date: plus(-9), time: "10:24", type: "入金", amount: 2000 },
@@ -89,7 +65,7 @@ const boot = await page.evaluate(() => ({
   err: window.__lastError || null,
 }));
 check("页面正常启动", boot.ready);
-check("数据迁移标记写入", eq(boot.schema, "2"), boot.schema);
+check("数据迁移标记写入", eq(boot.schema, "3"), boot.schema);
 check("迁移清理遗留键", boot.legacyGone);
 check("启动无未捕获错误", boot.err === null, boot.err || "");
 
@@ -143,77 +119,21 @@ const affordability = await page.evaluate(() => {
 });
 check("预计金额联动计算", /300/.test(affordability || ''), affordability);
 
-/* ================= 4. 期权页 ================= */
-await page.evaluate(() => { if (window.switchTab) window.switchTab('option'); });
+/* ================= 4. 分析页 ================= */
+await page.evaluate(() => { if (window.switchTab) window.switchTab('analysis'); });
 await page.waitForTimeout(900);
-const opt = await page.evaluate(() => {
-  const rows = [...document.querySelectorAll('#holdingsBody tr')].filter((tr) => tr.children.length > 1);
-  return {
-    rowCount: rows.length,
-    firstCells: rows[0] ? [...rows[0].children].map((td) => td.textContent.trim().slice(0, 18)) : null,
-    /* v389 修腐烂：OTM 加减号从 v336 起就改叫 probOtm*（老 id otmVgt* 早没了），
-       这里一直在查一个不存在的元素 → 断言常年失败却没人发现（见 scripts/e2e/verdict.mjs）。 */
-    hasOtm: !!document.getElementById('probOtmMinus'),
-    hasMetrics: document.querySelectorAll('.option-metric').length,
-    hasRevenue: !!document.getElementById('mrev') || !!document.getElementById('trev'),
-  };
-});
-check("期权持仓清单渲染", opt.rowCount >= 1, opt.rowCount + " 行");
-check("期权行包含行权价与到期", !!opt.firstCells && opt.firstCells.some((c) => c.includes('$')) && opt.firstCells.some((c) => c.includes('-')));
-check("OTM 调整控件存在", opt.hasOtm);
-check("期权指标块齐全", opt.hasMetrics >= 3, opt.hasMetrics + " 个");
-check("Covered Call 收入卡存在", opt.hasRevenue);
-
-// OTM 步进按钮可点击并改变数值
-const otmBefore = await page.evaluate(() => (document.getElementById('probOtmVal') || {}).textContent || '');
-const otmAfter = await page.evaluate(() => {
-  const btn = document.getElementById('probOtmPlus');
-  if (!btn) return null;
-  btn.click();
-  return (document.getElementById('probOtmVal') || {}).textContent || '';
-});
-check("OTM 步进可调整（在链上相邻真实档位之间移动）",
-  otmBefore !== otmAfter && /^\$\d/.test(otmBefore) && /^\$\d/.test(String(otmAfter)),
-  otmBefore + " → " + otmAfter);
-
-/* v392：控件不许互相压（线上真出现过"现价那行压住 + 按钮"），矩阵不许在自己的容器里横滑。
-   这两条都是"看着像小事、真机上立刻很难看"的排版回归，纯靠肉眼看截图抓不住，所以钉成断言。 */
-const layoutCx = await page.evaluate(() => {
-  const sels = ['#probOtmMinus', '#probOtmVal', '#probOtmPlus', '#probSpot', '#probOtmSym'];
-  const items = sels.map((s) => { const el = document.querySelector(s); return el ? { s, el, r: el.getBoundingClientRect() } : null; }).filter(Boolean);
-  const bad = [];
-  for (let i = 0; i < items.length; i += 1) {
-    for (let j = i + 1; j < items.length; j += 1) {
-      /* 父容器包含子元素不算重叠 */
-      if (items[i].el.contains(items[j].el) || items[j].el.contains(items[i].el)) continue;
-      const a = items[i].r, b = items[j].r;
-      const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-      const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-      if (ox > 1 && oy > 1) bad.push(items[i].s + ' ∩ ' + items[j].s + ' ' + Math.round(ox) + 'x' + Math.round(oy));
-    }
-  }
-  const m = document.getElementById('probMatrix');
-  return { bad, overflow: m ? Math.max(0, m.scrollWidth - m.clientWidth) : 0 };
-});
-check("期权卡控件互不重叠（v391 出现过现价压住 + 按钮）", layoutCx.bad.length === 0, layoutCx.bad.join(' | '));
-check("期权矩阵在自己的容器里不横滑", layoutCx.overflow === 0, layoutCx.overflow + "px");
-
-/* v394：累计收益必须带百分比 —— 手机汇总条与桌面胶囊读的是同一份 portfolioTotals。
-   这里用正则卡"真百分比"，避免只写了「—」也算通过。 */
-const pnlPct = await page.evaluate(() => {
-  const ms = document.getElementById('msPnlPct');
-  const pill = document.getElementById('hmPnLPctPill');
-  const sub = document.getElementById('hmPnLPct');
-  return {
-    ms: ms ? ms.textContent.trim() : null,
-    pill: pill ? pill.textContent.trim() : null,
-    pillHidden: pill ? !!pill.hidden : null,
-    subHasParenPct: sub ? /\(\s*[+-]?\d/.test(sub.textContent) : null,
-  };
-});
-check("累计收益带百分比（手机汇总条）", /^[+-]\d+\.\d%$/.test(pnlPct.ms || ''), pnlPct.ms);
-check("累计收益带百分比（桌面胶囊）", pnlPct.pillHidden === false && /^[+-]\d+\.\d%$/.test(pnlPct.pill || ''), String(pnlPct.pill) + ' hidden=' + pnlPct.pillHidden);
-check("百分比不再重复出现在小字行", pnlPct.subHasParenPct === false);
+const marketTrend = await page.evaluate(() => ({
+  card: !!document.querySelector('#tab-analysis .market-trend-card'),
+  watch: !!document.querySelector('#tab-analysis #watchCard'),
+  chart: !!document.querySelector('#trendChart .trend-svg'),
+  status: (document.getElementById('marketRegime') || {}).textContent || '',
+  optionEntry: !!(document.getElementById('bbOption') || document.getElementById('tab-option')),
+}));
+check("市场趋势卡在分析页", marketTrend.card);
+check("观察列表在分析页", marketTrend.watch);
+check("市场趋势图渲染", marketTrend.chart);
+check("市场状态无期权建议", /市场状态/.test(marketTrend.status) && !/OTM|卖 CALL|卖 Call/.test(marketTrend.status), marketTrend.status.slice(0, 40));
+check("期权入口已移除", !marketTrend.optionEntry);
 
 /* ================= 5. 记录页 ================= */
 await page.evaluate(() => { if (window.switchTab) window.switchTab('data'); });

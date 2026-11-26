@@ -102,33 +102,7 @@ await step("⑤ 记录页：确认交易与持仓出现", async () => {
   return `持仓=${(hold || []).join(' / ')} | 交易=${(trade || []).join(' / ')}`;
 });
 
-await step("⑥ 期权页：真实记录一笔卖 Call", async () => {
-  await page.evaluate(() => window.switchTab && window.switchTab('option'));
-  await page.waitForTimeout(900);
-  await page.fill('#ostrike', '130');
-  await page.fill('#opremium', '1.25');
-  await page.fill('#ocontracts', '1');
-  const future = await page.evaluate(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 21);
-    const pad = (n) => String(n).padStart(2, '0');
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  });
-  await page.fill('#oexpiry', future);
-  await page.waitForTimeout(400);
-  await shot(page, "08-option-form");
-  await page.click('#btnAddOption');
-  await page.waitForTimeout(1000);
-  await shot(page, "09-option-added");
-  const row = await page.evaluate(() => {
-    const tr = document.querySelector('#holdingsBody tr');
-    return tr ? [...tr.children].map((td) => td.textContent.trim().slice(0, 16)) : null;
-  });
-  const opts = await page.evaluate(() => JSON.parse(localStorage.getItem('wealth_options_v2') || '[]'));
-  return `期权行=${(row || []).join(' / ')} | 已存=${opts.length} 条`;
-});
-
-await step("⑦ 删除交易 → 撤销", async () => {
+await step("⑥ 删除交易 → 撤销", async () => {
   await page.evaluate(() => window.switchTab && window.switchTab('data'));
   await page.waitForTimeout(900);
   const before = await page.evaluate(() => document.querySelectorAll('#tradeBody tr').length);

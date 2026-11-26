@@ -19,7 +19,6 @@ page.on('dialog', async (d) => { await d.accept(); });
 
 const counts = () => page.evaluate(() => ({
   trades: JSON.parse(localStorage.getItem('wealth_trades_v2') || '[]').length,
-  opts: JSON.parse(localStorage.getItem('wealth_options_v2') || '[]').length,
   cashLog: JSON.parse(localStorage.getItem('wealth_cashlog_v2') || '[]').length,
   cash: Number(localStorage.getItem('wealth_cash_v2') || 0),
 }));
@@ -44,9 +43,6 @@ await page.evaluate(() => {
     { id: 7001, symbol: 'VGT', date: plus(-30), time: '10:00', shares: 10, price: 100, tag: '' },
     { id: 7002, symbol: 'SMH', date: plus(-20), time: '11:00', shares: 2, price: 250, tag: '' },
   ]));
-  localStorage.setItem('wealth_options_v2', JSON.stringify([
-    { id: 7003, sym: 'VGT', type: 'CALL', strike: 130, premium: 1.25, contracts: 1, expiry: plus(20), added: plus(-5), settled: false, archived: false },
-  ]));
   localStorage.setItem('wealth_cashlog_v2', JSON.stringify([
     { id: 7004, date: plus(-9), time: '10:00', type: '入金', amount: 5000 },
   ]));
@@ -58,7 +54,7 @@ await page.reload({ waitUntil: 'load' });
 await page.waitForTimeout(3000);
 
 let exported = null;
-await step('A. 准备数据（2 笔交易 / 1 张期权 / 1 笔流水 / 现金 3500）', async () => {
+await step('A. 准备数据（2 笔交易 / 1 笔流水 / 现金 3500）', async () => {
   const c = await counts();
   return JSON.stringify(c);
 });
@@ -95,7 +91,7 @@ await step('C. 清空浏览器数据 → 确认页面回到空状态', async () 
   await page.waitForTimeout(3000);
   const c = await counts();
   await page.screenshot({ path: OUT + '/backup-B-cleared.png' });
-  return '交易=' + c.trades + ' 期权=' + c.opts + ' 现金=' + c.cash;
+  return '交易=' + c.trades + ' 现金=' + c.cash;
 });
 
 await step('D. 打开设置 → 导入刚才的备份文件 → 验证数据恢复', async () => {
@@ -118,10 +114,10 @@ await step('D. 打开设置 → 导入刚才的备份文件 → 验证数据恢�
   await page.waitForTimeout(2500);
   const c = await counts();
   await page.screenshot({ path: OUT + '/backup-C-restored.png' });
-  return '交易=' + c.trades + ' 期权=' + c.opts + ' 流水=' + c.cashLog + ' 现金=' + c.cash;
+  return '交易=' + c.trades + ' 流水=' + c.cashLog + ' 现金=' + c.cash;
 });
 
-await step('E. 恢复后页面渲染是否正常（持仓/交易/期权三处）', async () => {
+await step('E. 恢复后页面渲染是否正常（持仓/交易两处）', async () => {
   await page.evaluate(() => {
     const o = document.querySelector('.sb-overlay');
     if (o) o.click();
@@ -146,7 +142,7 @@ await step('E. 恢复后页面渲染是否正常（持仓/交易/期权三处）
 const lastError = await page.evaluate(() => window.__lastError || null);
 await page.close();
 const summary = { log, lastError, exportedFile: exported };
-/* v389：与期权专项同一套判据 —— 步骤失败要变成非 0 退出码（见 scripts/e2e/verdict.mjs） */
+/* 步骤失败要变成非 0 退出码（见 scripts/e2e/verdict.mjs） */
 if (log.some((s) => !s.ok)) {
   console.log(JSON.stringify(summary, null, 2));
   throw new Error('备份专项失败 ' + log.filter((s) => !s.ok).length + ' 步：' +

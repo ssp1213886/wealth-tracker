@@ -38,12 +38,10 @@ function fakeDoc(map) {
   };
 }
 
-test('SYNC_KEY_LABELS：9 个同步键都有中文名', () => {
+test('SYNC_KEY_LABELS：7 个同步键都有中文名', () => {
   assert.deepEqual(Object.keys(SYNC_KEY_LABELS).sort(), [
-    'activities', 'cashBalance', 'cashLog', 'exit_portfolio', 'optionTrades',
-    'otmSettings', 'state', 'trades', 'watchlist',
+    'activities', 'cashBalance', 'cashLog', 'exit_portfolio', 'state', 'trades', 'watchlist',
   ]);
-  assert.equal(SYNC_KEY_LABELS.otmSettings, 'OTM百分比');
   assert.equal(SYNC_KEY_LABELS.watchlist, '观察列表');
 });
 

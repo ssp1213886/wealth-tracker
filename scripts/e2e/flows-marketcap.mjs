@@ -50,6 +50,9 @@ async function ev(fn, arg) {
 }
 const failures = [];
 
+await ev(() => document.getElementById('bbAnalysis').click());
+await p.waitForTimeout(900);
+
 /* A) 观察列表：点开行详情 → 有「总市值」 */
 const watchDetail = await ev(() => {
   const row = document.querySelector('#watchRows .watch-row');

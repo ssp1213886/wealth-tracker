@@ -4,8 +4,6 @@ export const SYNC_KEYS = new Set([
   'cashLog',
   'state',
   'activities',
-  'optionTrades',
-  'otmSettings',
   'exit_portfolio',
   'watchlist',
   'prices',

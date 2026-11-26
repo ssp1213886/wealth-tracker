@@ -6,13 +6,9 @@ import {buildSyncPayload, classifySyncError, normalizeSyncTs, syncContentEqual, 
 import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './render.js';
 import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
-import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, optionTotals, otmPercent, suggestedStrike, freeCallContracts, planOptionDelete} from './options.js';
-import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
-import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtProb, fmtStrike, renderMarketRegime} from './prob-view.js';
+import {renderMarketRegime} from './market-trend-view.js';
 import {regimeFromChartPayload} from './regime.js';
 import {renderTrendChart} from './trend-chart.js';
-import {renderFreshness} from './freshness.js';
-import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
 import {buildBackupPayload, planBackupImport} from './backup.js';
@@ -58,11 +54,13 @@ function symColor(sym){
   if(String(sym)==='BTC')return getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
   return getAssetColor(WATCH_HELD_OF[sym]||sym);
 }
-import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, loadOptPing, saveOptPing, badgeCountOf, badgeSupported, applyAppBadge} from './alerts-view.js';
+import {buildAlerts, renderAlerts, getCurrentAlerts, markAlertsSeen, updateBellBadge, badgeCountOf, badgeSupported, applyAppBadge} from './alerts-view.js';
 import {formatHealthTime, renderSyncHealthView, applySyncBar, syncClockText as syncClockTime, syncFailureText, SYNC_KEY_LABELS, openConflictModal, syncBannerView, applySyncBanner, bindSyncBanner, bindHealthJump} from './sync-view.js';
 import {configureWatchUI, paintWatchSort, renderWatch, renderWatchManage, renderHoldings, initWatchUI, updateSidebarPrices, capCellHTML, updateCapCells} from './watch-ui.js';
 import {configurePortfolioView, renderMetricsTop, renderMetricsPnl, renderHoldingsBody, renderGoalProgress, renderDrawdownPanel, renderPricePills, renderCashTotals} from './portfolio-view.js';
 import {configureSettingsView, bindShellControls, bindSettingsPanel, bindHaptics, haptic, loadAccent, loadTheme, toggleTheme, togglePrivacy, openMobileSettings, openAdvancedSettings, setMobileSettings} from './settings-view.js';
+import {showBusyToast, enableSheetDrag, showApproval} from './sheets.js';
+import {initTableSearch} from './table-search.js';
 import {portfolioTotals, dailyChange, goalProgress, drawdownLine, summaryRows} from './portfolio.js';
 import {disciplineMonths, monthlyPnl, portfolioStateAt, annualMatrix, totalDeposits, heatColorFor, donutSlices, equitySeries, equityCurveHtml, bindEquityCurve} from './charts.js';
 import {tradeImpact} from './trade-impact.js';
@@ -82,7 +80,7 @@ var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},trade
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v430';var APP_DATA_VERSION=5;
+var APP_BUILD='v431';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -90,7 +88,7 @@ function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
 function normalizeCashLogs(list){return normalizeCashLogsIn(list)}
 function normalizeActivities(list){return normalizeActivitiesIn(list)}
 
-function createBackupData(){return buildBackupPayload({appDataVersion:APP_DATA_VERSION,date:new Date().toISOString(),state:normalizeState(state),trades:trades,cashBalance:safeNum(cashBalance),cashLog:cashLog,activities:normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]')),optionTrades:normalizeOptions(JSON.parse(readRaw('wealth_options_v2')||'[]')),otmSettings:JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":5}'),exitPortfolio:readRaw('exit_portfolio')||'',watchlist:normalizeWatchlist(watchList),prices:JSON.parse(readRaw(PRICE_KEY)||'{}'),theme:document.documentElement.dataset.theme||'light',accent:document.documentElement.dataset.accent||'forest'})}
+function createBackupData(){return buildBackupPayload({appDataVersion:APP_DATA_VERSION,date:new Date().toISOString(),state:normalizeState(state),trades:trades,cashBalance:safeNum(cashBalance),cashLog:cashLog,activities:normalizeActivities(JSON.parse(readRaw(ACTIVITY_KEY)||'[]')),exitPortfolio:readRaw('exit_portfolio')||'',watchlist:normalizeWatchlist(watchList),prices:JSON.parse(readRaw(PRICE_KEY)||'{}'),theme:document.documentElement.dataset.theme||'light',accent:document.documentElement.dataset.accent||'forest'})}
 
 
 
@@ -118,7 +116,7 @@ function fmt$(n){n=safeNum(n);if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(2)+'
    ⚠️ 隐含不变量：**cashBalance 必须恒等于 Σ 现金流水**（入金/出金/股息/权利金/修正 每个入口都必须
    "改 cashBalance" 与 "写 cashLog" 成对出现；买卖股票**不动** cashBalance，它们的现金影响由这里的
    +卖出 −买入 体现）。破这条不变量，总资产/累计收益/月度收益会同时错，而且很难查。
-   e2e 的 flows-data 覆盖了主要路径（入金 / 买入 / 卖 CALL 后现金的数字）。 */
+   e2e 的 flows-data 覆盖了主要路径（入金和买入后的现金数字）。 */
 function getNetCash(){var ts=0,tb=0;trades.forEach(function(t){var a=Math.abs(t.shares)*t.price;if(t.shares<0)ts+=a;else tb+=a});return cashBalance+ts-tb}
 function animateVal(el,to){if(!el)return;var from=parseFloat(el.dataset.v||"0")||0;el.dataset.v=to;var start=Date.now(),dur=500;function step(){var t=Math.min(1,(Date.now()-start)/dur);var v=from+(to-from)*(1-Math.pow(1-t,3));el.textContent=fmtFull(v);if(t<1)requestAnimationFrame(step)}step()}
 
@@ -127,14 +125,9 @@ function fmtPct(n){if(isNaN(n)||!isFinite(n))return'-';return(n*100).toFixed(1)+
 
 
 var ETF_NAMES={VGT:'VGT',SMH:'SMH',IBIT:'IBIT',SGOV:'SGOV'},ETF_SYMS=TRADE_SYMBOLS,ALL_SYMS=TRADE_SYMBOLS;
-/* 期权（卖 CALL）的标的：与核心仓同三只。页面 tab / 到期日历 / 概率矩阵 / 提醒 / 录入弹层都跟着它。
-   这是"哪些标的能卖 CALL"在前端的唯一真源；服务端的链白名单在 lib/chain.js（有单测钉住两边一致）。 */
-var OPTION_SYMS=['VGT','SMH','IBIT'];
 /* 核心仓三腿 ↔ state 里的键名（第三腿沿用历史键名 btc，v384 起载体是 IBIT）。
    DCA 分栏 / 目标配比 / 归因都从这里取，别再散落 sym==='BTC' 这种写死。 */
 var LEG_STATE_KEY={VGT:'vgt',SMH:'smh',IBIT:'btc'};
-/* 「期权状态」卡里每腿两个元素：持股数 / 可卖 CALL 张数（HTML 里的静态格子） */
-var LEG_METRIC_IDS={VGT:['ov','ocv'],SMH:['vd','ocs'],IBIT:['oi','oci']};
 function legTargets(){var o={};Object.keys(LEG_STATE_KEY).forEach(function(s){o[s]=state[LEG_STATE_KEY[s]]});return o}
 
 
@@ -267,11 +260,10 @@ function updatePortfolio(){
   var totalPnLUnreal=hasPriced?totalValue-totalCost:null;
 
 
-  var realizedOptionPremium=0;try{realizedOptionPremium=optionTotals(optionTrades).total}catch(e){logSwallowed("updatePortfolio",e)}
   /* 累计股息：股息是真实收益（只是以现金形式躺着），要计入累计收益 —— 否则会和「纪律热力图」的当月收益对不上 */
   var dividendTotal=0;try{dividendTotal=(cashLog||[]).reduce(function(s,l){return String((l&&l.type)||'').indexOf('股息')>=0?s+(Number(l&&l.amount)||0):s},0)}catch(e){logSwallowed("dividendTotal",e)}
   /* v394：累计收益率的分母＝累计入金（与年度复盘 CAGR 同源；见 charts.totalDeposits） */
-  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,optionPremium:realizedOptionPremium,dividend:dividendTotal,netCash:getNetCash(),deposits:totalDeposits(cashLog)});
+  var totals=portfolioTotals({hasPriced:hasPriced,totalValue:totalValue,totalCost:totalCost,totalInvested:totalInvested,totalRealized:totalRealized,dividend:dividendTotal,netCash:getNetCash(),deposits:totalDeposits(cashLog)});
   lastPortfolioTotals=totals;
   var totalPnL=totals.total,totalPct=totals.pct;
 
@@ -282,7 +274,7 @@ function updatePortfolio(){
   renderMetricsTop(document,{hasPriced:hasPriced,totalValue:totalValue,totals:totals});
 
 
-  var daily=dailyChange(rows,buildDailyQuotes(),trades,marketDate()),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,realizedOptionPremium:realizedOptionPremium,dividendTotal:dividendTotal,dailyChg:dailyChg,dailyPct:dailyPct});
+  var daily=dailyChange(rows,buildDailyQuotes(),trades,marketDate()),dailyChg=daily.change,dailyPct=daily.pct;renderMetricsPnl(document,{hasPriced:hasPriced,totalPnL:totalPnL,totalPct:totalPct,unpriced:unpriced,totalPnLUnreal:totalPnLUnreal,totalRealized:totalRealized,dividendTotal:dividendTotal,dailyChg:dailyChg,dailyPct:dailyPct});
 
 
 
@@ -598,7 +590,7 @@ function renderAnnualMatrix(){
   var grid=document.getElementById('annualMatrixGrid'),stats=document.getElementById('annualMatrixStats');
   if(!grid||!stats)return;
 
-  var pack=annualMatrix({trades:trades,optionTrades:optionTrades,cashLog:cashLog,prices:livePrices,netCash:getNetCash(),targetGoal:state.targetGoal||2500000,symbols:ETF_SYMS,now:new Date()});
+  var pack=annualMatrix({trades:trades,cashLog:cashLog,prices:livePrices,netCash:getNetCash(),targetGoal:state.targetGoal||2500000,symbols:ETF_SYMS,now:new Date()});
   if(pack.empty){grid.innerHTML=emptyStateHTML({title:'暂无纪律数据',hint:'记录第一笔买入后，这里会自动生成月度热力图'});stats.innerHTML='';return}
  var cells=pack.cells,totalInvested=pack.totalInvested,activeYears=pack.activeYears,totalAssets=pack.totalAssets,cagr=pack.cagr,targetGap=pack.targetGap,totalMktV=pack.totalMktV;
   var heatColor=heatColorFor;   /* v245：色阶来自 charts.js（别名保留，渲染处不改） */
@@ -609,13 +601,13 @@ function renderAnnualMatrix(){
     var h=heatColor(c.rate,c.hasData);
     var rateStr=c.hasData?c.rate.toFixed(1)+'%':'-';
     var holdStr=c.hasData?('VGT '+fmtSh(c.vgt)+'股  SMH '+fmtSh(c.smh)+'股  IBIT '+fmtSh(c.ibit)+'股'):'';
-    var detail=c.hasData?('CC权利金 '+fmt$(c.prem)+' | 总买入 '+fmt$(c.dca)):'';
+    var detail=c.hasData?('总买入 '+fmt$(c.dca)):'';
     htm+='<div class="annual-cell" style="background:'+h[0]+';color:'+h[1]+';border-color:'+h[3]+'"><span class="year" style="color:'+h[2]+'">'+c.ym+'</span><strong>'+rateStr+'</strong><span style="color:'+h[2]+'">'+holdStr+'</span><span style="color:'+h[3]+'">'+detail+'</span></div>';
   });
   grid.innerHTML=htm;
 
   var cc=totalAssets>=0?'var(--ok)':'var(--red)';
-  stats.innerHTML='<div class="annual-stat"><span>总入金</span><strong>'+fmtFull(totalInvested)+'</strong></div><div class="annual-stat"><span>当前总资产</span><strong>'+fmtFull(totalAssets)+'</strong></div><div class="annual-stat"><span>长期 CAGR</span><strong style="color:'+cc+'">'+(cagr*100).toFixed(1)+'%</strong></div><div class="annual-stat"><span>目标差额</span><strong style="color:var(--orange)">'+fmtFull(targetGap)+'</strong></div><div class="annual-note">热力=年度权利金贡献率（CC权利金÷买入总额）颜色越暖权利金贡献越大</div>';
+  stats.innerHTML='<div class="annual-stat"><span>总入金</span><strong>'+fmtFull(totalInvested)+'</strong></div><div class="annual-stat"><span>当前总资产</span><strong>'+fmtFull(totalAssets)+'</strong></div><div class="annual-stat"><span>长期 CAGR</span><strong style="color:'+cc+'">'+(cagr*100).toFixed(1)+'%</strong></div><div class="annual-stat"><span>目标差额</span><strong style="color:var(--orange)">'+fmtFull(targetGap)+'</strong></div><div class="annual-note">热力＝年度投入完成度，颜色越暖表示当年投入越充分</div>';
 }
 
 
@@ -857,11 +849,11 @@ document.getElementById('btnExport').addEventListener('click',function(){var url
 
 
 function recordBackupTime(timestamp){var ts=Number(timestamp)||Date.now();LS.setItem('lastBackupTime',String(ts));var el=document.getElementById('lastBackupTime');if(el)el.textContent='上次备份 '+new Date(ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});renderSyncHealth()}
-document.getElementById('btnExportData').addEventListener('click',function(){showBusyToast('正在生成完整备份');setTimeout(function(){var data=createBackupData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wealth-complete-'+localDate()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},5000);recordBackupTime(Date.now());showToast('完整备份已导出 · '+data.trades.length+' 笔交易 · '+data.optionTrades.length+' 个期权','ok')},80)});
+document.getElementById('btnExportData').addEventListener('click',function(){showBusyToast('正在生成完整备份');setTimeout(function(){var data=createBackupData(),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wealth-complete-'+localDate()+'.json';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},5000);recordBackupTime(Date.now());showToast('完整备份已导出 · '+data.trades.length+' 笔交易','ok')},80)});
 
 
 function importBackupData(data){
-  var plan=planBackupImport(data,{appDataVersion:APP_DATA_VERSION,etfSymbols:ETF_SYMS,current:{trades:trades,cashLog:cashLog,optionTradesRaw:JSON.parse(readRaw('wealth_options_v2')||'[]'),activitiesRaw:JSON.parse(readRaw(ACTIVITY_KEY)||'[]'),watchlist:watchList}});
+  var plan=planBackupImport(data,{appDataVersion:APP_DATA_VERSION,etfSymbols:ETF_SYMS,current:{trades:trades,cashLog:cashLog,activitiesRaw:JSON.parse(readRaw(ACTIVITY_KEY)||'[]'),watchlist:watchList}});
   if(!plan.ok)throw new Error(plan.error);
   if(!confirm('准备恢复以下数据：\n\n'+plan.summary+'\n\n现有对应数据将被覆盖，是否继续？'))return false;
   var next=plan.next,has=plan.has;
@@ -870,8 +862,6 @@ function importBackupData(data){
   if(has.cashBalance){cashBalance=safeNum(Number(data.cashBalance));LS.setItem(CB_KEY,String(cashBalance));markDirty('cashBalance')}
   if(has.cashLog){cashLog=next.cashLog;LS.setItem(CLOG_KEY,JSON.stringify(cashLog));markDirty('cashLog')}
   if(has.activities){LS.setItem(ACTIVITY_KEY,JSON.stringify(next.activities));markDirty('activities')}
-  if(has.optionTrades){optionTrades=next.optionTrades;LS.setItem('wealth_options_v2',JSON.stringify(optionTrades));markDirty('optionTrades')}
-  if(plan.otm){otmSettings=plan.otm;LS.setItem('otmSettings',JSON.stringify(otmSettings));markDirty('otmSettings')}
   if(plan.exitValue!==undefined){LS.setItem('exit_portfolio',cleanText(plan.exitValue,120));markDirty('exit_portfolio')}
   if(has.watchlist){watchList=next.watchlist;LS.setItem(WATCH_KEY,JSON.stringify(watchList));markDirty('watchlist');try{renderWatch();renderWatchManage()}catch(e){logSwallowed("importBackupData",e)}}
   if(has.prices)LS.setItem(PRICE_KEY,JSON.stringify(plan.prices));
@@ -930,7 +920,7 @@ var autoBackup=false;function doAutoBackup(){if(!autoBackup)return;var data=crea
 
 
 
-function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate(8);if(tab==='log'||tab==='logs')tab='data';document.body.dataset.activeTab=tab;var titleMap={holding:'My Portfolio',console:'操作台',option:'期权',data:'记录',log:'记录'},desktopTitleMap={holding:'投资仪表盘',console:'操作台',option:'期权管理',data:'记录',log:'记录'};var mt=document.getElementById('msPageTitle');if(mt)mt.textContent=titleMap[tab]||'My Portfolio';var dt=document.getElementById('desktopPageTitle');if(dt)dt.textContent=desktopTitleMap[tab]||'投资仪表盘';
+function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate(8);if(tab==='log'||tab==='logs')tab='data';document.body.dataset.activeTab=tab;var titleMap={holding:'My Portfolio',console:'操作台',analysis:'分析',data:'记录',log:'记录'},desktopTitleMap={holding:'投资仪表盘',console:'操作台',analysis:'投资分析',data:'记录',log:'记录'};var mt=document.getElementById('msPageTitle');if(mt)mt.textContent=titleMap[tab]||'My Portfolio';var dt=document.getElementById('desktopPageTitle');if(dt)dt.textContent=desktopTitleMap[tab]||'投资仪表盘';
 
 
   document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});
@@ -961,6 +951,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
   if(tab==='holdings'||tab==='holding')updatePortfolio();
+  if(tab==='analysis'){refreshMarket(false);refreshMarketTrend(false)}
 
 
 
@@ -972,8 +963,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
   if(tab==='data'||tab==='console')updateDataPage()
-  if(tab==='option'){setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},50);refreshMaCrossEvents(false)}
-  if(tab==='console'&&typeof refreshTradeAffordability==='function')refreshTradeAffordability()
+    if(tab==='console'&&typeof refreshTradeAffordability==='function')refreshTradeAffordability()
 
   var main=document.querySelector('.main');if(main&&window.innerWidth<=800)main.scrollTo({top:0,behavior:'auto'});setMobileSettings(false)
 
@@ -1059,8 +1049,8 @@ function syncTradeControls(){
     btn.classList.toggle('active',active);
     btn.setAttribute('aria-selected',active?'true':'false');
   });
-  /* 只扫「交易标的」那一组：期权那张卡里也有 .asset-chip，用 data-asset 去比对会把它清掉 */
-  document.querySelectorAll('.asset-chips:not(.option-asset-chips) .asset-chip').forEach(function(btn){
+  /* 只扫「交易标的」那一组，避免把其它同结构的控件误清掉。 */
+  document.querySelectorAll('.asset-chips .asset-chip').forEach(function(btn){
     btn.classList.toggle('active',btn.dataset.asset===asset.value);
   });
   updateTradeEstimate();
@@ -1071,8 +1061,8 @@ function initConsoleEntryControls(){
   document.querySelectorAll('.segment').forEach(function(btn){
     btn.addEventListener('click',function(){type.value=btn.dataset.tradeType;syncTradeControls()});
   });
-  /* 同上：期权胶囊有自己的处理器（initOptionEntryControls），别在这里把 tfAsset 设成 undefined */
-  document.querySelectorAll('.asset-chips:not(.option-asset-chips) .asset-chip').forEach(function(btn){
+  /* 只同步交易标的控件，不在这里覆盖其它数据。 */
+  document.querySelectorAll('.asset-chips .asset-chip').forEach(function(btn){
     btn.addEventListener('click',function(){asset.value=btn.dataset.asset;syncTradeControls()});
   });
   type.addEventListener('change',syncTradeControls);
@@ -1082,33 +1072,6 @@ function initConsoleEntryControls(){
   syncTradeControls();
   updateTradeEstimate();
 }
-function syncOptionControls(){
-  var type=document.getElementById('otype'),asset=document.getElementById('osym');
-  if(!type||!asset)return;
-  document.querySelectorAll('.option-type-segment .segment').forEach(function(btn){
-    var active=btn.dataset.optionType===type.value;
-    btn.classList.toggle('active',active);
-    btn.setAttribute('aria-selected',active?'true':'false');
-  });
-  document.querySelectorAll('.option-asset-chips .asset-chip').forEach(function(btn){
-    btn.classList.toggle('active',btn.dataset.optionAsset===asset.value);
-  });
-}
-function initOptionEntryControls(){
-  var type=document.getElementById('otype'),asset=document.getElementById('osym');
-  if(!type||!asset)return;
-  document.querySelectorAll('.option-type-segment .segment').forEach(function(btn){
-    btn.addEventListener('click',function(){type.value=btn.dataset.optionType;syncOptionControls()});
-  });
-  document.querySelectorAll('.option-asset-chips .asset-chip').forEach(function(btn){
-    btn.addEventListener('click',function(){asset.value=btn.dataset.optionAsset;syncOptionControls()});
-  });
-  type.addEventListener('change',syncOptionControls);
-  asset.addEventListener('change',syncOptionControls);
-  syncOptionControls();
-}
-
-
 var _ptrEl=document.getElementById("pullHint");if(_ptrEl)_ptrEl.style.display="none";/* 顶部状态栏不再响应点击刷新，避免误触；刷新入口在操作台的刷新按钮 */
 
 
@@ -1118,9 +1081,7 @@ var _ptrEl=document.getElementById("pullHint");if(_ptrEl)_ptrEl.style.display="n
 function initAll(){
 
   var initialTradeDate=document.getElementById('tfDate');if(initialTradeDate&&!initialTradeDate.value)initialTradeDate.value=marketDate();initConsoleEntryControls();
-
-
-  initOptionEntryControls();
+  initTableSearch();
 
 
   document.getElementById('msPrices')?.addEventListener('click',function(e){
@@ -1182,7 +1143,7 @@ function initAll(){
   var ep=document.getElementById('exitPortfolio');if(ep){var saved=readRaw('exit_portfolio');if(saved)ep.value=saved;ep.addEventListener('change',function(){LS.setItem('exit_portfolio',ep.value);markDirty('exit_portfolio');autoPushDebounce()})}
 
 
-  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr;syncTradeControls();updateTradeEstimate();/* v309：给出可见反馈 —— 高亮这一行（防止点串看不出），并把录入弹层打开 */try{var rows=document.querySelectorAll('#hmPricesCompact .price-pill');for(var i=0;i<rows.length;i+=1)rows[i].classList.remove('is-picked');p.classList.add('is-picked');setTimeout(function(){p.classList.remove('is-picked')},1400);}catch(err){logSwallowed('pricePick',err)}try{openTradeSheet()}catch(err){logSwallowed('pricePick',err)}});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);setTimeout(function(){refreshMaCrossEvents(false)},1200);showFirstTimeGuide()}catch(e){console.error(e);reportError('boot: '+((e&&e.message)||e),(e&&e.stack)||'');document.body.innerHTML='<div style="padding:32px 20px;max-width:440px;margin:0 auto;font:15px/1.7 -apple-system,BlinkMacSystemFont,\'PingFang SC\',sans-serif;color:#17211b"><h2 style="font-size:18px;margin:0 0 10px">页面启动失败了</h2><p style="margin:0 0 14px;color:#6e7771">你的本地数据仍然保存在这台设备上，没有被清除。可以先点“重新加载”；若仍然失败，用“复制诊断信息”把详情发给开发者。</p><pre style="overflow:auto;padding:12px;border-radius:10px;background:#f3f5f2;color:#6e7771;font-size:12.5px;line-height:1.5;margin:0 0 16px">'+String((e&&e.message)||e).slice(0,300)+'</pre><div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="location.reload()" style="flex:1;min-width:120px;min-height:44px;border:0;border-radius:12px;background:#147a4b;color:#fff;font:inherit;font-weight:600;cursor:pointer">重新加载</button><button onclick="copyDiagnostics()" style="flex:1;min-width:120px;min-height:44px;border:1px solid #dfe4df;border-radius:12px;background:#fff;color:#17211b;font:inherit;cursor:pointer">复制诊断信息</button></div></div>'}
+  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr;syncTradeControls();updateTradeEstimate();/* v309：给出可见反馈 —— 高亮这一行（防止点串看不出），并把录入弹层打开 */try{var rows=document.querySelectorAll('#hmPricesCompact .price-pill');for(var i=0;i<rows.length;i+=1)rows[i].classList.remove('is-picked');p.classList.add('is-picked');setTimeout(function(){p.classList.remove('is-picked')},1400);}catch(err){logSwallowed('pricePick',err)}try{openTradeSheet()}catch(err){logSwallowed('pricePick',err)}});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);reportError('boot: '+((e&&e.message)||e),(e&&e.stack)||'');document.body.innerHTML='<div style="padding:32px 20px;max-width:440px;margin:0 auto;font:15px/1.7 -apple-system,BlinkMacSystemFont,\'PingFang SC\',sans-serif;color:#17211b"><h2 style="font-size:18px;margin:0 0 10px">页面启动失败了</h2><p style="margin:0 0 14px;color:#6e7771">你的本地数据仍然保存在这台设备上，没有被清除。可以先点“重新加载”；若仍然失败，用“复制诊断信息”把详情发给开发者。</p><pre style="overflow:auto;padding:12px;border-radius:10px;background:#f3f5f2;color:#6e7771;font-size:12.5px;line-height:1.5;margin:0 0 16px">'+String((e&&e.message)||e).slice(0,300)+'</pre><div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="location.reload()" style="flex:1;min-width:120px;min-height:44px;border:0;border-radius:12px;background:#147a4b;color:#fff;font:inherit;font-weight:600;cursor:pointer">重新加载</button><button onclick="copyDiagnostics()" style="flex:1;min-width:120px;min-height:44px;border:1px solid #dfe4df;border-radius:12px;background:#fff;color:#17211b;font:inherit;cursor:pointer">复制诊断信息</button></div></div>'}
 
 
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','value','pnl','pnlPct',''];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
@@ -1200,7 +1161,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=430',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=431',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1285,8 +1246,6 @@ function hasLocalData(key){
   if(key==='cashLog')return cashLog.length>0;
   if(key==='state')return readRaw(LSKEY)!==null;
   if(key==='activities')return(JSON.parse(readRaw(ACTIVITY_KEY)||'[]')).length>0;
-  if(key==='optionTrades')return(JSON.parse(readRaw('wealth_options_v2')||'[]')).length>0;
-  if(key==='otmSettings')return readRaw('otmSettings')!==null;
   if(key==='exit_portfolio')return readRaw('exit_portfolio')!==null;
   if(key==='watchlist')return readRaw('wealth_watchlist_v1')!==null;
   return false;
@@ -1302,8 +1261,6 @@ function localValOf(key){
   if(key==='cashLog')return cashLog;
   if(key==='state')return state;
   if(key==='activities')return JSON.parse(readRaw(ACTIVITY_KEY)||'[]');
-  if(key==='optionTrades')return JSON.parse(readRaw('wealth_options_v2')||'[]');
-  if(key==='otmSettings')return JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":6}');
   if(key==='exit_portfolio')return readRaw('exit_portfolio')||'';
   if(key==='watchlist')return watchList;
   return undefined;
@@ -1314,8 +1271,6 @@ function applyCloudVal(key,val){
   else if(key==='cashLog'){cashLog=normalizeCashLogs(val);saveCashLogNoPush()}
   else if(key==='state'){state=normalizeState(val);saveStateNoPush()}
   else if(key==='activities'){LS.setItem(ACTIVITY_KEY,JSON.stringify(normalizeActivities(val)))}
-  else if(key==='optionTrades'){optionTrades=normalizeOptions(val,OPTION_SYMS);LS.setItem('wealth_options_v2',JSON.stringify(optionTrades))}
-  else if(key==='otmSettings'){if(typeof val!=='object'||!val)val={vgt:7,smh:6};LS.setItem('otmSettings',JSON.stringify(val));otmSettings=val;updateOtm()}
   else if(key==='exit_portfolio'){LS.setItem('exit_portfolio',val);var ep=document.getElementById('exitPortfolio');if(ep)ep.value=val}
   else if(key==='watchlist'){
     watchList=mergeWatchlist(watchList,val);   // 并集：云端项在前，本地独有的补上，按代码去重
@@ -1331,8 +1286,6 @@ function buildPushData(dirtyOnly){
     cashLog:function(){return cashLog},
     state:function(){return state},
     activities:function(){return JSON.parse(readRaw(ACTIVITY_KEY)||'[]')},
-    optionTrades:function(){return JSON.parse(readRaw(KEYS.options)||'[]')},
-    otmSettings:function(){return JSON.parse(readRaw('otmSettings')||'{"vgt":7,"smh":6}')},
     exit_portfolio:function(){return readRaw('exit_portfolio')||''},
     watchlist:function(){return watchList}
   },readPrices:function(){return JSON.parse(readRaw(PRICE_KEY)||'{}')}});
@@ -1350,7 +1303,7 @@ function restoreClearSnapshot(){
   showApproval({title:'撤销清除',message:'把清除前的数据恢复回来，并立即推回云端。\n\n如果清除后你又录了新数据，这段新记录会被覆盖。',confirmText:'确认恢复',danger:false,onConfirm:function(){
     var n=0;Object.keys(s.data).forEach(function(k){try{applyCloudVal(k,s.data[k]);markDirty(k);n+=1}catch(e){logSwallowed("restoreClearSnapshot",e)}});
     try{LS.removeItem(CLEAR_SNAP_KEY)}catch(e){logSwallowed("restoreClearSnapshot",e)}
-    try{initTradeIds();updatePortfolio();updateSidebar();renderCashLog();updateAllO();updateOtm();renderActivity()}catch(e){logSwallowed("restoreClearSnapshot",e)}
+    try{initTradeIds();updatePortfolio();updateSidebar();renderCashLog();renderActivity()}catch(e){logSwallowed("restoreClearSnapshot",e)}
     hideClearUndoBar();
     showToast('已恢复清除前的数据，正在同步回云端','ok');
     pushSoon(300);
@@ -1409,7 +1362,7 @@ function openSnapshotSheet(){
       var row=document.createElement('div');row.className='snapshot-row';
       var meta=document.createElement('div');meta.className='snapshot-meta';
       var b=document.createElement('b');b.textContent=when;
-      var small=document.createElement('small');small.textContent=(sum.trades||0)+' 笔交易 · '+(sum.options||0)+' 个期权 · 现金 '+fmtFull(Number(sum.cash)||0);
+      var small=document.createElement('small');small.textContent=(sum.trades||0)+' 笔交易 · 现金 '+fmtFull(Number(sum.cash)||0);
       meta.appendChild(b);meta.appendChild(small);
       var btn=document.createElement('button');btn.type='button';btn.className='btn btn-out btn-sm';btn.textContent='恢复';
       btn.addEventListener('click',function(){confirmRestoreSnapshot(s.id)});
@@ -1424,11 +1377,11 @@ function clearAllData(){
      旧写法让非主账号（localStorage 里没有历史 token）走进"只清本机"分支，
      云端数据原样保留，重载后又被拉回来，表现就是"点了没反应"。 */
   showApproval({title:'清除全部数据',message:'确定清除本地与云端的全部投资数据？\n\n请先确认已导出完整备份。云端清除成功后才会清理本机。\n\n（误删可在 24 小时内用底部横条一键撤销）',confirmText:'清除全部',holdMs:3000,onConfirm:function(){
-  var empty={trades:[],cashBalance:0,cashLog:[],state:{},activities:[],optionTrades:[],otmSettings:{},exit_portfolio:'',prices:{}};
+  var empty={trades:[],cashBalance:0,cashLog:[],state:{},activities:[],exit_portfolio:'',prices:{}};
   /* v305 方案A：先留一份快照，万一误删能一键撤回（24 小时有效） */
   try{var snap={ts:Date.now(),data:{}};SYNC_KEYS.forEach(function(k){try{snap.data[k]=localValOf(k)}catch(e){logSwallowed("clearAllData",e)}});LS.setItem(CLEAR_SNAP_KEY,JSON.stringify(snap))}catch(e){logSwallowed("clearAllData",e)}
   var clearLocal=function(){
-    ['wealth_trades_v2','wealth_cash_v2','wealth_cashlog_v2','wealth_dashboard_v2','wealth_activity_v1','wealth_options_v2','otmSettings','exit_portfolio','wealth_prices_v2','wealth_sync_state','lastBackupTime','wealth_alert_snooze_v1'].forEach(function(k){try{removeKey(k)}catch(e){logSwallowed("clearAllData",e)}});
+    ['wealth_trades_v2','wealth_cash_v2','wealth_cashlog_v2','wealth_dashboard_v2','wealth_activity_v1','exit_portfolio','wealth_prices_v2','wealth_sync_state','lastBackupTime','wealth_alert_snooze_v1'].forEach(function(k){try{removeKey(k)}catch(e){logSwallowed("clearAllData",e)}});
     location.reload();
   };
   showToast('正在清除云端数据');
@@ -1451,7 +1404,7 @@ function showSyncConflict(conflicts,pendingCloud){
   setSyncConflicts(conflicts);
   openConflictModal({doc:document,conflicts:conflicts,labels:SYNC_KEY_LABELS,
     onAllLocal:function(modal){var payload={};try{SYNC_KEYS.forEach(function(k){payload[k]=localValOf(k)})}catch(e){logSwallowed("showSyncConflict",e)}showBusyToast('正在以本机数据覆盖云端');syncFetchWithoutHealth('POST',payload).then(function(){conflicts.forEach(function(k){try{clearDirty(k)}catch(e){logSwallowed("showSyncConflict",e)}});var st=loadSyncState();st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);modal.remove();showToast('已用本机数据覆盖云端','ok');renderSyncHealth()}).catch(function(e){showToast('上传失败：'+(e&&e.message?e.message:'未知错误'),'err')})},
-    onConfirm:function(modal,picks){var applied=[],kept=[];conflicts.forEach(function(k){if(picks[k]==='cloud'){applyCloudVal(k,pendingCloud[k]);clearDirty(k);applied.push(k)}else{markDirty(k);kept.push(k)}});setSyncConflicts([]);modal.remove();if(applied.length){initTradeIds();updatePortfolio();updateSidebar();renderCashLog();updateAllO();updateOtm();showToast('已使用云端: '+applied.map(function(k){return SYNC_KEY_LABELS[k]||k}).join(', '),'ok');autoPushDebounce()}if(kept.length)pushKeysForce(kept,'已用本机数据覆盖云端');else if(!applied.length)showToast('已保留本地数据','ok')}})
+    onConfirm:function(modal,picks){var applied=[],kept=[];conflicts.forEach(function(k){if(picks[k]==='cloud'){applyCloudVal(k,pendingCloud[k]);clearDirty(k);applied.push(k)}else{markDirty(k);kept.push(k)}});setSyncConflicts([]);modal.remove();if(applied.length){initTradeIds();updatePortfolio();updateSidebar();renderCashLog();showToast('已使用云端: '+applied.map(function(k){return SYNC_KEY_LABELS[k]||k}).join(', '),'ok');autoPushDebounce()}if(kept.length)pushKeysForce(kept,'已用本机数据覆盖云端');else if(!applied.length)showToast('已保留本地数据','ok')}})
 }
 
 function stableStr(v){if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';if(v&&typeof v==='object'){return '{'+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+':'+stableStr(v[k])}).join(',')+'}'}return JSON.stringify(v)}var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg||!syncCfg.url)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,700)}
@@ -1473,12 +1426,12 @@ function flushDirtyOnHide(){try{if(!syncCfg||!syncCfg.url)return;var st=loadSync
 
 /* v316：网络恢复（VPN 重连、切回 WiFi）时自动补一次同步，不用等下一次打开 */
 window.addEventListener('online',function(){try{autoPull();pushPendingSoon(300)}catch(e){logSwallowed("syncOnline",e)}});
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200);refreshQuotesIfStale();refreshCcAlerts();refreshMaCrossEvents(false)}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200);refreshQuotesIfStale();updateAlerts()}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;
 function autoPush(){if(pushInFlight){pushQueued=true;return}var data=buildPushData(true);if(shouldSkipPush(data,SYNC_KEYS))return;pushInFlight=true;var finish=function(){pushInFlight=false;if(pushQueued){pushQueued=false;setTimeout(autoPush,60)}};syncPushImpl(data).then(finish,finish)}/* v312 撤掉"先问版本号再拉全文"的两段式：数据只有 5KB，省下的下载量抵不过多出来的一轮往返（实测慢网络下会把同步拖到 20 秒以上）。现在打开就是一次 GET，和以前一样。 */function autoPull(){if(!syncCfg.url)return;syncFetch('GET').then(function(r){if(!r.data)return;var meta=r.meta||{};var ss=loadSyncState();var conflicts=[],pendingCloud={},pulled=[];var plan=planPullSync({keys:SYNC_KEYS,cloudData:r.data,meta:meta,state:ss,normalizeTs:normalizeSyncTs,hasCloud:hasCloudData,hasLocal:hasLocalData,isEmptyCloud:isEmptyCloudVal,equal:function(key){return syncContentEqual(key,localValOf(key),r.data[key],normalizeState)}});
 var conflicts=plan.conflicts,pendingCloud=plan.pendingCloud,pulled=plan.applies;
 plan.applies.forEach(function(key){applyCloudVal(key,r.data[key])});
 ss.dirty=plan.dirty;ss.cloudTs=plan.cloudTs;saveSyncState(ss);
-  if(r.data.prices){var lp=readPriceCache();var pm=mergePullPrices({cloud:r.data.prices,cache:lp,live:liveQuoteData});if(pm.changed){for(var pk in pm.patch)lp[pk]=pm.patch[pk];try{LS.setItem(PRICE_KEY,JSON.stringify(lp))}catch(e){logSwallowed("autoPull:prices",e)}for(var pv in pm.livePrices)livePrices[pv]=pm.livePrices[pv]}}initTradeIds();updatePortfolio();updateSidebarPrices();updateSidebar();renderCashLog();updateAllO();renderActivity();if(pulled.length){var _sl={trades:'交易记录',cashBalance:'现金余额',cashLog:'资金流水',state:'投资参数',activities:'操作日志',optionTrades:'期权持仓',otmSettings:'OTM设置',exit_portfolio:'退出策略',watchlist:'观察列表'};showToast('☁️ 已从云端同步：'+pulled.map(function(k){return _sl[k]||k}).join('·'),'ok')};if(conflicts.length)showSyncConflict(conflicts,pendingCloud)}).catch(function(){})}function saveTradesNoPush(){try{LS.setItem(TRADE_KEY,JSON.stringify(trades))}catch(e){console.error("保存交易记录失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function saveCashNoPush(){try{LS.setItem(CB_KEY,cashBalance.toString())}catch(e){console.error("保存现金余额失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function saveCashLogNoPush(){try{LS.setItem(CLOG_KEY,JSON.stringify(cashLog))}catch(e){console.error("保存现金流水失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function saveStateNoPush(){try{LS.setItem(LSKEY,JSON.stringify(state))}catch(e){console.error("保存投资参数失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function syncPushImpl(data){return syncFetch('POST',data).then(function(r){var el=document.getElementById('syncStatus');if(el){el.textContent='已上传 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}Object.keys(data).forEach(function(k){if(SYNC_KEYS.indexOf(k)>=0){clearDirty(k);setCloudTs(k,(r.ts||Date.now()))}})}).catch(function(error){if(error&&error.status===409){healPushConflict(data);return}/* 其它失败（断网 / 401 / 429 / 5xx）以前完全静默，用户会以为"已经同步了"；现在明确提示，dirty 保留等重试 */var st=syncFailureText(error,(typeof navigator!=='undefined'&&navigator.onLine===false));try{setSyncBar('err',st)}catch(e){logSwallowed("syncPushImpl",e)}try{if(!window.__syncErrAt||Date.now()-window.__syncErrAt>60000){window.__syncErrAt=Date.now();showToast(st,'err')}}catch(e){logSwallowed("syncPushImpl",e)}})} var SYNC_KEY=KEYS.syncConfig;var syncCfg=loadSyncCfg();
+  if(r.data.prices){var lp=readPriceCache();var pm=mergePullPrices({cloud:r.data.prices,cache:lp,live:liveQuoteData});if(pm.changed){for(var pk in pm.patch)lp[pk]=pm.patch[pk];try{LS.setItem(PRICE_KEY,JSON.stringify(lp))}catch(e){logSwallowed("autoPull:prices",e)}for(var pv in pm.livePrices)livePrices[pv]=pm.livePrices[pv]}}initTradeIds();updatePortfolio();updateSidebarPrices();updateSidebar();renderCashLog();renderActivity();if(pulled.length){var _sl={trades:'交易记录',cashBalance:'现金余额',cashLog:'资金流水',state:'投资参数',activities:'操作日志',exit_portfolio:'退出策略',watchlist:'观察列表'};showToast('☁️ 已从云端同步：'+pulled.map(function(k){return _sl[k]||k}).join('·'),'ok')};if(conflicts.length)showSyncConflict(conflicts,pendingCloud)}).catch(function(){})}function saveTradesNoPush(){try{LS.setItem(TRADE_KEY,JSON.stringify(trades))}catch(e){console.error("保存交易记录失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function saveCashNoPush(){try{LS.setItem(CB_KEY,cashBalance.toString())}catch(e){console.error("保存现金余额失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function saveCashLogNoPush(){try{LS.setItem(CLOG_KEY,JSON.stringify(cashLog))}catch(e){console.error("保存现金流水失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function saveStateNoPush(){try{LS.setItem(LSKEY,JSON.stringify(state))}catch(e){console.error("保存投资参数失败:",e);showToast("保存失败，请导出数据后清理旧记录","err")}}function syncPushImpl(data){return syncFetch('POST',data).then(function(r){var el=document.getElementById('syncStatus');if(el){el.textContent='已上传 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});el.style.color='var(--accent)'}Object.keys(data).forEach(function(k){if(SYNC_KEYS.indexOf(k)>=0){clearDirty(k);setCloudTs(k,(r.ts||Date.now()))}})}).catch(function(error){if(error&&error.status===409){healPushConflict(data);return}/* 其它失败（断网 / 401 / 429 / 5xx）以前完全静默，用户会以为"已经同步了"；现在明确提示，dirty 保留等重试 */var st=syncFailureText(error,(typeof navigator!=='undefined'&&navigator.onLine===false));try{setSyncBar('err',st)}catch(e){logSwallowed("syncPushImpl",e)}try{if(!window.__syncErrAt||Date.now()-window.__syncErrAt>60000){window.__syncErrAt=Date.now();showToast(st,'err')}}catch(e){logSwallowed("syncPushImpl",e)}})} var SYNC_KEY=KEYS.syncConfig;var syncCfg=loadSyncCfg();
 /* token 退役：登录后就用自己这台的站点同步，不需要再填任何东西 */
 if(!syncCfg.url){syncCfg.url=location.origin;try{saveSyncCfg()}catch(e){logSwallowed("defaultSyncCfg",e)}}function loadSyncCfg(){return parseSyncConfig(readRaw(SYNC_KEY))}function saveSyncCfg(){try{LS.setItem(SYNC_KEY,JSON.stringify(syncCfg))}catch(e){console.error("保存同步配置失败:",e)}}/* v316：同步请求硬超时 —— 网络黑洞时（VPN 掉线 / SNI 被拦）fetch 可能永远不返回，
    没有超时的话状态条就永远等不到结局，"连不上"会被翻译成一直"正在下载"。
@@ -1601,236 +1554,12 @@ function doCSVImport(file){
 
 
 
-/* === Covered Call === */
-var optionTrades=[];
-function loadOpt(){try{var raw=JSON.parse(readRaw(KEYS.options)||"[]"),opts=normalizeOptions(raw,OPTION_SYMS);if(stableStr(raw)!==stableStr(opts))LS.setItem(KEYS.options,JSON.stringify(opts));return opts}catch(e){return[]}}
-function saveOpt(){optionTrades=normalizeOptions(optionTrades,OPTION_SYMS);LS.setItem(KEYS.options,JSON.stringify(optionTrades));markDirty('optionTrades');autoPushDebounce()}
-optionTrades=loadOpt();
-function updateAllO(){if(!trades||!trades.forEach||!livePrices)return;var nowInstant=new Date();optionTrades=loadOpt();Object.keys(LEG_METRIC_IDS).forEach(function(sym){var sh=0;trades.forEach(function(t){if(t.symbol===sym)sh+=Number(t.shares)||0});var calls=optionTrades.filter(function(o){return o.sym===sym&&o.type==="CALL"&&isActiveOption(o,nowInstant)}).reduce(function(s,o){return s+(o.contracts||1)},0);var ids=LEG_METRIC_IDS[sym];var se=document.getElementById(ids[0]);if(se)se.textContent=sh+" 股";var ce=document.getElementById(ids[1]);if(ce)ce.textContent="可卖 "+Math.max(0,freeCallContracts(sh,calls))+" 张CALL"});var re=document.getElementById("ore");if(re){var thisM=marketDate(nowInstant).slice(0,7);optionTrades=loadOpt();var m=optionTrades.filter(function(o){return o.added&&o.added.slice(0,7)===thisM}).reduce(function(s,o){return s+(o.premium||0)*(o.contracts||1)},0);re.textContent=fmtFull(m)}renderOpt();updatePnLOpt();updateOptStatus();}var showArchivedOpt=false;function toggleArchivedOpt(){showArchivedOpt=!showArchivedOpt;renderOpt()}
-function renderOpt(){
-var el=document.getElementById("holdingsBody");if(!el)return;
-optionTrades=loadOpt();var nowInstant=new Date();
-/* 被行权概率并入持仓表（v329）：原先"被行权概率"卡里另有一张活跃持仓表，和这张完全重复。
-   现在只在这里算一次，按 option.id 映射；期权链没到就整列不显示。 */
-var optProbById={};
-try{
-  OPTION_SYMS.forEach(function(sym){
-    var ch=chainFor(sym);if(!ch)return;
-    optionProbabilities(ch,optionTrades,{chains:optionChains}).forEach(function(r){if(r.prob!=null)optProbById[r.id]=r.prob});
-  });
-}catch(e){logSwallowed("optProbById",e)}
-if(!optionTrades.length){el.innerHTML='<tr><td colspan="8" style="padding:12px 0">'+emptyStateHTML({title:'暂无期权持仓',hint:'录入一笔 Covered Call 后会显示在这里',compact:true})+'</td></tr>';return}
-var archivedCount=optionTrades.filter(function(o){return o.archived}).length;
-var visible=showArchivedOpt?optionTrades.slice():optionTrades.filter(function(o){return !o.archived});
-if(!visible.length&&archivedCount>0){showArchivedOpt=true;visible=optionTrades.slice()}
-var sorted=visible.sort(function(a,b){if(!a.settled&&b.settled)return -1;if(a.settled&&!b.settled)return 1;var ae=a.expiry||'9999',be=b.expiry||'9999';if(ae!==be)return ae.localeCompare(be);return a.type==='CALL'?-1:1});
-var rows=sorted.map(function(o){var i=optionTrades.indexOf(o);var oid=o.id;
-var exp=o.expiry||"",cp=livePrices[o.sym]||0,st=optionRowStatus(o,{now:nowInstant,spot:cp}),isExpired=st.expired,daysLeft=st.days,status="<span class=\"opt-status is-"+st.statusKind+"\">"+st.statusText+"</span>"+(optProbById[o.id]!=null?"<span class=\"opt-prob\">被行权 "+fmtProb(optProbById[o.id])+"</span>":""),distD=st.distancePct;var distHtml=distD==null?"":"<span class=\"opt-dist "+(distD>=0?"is-otm":"is-itm")+"\">距现价 "+(distD>=0?"+":"")+distD.toFixed(1)+"%</span>";return "<tr class=\"opt-row"+(isExpired?" is-done":"")+"\"><td data-cell=\"sym\" class=\"opt-sym\"><b>"+o.sym+"</b></td><td data-cell=\"type\"><span class=\"opt-type "+(o.type==="CALL"?"is-call":"is-put")+"\">"+o.type+"</span></td><td data-cell=\"strike\" class=\"opt-strike\">$"+o.strike.toFixed(2)+"</td><td data-cell=\"premium\">"+fmtFull(o.premium||0)+"</td><td data-cell=\"contracts\">"+(o.contracts||1)+"张</td><td data-cell=\"expiry\" class=\"opt-expiry\">"+exp+"</td><td data-cell=\"status\">"+status+"</td><td data-cell=\"actions\" class=\"opt-foot\">"+distHtml+"<span class=opt-actions><button class=\"opt-del\" onclick=delOpt(\x27"+oid+"\x27)>"+(o.archived?"恢复":o.settled?"归档":"X")+"</button>"+(st.canAssign?"<button class=\"opt-assign\" onclick=assignOpt(\x27"+oid+"\x27)>行权</button>":"")+(st.canSettle?"<button class=\"opt-settle\" onclick=settleOpt(\x27"+oid+"\x27)>结算</button>":"")+"</span></td></tr>"
-;}).join("");
-if(archivedCount>0){rows+="<tr><td colspan=8 style=text-align:center;padding:4px><button class=\"opt-toggle\" onclick='toggleArchivedOpt()'>"+(showArchivedOpt?"📁 隐藏已归档":"📁 显示已归档 "+archivedCount+" 个")+"</button></td></tr>"}el.innerHTML=rows}
-function showBusyToast(msg){
-  var t=document.getElementById('syncToast');
-  if(!t)return;
-  clearTimeout(t._timer);
-  t.onclick=null;
-  t.style.pointerEvents='auto';
-  t.className='sync-toast busy show';
-  t.innerHTML='<span class="ds-spinner" aria-hidden="true"></span><span></span>';
-  t.lastElementChild.textContent=msg;
-}
-
-/**
- * 底部面板的"下拉关闭"：跟手位移，松手时超过阈值或快速下滑就关。
- * 原生 sheet 的手感基本就靠这一条 —— 之前只能点遮罩或按钮。
- */
-function enableSheetDrag(panel, onClose){
-  if(!panel||panel.dataset.dragReady)return;
-  panel.dataset.dragReady='1';
-  var startY=0,dy=0,active=false,t0=0;
-  function reset(){
-    panel.style.transition='';
-    panel.style.transform='';
-  }
-  panel.addEventListener('pointerdown',function(e){
-    // 面板里可点的控件不参与拖拽（否则点按钮会变成拖拽）
-    if(e.target.closest('input,textarea,button,select,a,label'))return;
-    active=true;startY=e.clientY;dy=0;t0=Date.now();
-    panel.style.transition='none';
-  });
-  panel.addEventListener('pointermove',function(e){
-    if(!active)return;
-    dy=Math.max(0,e.clientY-startY);
-    panel.style.transform='translateY('+dy+'px)';
-  });
-  function end(){
-    if(!active)return;
-    active=false;
-    var fast=(Date.now()-t0)<450;
-    if(dy>110||(fast&&dy>56)){panel.style.transform='translateY(102%)';onClose();}
-    else reset();
-  }
-  panel.addEventListener('pointerup',end);
-  panel.addEventListener('pointercancel',end);
-}
-function showApproval(opts){
-  var o=opts||{};
-  var existing=document.getElementById('approvalModal');
-  if(existing)existing.remove();
-  var modal=document.createElement('div');
-  modal.id='approvalModal';
-  modal.className='ds-approval';
-  modal.innerHTML='<div class="ds-approval-card" role="dialog" aria-modal="true" aria-labelledby="approvalTitle"><div class="ds-approval-body"><strong class="ds-approval-title" id="approvalTitle"></strong><p class="ds-approval-text"></p></div><div class="ds-approval-actions"><button type="button" class="ds-approval-btn" data-act="cancel"></button><button type="button" class="ds-approval-btn ds-approval-danger" data-act="ok"></button></div></div>';
-  modal.querySelector('.ds-approval-title').textContent=o.title||'请确认';
-  modal.querySelector('.ds-approval-text').textContent=o.message||'';
-  var cancelBtn=modal.querySelector('[data-act="cancel"]'),okBtn=modal.querySelector('[data-act="ok"]');
-  cancelBtn.textContent=o.cancelText||'取消';
-  okBtn.textContent=o.confirmText||'确认';
-  if(o.danger===false)okBtn.className='ds-approval-btn';
-  var closed=false;
-  /* v321：记住弹层打开前的焦点，关闭后还回去 —— 否则键盘/读屏用户关掉弹层就"失位"了 */
-  var prevFocus=document.activeElement;
-  function close(){
-    if(closed)return;
-    closed=true;
-    modal.classList.remove('show');
-    if(modal.parentNode)modal.parentNode.removeChild(modal);
-    document.removeEventListener('keydown',onKey);
-    try{if(prevFocus&&prevFocus!==document.body&&prevFocus.isConnected&&typeof prevFocus.focus==='function')prevFocus.focus()}catch(e){logSwallowed("showApproval",e)}
-  }
-  function onKey(e){
-    if(e.key==='Escape'){e.preventDefault();close();return}
-    if(e.key==='Tab'){
-      /* v321：焦点陷阱 —— 别让 Tab 跑到背后的页面上（键盘用户会看不见自己在操作谁） */
-      var items=Array.prototype.slice.call(modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter(function(el){return !el.disabled});
-      if(!items.length)return;
-      var first=items[0],last=items[items.length-1],active=document.activeElement;
-      if(e.shiftKey&&active===first){e.preventDefault();last.focus()}
-      else if(!e.shiftKey&&active===last){e.preventDefault();first.focus()}
-      else if(items.indexOf(active)<0){e.preventDefault();first.focus()}
-    }
-  }
-  cancelBtn.addEventListener('click',close);
-  if(o.holdMs){
-    /* v305 方案C：危险操作要按住 holdMs 才生效，手滑点一下不会执行 */
-    var sec=Math.round(o.holdMs/1000);
-    okBtn.textContent=(o.confirmText||'确认')+'（长按 '+sec+' 秒）';
-    var held=false,holdTimer=null,raf=null,startAt=0;
-    var resetHold=function(){held=false;startAt=0;if(holdTimer){clearTimeout(holdTimer);holdTimer=null}if(raf){cancelAnimationFrame(raf);raf=null}okBtn.style.setProperty('--hold-pct','0%');okBtn.classList.remove('is-holding')};
-    var tick=function(){if(!held)return;var p=Math.min(1,(Date.now()-startAt)/o.holdMs);okBtn.style.setProperty('--hold-pct',(p*100).toFixed(1)+'%');if(p<1)raf=requestAnimationFrame(tick)};
-    var fire=function(){resetHold();close();if(typeof o.onConfirm==='function')o.onConfirm()};
-    var startHold=function(e){if(e&&e.preventDefault)e.preventDefault();held=true;startAt=Date.now();okBtn.classList.add('is-holding');okBtn.style.setProperty('--hold-pct','0%');clearTimeout(holdTimer);holdTimer=setTimeout(fire,o.holdMs);raf=requestAnimationFrame(tick)};
-    okBtn.addEventListener('pointerdown',startHold);
-    okBtn.addEventListener('pointerup',resetHold);
-    okBtn.addEventListener('pointercancel',resetHold);
-    okBtn.addEventListener('pointerleave',resetHold);
-    /* v321：键盘也必须"按住"——以前是 keydown 阻止默认 + keyup 直接 fire()，
-       等于键盘一次按键就执行了本该长按的破坏性操作（读屏用户常用 Enter/Space 激活按钮）。 */
-    okBtn.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){if(!held)startHold(e)}});
-    okBtn.addEventListener('keyup',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();resetHold()}});
-  }else{
-    okBtn.addEventListener('click',function(){close();if(typeof o.onConfirm==='function')o.onConfirm()});
-  }
-  modal.addEventListener('click',function(e){if(e.target===modal)close()});
-  enableSheetDrag(modal.querySelector('.ds-approval-card'),close);
-  document.addEventListener('keydown',onKey);
-  document.body.appendChild(modal);
-  haptic('warning');
-  requestAnimationFrame(function(){modal.classList.add('show')});
-  cancelBtn.focus();
-  return modal;
-}
-
-var dsSearchQuery="";
-function applyTableSearch(){var q=dsSearchQuery.trim().toLowerCase(),total=0,matched=0,first=null;['holdBody','tradeBody','cashLogBody'].forEach(function(id){var tb=document.getElementById(id);if(!tb)return;[].forEach.call(tb.querySelectorAll('tr'),function(tr){if(tr.querySelector('.table-empty')||tr.querySelector('.ds-empty'))return;total++;var hit=matchRowText(tr.textContent,q);tr.style.display=hit?'':'none';tr.classList.toggle('is-hidden-row',!hit);if(hit){matched++;if(!first&&q)first=tr}})});var counter=document.getElementById('dsSearchCount');if(counter)counter.textContent=searchCountText(matched,q);var clearBtn=document.getElementById('dsSearchClear');if(clearBtn)clearBtn.hidden=!q;var tip=document.getElementById('dsSearchEmpty');if(tip)tip.hidden=!(q&&matched===0);if(q&&first){first.classList.add('is-search-hit');setTimeout(function(){first.classList.remove('is-search-hit')},1200);if(!first._jumpLock){first._jumpLock=true;try{first.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){first.scrollIntoView()}setTimeout(function(){first._jumpLock=false},1400)}}}
-function initTableSearch(){
-  var input=document.getElementById("dsSearchInput");
-  if(!input)return;
-  var timer=null;
-  input.addEventListener("input",function(){clearTimeout(timer);var v=input.value;timer=setTimeout(function(){dsSearchQuery=v;applyTableSearch()},120)});
-  input.addEventListener("keydown",function(e){if(e.key==="Escape"){input.value="";dsSearchQuery="";applyTableSearch()}});
-  var clearBtn=document.getElementById("dsSearchClear");
-  if(clearBtn)clearBtn.addEventListener("click",function(){input.value="";dsSearchQuery="";applyTableSearch();input.focus()});
-  ["holdBody","tradeBody","cashLogBody"].forEach(function(id){
-    var tb=document.getElementById(id);
-    if(tb&&window.MutationObserver)new MutationObserver(function(){applyTableSearch()}).observe(tb,{childList:true});
-  });
-  applyTableSearch();
-}
-if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initTableSearch)}else{initTableSearch()}
-
-var RECORD_SEG_KEY=KEYS.recordsSegment;
-function setRecordSegment(seg,persist){
-  var groups=document.querySelectorAll(".record-group");
-  if(!groups.length)return;
-  [].forEach.call(groups,function(g){g.classList.toggle("active",g.getAttribute("data-group")===seg)});
-  [].forEach.call(document.querySelectorAll("#recordSeg .record-seg"),function(b){
-    var on=b.getAttribute("data-seg")===seg;
-    b.classList.toggle("active",on);
-    b.setAttribute("aria-selected",on?"true":"false");
-  });
-  if(persist!==false){try{LS.setItem(RECORD_SEG_KEY,seg)}catch(e){logSwallowed("setRecordSegment",e)}}
-}
-function initRecordSegment(){
-  var seg=document.getElementById("recordSeg");
-  if(!seg)return;
-  seg.addEventListener("click",function(e){
-    var b=e.target&&e.target.closest?e.target.closest(".record-seg"):null;
-    if(!b)return;
-    setRecordSegment(b.getAttribute("data-seg"));
-  });
-  var saved="data";
-  try{saved=readRaw(RECORD_SEG_KEY)||"data"}catch(e){logSwallowed("initRecordSegment",e)}
-  setRecordSegment(saved,false);
-}
-if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initRecordSegment)}else{initRecordSegment()}
-
-
-function updatePnLOpt(){
-var nowInstant=new Date(),now=marketDate(nowInstant),thisM=now.slice(0,7);
-optionTrades=loadOpt();
-var tot=optionTotals(optionTrades,{now:nowInstant,ym:thisM}),month=tot.month,total=tot.total;
-var me=document.getElementById("mrev"),te=document.getElementById("trev");
-if(me)me.textContent=fmtFull(month);if(te)te.textContent=fmtFull(total);var cc=document.getElementById('ccMonthly'),cs=document.getElementById('ccSub'),ca=document.getElementById('ccActive'),cn=document.getElementById('ccNearest');if(cc)cc.textContent=fmtFull(month);if(cs)cs.textContent=tot.callsThisMonth+' 张 CALL · 复投核心仓';if(ca)ca.textContent=String(tot.activeCount);if(cn){cn.textContent=tot.nearest?('最近 '+tot.nearest.expiry.slice(5)+' · '+tot.nearest.sym+' $'+tot.nearest.strike.toFixed(0)):'暂无待到期期权'}
-}
-function updateOptStatus(){var el=document.getElementById("optStatus");if(!el)return;var nowInstant=new Date();optionTrades=loadOpt();var active=optionTrades.filter(function(o){return isActiveOption(o,nowInstant)});if(!active.length){el.innerHTML="无活跃持仓";return}el.innerHTML=active.map(function(o){var st=optionRowStatus(o,{now:nowInstant,spot:livePrices[o.sym]||0});var d=st.days;var itm=st.itm;var icon=itm?"🔵":"🟢";var txt=itm?"已实值":"虚值";return "<div style=display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--rule)><span>"+icon+"</span><div style=flex:1><b>"+o.sym+"</b> "+o.type+" @$"+o.strike.toFixed(0)+" x"+(o.contracts||1)+"</div><div style=font-size:11.5px;color:"+(itm?"var(--blue)":"var(--accent)")+">"+txt+" · "+d+"天</div></div>";}).join("");}function delOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o)return;if(o.archived){o.archived=false;saveOpt();updateAllO();showToast("已恢复 "+o.sym+" @$"+o.strike.toFixed(2),"ok");return}if(o.settled){o.archived=true;saveOpt();updateAllO();showToast("已归档 "+o.sym+" @$"+o.strike.toFixed(2)+" · 权利金统计保留","ok");return}var pb=(o.premium||0)*(o.contracts||1);/* v384：连带删掉那条权利金流水，现金只动这一次。老写法是"再写一条 权利金退回-X"，而原来那条 权利金+X 还留着 —— 用户跟着删掉那条孤儿流水就会退第二次。 */var _opd=planOptionDelete(o,cashLog);if(_opd.matched){cashLog=_opd.kept;cashBalance+=_opd.cashDelta;saveCash();saveCashLog();addActivity("删除期权 "+o.sym+" · 连带撤销权利金流水 "+fmtFull(pb))}else if(pb>0){addActivity("删除期权 "+o.sym+" · 没找到对应权利金流水，未动现金")}optionTrades.splice(i,1);saveOpt();pushNow();updateAllO();showToast("已删除 "+o.sym+" @$"+o.strike.toFixed(2)+(pb>0?",退回 "+fmtFull(pb):""),"ok")}function assignOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o||o.type!=="CALL")return;var contracts=o.contracts||1;var need=contracts*100;var held=0;trades.forEach(function(t){if(t.symbol===o.sym)held+=t.shares});if(need>held){alert("持仓不足！\n持有："+held.toFixed(0)+"股\n行权需要："+need+"股");return}var recDate=(o.expiry&&o.expiry<=marketDate())?o.expiry:marketDate();var msg="将以 $"+o.strike.toFixed(2)+" 卖出 "+contracts+"张CALL对应的 "+(contracts*100)+" 股 "+o.sym+"\n\n权利金已在卖CALL时入账，无需重复记录。\n\n记账日期：\n"+recDate+"（到期日；提前行权则记今天）";if(!confirm(msg))return;trades.push({id:tradeIdCounter++,symbol:o.sym,date:recDate,time:marketClock(),shares:-(contracts*100),price:o.strike,tag:'assign'});saveTrades();initTradeIds();o.settled=true;saveOpt();updateAllO();updatePortfolio();updateSidebar();updateSidebarPrices();updateTradeList();addActivity('CALL行权 '+o.sym+'×'+contracts+'张 @$'+o.strike.toFixed(2));showToast("已标记行权: "+o.sym+" @$"+o.strike.toFixed(2)+" x"+contracts,"ok")}function settleOpt(id){var i=optionTrades.findIndex(function(x){return x.id==id});if(i<0)return;var o=optionTrades[i];if(!o)return;if(!confirm("确认到期结算 "+o.sym+" "+o.type+" @$"+o.strike.toFixed(2)+" x"+(o.contracts||1)+"张?\n\n权利金已在卖CALL时入账，到期未行权无需其他操作。"))return;o.settled=true;saveOpt();updateAllO();addActivity('CALL到期 '+o.sym+'×'+(o.contracts||1)+'张 @$'+o.strike.toFixed(2));showToast("已到期结算: "+o.sym,"ok")}
-document.getElementById("btnAddOption").addEventListener("click",function(){
-var t=document.getElementById("otype").value;
-var s=document.getElementById("osym").value;
-var k=parseFloat(document.getElementById("ostrike").value||0);
-var p=parseFloat(document.getElementById("opremium").value||0);
-var e=document.getElementById("oexpiry").value;
-var c=parseInt(document.getElementById("ocontracts").value||1);
-if(!t)return formError('请选择期权类型','otype');if(!s)return formError('请选择标的','osym');if(!k||k<=0)return formError('请填写行权价','ostrike');if(isNaN(p)||p<0)return formError('请填写有效的权利金','opremium');if(!e)return formError('请选择到期日','oexpiry');if(isNaN(c)||c<1)c=1;if(t==='CALL'){try{var heldShares=0;trades.forEach(function(tr){if(tr.symbol===s)heldShares+=Number(tr.shares)||0});var needShares=(Number(c)||1)*100;if(heldShares<needShares){showToast('提醒：卖 '+c+' 张 CALL 通常需要 '+needShares+' 股 '+s+'，当前 '+heldShares.toFixed(2)+' 股（仍会记录）','err')}}catch(e){logSwallowed("settleOpt",e)}}
-/* 到期日校验（v326）：拿市场真实挂牌的到期日对一遍。VGT 只有月度（第三个周五），
-   输一个周三的日期是很可能手滑——给提示但**不阻止**记录（行情拿不到时也照记）。 */
-try{
-  var _chkChain=chainFor(s);
-  if(_chkChain&&_chkChain.expiries&&_chkChain.expiries.length&&!_chkChain.expiries.some(function(x){return x.date===e})){
-    var _near=_chkChain.expiries.slice().sort(function(a,b){return Math.abs(Date.parse(a.date)-Date.parse(e))-Math.abs(Date.parse(b.date)-Date.parse(e))})[0];
-    showToast('提醒：'+s+' 在 '+e+' 没有挂牌到期日'+(e.slice(0,7)===_near.date.slice(0,7)?'（该月是 '+_near.date+'）':('，最近的是 '+_near.date))+'（仍会记录）','err');
-  }
-}catch(e2){logSwallowed("optExpiryCheck",e2)}
-var premiumTotal=p*(c||1);var optObj={id:Date.now(),sym:s,type:t,strike:k,premium:p,expiry:e,contracts:c,added:marketDate()};optionTrades.push(optObj);if(typeof closeOptSheet==="function")closeOptSheet();addActivity('卖'+t+'开仓 '+s+'×'+c+'张 @$'+k+' 💰$'+p);
-cashBalance+=premiumTotal;saveCash();cashLog.push({id:Date.now(),date:marketDate(),time:marketClock(),type:"权利金+"+s,amount:premiumTotal});saveCashLog();saveOpt();updateSidebar();document.getElementById("ostrike").value="";document.getElementById("opremium").value="";updateAllO();
-var cc=document.getElementById("ccMonthly"),cs=document.getElementById("ccSub");
-if(cc&&cs){var nw=marketDate(),tm=nw.slice(0,7),ccTotal=0,ccCount=0;
-optionTrades.forEach(function(o){if(o.type==="CALL"&&o.added&&o.added.slice(0,7)===tm){ccTotal+=(o.premium||0)*(o.contracts||1);ccCount++}});
-cc.textContent=fmtFull(ccTotal);cs.textContent=ccCount+" 张CALL · 复投核心仓"}
-});
-var __us=updateSidebar;updateSidebar=function(){__us();
-var sh=document.getElementById("sbOptHoldings");
-if(sh&&typeof optionTrades!=="undefined"){
-var nowInstant=new Date();
-var ac=optionTrades.filter(function(o){return isActiveOption(o,nowInstant)});
-if(!ac.length){sh.innerHTML=emptyStateHTML({title:'暂无期权持仓',compact:true})}
-else{sh.innerHTML=ac.map(function(o){var d=optionExpiryState(o.expiry,nowInstant).days;return '<div class="sb-option-line"><span><b>'+escapeHtml(o.sym)+'</b> '+escapeHtml(o.type)+' $'+Number(o.strike||0).toFixed(0)+' ×'+(o.contracts||1)+'</span><strong>'+d+'天</strong></div>'}).join("")}
-}
-};
+/* ===== 现金修正与股息 ===== */
 /* v319：负数修正是"往回改"的非常规操作，先二次确认（会修成负数时再明确警告一次）——
    以前只挡了 v===0，填负数就能把可用现金直接改成负数，总资产跟着变负而且毫无提示 */
 function applyCashCorrection(v){cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:v>0?"修正+":"修正-",amount:v});saveCashLog();document.getElementById("hmCorrectAmt").value="";addActivity("现金修正 "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()}
-try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return formError("请输入修正金额","hmCorrectAmt");var plan=cashCorrectionPlan(cashBalance,v);if(!plan.needsConfirm)return applyCashCorrection(v);showApproval({title:"确认减少现金",message:"现金修正填了负数，会把可用现金从 "+fmtFull(cashBalance)+" 改成 "+fmtFull(plan.next)+"。"+(plan.willGoNegative?"\n\n⚠️ 修正后可用现金为负数，总资产也会跟着变成负数。":""),confirmText:"确认修正",onConfirm:function(){applyCashCorrection(v)}})})}catch(e){logSwallowed("settleOpt",e)}
-try{document.getElementById("hmDividend").addEventListener("click",function(){var s=document.getElementById("divSym").value;var v=parseFloat(document.getElementById("divAmt").value)||0;if(!s)return formError("请选择股息标的","divSym");if(v===0)return formError("请输入股息金额","divAmt");cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:"股息+"+s,amount:v});saveCashLog();document.getElementById("divAmt").value="";addActivity("股息收入 "+s+" "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()})}catch(e){logSwallowed("settleOpt",e)}setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},500);
+try{document.getElementById("hmCorrect").addEventListener("click",function(){var v=parseFloat(document.getElementById("hmCorrectAmt").value)||0;if(v===0)return formError("请输入修正金额","hmCorrectAmt");var plan=cashCorrectionPlan(cashBalance,v);if(!plan.needsConfirm)return applyCashCorrection(v);showApproval({title:"确认减少现金",message:"现金修正填了负数，会把可用现金从 "+fmtFull(cashBalance)+" 改成 "+fmtFull(plan.next)+"。"+(plan.willGoNegative?"\n\n⚠️ 修正后可用现金为负数，总资产也会跟着变成负数。":""),confirmText:"确认修正",onConfirm:function(){applyCashCorrection(v)}})})}catch(e){logSwallowed("cashEntry",e)}
+try{document.getElementById("hmDividend").addEventListener("click",function(){var s=document.getElementById("divSym").value;var v=parseFloat(document.getElementById("divAmt").value)||0;if(!s)return formError("请选择股息标的","divSym");if(v===0)return formError("请输入股息金额","divAmt");cashBalance+=v;saveCash();cashLog.push({id:Date.now(),date:localDate(),time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),type:"股息+"+s,amount:v});saveCashLog();document.getElementById("divAmt").value="";addActivity("股息收入 "+s+" "+fmtFull(v));updateSidebar();updateHoldCash();renderCashLog()})}catch(e){logSwallowed("cashEntry",e)}
 
 /* range=max 是历史数据：同一个标的只请求一次，年初/年末两个口径共用（原先一次开屏要打 6 次） */
 var maxPriceReq={};
@@ -1845,68 +1574,20 @@ function calcAttribution(year){var yS=year+'-01-01',yE=year+'-12-31';
   var ss=sSnap.shares,es=eSnap.shares,sCash=sSnap.cash,eCash=eSnap.cash,sBuy=sSnap.buy,sSell=sSnap.sell,eBuy=eSnap.buy,eSell=eSnap.sell;
   var ac={};ETF_SYMS.forEach(function(s){ac[s]=0});
   trades.forEach(function(t){if(t.date>=yS&&t.date<=yE&&t.shares>0&&ac[t.symbol]!==undefined)ac[t.symbol]+=t.shares*t.price});
-  var ccP=0,div=0,nd=0;
+  var div=0,nd=0;
   cashLog.forEach(function(l){if(l.date>=yS&&l.date<=yE){if(l.type&&l.type.indexOf('入金')>=0)nd+=l.amount||0;if(l.type&&l.type.indexOf('出金')>=0)nd-=Math.abs(l.amount||0);/* 「修正」是记账调整（补记/改错），按资本变动算，不能算成收益 —— 与 monthlyPnl、首页累计收益三处口径必须一致 */if(l.type&&l.type.indexOf('修正')>=0)nd+=Number(l.amount)||0;if(l.type&&l.type.indexOf('股息')>=0)div+=l.amount||0}});
-  optionTrades.forEach(function(o){if(o.added&&o.added.slice(0,4)===year)ccP+=(o.premium||0)*(o.contracts||1)});
-  Promise.all(ETF_SYMS.map(function(s){return Promise.all([fetchYearStartPrice(s,year),fetchYearEndPrice(s,year)])})).then(function(pairs){var ps={},pe={};var _unavail=false;ETF_SYMS.forEach(function(s,i){ps[s]=pairs[i][0];pe[s]=pairs[i][1];if(ps[s]===null||pe[s]===null)_unavail=true});var sA=0,eA=eCash+eSell-eBuy,cg={};ETF_SYMS.forEach(function(s){var sp=ps[s]||0,ep=pe[s]||0;sA+=(ss[s]||0)*sp;eA+=(es[s]||0)*ep;cg[s]=((es[s]||0)*ep)-((ss[s]||0)*sp)-ac[s]});sA+=sCash+sSell-sBuy;var tg=eA-sA-nd;var ot=tg-ETF_SYMS.reduce(function(s,sym){return s+cg[sym]},0)-ccP-div;renderAttribution({year:year,totalGain:tg,startAssets:sA,endAssets:eA,netDep:nd,capGains:cg,ccPrem:ccP,dividend:div,other:ot,unavail:_unavail})})}
-function renderAttribution(r){var el=document.getElementById('attrSummary');if(el){el.innerHTML=(r.unavail?'<span style="color:var(--orange)">⚠️ 价格数据不可用，结果可能不准确</span><br>':'')+'<strong style="color:'+(r.totalGain>=0?'var(--accent)':'var(--red)')+'">总收益 '+fmtFull(r.totalGain)+'</strong>'}var ch=document.getElementById('attrChart');if(ch){var items=[{label:'VGT 增值',val:r.capGains.VGT},{label:'SMH 增值',val:r.capGains.SMH},{label:'IBIT 增值',val:r.capGains.IBIT},{label:'CC 权利金',val:r.ccPrem},{label:'股息',val:r.dividend},{label:'其他',val:r.other}];var mx=Math.max.apply(null,items.map(function(i){return Math.abs(i.val)}))||1;ch.innerHTML=items.map(function(it){var w=Math.abs(it.val)/mx*100;var pos=it.val>=0;return '<div class="attribution-row"><div class="attribution-row-head"><span>'+it.label+'</span><span class="'+(pos?'pos':'neg')+'">'+(pos?'+':'')+fmtFull(it.val)+((r.totalGain!==0&&isFinite(it.val))?' '+(it.val/r.totalGain*100).toFixed(0)+'%':'')+'</span></div><div class="attribution-bar"><i style="width:'+w+'%;background:'+(pos?'var(--accent)':'var(--red)')+'"></i></div></div>'}).join('')}var det=document.getElementById('attrDetail');if(det){det.innerHTML='年初 '+fmtFull(r.startAssets)+' → 年末 '+fmtFull(r.endAssets)+' · 净入金 '+fmtFull(r.netDep)}}
+  Promise.all(ETF_SYMS.map(function(s){return Promise.all([fetchYearStartPrice(s,year),fetchYearEndPrice(s,year)])})).then(function(pairs){var ps={},pe={};var _unavail=false;ETF_SYMS.forEach(function(s,i){ps[s]=pairs[i][0];pe[s]=pairs[i][1];if(ps[s]===null||pe[s]===null)_unavail=true});var sA=0,eA=eCash+eSell-eBuy,cg={};ETF_SYMS.forEach(function(s){var sp=ps[s]||0,ep=pe[s]||0;sA+=(ss[s]||0)*sp;eA+=(es[s]||0)*ep;cg[s]=((es[s]||0)*ep)-((ss[s]||0)*sp)-ac[s]});sA+=sCash+sSell-sBuy;var tg=eA-sA-nd;var ot=tg-ETF_SYMS.reduce(function(s,sym){return s+cg[sym]},0)-div;renderAttribution({year:year,totalGain:tg,startAssets:sA,endAssets:eA,netDep:nd,capGains:cg,dividend:div,other:ot,unavail:_unavail})})}
+function renderAttribution(r){var el=document.getElementById('attrSummary');if(el){el.innerHTML=(r.unavail?'<span style="color:var(--orange)">⚠️ 价格数据不可用，结果可能不准确</span><br>':'')+'<strong style="color:'+(r.totalGain>=0?'var(--accent)':'var(--red)')+'">总收益 '+fmtFull(r.totalGain)+'</strong>'}var ch=document.getElementById('attrChart');if(ch){var items=[{label:'VGT 增值',val:r.capGains.VGT},{label:'SMH 增值',val:r.capGains.SMH},{label:'IBIT 增值',val:r.capGains.IBIT},{label:'股息',val:r.dividend},{label:'其他',val:r.other}];var mx=Math.max.apply(null,items.map(function(i){return Math.abs(i.val)}))||1;ch.innerHTML=items.map(function(it){var w=Math.abs(it.val)/mx*100;var pos=it.val>=0;return '<div class="attribution-row"><div class="attribution-row-head"><span>'+it.label+'</span><span class="'+(pos?'pos':'neg')+'">'+(pos?'+':'')+fmtFull(it.val)+((r.totalGain!==0&&isFinite(it.val))?' '+(it.val/r.totalGain*100).toFixed(0)+'%':'')+'</span></div><div class="attribution-bar"><i style="width:'+w+'%;background:'+(pos?'var(--accent)':'var(--red)')+'"></i></div></div>'}).join('')}var det=document.getElementById('attrDetail');if(det){det.innerHTML='年初 '+fmtFull(r.startAssets)+' → 年末 '+fmtFull(r.endAssets)+' · 净入金 '+fmtFull(r.netDep)}}
 try{var ay=document.getElementById('attrYear');if(ay){ay.addEventListener('change',function(){calcAttribution(this.value)});var cy=new Date().getFullYear();var ey=9999;cashLog.forEach(function(l){if(l.type&&l.type.indexOf('入金')>=0&&l.date){var y=parseInt(l.date.slice(0,4));if(y<ey)ey=y}});if(ey===9999){cashLog.forEach(function(l){if(l.date){var y=parseInt(l.date.slice(0,4));if(y<ey)ey=y}});trades.forEach(function(t){if(t.date){var y=parseInt(t.date.slice(0,4));if(y<ey)ey=y}})}if(ey===9999)ey=cy;var opts='';for(var y=cy;y>=ey;y--){opts+='<option value="'+y+'">'+y+'</option>'}ay.innerHTML=opts;ay.value=String(cy);setTimeout(function(){calcAttribution(String(cy))},2000)}}catch(e){logSwallowed("renderAttribution",e)}
 
-/* ===== 被行权概率：CBOE 期权链 → N(d2) =====
-   链数据由 Worker 代理（CBOE 主源 / Yahoo 兜底），边缘缓存 30 分钟；数学全在 prob.js。
-   v330 移除了"按目标概率反推行权价"：算出来的行权价要吸附到挂牌档，实际还是回到
-   OTM 百分比这一个自由度上，多一层反推只是把同一件事说了两遍。现在只有一个入口：
-   调 OTM%，直接看对应的概率与权利金。到期日也不再手选 —— 由「节奏」卡的固定日历决定。 */
-var optionChains={};
-var chainStatus={loading:false,loadedAt:0,error:'',stale:''};
-var chainRetryAttempt=0,chainRetryTimer=0;
-function clearChainRetry(){if(chainRetryTimer){clearTimeout(chainRetryTimer);chainRetryTimer=0}}
-function scheduleChainRetry(){
-  if(chainRetryTimer||chainRetryAttempt>=2)return;
-  var delay=chainRetryAttempt===0?10000:30000;
-  chainRetryAttempt+=1;
-  chainRetryTimer=setTimeout(function(){chainRetryTimer=0;refreshChains(true)},delay);
-}
-function chainFor(sym){var c=optionChains[sym];return c&&Number(c.spot)>0?c:null}
-function anyChain(){for(var i=0;i<OPTION_SYMS.length;i+=1){var c=chainFor(OPTION_SYMS[i]);if(c)return c}return null}
-/** CBOE 顶层的官方 30 天 IV（百分数）→ { VGT: 22.485, ... }，只收有效的。 */
-function iv30Map(){var m={};OPTION_SYMS.forEach(function(s){var c=chainFor(s);if(c&&Number(c.iv30)>0)m[s]=Number(c.iv30)});return m}
-var CHAIN_TTL_MS=5*60*1000;
-/* OTM 默认值的两次调整都来自 22 年回测（2004-2026，含买卖价差）：
-   v326 先把 VGT 7% / SMH 5% 统一成 6%；
-   v328 按**固定节奏**（VGT 月度第三个周五、SMH 每 3 周）重跑后又调开 ——
-   月度日历里有 35 天的月份，DTE 被拉到 32 天左右、行权风险上升，所以 VGT 要卖得更远（7%），
-   SMH 是 21 天短周期、行权风险低，留在 6%。
-   老设备的存量设置用一次性标记搬过来 —— 只跑一次，之后用户自己调过的值不会再被覆盖。
-
-   ⚠️ 这段必须放在 initProb 之前：脚本是 defer 加载的，执行时 document.readyState
-   已经是 'interactive'，initProb 里的 run() 会**同步**跑起来并调用 updateOtm()；
-   那时若 otmSettings 还没赋值，updateOtm 里的 `otmSettings.vgt=` 会直接抛 TypeError，
-   整个模块从这里往后全部中断（v336 的真实事故：页面点击无反应）。 */
-var OTM_MIGRATE_KEY='otm76_migrated_v1';
-/* OTM（虚值档位）的键名与默认值：VGT 7% / SMH 6% / IBIT 10%（IBIT 近月 IV≈36%，按 0.7–0.8σ 对齐）。
-   只在这里定义一处 —— 别再写 `sym==='SMH'?'smh':'vgt'` 那种三元，加标的时会漏。 */
-var OTM_KEYS={VGT:'vgt',SMH:'smh',IBIT:'ibit'};
-var OTM_DEFAULTS={vgt:7,smh:6,ibit:10};
-function otmKeyOf(sym){return OTM_KEYS[String(sym||'').toUpperCase()]||OTM_KEYS[OPTION_SYMS[0]]}
-function otmDefaultOf(sym){return OTM_DEFAULTS[otmKeyOf(sym)]}
-var otmSettings={vgt:7,smh:6,ibit:10};
-try{
-  var s2=JSON.parse(readRaw("otmSettings"));if(s2)otmSettings=s2;
-  if(!LS.getItem(OTM_MIGRATE_KEY)){
-    otmSettings.vgt=7;otmSettings.smh=6;
-    LS.setItem("otmSettings",JSON.stringify(otmSettings));
-    LS.setItem(OTM_MIGRATE_KEY,'1');
-    markDirty('otmSettings');
-  }
-}catch(e){logSwallowed("otmSettingsInit",e)}
-
-var probTab=OPTION_SYMS[0];
-/* 市场状态读取 2 年日线：至少保留 200 日预热，才能画出近一年状态历史。 */
+/* ===== 市场趋势 =====
+   保留原趋势图能力，但它只描述市场和均线，不关联任何交易操作。 */
+var MARKET_SYMBOLS=['VGT','SMH','IBIT'];
 var REGIME_TTL_MS=6*60*60*1000;
 var REGIME_RETRY_MS=5*60*1000;
 var regimeBySym={};
 var regimeStatus={loading:false,loadedAt:0,error:''};
+var marketSymbol='VGT';
 var trendRange='1y';
 async function fetchMarketRegime(sym){
   try{
@@ -1919,40 +1600,24 @@ async function fetchMarketRegime(sym){
     return{ok:true,info:info};
   }catch(e){return{ok:false,error:(e&&e.message)||'failed'}}
 }
-function renderMarketRegimeForTab(){
-  var info=regimeBySym[probTab];
+function renderMarketTrend(){
+  var info=regimeBySym[marketSymbol];
   var loading=regimeStatus.loading||(!info&&!regimeStatus.error);
-  try{renderMarketRegime(document,probTab,info,{loading:loading,error:regimeStatus.error})}
+  try{renderMarketRegime(document,marketSymbol,info,{loading:loading,error:regimeStatus.error})}
   catch(e){logSwallowed("renderMarketRegime",e)}
-  try{renderTrendChart(document,info,probTab,OPTION_SYMS,trendRange,{loading:loading,error:regimeStatus.error})}
+  try{renderTrendChart(document,info,marketSymbol,MARKET_SYMBOLS,trendRange,{loading:loading,error:regimeStatus.error})}
   catch(e){logSwallowed("renderTrendChart",e)}
 }
-function renderFreshnessCard(){
-  try{
-    var quote=liveQuoteData[probTab]||{};
-    var chain=null,status=typeof chainStatus==='object'?chainStatus:null;
-    try{chain=chainFor(probTab)}catch(e){logSwallowed("freshnessChain",e)}
-    var source=liveSources[probTab]||quote.source||'缓存';
-    var chainSource=chain&&chain.source==='cboe'?'CBOE':chain&&chain.source==='yahoo'?'Yahoo':(chain&&chain.source)||'—';
-    renderFreshness(document,{
-      quoteUpdated:quote.time||quote.asOf||quote.ts||0,
-      quoteSource:source,
-      regimeUpdated:regimeStatus.loadedAt,
-      chainUpdated:status&&status.loadedAt,
-      chainSource:chainSource,
-    },Date.now());
-  }catch(e){logSwallowed("renderFreshnessCard",e)}
-}
-async function refreshMarketRegimes(force){
+async function refreshMarketTrend(force){
   if(regimeStatus.loading)return;
-  var hasAny=OPTION_SYMS.some(function(sym){return !!regimeBySym[sym]});
+  var hasAny=MARKET_SYMBOLS.some(function(sym){return !!regimeBySym[sym]});
   var ttl=regimeStatus.error?REGIME_RETRY_MS:REGIME_TTL_MS;
   if(!force&&hasAny&&Date.now()-regimeStatus.loadedAt<ttl)return;
   regimeStatus.loading=true;regimeStatus.error='';
-  renderMarketRegimeForTab();
-  var results=await Promise.all(OPTION_SYMS.map(fetchMarketRegime));
+  renderMarketTrend();
+  var results=await Promise.all(MARKET_SYMBOLS.map(fetchMarketRegime));
   var errs=[];
-  OPTION_SYMS.forEach(function(sym,i){
+  MARKET_SYMBOLS.forEach(function(sym,i){
     var res=results[i]||{};
     if(res.info)regimeBySym[sym]=res.info;
     if(!res.ok)errs.push(sym+': '+(res.error||'failed'));
@@ -1960,326 +1625,31 @@ async function refreshMarketRegimes(force){
   regimeStatus.loading=false;
   regimeStatus.loadedAt=Date.now();
   regimeStatus.error=errs.join(' | ');
-  renderMarketRegimeForTab();
+  renderMarketTrend();
 }
-var MA_CROSS_TTL_MS=5*60*1000;
-var maCrossEvents=[];
-var maCrossStatus={loading:false,loadedAt:0,error:''};
-async function refreshMaCrossEvents(force){
-  if(maCrossStatus.loading)return;
-  if(!force&&maCrossStatus.loadedAt&&Date.now()-maCrossStatus.loadedAt<MA_CROSS_TTL_MS)return;
-  maCrossStatus.loading=true;maCrossStatus.error='';
-  try{
-    var r=await fetchWithTimeout('/api/ma-cross?limit=20');
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    var j=await r.json();
-    if(!j||!j.ok||!Array.isArray(j.events))throw new Error((j&&j.error)||'payload');
-    maCrossEvents=j.events;
-  }catch(e){
-    maCrossStatus.error=(e&&e.message)||'failed';
-  }finally{
-    maCrossStatus.loading=false;
-    maCrossStatus.loadedAt=Date.now();
-    refreshCcAlerts();
-  }
-}
-async function ackMaCross(id){
-  var eventId=Number(id);
-  if(!(eventId>0))return;
-  try{
-    var r=await fetchWithTimeout('/api/ma-cross/ack',{
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:eventId}),
-    });
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    maCrossEvents=maCrossEvents.filter(function(event){return Number(event.id)!==eventId});
-    refreshCcAlerts();
-    showToast('已确认均线穿越提醒','ok');
-  }catch(e){
-    showToast('确认失败，请稍后重试','err');
-  }
-}
-/* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
-function otmOf(sym){var v=Number(otmSettings&&otmSettings[otmKeyOf(sym)]);return v>0?v:otmDefaultOf(sym)}
-/* 最近一次渲染出来的矩阵摘要 —— ± 按钮与列头点击都要靠它把指针在**真实档位**上移动。
-   ladder 是这一期的完整候选阶梯（真实挂牌价、高于现价 ≤20%），不走 DOM 读。 */
-var lastProb={sym:'',ladder:[],selected:-1,spot:0};
-/**
- * 矩阵显示几列（v392）：手机 3 列、桌面 4 列。
- * 手机 4 列时每格只有 55px（列头 `$131.88` 一个就占 42px），左右留白剩 5px、360px 的机器还得横滑；
- * 3 列时每格约 68px，数字不贴边。少看一档不影响挑档 —— ± 本来就沿真实阶梯逐档移动。
- * 用 window.innerWidth 而不是量卡片宽度：卡片在未打开的页签里时宽度是 0，会误判成手机。
- */
-var lastProbCols=0;
-function probCols(){return window.innerWidth<=800?3:4}
-/* 只在"列数真的变了"时重画 —— iOS 滚动时地址栏伸缩也会触发 resize，别跟着反复重绘 */
-window.addEventListener('resize',function(){if(probCols()!==lastProbCols)renderProbCard()});
-function renderProbCard(){
-  var tabs=document.getElementById('probTabs');
-  if(tabs)tabs.innerHTML=probTabsHtml(probTab,OPTION_SYMS);
-  renderMarketRegimeForTab();
-  renderFreshnessCard();
-  var otm=otmOf(probTab);
-  /* v391：控件说的是"你选中那一档**真实合约**"（$135）；v392 把「现价」搬到同一行左边当对照，
-     标签因此简化成「行权价」（哪个标的由上面那排 tab 高亮着，不必再写一遍）。
-     合约价要等矩阵算完 —— 下一档由链上的真实阶梯决定，不是"7% + 1%"。 */
-  var olab=document.getElementById('probOtmSym');if(olab)olab.textContent='行权价';
-  var oval=document.getElementById('probOtmVal');if(oval)oval.textContent='—';
-  /* 标的现价：列头的 OTM%、格里的真实档位全是相对它算的，摆在旁边最省解释 */
-  var ospot=document.getElementById('probSpot');
-  var chain=chainFor(probTab);
-  if(!chain){
-    if(ospot)ospot.textContent='';
-    lastProb={sym:'',ladder:[],selected:-1,spot:0};
-    renderProbNote(document,{});          /* 先清掉上一次的说明 */
-    var nb=document.getElementById('probNote');
-    if(nb&&chainStatus.loading)nb.textContent='加载中…';
-    /* 必须先写说明、再写错误提示 —— 顺序反了会被说明文案覆盖掉 */
-    if(!chainStatus.loading)renderProbUnavailable(document,chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'稍后会自动重试');
-    renderExpiryCalendar();
-    return;
-  }
-  var mx=null;
-  /* v389：**不再判定"该卖哪一档"** —— 表里每一行都给年化（按当前选中那一档算），你自己挑哪一期。
-     v391：列 = **链上真实挂牌档位**，`otm` 只负责把窗口定位到你想的 % 附近（真实价才是能下单的东西）。
-     系统只给两类事实：剩余天数、以及你手上已经持有了哪几档（中性标记，不是建议）。
-     minDte 保持 14：SMH 有每日到期日，门槛放低会把它那堆 7/8/11 天的档全拉进来；
-     若整条链都没有 14 天以上的档（IBIT 的 Yahoo 兜底就可能是这种情况），probMatrix 会回退显示现有短天期并给出警告。 */
-  var cols=probCols();lastProbCols=cols;
-  try{mx=probMatrix(chain,{otm:otm,minDte:14,maxRows:5,cols:cols})}catch(e){logSwallowed("probMatrix",e)}
-  /* selected 存的是**完整阶梯**里的下标（probMatrix 的 selectedAbs）—— ± 靠它走相邻真实档 */
-  lastProb={sym:probTab,ladder:(mx&&mx.ladder)||[],selected:mx?Number(mx.selectedAbs):-1,spot:Number(mx&&mx.spot)||0};
-  var selCol=mx&&mx.columns&&mx.selected>=0?mx.columns[mx.selected]:null;
-  if(oval)oval.textContent=selCol?fmtStrike(selCol.strike):'—';
-  /* v392：现价用胶囊（中性底＝市场事实）。"这一档 +X%"不再重复写一遍 ——
-     选中列头 `.mx-col.is-on` 那格下方就写着它的 +X%，而现价与行权价现在挨在同一行，差多少一眼能比。 */
-  if(ospot){
-    var spotPill=Number(chain.spot)>0?('<span class="mx-pill is-spot">现价 $'+Number(chain.spot).toFixed(2)+'</span>'):'';
-    ospot.innerHTML=spotPill;
-  }
-  /* 我持有哪几档：与「到期日历」同一口径（settled/archived 不算） */
-  var heldByDate={};
-  (optionTrades||[]).forEach(function(o){
-    if(!o||o.settled||o.archived||!o.expiry)return;
-    heldByDate[o.expiry]=(heldByDate[o.expiry]||0)+(Number(o.contracts)||1);
-  });
-  renderProbMatrix(document,mx,{holdings:heldByDate,
-    emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链里没有可显示的到期日'});
-  renderProbNote(document,{source:chain.source,updated:chain.updated,nowMs:Date.now(),
-    iv30:(function(){var m={},all=iv30Map();if(all[probTab]!=null)m[probTab]=all[probTab];return m})()});
-  if(chain.stale){
-    var pn=document.getElementById('probNote');
-    if(pn){
-      var staleTime=chain.staleAt?new Date(chain.staleAt).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}):'上次成功时间未知';
-      pn.innerHTML+=' · <span class="chain-stale">数据源暂不可用，使用旧数据（'+escapeHtml(staleTime)+'）</span>';
-    }
-  }
-  renderExpiryCalendar();
-}
-/** 到期日历：只讲"市场有哪些到期日"（月度/周度、剩余天数、行权价间距、自己有没有持仓）。
-    v389 起不再往里塞"节奏档"（"该卖哪一档"整套已删），日历与概率矩阵各说各的、不再互相串标记。
-    isMonthlyExpiry 已抽到 prob.js（概率矩阵的行头悬停也要用它）。 */
-var calShowAll=false,calTab=OPTION_SYMS[0];
-function renderExpiryCalendar(){
-  var el=document.getElementById('expiryCalendar');
-  if(!el)return;
-  if(OPTION_SYMS.indexOf(calTab)<0)calTab=OPTION_SYMS[0];
-  var sym=calTab;
-  var entries=[];
-  var chain=chainFor(sym);
-  if(chain){
-    var all=(chain.expiries||[]).filter(function(e){return e&&(e.calls||[]).length});
-    /* 默认只列"周五档"的前 3 个（周度档会被滤掉、留下月度/周五档），想看全部点「显示全部到期日」。
-       v389：不再把"节奏档"强塞进来 —— "该卖哪一档"已取消，日历只讲市场有哪些到期日。 */
-    var picked=calShowAll?all:all.filter(function(e){return weekdayOf(e.date)===5}).slice(0,3);
-    picked=picked.slice().sort(function(a,b){return a.date<b.date?-1:1});
-    picked.forEach(function(e){
-      entries.push({date:e.date,dte:e.dte,monthly:isMonthlyExpiry(e.date),
-        listed:Number(e.listed)||0,gapPct:Number(e.gapPct)||0});
-    });
-  }
-  var holdings={};
-  (optionTrades||[]).forEach(function(o){
-    if(!o||o.settled||o.archived||!o.expiry)return;
-    var k=o.sym+'|'+o.expiry;holdings[k]=(holdings[k]||0)+(Number(o.contracts)||1);
-  });
-  var tabs=document.getElementById('calTabs');
-  if(tabs)tabs.innerHTML=OPTION_SYMS.map(function(s){
-    return '<button type="button" class="prob-chip'+(s===calTab?' is-on':'')+'" data-caltab="'+s+'">'+s+'</button>';
-  }).join('');
-  el.innerHTML=expiryCalendarHtml(entries,{sym:sym,holdings:holdings,
-    emptyHint:chainStatus.error?('数据源暂不可用（'+chainStatus.error+'）'):'期权链加载中…'});
-  var btn=document.getElementById('calToggle');
-  if(btn)btn.textContent=calShowAll?'只看周五档':'显示全部到期日';
-}
-function toggleCalShowAll(){calShowAll=!calShowAll;renderExpiryCalendar();haptic('light')}
-/* v390：`ccNextExpiry` / `ccRollExpiry` 已删 —— 它们是**最后两处替用户指定到期日的地方**
-   （提醒里的"今天卖出 → 某档到期"）。现在提醒只说哪天卖 + 挑档标准，具体哪一期由用户自己挑。 */
-async function fetchChain(sym){
-  try{
-    var r=await fetchWithTimeout('/api/chain?sym='+encodeURIComponent(sym));
-    if(!r.ok)return{ok:false,error:'HTTP '+r.status};
-    var j=await r.json();
-    if(!j||!j.ok||!j.chain)return{ok:false,error:(j&&j.error)||'payload'};
-    return{ok:true,chain:Object.assign({},j.chain,{stale:!!j.stale,staleAt:Number(j.staleAt)||Number(j.cachedAt)||0,staleReason:String(j.staleReason||'')}),stale:!!j.stale};
-  }catch(e){return{ok:false,error:(e&&e.message)||'failed'}}
-}
-async function refreshChains(force){
-  if(chainStatus.loading)return;
-  if(!force&&Date.now()-chainStatus.loadedAt<CHAIN_TTL_MS&&anyChain())return;
-  chainStatus.loading=true;
-  if(!anyChain())renderProbCard();          /* 首屏先出"加载中" */
-  var results=await Promise.all(OPTION_SYMS.map(fetchChain));
-  var errs=[],stale=[];
-  OPTION_SYMS.forEach(function(sym,i){if(results[i].ok){optionChains[sym]=results[i].chain;if(results[i].stale)stale.push(sym)}else errs.push(sym+': '+results[i].error)});
-  chainStatus.loading=false;
-  chainStatus.error=errs.join(' | ');
-  chainStatus.stale=stale.join('、');
-  if(!errs.length){chainStatus.loadedAt=Date.now();chainRetryAttempt=0;clearChainRetry()}else scheduleChainRetry();
-  renderProbCard();
-  updateOtm();
-  /* 持仓表的「被行权概率」列要等期权链到位才有值 —— 链刷新后补渲一次表 */
-  try{renderOpt()}catch(e){logSwallowed("renderOpt",e)}
-}
-function bindProbControls(){
-  /* 底部说明行（数据源 + 美东时间）同时也是刷新入口 —— 卡片上不再单独占一个控件位 */
-  var note=document.getElementById('probNote');
-  if(note)note.addEventListener('click',function(){if(!chainStatus.loading)refreshChains(true)});
-  /* 行权 / 结算 / 删除之后，日历里的「我的持仓」要跟着变 —— 期权表格的按钮是 onclick 直挂的，
-     所以在容器上做事件委托，等原处理器跑完再重绘。 */
-  var ob=document.getElementById('holdingsBody');
-  /* 行权 / 结算 / 删除之后，矩阵里的"我持有这一档"与到期判定/买回待办要立刻跟着变 */
-  if(ob)ob.addEventListener('click',function(){setTimeout(function(){renderProbCard();refreshCcAlerts()},150)});
-  /* 概率矩阵按标的切页（与到期日历各自独立） */
-  var tabs=document.getElementById('probTabs');
-  if(tabs)tabs.addEventListener('click',function(e){
-    var b=e.target.closest('[data-probtab]');if(!b)return;
-    probTab=b.dataset.probtab;
-    renderProbCard();
-    refreshMarketRegimes(false);
-    haptic('light');
-  });
+function bindMarketTrendControls(){
   var trendTabs=document.getElementById('trendTabs');
   if(trendTabs)trendTabs.addEventListener('click',function(e){
     var b=e.target.closest('[data-trendtab]');if(!b)return;
-    probTab=b.dataset.trendtab;
-    renderProbCard();
-    refreshMarketRegimes(false);
+    marketSymbol=b.dataset.trendtab;
+    renderMarketTrend();
+    refreshMarketTrend(false);
     haptic('light');
   });
   var trendChart=document.getElementById('trendChart');
   if(trendChart)trendChart.addEventListener('click',function(e){
     var b=e.target.closest('[data-trendrange]');if(!b)return;
     trendRange=b.dataset.trendrange;
-    renderMarketRegimeForTab();
-    haptic('light');
-  });
-  /* v391：加减号在**链上相邻的真实档位**之间移动指针（不再是 ±1%）。
-     走到阶梯两端就不动；点列头与加减号写的是同一份 otmSettings（存的是那一档真实的 OTM%）。 */
-  var minus=document.getElementById('probOtmMinus');
-  if(minus)minus.addEventListener('click',function(){adjOtm(probTab,-1);haptic('light')});
-  var plus=document.getElementById('probOtmPlus');
-  if(plus)plus.addEventListener('click',function(){adjOtm(probTab,1);haptic('light')});
-  /* 点列头 = 把指针移到那一档真实合约（写回它真实的 OTM%） */
-  var mxEl=document.getElementById('probMatrix');
-  if(mxEl)mxEl.addEventListener('click',function(e){
-    var b=e.target.closest('[data-probstrike]');if(!b)return;
-    if(b.classList.contains('is-on'))return;          /* 已经是这一档，不用写一遍 */
-    var want=Number(b.dataset.probotmpct);
-    if(!isFinite(want))return;
-    otmSettings[otmKeyOf(probTab)]=Math.min(20,Math.max(0,want));
-    LS.setItem('otmSettings',JSON.stringify(otmSettings));
-    markDirty('otmSettings');
-    updateOtm();
-    autoPushDebounce();
-    haptic('light');
-  });
-  var calBtn=document.getElementById('calToggle');
-  if(calBtn)calBtn.addEventListener('click',toggleCalShowAll);
-  /* 到期日历按标的切页（VGT / SMH）—— 两个标的的到期日结构完全不同，一张表塞不下 */
-  var calTabs=document.getElementById('calTabs');
-  if(calTabs)calTabs.addEventListener('click',function(e){
-    var b=e.target.closest('[data-caltab]');if(!b)return;
-    calTab=b.dataset.caltab;
-    renderExpiryCalendar();
+    renderMarketTrend();
     haptic('light');
   });
 }
-(function initProb(){
+(function initMarketTrend(){
   var run=function(){
-    bindProbControls();updateOtm();
-    refreshMarketRegimes(false);
-    setInterval(function(){if(document.visibilityState==='visible')renderFreshnessCard()},60000);
-    /* 切到期权页时刷新（refreshChains 自带 5 分钟节流，不会每切一次就打上游） */
-    document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.tab==='option'){refreshChains(false);refreshMarketRegimes(false)}})});
-    setTimeout(function(){refreshChains(false);refreshDividends(false)},1200);
+    bindMarketTrendControls();
   };
-  /* ⚠️ 不能用 `readyState==='loading' ? 等 DOMContentLoaded : 立刻跑` 这种写法。
-     脚本是 defer 加载的，执行时 readyState 已经是 'interactive'（不是 'loading'），
-     于是 run() 会在**模块求值过程中**同步跑起来 —— 那时文件后半段的顶层变量
-     （例如 otmSettings）还没赋值，updateOtm 会直接抛 TypeError，
-     整个模块从此中断，第 1795 行往后的所有代码（含「记录期权」按钮绑定）全部失效。
-     v336 的真实事故就是这样：页面点击没反应。
-     改成只在 'complete'（脚本被动态注入、DOM 早已就绪）时才立刻跑，其余一律等
-     DOMContentLoaded —— 那时整份模块已经求值完毕。 */
   if(document.readyState==='complete')run();else document.addEventListener('DOMContentLoaded',run);
 })();
-
-/* ===== 卖 CALL 的节奏（v388：三条腿统一到月度）=====
-   15-20 年的系统化策略里，日历本身就是纪律的一部分（和月度 DCA、年度再平衡同源）。
-   **三条腿统一到「每月第三个周五」**：全市场都有月度期权，不用再靠"每 3 周"去凑档位，
-   三条腿也就在同一天操作。卖出时点固定为**到期日当天**（旧档到期 = 新档开仓同一天，没有空档期）。
-   ⚠️ v389 起**目标到期日不再由系统挑选** —— 卡片只给每行的年化（见 renderProbCard / probMatrixHtml），
-   挑哪一期是用户的事；节奏常量只回答"哪天操作"。策略上的经验区间（卖出日之后 30~45 天）
-   写在 INVESTMENT_STRATEGY.md，App 里不再复述一遍。
-   ⚠️ 老设备的本机存储里可能还留着 v328–v335 那个「节奏设置」写下的值（例如把 SMH 设成每 3 周）。
-   这里**不再从存储读节奏**（那段已删）—— 节奏只由下面这个常量决定，存储改不了它；
-   另外再用一个新版本的标记清一次残留。 */
-var CC_KEY='ccSchedule';
-var ccSchedule={VGT:{rule:'monthly3'},SMH:{rule:'monthly3'},IBIT:{rule:'monthly3'}};
-var CC_RESET_KEY='cc_schedule_reset_v2';   /* v388：再清一次，保险起见 */
-try{
-  if(!LS.getItem(CC_RESET_KEY)){LS.removeItem(CC_KEY);LS.setItem(CC_RESET_KEY,'1')}
-}catch(e){logSwallowed("ccScheduleReset",e)}
-var ccDividends={};
-/** 节奏每行的 nextExpiry 是**卖出日**（到期日当天卖下一档）。
-    v390：不再附带 target（"卖出哪一档到期"）—— 提醒只说哪天卖 + 挑档标准，具体哪一期由用户自己挑。 */
-function ccRows(){
-  return OPTION_SYMS.map(function(s){
-    var r=scheduleRow(s,ccSchedule,marketDate());
-    if(!r)return null;
-    return r;
-  }).filter(Boolean);
-}
-function ccStreaks(){var m={};OPTION_SYMS.forEach(function(s){m[s]=complianceStreak(optionTrades,s,ccSchedule,marketDate())});return m}
-function ccExDivItems(){
-  var out=[];
-  OPTION_SYMS.forEach(function(s){
-    var list=ccDividends[s];if(!list||!list.length)return;
-    var next=null;try{next=estimateNextExDiv(list,marketDate())}catch(e){logSwallowed("estimateNextExDiv",e)}
-    if(next)out.push({sym:s,next:next});
-  });
-  return out;
-}
-/** { VGT:'2026-12-23', SMH:'2026-12-22' } —— 给提醒判断"除息是否落在本轮周期内"用。 */
-function exDivMap(){var m={};try{ccExDivItems().forEach(function(x){if(x&&x.next&&x.next.date)m[x.sym]=x.next.date})}catch(e){logSwallowed("exDivMap",e)}return m}
-async function fetchDividends(sym){
-  try{
-    var r=await fetchWithTimeout('/api/dividends?sym='+encodeURIComponent(sym));
-    if(!r.ok)return null;
-    var j=await r.json();
-    return (j&&j.ok&&Array.isArray(j.dividends))?j.dividends:null;
-  }catch(e){return null}
-}
-/** 节奏卡片 + CC 相关的提醒一起刷新（提醒要读 ccRows，所以绑在一起）。 */
-function refreshCcAlerts(){
-  try{
-    var nowInstant=new Date();
-    var list=buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),
-      ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap(),maCrosses:maCrossEvents});
-    renderAlerts(document,list);
-    syncAppBadge(list);
-  }catch(e){logSwallowed("refreshCcAlerts",e)}
-}
 
 /* ===== v370：主屏图标角标 =====
    所有提醒以前只在"打开 App"那一刻可见（sw.js 没有 push、前端也没接任何通知能力）。
@@ -2300,7 +1670,7 @@ function bindAlertBadgeToggle(){
     var el=this;
     if(!el.checked){alertBadgeOn=false;LS.setItem('alertBadge','0');applyAppBadge(navigator,0);setNote('已关闭');return}
     var settle=function(state){
-      if(state==='granted'){alertBadgeOn=true;LS.setItem('alertBadge','1');setNote('已开启 · 只有"需要动手"的提醒才显示数字');refreshCcAlerts();return}
+      if(state==='granted'){alertBadgeOn=true;LS.setItem('alertBadge','1');setNote('已开启 · 只有"需要动手"的提醒才显示数字');updateAlerts();return}
       alertBadgeOn=false;LS.setItem('alertBadge','0');el.checked=false;
       setNote(state==='denied'?'系统没有允许通知，角标显示不了（可在系统设置里重新允许）':'此设备不支持角标（iPhone 上需先「添加到主屏幕」再打开）');
     };
@@ -2309,51 +1679,11 @@ function bindAlertBadgeToggle(){
     try{var r=N.requestPermission();if(r&&typeof r.then==='function')r.then(settle,function(){settle('unsupported')});else settle(String(r))}catch(e){settle('unsupported')}
   });
 }
-async function refreshDividends(force){
-  if(!force&&ccDividends.VGT&&ccDividends.SMH){refreshCcAlerts();return}
-  /* 股息只拉 VGT/SMH：IBIT 是比特币信托、没有除息日（worker 的 lib/dividends.js 白名单里也没有它），
-     拉它只会白拿一个 400。ccDividends 里查不到 IBIT 时 ccExDivItems 会直接跳过。 */
-  var res=await Promise.all(['VGT','SMH'].map(fetchDividends));
-  ['VGT','SMH'].forEach(function(s,i){if(res[i])ccDividends[s]=res[i]});
-  refreshCcAlerts();
-}
-
-/* 容错：initProb 可能在任何时候同步调用它，这里再兜一次底，保证 otmSettings 一定存在。 */
-function updateOtm(){if(!otmSettings)otmSettings={};Object.keys(OTM_DEFAULTS).forEach(function(k){otmSettings[k]=otmPercent(otmSettings[k],OTM_DEFAULTS[k])});renderProbCard();}
-/**
- * ± 的落点：**链上相邻的真实档位**。用最近一次渲染的阶梯把指针移一格，
- * 再把那一档真实的 OTM% 写回设置（所以设置里存的是"这张合约"而不是"一个圆整的百分比"）。
- * 走到两端就原地不动 —— 不要偷偷绕回另一头。
- */
-function adjOtm(sym,dir){
-  if(!lastProb||lastProb.sym!==sym)return;
-  var lad=lastProb.ladder||[],i=Number(lastProb.selected)+(dir>0?1:-1);
-  if(i<0||i>=lad.length||i===Number(lastProb.selected))return;
-  var sp=Number(lastProb.spot)||0;
-  if(!(sp>0))return;
-  otmSettings[otmKeyOf(sym)]=Math.min(20,Math.max(0,Number(((lad[i]/sp-1)*100).toFixed(2))));
-  LS.setItem("otmSettings",JSON.stringify(otmSettings));
-  markDirty('otmSettings');
-  updateOtm();
-  autoPushDebounce();
-}
-setTimeout(updateOtm,800);
-
 function refreshTradeAffordability(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(!sh||!pr)return;var s=parseFloat(sh.value),p=parseFloat(pr.value);if(!s||!p||s<=0||p<=0){sh.style.borderColor='';sh.title='';return}var cost=s*p,avail=getNetCash();if(cost>avail){sh.style.borderColor='var(--red)';sh.title='需要 '+fmtFull(cost)+' ，可用 '+fmtFull(avail)}else{sh.style.borderColor='';sh.title=''}}
 (function(){var sh=document.getElementById('tfShares'),pr=document.getElementById('tfPrice');if(sh)sh.addEventListener('input',refreshTradeAffordability);if(pr)pr.addEventListener('input',refreshTradeAffordability)})();
 function qaToggle(){var s=document.getElementById('qaSheet');if(s.classList.contains('open'))qaClose();else{s.classList.add('open');markAlertsSeen(alertSignature(getCurrentAlerts()||[]));updateBellBadge(getCurrentAlerts()||[]);}}
 function qaClose(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)p.style.transform='';s.classList.remove('open')}
-/* 记录期权：从底部弹层录入（原来是一张常显的大表单，占掉期权页三分之一） */
-function optSheetEl(){return document.getElementById('optSheet')}
-function openOptSheet(){var s=optSheetEl();if(!s)return;var p=s.querySelector('.qa-panel');if(p){p.style.animation='none';p.style.transform='translateY(0)'}s.classList.add('open');haptic('light')}
-function closeOptSheet(){var s=optSheetEl();if(!s)return;var p=s.querySelector('.qa-panel');if(p){p.style.animation='';p.style.transform=''}s.classList.remove('open')}
-/* v308 方案B：买卖录入 / 现金管理各自进底部弹层（表单内容原地搬，未改任何字段与逻辑） */function sheetOpen(id){var s=document.getElementById(id);if(!s)return;var p=s.querySelector(".qa-panel");if(p){p.style.animation="none";p.style.transform="translateY(0)"}s.classList.add("open")}function sheetClose(id){var s=document.getElementById(id);if(!s)return;var p=s.querySelector(".qa-panel");if(p){p.style.animation="";p.style.transform=""}s.classList.remove("open")}function openTradeSheet(){sheetOpen("tradeSheet");try{haptic("light")}catch(e){logSwallowed("openTradeSheet",e)}}function closeTradeSheet(){sheetClose("tradeSheet")}function openCashSheet(){sheetOpen("cashSheet");try{haptic("light")}catch(e){logSwallowed("openCashSheet",e)}}function closeCashSheet(){sheetClose("cashSheet")}(function initConsoleSheets(){[["btnTradeSheet","tradeSheet",closeTradeSheet],["btnCashSheet","cashSheet",closeCashSheet]].forEach(function(pair){var btn=document.getElementById(pair[0]);if(btn)btn.addEventListener("click",function(){sheetOpen(pair[1])});var s=document.getElementById(pair[1]);if(!s)return;var p=s.querySelector(".qa-panel");if(p)enableSheetDrag(p,pair[2]);});})();function initOptSheet(){
-  var btn=document.getElementById('btnOptSheet');if(btn)btn.addEventListener('click',openOptSheet);
-  var s=optSheetEl();if(!s)return;
-  var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,closeOptSheet);
-}
-initOptSheet();
-function initQaDrag(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,qaClose)}
+/* v308 方案B：买卖录入 / 现金管理各自进底部弹层（表单内容原地搬，未改任何字段与逻辑） */function sheetOpen(id){var s=document.getElementById(id);if(!s)return;var p=s.querySelector(".qa-panel");if(p){p.style.animation="none";p.style.transform="translateY(0)"}s.classList.add("open")}function sheetClose(id){var s=document.getElementById(id);if(!s)return;var p=s.querySelector(".qa-panel");if(p){p.style.animation="";p.style.transform=""}s.classList.remove("open")}function openTradeSheet(){sheetOpen("tradeSheet");try{haptic("light")}catch(e){logSwallowed("openTradeSheet",e)}}function closeTradeSheet(){sheetClose("tradeSheet")}function openCashSheet(){sheetOpen("cashSheet");try{haptic("light")}catch(e){logSwallowed("openCashSheet",e)}}function closeCashSheet(){sheetClose("cashSheet")}(function initConsoleSheets(){[["btnTradeSheet","tradeSheet",closeTradeSheet],["btnCashSheet","cashSheet",closeCashSheet]].forEach(function(pair){var btn=document.getElementById(pair[0]);if(btn)btn.addEventListener("click",function(){sheetOpen(pair[1])});var s=document.getElementById(pair[1]);if(!s)return;var p=s.querySelector(".qa-panel");if(p)enableSheetDrag(p,pair[2]);});})();function initQaDrag(){var s=document.getElementById('qaSheet');if(!s)return;var p=s.querySelector('.qa-panel');if(p)enableSheetDrag(p,qaClose)}
 function syncSheetLock(){document.body.classList.toggle('sheet-open',!!document.querySelector('.qa-sheet.open'))}
 document.addEventListener('keydown',function(e){
   if(e.key!=='Escape')return;
@@ -2362,7 +1692,7 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
   if(open.id==='tradeSheet')closeTradeSheet();
   else if(open.id==='cashSheet')closeCashSheet();
-  else if(open.id==='optSheet')closeOptSheet();
+
   else if(open.id==='qaSheet')qaClose();
 });
 document.querySelectorAll('.qa-sheet').forEach(function(s){new MutationObserver(syncSheetLock).observe(s,{attributes:true,attributeFilter:['class']})});
@@ -2370,19 +1700,16 @@ initQaDrag();
 function qaDeposit(){qaClose();switchTab('console');setTimeout(function(){openCashSheet();var e=document.getElementById('hmCashAmt');if(e)e.focus()},260)}
 function qaBuy(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='buy';syncTradeControls();setTimeout(function(){openTradeSheet();var e=document.getElementById('tfShares');if(e)e.focus()},260)}
 function qaSell(){qaClose();switchTab('console');var t=document.getElementById('tfType');if(t)t.value='sell';syncTradeControls();setTimeout(function(){openTradeSheet();var e=document.getElementById('tfShares');if(e)e.focus()},260)}
-function qaCall(){qaClose();switchTab('option');setTimeout(function(){var e=document.getElementById('ostrike');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus()}},300)}
 
 
 function updateAlerts(){
   var nowInstant=new Date();
-  renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap(),maCrosses:maCrossEvents}));
+  renderAlerts(document,buildAlerts({now:nowInstant,trades:trades,state:state}));
 }
-/* v372：两种"今天不再提醒"的键（opt-expiry-<id> / opt-due-<id>）都归一成期权 id 再存 ——
-   pingMap 的键空间保持一套（老的 numeric 键也兼容），提醒那边也用 pingMap[id] 判断。 */
- document.addEventListener('click',function(event){var target=event.target;if(!target||!target.closest)return;var dismiss=target.closest('[data-alert-dismiss]');if(dismiss){event.preventDefault();event.stopPropagation();var key=String(dismiss.getAttribute('data-alert-dismiss')||'');if(key.indexOf('macross:')===0){ackMaCross(key.slice('macross:'.length));return}saveOptPing(key.replace(/^opt-(?:expiry|due)-/,''));updateAlerts();return}var action=target.closest('[data-alert-action]');if(action){qaClose();switchTab(action.getAttribute('data-alert-action'))}});
+ document.addEventListener('click',function(event){var target=event.target;if(!target||!target.closest)return;var dismiss=target.closest('[data-alert-dismiss]');if(dismiss){event.preventDefault();event.stopPropagation();var key=String(dismiss.getAttribute('data-alert-dismiss')||'');updateAlerts();return}var action=target.closest('[data-alert-action]');if(action){qaClose();switchTab(action.getAttribute('data-alert-action'))}});
 
 function updatePresentationMeta(){var dateEl=document.getElementById('desktopDate'),now=new Date(),cn=zonedDateParts(now,HOME_TIME_ZONE),ny=zonedDateParts(now,MARKET_TIME_ZONE),cnWeek={Sun:'星期日',Mon:'星期一',Tue:'星期二',Wed:'星期三',Thu:'星期四',Fri:'星期五',Sat:'星期六'};if(dateEl)dateEl.textContent='北京时间 '+Number(cn.month)+'月'+Number(cn.day)+'日 · '+cnWeek[cn.weekday]+' · '+cn.hour+':'+cn.minute;var mins=(Number(ny.hour)||0)*60+(Number(ny.minute)||0),weekday=['Mon','Tue','Wed','Thu','Fri'].indexOf(ny.weekday)>=0,isSession=weekday&&mins>=570&&mins<960,stateEl=document.getElementById('desktopMarketState'),stateWrap=stateEl&&stateEl.closest('.market-open');if(stateEl)stateEl.textContent='美东 '+ny.month+'/'+ny.day+' '+ny.hour+':'+ny.minute+' · '+(isSession?MARKET_SESSION_LABELS.open:MARKET_SESSION_LABELS.closed);if(stateWrap)stateWrap.classList.toggle('is-closed',!isSession)}
-(function initPresentationMeta(){updatePresentationMeta();setInterval(updatePresentationMeta,60000);var labels={otype:'期权类型',osym:'期权标的',oexpiry:'期权到期日',ocontracts:'期权合约数量',divSym:'股息标的',tradeFilterSym:'交易标的筛选',cashFilter:'资金流水筛选',attrYear:'年度归因年份'};Object.keys(labels).forEach(function(id){var el=document.getElementById(id);if(el&&!el.getAttribute('aria-label'))el.setAttribute('aria-label',labels[id])})})();
+(function initPresentationMeta(){updatePresentationMeta();setInterval(updatePresentationMeta,60000);var labels={divSym:'股息标的',tradeFilterSym:'交易标的筛选',cashFilter:'资金流水筛选',attrYear:'年度归因年份'};Object.keys(labels).forEach(function(id){var el=document.getElementById(id);if(el&&!el.getAttribute('aria-label'))el.setAttribute('aria-label',labels[id])})})();
 
 function updateSyncBanner(){applySyncBanner(document,syncBannerView(loadSyncState(),Date.now()))}
 function initSyncBanner(){bindSyncBanner({doc:document,onRetry:function(){if(typeof autoPull==='function')try{autoPull()}catch(e){logSwallowed("initSyncBanner",e)}},onExport:function(){var b=document.getElementById('btnExportData');if(b)b.click()},onDismiss:function(){var s=loadSyncState();s.bannerDismissedAt=Date.now();saveSyncState(s)}})}
@@ -2438,7 +1765,7 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 
 /* 打包成 IIFE 后，把内联事件用到的入口显式暴露到 window */
 if(typeof window!=='undefined'){
-  var __globals={clearAllData:clearAllData,logoutNow:logoutNow,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,openOptSheet:openOptSheet,closeOptSheet:closeOptSheet,openTradeSheet:openTradeSheet,closeTradeSheet:closeTradeSheet,openCashSheet:openCashSheet,closeCashSheet:closeCashSheet,qaCall:qaCall,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,adjOtm:adjOtm,assignOpt:assignOpt,copyDiagnostics:copyDiagnostics,delOpt:delOpt,settleOpt:settleOpt,renderOpt:renderOpt,showBusyToast:showBusyToast,toggleArchivedOpt:toggleArchivedOpt,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
+  var __globals={clearAllData:clearAllData,logoutNow:logoutNow,openAdvancedSettings:openAdvancedSettings,openMobileSettings:openMobileSettings,qaBuy:qaBuy,openTradeSheet:openTradeSheet,closeTradeSheet:closeTradeSheet,openCashSheet:openCashSheet,closeCashSheet:closeCashSheet,qaClose:qaClose,qaDeposit:qaDeposit,qaSell:qaSell,qaToggle:qaToggle,switchTab:switchTab,togglePrivacy:togglePrivacy,toggleTheme:toggleTheme,copyDiagnostics:copyDiagnostics,showBusyToast:showBusyToast,localValOf:localValOf,buildPushData:buildPushData,loadSyncState:loadSyncState,createBackupData:createBackupData,refreshMarket:refreshMarket,saveWatch:saveWatch};
   for(var __k in __globals){try{if(typeof __globals[__k]==='function')window[__k]=__globals[__k]}catch(e){logSwallowed("initForceUpload",e)}}
 }
 
