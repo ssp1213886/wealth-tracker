@@ -82,7 +82,7 @@ var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},trade
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v423';var APP_DATA_VERSION=5;
+var APP_BUILD='v424';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -1032,12 +1032,12 @@ function renderTradeImpact(p){
   var items=p.rows.map(function(row){return {sym:row.sym,pct:row.beforePct,color:getAssetColor(row.sym)}}).concat([{sym:'现金',pct:p.cashBeforePct,color:'color-mix(in srgb,var(--muted) 62%,transparent)'}]);
   var after=p.rows.map(function(row){return {sym:row.sym,pct:row.afterPct,color:getAssetColor(row.sym)}}).concat([{sym:'现金',pct:p.cashAfterPct,color:'color-mix(in srgb,var(--muted) 62%,transparent)'}]);
   var rows=p.rows.map(function(row){
-    var change=row.afterDeviation-row.beforeDeviation,cls=Math.abs(change)<.05?'is-flat':change<0?'is-good':'is-worse';
+    var cls=Math.abs(row.improvement)<.05?'is-flat':row.improvement>0?'is-good':'is-worse';
     return '<div class="ti-weight-row"><i style="background:'+getAssetColor(row.sym)+'"></i><strong>'+row.sym+'</strong>'+
       '<span>'+fmtImpactPct(row.beforePct)+' → '+fmtImpactPct(row.afterPct)+'</span>'+
       '<b class="'+cls+'" title="相对目标 '+fmtImpactPct(row.targetPct)+'">'+fmtImpactPp(row.beforeDeviation)+' → '+fmtImpactPp(row.afterDeviation)+'</b></div>';
   }).join('');
-  var cashChange=p.cashAfterDeviation-p.cashBeforeDeviation,cashCls=Math.abs(cashChange)<.05?'is-flat':cashChange<0?'is-good':'is-worse';
+  var cashCls=Math.abs(p.cashImprovement)<.05?'is-flat':p.cashImprovement>0?'is-good':'is-worse';
   rows+='<div class="ti-weight-row is-cash"><i></i><strong>现金</strong><span>'+fmtImpactPct(p.cashBeforePct)+' → '+fmtImpactPct(p.cashAfterPct)+'</span><b class="'+cashCls+'">'+fmtImpactPp(p.cashBeforeDeviation)+' → '+fmtImpactPp(p.cashAfterDeviation)+'</b></div>';
   var note;
   if(!p.hasTrade)note='输入数量和价格后显示交易后配比';
@@ -1202,7 +1202,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=423',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=424',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */

@@ -35,6 +35,7 @@ test('tradeImpact：卖出显示回收现金与剩余股数', () => {
   assert.equal(p.remainingShares, 5);
   assert.equal(p.rows[1].beforePct, 25);
   assert.equal(p.rows[1].afterPct, 12.5);
+  assert.ok(p.rows[1].improvement < 0);
 });
 
 test('tradeImpact：空输入仍可展示当前配比，缺价会明确列出', () => {
