@@ -171,8 +171,10 @@ optionActions.forEach(function(a){
     type:up?'blue':'orange',
     severity:period>=200?'high':'medium',
     title:e.symbol+' '+(up?'上穿':'下穿')+' '+period+' 日均线',
-    detail:'价格 $'+Number(e.price).toFixed(2)+' · '+period+' 日均线 $'+Number(e.average).toFixed(2)+' · 去期权页确认',
-    action:'option'
+    detail:'价格 $'+Number(e.price).toFixed(2)+' · '+period+' 日均线 $'+Number(e.average).toFixed(2)+' · 点「知道了」确认',
+    action:'option',
+    dismiss:'macross:'+e.id,
+    dismissLabel:'知道了'
   });
 });
 var monthBuys=ctx.trades.filter(function(t){return t.date.slice(0,7)===now&&t.shares>0}),buyTotal=monthBuys.reduce(function(s,t){return s+(t.price*Math.abs(t.shares))},0),dcaTarget=ctx.state.dcaOverride&&ctx.state.dcaOverride.month===now?ctx.state.dcaOverride.amount:ctx.state.monthlyDCA;

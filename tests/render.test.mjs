@@ -55,6 +55,17 @@ test('renderAlertItem：未知类型回退到 blue 图标', () => {
   assert.ok(html.includes('>B<') || html.includes('B'));
 });
 
+test('renderAlertItem：文字确认按钮使用自定义文案', () => {
+  const icons = { blue: '<svg></svg>' };
+  const html = renderAlertItem({
+    type: 'blue', title: '均线穿越', detail: '确认', action: 'option',
+    dismiss: 'macross:7', dismissLabel: '知道了',
+  }, icons);
+  assert.match(html, /data-alert-dismiss="macross:7"/);
+  assert.match(html, /qa-alert-dismiss is-text/);
+  assert.match(html, />知道了<\/button>/);
+});
+
 test('alertSignature：与顺序无关、随严重度变化、异常输入不抛错', () => {
   const a = [{ id: 'x', severity: 'high' }, { id: 'y', severity: 'low' }];
   const b = [{ id: 'y', severity: 'low' }, { id: 'x', severity: 'high' }];

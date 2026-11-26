@@ -392,4 +392,6 @@ test('buildAlerts：服务端均线穿越进入待办，200 日比 50 日优先�
   assert.equal(smh.severity, 'high');
   assert.equal(smh.title, 'SMH 下穿 200 日均线');
   assert.equal(smh.action, 'option');
+  assert.equal(vgt.dismiss, 'macross:1');
+  assert.equal(vgt.dismissLabel, '知道了');
 });

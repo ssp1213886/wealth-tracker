@@ -105,9 +105,21 @@ export function trendChartHtml(info, symbol) {
     '<div class="trend-counts"><span class="is-bull">强势 ' + data.counts.bull + ' 天</span><span class="is-neutral">中性 ' + data.counts.neutral + ' 天</span><span class="is-bear">弱势 ' + data.counts.bear + ' 天</span></div>';
 }
 
-export function renderTrendChart(doc, info, symbol) {
+export function trendTabsHtml(current, symbols) {
+  const list = Array.isArray(symbols) && symbols.length ? symbols : ['VGT', 'SMH', 'IBIT'];
+  const active = String(current || '').toUpperCase();
+  return list.map(function (symbol) {
+    const sym = String(symbol || '').toUpperCase();
+    return '<button type="button" class="prob-chip' + (sym === active ? ' is-on' : '') +
+      '" data-trendtab="' + escapeHtml(sym) + '">' + escapeHtml(sym) + '</button>';
+  }).join('');
+}
+
+export function renderTrendChart(doc, info, symbol, symbols) {
   const el = doc.getElementById('trendChart');
   const sym = doc.getElementById('trendSymbol');
+  const tabs = doc.getElementById('trendTabs');
   if (sym) sym.textContent = String(symbol || '').toUpperCase();
+  if (tabs) tabs.innerHTML = trendTabsHtml(symbol, symbols);
   if (el) el.innerHTML = trendChartHtml(info, symbol);
 }

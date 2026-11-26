@@ -145,7 +145,7 @@ if (!/CALL/.test(optUi.calls || '')) failures.push('"复投核心仓"那行没�
 if (optUi.rows < 1) failures.push('期权行没渲染出来');
 if (!/市场状态/.test(optUi.market || '')) failures.push('期权页没显示市场状态提示：' + optUi.market);
 if (!/强势/.test(optUi.market || '') || !/10% OTM/.test(optUi.market || '')) {
-  failures.push('市场状态没按 1 年日线给出强势/VGT 10% OTM：' + optUi.market);
+  failures.push('市场状态没按 2 年日线给出强势/VGT 10% OTM：' + optUi.market);
 }
 if (!/200 日均线/.test(optUi.market || '') || /200D/.test(optUi.market || '')) {
   failures.push('市场状态还要显示 200D 这种旧文案：' + optUi.market);
@@ -178,16 +178,30 @@ const chartUi = await ev(() => ({
   sma50: !!document.querySelector('#trendChart .trend-line.is-sma50'),
   sma200: !!document.querySelector('#trendChart .trend-line.is-sma200'),
   states: document.querySelectorAll('#trendChart .trend-state').length,
+  trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
+  activeTrend: (document.querySelector('#trendTabs .prob-chip.is-on') || {}).textContent || '',
   freshness: (document.getElementById('dataFreshness') || {}).innerText || '',
 }));
 if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200) failures.push('趋势图三条线没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
+if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
 if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {
   failures.push('数据新鲜度信息不完整：' + chartUi.freshness);
 }
+await ev(() => document.querySelector('#trendTabs [data-trendtab="IBIT"]').click());
+await p.waitForTimeout(600);
+const trendSwitch = await ev(() => ({
+  symbol: (document.getElementById('trendSymbol') || {}).textContent || '',
+  probabilityTab: (document.querySelector('#probTabs .prob-chip.is-on') || {}).textContent || '',
+}));
+if (trendSwitch.symbol !== 'IBIT' || trendSwitch.probabilityTab !== 'IBIT') failures.push('趋势图切换没有同步 IBIT：' + JSON.stringify(trendSwitch));
+await ev(() => document.querySelector('#trendTabs [data-trendtab="VGT"]').click());
+await p.waitForTimeout(400);
+await ev(() => document.getElementById('bbHoldings').click());
+await p.waitForTimeout(400);
 const maBefore = await ev(() => {
-  const list = document.getElementById('maCrossList');
-  const ack = list && list.querySelector('[data-ma-cross-ack]');
+  const list = document.getElementById('mobileAlerts');
+  const ack = list && list.querySelector('[data-alert-dismiss="macross:9001"]');
   return {
     text: list ? list.innerText : '',
     ack: !!ack,
@@ -197,15 +211,16 @@ const maBefore = await ev(() => {
 if (!/VGT 上穿 200 日均线/.test(maBefore.text || '')) failures.push('均线穿越提醒没有显示：' + maBefore.text);
 if (!maBefore.ack) failures.push('均线穿越提醒缺少确认按钮');
 if (!(maBefore.ackHeight >= 40)) failures.push('移动端均线提醒按钮触控高度不足：' + maBefore.ackHeight);
-await ev(() => { const b = document.querySelector('[data-ma-cross-ack]'); if (b) b.click(); });
+await ev(() => { const b = document.querySelector('#mobileAlerts [data-alert-dismiss="macross:9001"]'); if (b) b.click(); });
 await p.waitForTimeout(700);
 const maAfter = await ev(() => ({
-  text: (document.getElementById('maCrossList') || {}).textContent || '',
-  count: (document.getElementById('maCrossCount') || {}).textContent || '',
+  text: (document.getElementById('mobileAlerts') || {}).textContent || '',
 }));
-if (!/暂无待确认的均线穿越/.test(maAfter.text) || maAfter.count !== '0') {
+if (/VGT 上穿 200 日均线/.test(maAfter.text)) {
   failures.push('确认均线穿越后列表没有清空：' + JSON.stringify(maAfter));
 }
+await ev(() => document.getElementById('bbOption').click());
+await p.waitForTimeout(400);
 await p.setViewportSize({ width: 320, height: 700 });
 await p.waitForTimeout(300);
 const pwa320 = await ev(() => {

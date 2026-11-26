@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTrendData, trendChartHtml, renderTrendChart } from '../src/app/trend-chart.js';
+import { buildTrendData, trendChartHtml, trendTabsHtml, renderTrendChart } from '../src/app/trend-chart.js';
 
 function info() {
   const closes = [];
@@ -32,9 +32,12 @@ test('trendChartHtml：输出三条线、状态条与近一年统计', () => {
 });
 
 test('renderTrendChart：写入标的和图表容器', () => {
-  const nodes = { trendChart: { innerHTML: '' }, trendSymbol: { textContent: '' } };
+  const nodes = { trendChart: { innerHTML: '' }, trendSymbol: { textContent: '' }, trendTabs: { innerHTML: '' } };
   const doc = { getElementById(id) { return nodes[id] || null; } };
-  renderTrendChart(doc, info(), 'smh');
+  renderTrendChart(doc, info(), 'smh', ['VGT', 'SMH', 'IBIT']);
   assert.equal(nodes.trendSymbol.textContent, 'SMH');
   assert.match(nodes.trendChart.innerHTML, /50 日均线/);
+  assert.match(nodes.trendTabs.innerHTML, /data-trendtab="SMH"/);
+  assert.match(nodes.trendTabs.innerHTML, /class="prob-chip is-on" data-trendtab="SMH"/);
+  assert.equal(trendTabsHtml('IBIT', ['VGT', 'SMH', 'IBIT']).match(/is-on/g).length, 1);
 });
