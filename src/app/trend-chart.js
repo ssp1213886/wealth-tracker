@@ -20,6 +20,13 @@ function regimeAt(price, sma50, sma200) {
   return 'neutral';
 }
 
+/** Yahoo 返回 Unix 秒；同时兼容已经是毫秒的调用方，避免 2026 年被显示成 1970。 */
+function timestampMs(value) {
+  const ts = Number(value);
+  if (!Number.isFinite(ts) || !(ts > 0)) return NaN;
+  return ts < 1e12 ? ts * 1000 : ts;
+}
+
 /** 用日线收盘生成价格、50/200 日均线和逐日状态；最后一年最多 252 个交易日。 */
 export function buildTrendData(info) {
   const d = info || {};
@@ -29,7 +36,7 @@ export function buildTrendData(info) {
   closes.forEach(function (price, i) {
     const sma50 = averageAt(closes, i, 50);
     const sma200 = averageAt(closes, i, 200);
-    const ts = timestamps[i];
+    const ts = timestampMs(timestamps[i]);
     if (!(price > 0) || !(sma50 > 0) || !(sma200 > 0) || !(ts > 0)) return;
     rows.push({ i: i, ts: ts, price: price, sma50: sma50, sma200: sma200, regime: regimeAt(price, sma50, sma200) });
   });
@@ -51,7 +58,7 @@ function pathFor(rows, valueKey, min, max) {
 }
 
 function dateLabel(ms) {
-  const d = new Date(Number(ms));
+  const d = new Date(timestampMs(ms));
   if (!Number.isFinite(d.getTime())) return '';
   return String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + String(d.getUTCDate()).padStart(2, '0');
 }

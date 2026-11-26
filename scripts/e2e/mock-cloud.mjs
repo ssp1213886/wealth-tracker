@@ -320,7 +320,7 @@ const server = http.createServer((req, res) => {
     if (['VGT', 'SMH', 'IBIT'].includes(sym)) {
       const length = url.searchParams.get('range') === '2y' ? 501 : 251;
       const closes = Array.from({ length }, (_, i) => (i < length - 100 ? 100 : 120));
-      const timestamps = Array.from({ length }, (_, i) => Date.UTC(2024, 0, 1) + i * 86400000);
+      const timestamps = Array.from({ length }, (_, i) => (Date.UTC(2024, 0, 1) + i * 86400000) / 1000);
       res.writeHead(200, cors);
       return res.end(JSON.stringify({
         ok: true,
