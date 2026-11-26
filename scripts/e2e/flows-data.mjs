@@ -186,7 +186,7 @@ const chartUi = await ev(() => ({
 if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200) failures.push('趋势图三条线没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
 if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
-if (chartUi.rangeLabels.length !== 2 || chartUi.rangeLabels.some((label) => !/^(0[1-9]|1[0-2])\/\d{2}$/.test(label) || label === '01/21')) {
+if (chartUi.rangeLabels.length !== 2 || chartUi.rangeLabels.some((label) => !/^\d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(label) || label.endsWith('/01/21')) || chartUi.rangeLabels[0] === chartUi.rangeLabels[1]) {
   failures.push('趋势图日期标签异常：' + JSON.stringify(chartUi.rangeLabels));
 }
 if (!/现价/.test(chartUi.freshness) || !/日线/.test(chartUi.freshness) || !/期权链/.test(chartUi.freshness) || !/22:10 UTC/.test(chartUi.freshness)) {

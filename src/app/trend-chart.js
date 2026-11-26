@@ -60,7 +60,7 @@ function pathFor(rows, valueKey, min, max) {
 function dateLabel(ms) {
   const d = new Date(timestampMs(ms));
   if (!Number.isFinite(d.getTime())) return '';
-  return String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + String(d.getUTCDate()).padStart(2, '0');
+  return d.getUTCFullYear() + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + String(d.getUTCDate()).padStart(2, '0');
 }
 
 export function trendChartHtml(info, symbol) {
