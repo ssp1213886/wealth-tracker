@@ -371,3 +371,25 @@ test('v390：节奏提醒不再指定"卖哪一档到期"，只给卖出日与�
   assert.match(soon.detail, /30~45 天后到期的档，自己挑/);
   assert.equal((soon.detail.match(/\d{4}-\d{2}-\d{2}/g) || []).length, 1, '只允许出现卖出日这一个日期');
 });
+
+test('buildAlerts：服务端均线穿越进入待办，200 日比 50 日优先级高', () => {
+  const list = buildAlerts({
+    now: new Date('2026-11-26T12:00:00Z'),
+    options: [],
+    prices: {},
+    trades: [],
+    state: { monthlyDCA: 0 },
+    pingMap: {},
+    maCrosses: [
+      { id: 1, symbol: 'VGT', period: 50, toSide: 'ABOVE', price: 120, average: 115, triggeredAt: 1 },
+      { id: 2, symbol: 'SMH', period: 200, toSide: 'BELOW', price: 400, average: 520, triggeredAt: 2 },
+    ],
+  });
+  const vgt = list.find((a) => a.id === 'macross:1');
+  const smh = list.find((a) => a.id === 'macross:2');
+  assert.equal(vgt.severity, 'medium');
+  assert.equal(vgt.title, 'VGT 上穿 50 日均线');
+  assert.equal(smh.severity, 'high');
+  assert.equal(smh.title, 'SMH 下穿 200 日均线');
+  assert.equal(smh.action, 'option');
+});

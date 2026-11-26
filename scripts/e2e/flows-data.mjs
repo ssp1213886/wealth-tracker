@@ -172,6 +172,45 @@ if (regimeExplain.summary !== '判断规则') failures.push('判断规则入口�
 if (!regimeExplain.open) failures.push('移动端点开判断规则后没有展开');
 if (!regimeExplain.mobile) failures.push('端到端场景未按移动端宽度运行');
 if (!(regimeExplain.summaryHeight >= 40)) failures.push('移动端判断规则触控高度不足：' + regimeExplain.summaryHeight);
+const maBefore = await ev(() => {
+  const list = document.getElementById('maCrossList');
+  const ack = list && list.querySelector('[data-ma-cross-ack]');
+  return {
+    text: list ? list.innerText : '',
+    ack: !!ack,
+    ackHeight: ack ? ack.getBoundingClientRect().height : 0,
+  };
+});
+if (!/VGT 上穿 200 日均线/.test(maBefore.text || '')) failures.push('均线穿越提醒没有显示：' + maBefore.text);
+if (!maBefore.ack) failures.push('均线穿越提醒缺少确认按钮');
+if (!(maBefore.ackHeight >= 40)) failures.push('移动端均线提醒按钮触控高度不足：' + maBefore.ackHeight);
+await ev(() => { const b = document.querySelector('[data-ma-cross-ack]'); if (b) b.click(); });
+await p.waitForTimeout(700);
+const maAfter = await ev(() => ({
+  text: (document.getElementById('maCrossList') || {}).textContent || '',
+  count: (document.getElementById('maCrossCount') || {}).textContent || '',
+}));
+if (!/暂无待确认的均线穿越/.test(maAfter.text) || maAfter.count !== '0') {
+  failures.push('确认均线穿越后列表没有清空：' + JSON.stringify(maAfter));
+}
+await p.setViewportSize({ width: 320, height: 700 });
+await p.waitForTimeout(300);
+const pwa320 = await ev(() => {
+  const summary = document.querySelector('#marketRegime details.regime-rules summary');
+  const regime = document.getElementById('marketRegime');
+  return {
+    mobile: window.matchMedia('(max-width: 800px)').matches,
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    summaryHeight: summary ? summary.getBoundingClientRect().height : 0,
+    regimeWidth: regime ? regime.getBoundingClientRect().width : 0,
+    tabs: document.querySelectorAll('.bb-btn').length,
+  };
+});
+if (!pwa320.mobile) failures.push('320px 场景没有命中移动端样式');
+if (pwa320.overflow > 0) failures.push('320px 出现横向溢出：' + pwa320.overflow);
+if (!(pwa320.summaryHeight >= 40)) failures.push('320px 判断规则触控高度不足：' + pwa320.summaryHeight);
+if (!(pwa320.regimeWidth > 0 && pwa320.regimeWidth <= 320)) failures.push('320px 市场状态卡宽度异常：' + pwa320.regimeWidth);
+if (pwa320.tabs !== 4) failures.push('320px 底部 PWA 导航数量异常：' + pwa320.tabs);
 
 /* 云端是否真的收到 */
 await p.waitForTimeout(1500);

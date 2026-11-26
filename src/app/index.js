@@ -10,6 +10,7 @@ import {normalizeOptions, isActiveOption, optionExpiryState, optionRowStatus, op
 import {optionProbabilities, probMatrix, isMonthlyExpiry} from './prob.js';
 import {renderProbNote, renderProbUnavailable, renderProbMatrix, probTabsHtml, expiryCalendarHtml, fmtProb, fmtStrike, renderMarketRegime} from './prob-view.js';
 import {regimeFromChartPayload} from './regime.js';
+import {renderMaCross} from './ma-cross-view.js';
 import {scheduleRow, complianceStreak, estimateNextExDiv, weekdayOf} from './cc-schedule.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
@@ -79,7 +80,7 @@ var trades=[],livePrices={},liveChanges={},liveSources={},liveQuoteData={},trade
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v404';var APP_DATA_VERSION=5;
+var APP_BUILD='v406';var APP_DATA_VERSION=5;
 var PRICE_SYMBOLS={VGT:'VGT',SMH:'SMH',IBIT:'IBIT'};
 
 
@@ -960,7 +961,7 @@ function switchTab(tab){if(window.navigator&&navigator.vibrate)navigator.vibrate
 
 
   if(tab==='data'||tab==='console')updateDataPage()
-  if(tab==='option')setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},50)
+  if(tab==='option'){setTimeout(function(){if(typeof updateAllO==="function")updateAllO()},50);refreshMaCrossEvents(false)}
   if(tab==='console'&&typeof refreshTradeAffordability==='function')refreshTradeAffordability()
 
   var main=document.querySelector('.main');if(main&&window.innerWidth<=800)main.scrollTo({top:0,behavior:'auto'});setMobileSettings(false)
@@ -1141,7 +1142,7 @@ function initAll(){
   var ep=document.getElementById('exitPortfolio');if(ep){var saved=readRaw('exit_portfolio');if(saved)ep.value=saved;ep.addEventListener('change',function(){LS.setItem('exit_portfolio',ep.value);markDirty('exit_portfolio');autoPushDebounce()})}
 
 
-  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr;syncTradeControls();updateTradeEstimate();/* v309：给出可见反馈 —— 高亮这一行（防止点串看不出），并把录入弹层打开 */try{var rows=document.querySelectorAll('#hmPricesCompact .price-pill');for(var i=0;i<rows.length;i+=1)rows[i].classList.remove('is-picked');p.classList.add('is-picked');setTimeout(function(){p.classList.remove('is-picked')},1400);}catch(err){logSwallowed('pricePick',err)}try{openTradeSheet()}catch(err){logSwallowed('pricePick',err)}});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);showFirstTimeGuide()}catch(e){console.error(e);reportError('boot: '+((e&&e.message)||e),(e&&e.stack)||'');document.body.innerHTML='<div style="padding:32px 20px;max-width:440px;margin:0 auto;font:15px/1.7 -apple-system,BlinkMacSystemFont,\'PingFang SC\',sans-serif;color:#17211b"><h2 style="font-size:18px;margin:0 0 10px">页面启动失败了</h2><p style="margin:0 0 14px;color:#6e7771">你的本地数据仍然保存在这台设备上，没有被清除。可以先点“重新加载”；若仍然失败，用“复制诊断信息”把详情发给开发者。</p><pre style="overflow:auto;padding:12px;border-radius:10px;background:#f3f5f2;color:#6e7771;font-size:12.5px;line-height:1.5;margin:0 0 16px">'+String((e&&e.message)||e).slice(0,300)+'</pre><div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="location.reload()" style="flex:1;min-width:120px;min-height:44px;border:0;border-radius:12px;background:#147a4b;color:#fff;font:inherit;font-weight:600;cursor:pointer">重新加载</button><button onclick="copyDiagnostics()" style="flex:1;min-width:120px;min-height:44px;border:1px solid #dfe4df;border-radius:12px;background:#fff;color:#17211b;font:inherit;cursor:pointer">复制诊断信息</button></div></div>'}
+  updateSidebarPrices();initPortfolio();document.getElementById('hmPricesCompact')?.addEventListener('click',function(e){var p=e.target.closest('.price-pill');if(!p)return;var s=p.dataset.sym;if(!s)return;document.getElementById('tfAsset').value=s;var pr=parseFloat(p.dataset.price);if(!isNaN(pr))document.getElementById('tfPrice').value=pr;syncTradeControls();updateTradeEstimate();/* v309：给出可见反馈 —— 高亮这一行（防止点串看不出），并把录入弹层打开 */try{var rows=document.querySelectorAll('#hmPricesCompact .price-pill');for(var i=0;i<rows.length;i+=1)rows[i].classList.remove('is-picked');p.classList.add('is-picked');setTimeout(function(){p.classList.remove('is-picked')},1400);}catch(err){logSwallowed('pricePick',err)}try{openTradeSheet()}catch(err){logSwallowed('pricePick',err)}});document.querySelectorAll('.collapsible-header').forEach(function(h){h.addEventListener('click',function(e){if(e.target.closest('button'))return;this.closest('.collapsible-card').classList.toggle('collapsed')})});setTimeout(autoPull,300);setTimeout(doRebalance,500);setTimeout(function(){refreshMaCrossEvents(false)},1200);showFirstTimeGuide()}catch(e){console.error(e);reportError('boot: '+((e&&e.message)||e),(e&&e.stack)||'');document.body.innerHTML='<div style="padding:32px 20px;max-width:440px;margin:0 auto;font:15px/1.7 -apple-system,BlinkMacSystemFont,\'PingFang SC\',sans-serif;color:#17211b"><h2 style="font-size:18px;margin:0 0 10px">页面启动失败了</h2><p style="margin:0 0 14px;color:#6e7771">你的本地数据仍然保存在这台设备上，没有被清除。可以先点“重新加载”；若仍然失败，用“复制诊断信息”把详情发给开发者。</p><pre style="overflow:auto;padding:12px;border-radius:10px;background:#f3f5f2;color:#6e7771;font-size:12.5px;line-height:1.5;margin:0 0 16px">'+String((e&&e.message)||e).slice(0,300)+'</pre><div style="display:flex;gap:10px;flex-wrap:wrap"><button onclick="location.reload()" style="flex:1;min-width:120px;min-height:44px;border:0;border-radius:12px;background:#147a4b;color:#fff;font:inherit;font-weight:600;cursor:pointer">重新加载</button><button onclick="copyDiagnostics()" style="flex:1;min-width:120px;min-height:44px;border:1px solid #dfe4df;border-radius:12px;background:#fff;color:#17211b;font:inherit;cursor:pointer">复制诊断信息</button></div></div>'}
 
 
   var ht=document.querySelector('#holdBody');if(ht){ht=ht.parentElement.querySelector('thead');if(ht){var cols2=['sym','','','value','pnl','pnlPct',''];ht.style.cursor='pointer';ht.querySelectorAll('th').forEach(function(th){var c2=cols2[th.cellIndex];if(c2===holdSort.col)th.textContent+=' ↓';th.style.userSelect='none'});ht.addEventListener('click',function(e){var th=e.target.closest('th');if(!th)return;var col=cols2[th.cellIndex];if(!col)return;if(holdSort.col===col)holdSort.asc=!holdSort.asc;else{holdSort.col=col;holdSort.asc=false}updatePortfolio();var arr=holdSort.asc?' ↑':' ↓';ht.querySelectorAll('th').forEach(function(h,i){var c2=cols2[i];h.textContent=h.textContent.replace(/ [↑↓]$/,'')+(c2===holdSort.col?arr:'')})})}}
@@ -1159,7 +1160,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=404',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=406',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1432,7 +1433,7 @@ function flushDirtyOnHide(){try{if(!syncCfg||!syncCfg.url)return;var st=loadSync
 
 /* v316：网络恢复（VPN 重连、切回 WiFi）时自动补一次同步，不用等下一次打开 */
 window.addEventListener('online',function(){try{autoPull();pushPendingSoon(300)}catch(e){logSwallowed("syncOnline",e)}});
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200);refreshQuotesIfStale();refreshCcAlerts()}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&!document.getElementById('conflictModal')){autoPull();pushPendingSoon(1200);refreshQuotesIfStale();refreshCcAlerts();refreshMaCrossEvents(false)}else if(document.visibilityState==='hidden'){flushDirtyOnHide()}});window.addEventListener('pagehide',flushDirtyOnHide);var pushInFlight=false,pushQueued=false;
 function autoPush(){if(pushInFlight){pushQueued=true;return}var data=buildPushData(true);if(shouldSkipPush(data,SYNC_KEYS))return;pushInFlight=true;var finish=function(){pushInFlight=false;if(pushQueued){pushQueued=false;setTimeout(autoPush,60)}};syncPushImpl(data).then(finish,finish)}/* v312 撤掉"先问版本号再拉全文"的两段式：数据只有 5KB，省下的下载量抵不过多出来的一轮往返（实测慢网络下会把同步拖到 20 秒以上）。现在打开就是一次 GET，和以前一样。 */function autoPull(){if(!syncCfg.url)return;syncFetch('GET').then(function(r){if(!r.data)return;var meta=r.meta||{};var ss=loadSyncState();var conflicts=[],pendingCloud={},pulled=[];var plan=planPullSync({keys:SYNC_KEYS,cloudData:r.data,meta:meta,state:ss,normalizeTs:normalizeSyncTs,hasCloud:hasCloudData,hasLocal:hasLocalData,isEmptyCloud:isEmptyCloudVal,equal:function(key){return syncContentEqual(key,localValOf(key),r.data[key],normalizeState)}});
 var conflicts=plan.conflicts,pendingCloud=plan.pendingCloud,pulled=plan.applies;
 plan.applies.forEach(function(key){applyCloudVal(key,r.data[key])});
@@ -1894,6 +1895,49 @@ async function refreshMarketRegimes(force){
   regimeStatus.error=errs.join(' | ');
   renderMarketRegimeForTab();
 }
+var MA_CROSS_TTL_MS=5*60*1000;
+var maCrossEvents=[];
+var maCrossStatus={loading:false,loadedAt:0,error:''};
+function renderMaCrossCard(){
+  try{renderMaCross(document,maCrossEvents,{loading:maCrossStatus.loading,error:maCrossStatus.error})}
+  catch(e){logSwallowed("renderMaCross",e)}
+}
+async function refreshMaCrossEvents(force){
+  if(maCrossStatus.loading)return;
+  if(!force&&maCrossStatus.loadedAt&&Date.now()-maCrossStatus.loadedAt<MA_CROSS_TTL_MS)return;
+  maCrossStatus.loading=true;maCrossStatus.error='';
+  renderMaCrossCard();
+  try{
+    var r=await fetchWithTimeout('/api/ma-cross?limit=20');
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var j=await r.json();
+    if(!j||!j.ok||!Array.isArray(j.events))throw new Error((j&&j.error)||'payload');
+    maCrossEvents=j.events;
+  }catch(e){
+    maCrossStatus.error=(e&&e.message)||'failed';
+  }finally{
+    maCrossStatus.loading=false;
+    maCrossStatus.loadedAt=Date.now();
+    renderMaCrossCard();
+    refreshCcAlerts();
+  }
+}
+async function ackMaCross(id){
+  var eventId=Number(id);
+  if(!(eventId>0))return;
+  try{
+    var r=await fetchWithTimeout('/api/ma-cross/ack',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:eventId}),
+    });
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    maCrossEvents=maCrossEvents.filter(function(event){return Number(event.id)!==eventId});
+    renderMaCrossCard();
+    refreshCcAlerts();
+    showToast('已确认均线穿越提醒','ok');
+  }catch(e){
+    showToast('确认失败，请稍后重试','err');
+  }
+}
 /* 容错读法：otmSettings 在模块后半段才赋值，而 initProb 可能在 DOM 已就绪时同步跑 */
 function otmOf(sym){var v=Number(otmSettings&&otmSettings[otmKeyOf(sym)]);return v>0?v:otmDefaultOf(sym)}
 /* 最近一次渲染出来的矩阵摘要 —— ± 按钮与列头点击都要靠它把指针在**真实档位**上移动。
@@ -2146,7 +2190,7 @@ function refreshCcAlerts(){
   try{
     var nowInstant=new Date();
     var list=buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),
-      ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap()});
+      ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap(),maCrosses:maCrossEvents});
     renderAlerts(document,list);
     syncAppBadge(list);
   }catch(e){logSwallowed("refreshCcAlerts",e)}
@@ -2234,11 +2278,11 @@ function qaCall(){qaClose();switchTab('option');setTimeout(function(){var e=docu
 
 function updateAlerts(){
   var nowInstant=new Date();
-  renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap()}));
+  renderAlerts(document,buildAlerts({now:nowInstant,options:loadOpt(),prices:livePrices,trades:trades,state:state,pingMap:loadOptPing(),ccRows:ccRows(),ccStreaks:ccStreaks(),exDiv:exDivMap(),maCrosses:maCrossEvents}));
 }
 /* v372：两种"今天不再提醒"的键（opt-expiry-<id> / opt-due-<id>）都归一成期权 id 再存 ——
    pingMap 的键空间保持一套（老的 numeric 键也兼容），提醒那边也用 pingMap[id] 判断。 */
-document.addEventListener('click',function(event){var target=event.target;if(!target||!target.closest)return;var dismiss=target.closest('[data-alert-dismiss]');if(dismiss){event.preventDefault();event.stopPropagation();saveOptPing(String(dismiss.getAttribute('data-alert-dismiss')||'').replace(/^opt-(?:expiry|due)-/,''));updateAlerts();return}var action=target.closest('[data-alert-action]');if(action){qaClose();switchTab(action.getAttribute('data-alert-action'))}});
+ document.addEventListener('click',function(event){var target=event.target;if(!target||!target.closest)return;var maAck=target.closest('[data-ma-cross-ack]');if(maAck){event.preventDefault();event.stopPropagation();ackMaCross(maAck.getAttribute('data-ma-cross-ack'));return}var dismiss=target.closest('[data-alert-dismiss]');if(dismiss){event.preventDefault();event.stopPropagation();saveOptPing(String(dismiss.getAttribute('data-alert-dismiss')||'').replace(/^opt-(?:expiry|due)-/,''));updateAlerts();return}var action=target.closest('[data-alert-action]');if(action){qaClose();switchTab(action.getAttribute('data-alert-action'))}});
 
 function updatePresentationMeta(){var dateEl=document.getElementById('desktopDate'),now=new Date(),cn=zonedDateParts(now,HOME_TIME_ZONE),ny=zonedDateParts(now,MARKET_TIME_ZONE),cnWeek={Sun:'星期日',Mon:'星期一',Tue:'星期二',Wed:'星期三',Thu:'星期四',Fri:'星期五',Sat:'星期六'};if(dateEl)dateEl.textContent='北京时间 '+Number(cn.month)+'月'+Number(cn.day)+'日 · '+cnWeek[cn.weekday]+' · '+cn.hour+':'+cn.minute;var mins=(Number(ny.hour)||0)*60+(Number(ny.minute)||0),weekday=['Mon','Tue','Wed','Thu','Fri'].indexOf(ny.weekday)>=0,isSession=weekday&&mins>=570&&mins<960,stateEl=document.getElementById('desktopMarketState'),stateWrap=stateEl&&stateEl.closest('.market-open');if(stateEl)stateEl.textContent='美东 '+ny.month+'/'+ny.day+' '+ny.hour+':'+ny.minute+' · '+(isSession?MARKET_SESSION_LABELS.open:MARKET_SESSION_LABELS.closed);if(stateWrap)stateWrap.classList.toggle('is-closed',!isSession)}
 (function initPresentationMeta(){updatePresentationMeta();setInterval(updatePresentationMeta,60000);var labels={otype:'期权类型',osym:'期权标的',oexpiry:'期权到期日',ocontracts:'期权合约数量',divSym:'股息标的',tradeFilterSym:'交易标的筛选',cashFilter:'资金流水筛选',attrYear:'年度归因年份'};Object.keys(labels).forEach(function(id){var el=document.getElementById(id);if(el&&!el.getAttribute('aria-label'))el.setAttribute('aria-label',labels[id])})})();

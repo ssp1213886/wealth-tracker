@@ -13,3 +13,7 @@ run_worker_first = true
 binding = "DB"
 database_name = "wealth-db"
 database_id = "f5ffd073-c0a2-4fad-a470-7f9120eae3d8"
+
+[triggers]
+# 22:10 UTC：美股夏令时收盘后 10 分钟，冬令时已收盘 70 分钟。
+crons = ["10 22 * * 1-5"]

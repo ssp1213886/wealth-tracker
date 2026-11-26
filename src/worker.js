@@ -10,6 +10,7 @@ import { handleLog } from './lib/logs.js';
 import { handleQuotes, handleHoldings } from './lib/quotes.js';
 import { handleLogo } from './lib/logos.js';
 import { handleMarketCap } from './lib/marketcap.js';
+import { scanMaCrosses, listMaCrossEvents, ackMaCrossEvent } from './lib/ma-cross.js';
 import { readSession, issueSession, sessionCookie, clearSessionCookie, uidCookie, clearUidCookie, passwordMatches, sessionSecret } from './lib/session.js';
 import { ensureAccountsTable, countAccounts, findAccountByUsername, findAccountById, listAccounts, dataRowCounts, touchLastSeen, setAccountPassword, setAccountDisabled, deleteAccount, createAccount, verifyAccountPassword, normalizeUsername } from './lib/accounts.js';
 import { loginPageResponse, notFoundPage } from './lib/login-page.js';
@@ -74,6 +75,11 @@ function needsAuth(request, pathname) {
 export default {
   async fetch(request, env, ctx) {
     return withSecurityHeaders(await handleRequest(request, env, ctx));
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(scanMaCrosses(env).catch(function (error) {
+      console.error('[ma-cross] scheduled scan failed', error);
+    }));
   },
 };
 
@@ -350,6 +356,29 @@ async function handleRequest(request, env, ctx) {
           userId: Number(row.user_id),
         })),
       });
+    }
+    if (url.pathname === '/api/ma-cross' && request.method === 'GET') {
+      const me = await activeAccount(request, env);
+      if (!me) return json({ error: 'Unauthorized' }, 401);
+      const events = await listMaCrossEvents(env, me.id, url.searchParams.get('limit'));
+      return json({ ok: true, events: events }, 200);
+    }
+    if (url.pathname === '/api/ma-cross/ack' && request.method === 'POST') {
+      const me = await activeAccount(request, env);
+      if (!me) return json({ error: 'Unauthorized' }, 401);
+      let body = {};
+      try { body = await request.json(); } catch { return json({ ok: false, error: 'Invalid JSON' }, 400); }
+      const id = Number(body && body.id);
+      if (!(id > 0)) return json({ ok: false, error: 'Missing id' }, 400);
+      const changed = await ackMaCrossEvent(env, me.id, id);
+      return json({ ok: true, changed: changed }, 200);
+    }
+    if (url.pathname === '/api/ma-cross/scan' && request.method === 'POST') {
+      const me = await activeAccount(request, env);
+      if (!me) return json({ error: 'Unauthorized' }, 401);
+      if (me.role !== 'owner') return json({ ok: false, error: 'Forbidden' }, 403);
+      const result = await scanMaCrosses(env);
+      return json({ ok: true, result: result }, 200);
     }
     // 登录页自己的路由。少了这一条，/login 会掉到静态资源查找 → 404（真事故）
     if (url.pathname === '/login') return loginPageResponse('');

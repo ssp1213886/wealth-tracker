@@ -11,6 +11,8 @@ export function createFakeDb(initial = {}) {
   const accounts = [];
   const events = [];
   const snapshots = [];
+  const maStates = [];
+  const maEvents = [];
 
   const route = (sql, args) => {
     const q = sql.replace(/\s+/g, ' ').trim();
@@ -18,6 +20,8 @@ export function createFakeDb(initial = {}) {
     if (q.startsWith('CREATE TABLE IF NOT EXISTS accounts')) return { results: [], success: true };
     if (q.startsWith('CREATE TABLE IF NOT EXISTS events')) return { results: [], success: true };
     if (q.startsWith('CREATE TABLE IF NOT EXISTS snapshots')) return { results: [], success: true };
+    if (q.startsWith('CREATE TABLE IF NOT EXISTS ma_cross_state')) return { results: [], success: true };
+    if (q.startsWith('CREATE TABLE IF NOT EXISTS ma_cross_events')) return { results: [], success: true };
     if (q.startsWith('CREATE INDEX')) return { results: [], success: true };
     if (q.startsWith('INSERT INTO snapshots')) {
       const [user_id, payload, summary, reason, created_at] = args;
@@ -96,6 +100,9 @@ export function createFakeDb(initial = {}) {
         created_at: a.created_at, last_seen_at: a.last_seen_at,
       })) };
     }
+    if (q.startsWith('SELECT id FROM accounts WHERE disabled = 0')) {
+      return { results: accounts.filter((a) => !Number(a.disabled)).map((a) => ({ id: a.id })) };
+    }
     if (q.startsWith('INSERT INTO accounts (id,')) {
       const [id, username, name, pass_hash, salt, created_at, role] = args;
       accounts.push({ id: Number(id), username, name, pass_hash, salt, created_at, role: role || 'member', disabled: 0, last_seen_at: 0, token_version: 0 });
@@ -141,6 +148,56 @@ export function createFakeDb(initial = {}) {
       if (at >= 0) accounts.splice(at, 1);
       return { results: [], success: true };
     }
+    if (q.startsWith('DELETE FROM ma_cross_events WHERE user_id = ?')) {
+      const userId = Number(args[0]);
+      for (let i = maEvents.length - 1; i >= 0; i -= 1) if (maEvents[i].user_id === userId) maEvents.splice(i, 1);
+      return { results: [], success: true };
+    }
+    if (q.startsWith('DELETE FROM ma_cross_state WHERE user_id = ?')) {
+      const userId = Number(args[0]);
+      for (let i = maStates.length - 1; i >= 0; i -= 1) if (maStates[i].user_id === userId) maStates.splice(i, 1);
+      return { results: [], success: true };
+    }
+    if (q.startsWith('SELECT user_id, symbol, period, side, price, average, observed_at FROM ma_cross_state')) {
+      return { results: maStates.slice() };
+    }
+    if (q.startsWith('INSERT INTO ma_cross_events')) {
+      const [user_id, symbol, period, from_side, to_side, price, average, triggered_at] = args;
+      const row = {
+        id: maEvents.reduce((max, e) => Math.max(max, e.id), 0) + 1,
+        user_id: Number(user_id), symbol, period: Number(period), from_side, to_side,
+        price: Number(price), average: Number(average), triggered_at: Number(triggered_at), acked_at: null,
+      };
+      maEvents.push(row);
+      return { results: [], success: true, meta: { last_row_id: row.id } };
+    }
+    if (q.startsWith('INSERT INTO ma_cross_state')) {
+      const [user_id, symbol, period, side, price, average, observed_at] = args;
+      const userId = Number(user_id);
+      const periodNum = Number(period);
+      const found = maStates.filter((s) => s.user_id === userId && s.symbol === symbol && s.period === periodNum)[0];
+      const row = {
+        user_id: userId, symbol, period: periodNum, side, price: Number(price),
+        average: Number(average), observed_at: Number(observed_at),
+      };
+      if (found) Object.assign(found, row);
+      else maStates.push(row);
+      return { results: [], success: true };
+    }
+    if (q.startsWith('SELECT id, symbol, period, from_side, to_side, price, average, triggered_at FROM ma_cross_events')) {
+      const userId = Number(args[0]);
+      const limit = Number(args[1]) || 20;
+      return { results: maEvents
+        .filter((e) => e.user_id === userId && !e.acked_at)
+        .sort((a, b) => b.triggered_at - a.triggered_at || b.id - a.id)
+        .slice(0, limit) };
+    }
+    if (q.startsWith('UPDATE ma_cross_events SET acked_at = ?')) {
+      const [acked_at, id, user_id] = args;
+      const found = maEvents.filter((e) => e.id === Number(id) && e.user_id === Number(user_id) && !e.acked_at)[0];
+      if (found) found.acked_at = Number(acked_at);
+      return { results: [], success: true, meta: { changes: found ? 1 : 0 } };
+    }
     if (q.startsWith('SELECT key, value, updated_at FROM data WHERE user_id = ?')) {
       const userId = Number(args[0]);
       return { results: [...rows.values()].filter((row) => row.user_id === userId) };
@@ -183,6 +240,8 @@ export function createFakeDb(initial = {}) {
     accounts,
     events,
     snapshots,
+    maStates,
+    maEvents,
     prepare: (sql) => statement(sql),
     async batch(statements) {
       for (const item of statements) await item.run();

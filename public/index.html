@@ -487,6 +487,12 @@
   <div class="prob-note is-refresh" id="probNote" title="点击刷新期权链（CBOE 免费接口为延迟报价，非实时）"></div>
 </div>
 
+<div class="card option-card ma-cross-card">
+  <div class="opt-card-head"><h3>均线穿越<span class="card-sub">50 / 200 日均线</span></h3><span class="cc-active-badge"><strong id="maCrossCount">0</strong> 条</span></div>
+  <div id="maCrossList" aria-live="polite"><div class="ma-cross-empty">读取均线穿越提醒…</div></div>
+  <div class="prob-note">每个交易日收盘后扫描一次。首次扫描只建立基线；确认后提醒会在所有设备消失。</div>
+</div>
+
 <div class="card collapsible-card collapsed" id="expiryCalCard">
   <div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>到期日历<span class="card-sub">市场有哪些到期日</span></h3></div>
   <div class="collapsible-body">

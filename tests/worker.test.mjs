@@ -58,6 +58,33 @@ test('rejects unsupported price symbols and methods', async () => {
   assert.equal((await worker.fetch(request('/api/price?symbol=VGT', { method: 'POST', headers: auth }), testEnv)).status, 405);
 });
 
+test('均线穿越 API：按账号返回待确认事件，确认后消失', async () => {
+  assert.equal(typeof worker.scheduled, 'function', 'Worker 必须暴露 Cron scheduled 入口');
+  const db = createFakeDb();
+  const testEnv = env(db);
+  const cookie = await loginCookie(testEnv);
+  const auth = { Cookie: cookie };
+  db.maEvents.push({
+    id: 1, user_id: 1, symbol: 'VGT', period: 200,
+    from_side: 'BELOW', to_side: 'ABOVE', price: 120, average: 105,
+    triggered_at: 123, acked_at: null,
+  });
+  const before = await worker.fetch(request('/api/ma-cross', { headers: auth }), testEnv);
+  assert.equal(before.status, 200);
+  const beforeBody = await before.json();
+  assert.equal(beforeBody.events.length, 1);
+  assert.equal(beforeBody.events[0].period, 200);
+  const ack = await worker.fetch(request('/api/ma-cross/ack', {
+    method: 'POST',
+    headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 1 }),
+  }), testEnv);
+  assert.equal(ack.status, 200);
+  assert.equal((await ack.json()).changed, true);
+  const after = await worker.fetch(request('/api/ma-cross', { headers: auth }), testEnv);
+  assert.equal((await after.json()).events.length, 0);
+});
+
 /* ===== 登录门禁 ===== */
 
 const shellEnv = (db) => ({

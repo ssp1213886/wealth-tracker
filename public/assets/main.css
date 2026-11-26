@@ -2907,6 +2907,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
      不会再出现"两块各自被压扁、文字压住 + 按钮"（v391 的线上 bug）。 */
   .prob-card .prob-controls{gap:6px 8px}
   .regime-rules summary{min-height:44px;margin:0 -2px;padding:0 2px}
+  .ma-cross-ack{min-height:44px}
 }
 
 /* ===== v326 到期日历 + 行权价参考的备注 ===== */
@@ -2925,6 +2926,15 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
 .cc-due{color:var(--accent-d);font-weight:700}
 .cc-streak{color:var(--accent-d)}
 .cc-missed{color:var(--orange)}
+.ma-cross-list{display:flex;flex-direction:column;gap:8px}
+.ma-cross-item{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:var(--radius-sm);background:color-mix(in srgb,var(--fg) 2.5%,transparent)}
+.ma-cross-item.is-below{border-left-color:var(--orange);background:color-mix(in srgb,var(--orange) 7%,transparent)}
+.ma-cross-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:2px}
+.ma-cross-copy strong{font-size:12px;font-weight:680}
+.ma-cross-copy small{color:var(--muted);font-size:10.5px;line-height:1.45;font-variant-numeric:tabular-nums}
+.ma-cross-ack{min-width:58px;min-height:34px;padding:0 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--fg);font:inherit;font-size:11px;font-weight:650;cursor:pointer}
+.ma-cross-empty{color:var(--muted);font-size:11.5px;padding:5px 0}
+@media(max-width:800px){.ma-cross-ack{min-height:44px}}
 /* ===== v336 被行权概率矩阵（v391 起列＝链上真实档位）===== */
 .mx-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .mx-table thead th{text-align:right;padding:6px;border-bottom:1px solid var(--rule);color:var(--muted);font-size:11px;font-weight:560;white-space:nowrap}

@@ -161,6 +161,20 @@ optionActions.forEach(function(a){
       action:'option'});
   }
 });
+/* 服务端均线穿越事件：只在“穿越发生”时生成，确认前会一直在待办里。
+   50 日用于更早感知趋势变化，200 日作为长期趋势确认，所以 200 日优先级更高。 */
+(ctx.maCrosses||[]).forEach(function(e){
+  if(!e||!e.symbol||!e.toSide)return;
+  var up=e.toSide==='ABOVE',period=Number(e.period)||0;
+  alerts.push({
+    id:'macross:'+e.id,
+    type:up?'blue':'orange',
+    severity:period>=200?'high':'medium',
+    title:e.symbol+' '+(up?'上穿':'下穿')+' '+period+' 日均线',
+    detail:'价格 $'+Number(e.price).toFixed(2)+' · '+period+' 日均线 $'+Number(e.average).toFixed(2)+' · 去期权页确认',
+    action:'option'
+  });
+});
 var monthBuys=ctx.trades.filter(function(t){return t.date.slice(0,7)===now&&t.shares>0}),buyTotal=monthBuys.reduce(function(s,t){return s+(t.price*Math.abs(t.shares))},0),dcaTarget=ctx.state.dcaOverride&&ctx.state.dcaOverride.month===now?ctx.state.dcaOverride.amount:ctx.state.monthlyDCA;
 if(dcaTarget&&buyTotal<dcaTarget*0.9){var gap=dcaTarget-buyTotal;alerts.push({id:'dca:'+now,type:'accent',severity:'low',title:'本月定投还差 '+fmtFull(gap),detail:'完成后保持目标资产配比',action:'console'})}
 /* 固定节奏提醒（v328）：到期日当天就卖下一档。节奏日历由 index.js 传进来（ccRows），

@@ -1,3 +1,5 @@
+import { ensureMaCrossSchema } from './ma-cross.js';
+
 // 账号体系：用户名 + 密码（一个账号一份数据，互相看不到）。
 //
 // 密码怎么存：
@@ -119,8 +121,11 @@ export async function setAccountDisabled(env, id, disabled) {
 
 /** 删除账号：连带删掉它的全部云端数据行（调用方负责先导出）。 */
 export async function deleteAccount(env, id) {
+  await ensureMaCrossSchema(env);
   await env.DB.batch([
     env.DB.prepare('DELETE FROM data WHERE user_id = ?').bind(Number(id)),
+    env.DB.prepare('DELETE FROM ma_cross_events WHERE user_id = ?').bind(Number(id)),
+    env.DB.prepare('DELETE FROM ma_cross_state WHERE user_id = ?').bind(Number(id)),
     env.DB.prepare('DELETE FROM accounts WHERE id = ?').bind(Number(id)),
   ]);
   return { ok: true };
