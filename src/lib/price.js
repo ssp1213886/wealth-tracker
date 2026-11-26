@@ -9,7 +9,7 @@ const SHORT_HISTORY_TTL_SECONDS = 15 * 60;
 const LONG_HISTORY_TTL_SECONDS = 24 * 60 * 60;
 const HISTORY_RANGES = new Set(['1y', '2y', '5y', '10y', 'ytd', 'max']);
 const SHORT_HISTORY_RANGES = new Set(['1y', '2y', 'ytd']);
-const PRICE_CACHE_VERSION = 'v2';
+const PRICE_CACHE_VERSION = 'v3';
 
 /** 近期区间的缓存时长；其它历史区间维持一天。 */
 export function priceHistoryTtlSeconds(range) {
@@ -21,6 +21,41 @@ export function priceHistoryTtlSeconds(range) {
 /** 版本化缓存键：改 TTL 时同时淘汰已经写入的旧缓存。 */
 export function priceCacheKey(symbol, range) {
   return 'price:' + PRICE_CACHE_VERSION + ':' + String(symbol).toUpperCase() + '|' + range;
+}
+
+/**
+ * Yahoo 偶尔会把最新交易日的 close 留空，但同一响应里的 regularMarketPrice
+ * 已经是该日收盘价。写入缓存前补齐，避免前端过滤空值时退回上一交易日。
+ */
+export function mergeLatestQuote(data) {
+  const result = data && data.chart && data.chart.result && data.chart.result[0];
+  const quote = result && result.indicators && result.indicators.quote && result.indicators.quote[0];
+  const meta = result && result.meta;
+  if (!quote || !meta || !Array.isArray(result.timestamp) || !Array.isArray(quote.close)) return data;
+
+  const price = Number(meta.regularMarketPrice);
+  const marketTs = Number(meta.regularMarketTime);
+  if (!(price > 0) || !(marketTs > 0)) return data;
+
+  let last = result.timestamp.length - 1;
+  while (last >= 0 && !(Number(result.timestamp[last]) > 0)) last -= 1;
+  if (last < 0) return data;
+
+  const lastTs = Number(result.timestamp[last]);
+  const lastDay = new Date(lastTs * 1000).toISOString().slice(0, 10);
+  const marketDay = new Date(marketTs * 1000).toISOString().slice(0, 10);
+  if (marketDay === lastDay) {
+    result.timestamp[last] = marketTs;
+    quote.close[last] = price;
+    return data;
+  }
+  if (marketDay < lastDay) return data;
+
+  result.timestamp.push(marketTs);
+  Object.keys(quote).forEach(function (key) {
+    if (Array.isArray(quote[key])) quote[key].push(key === 'close' ? price : null);
+  });
+  return data;
 }
 
 // 东方财富市场号：107 = NYSE Arca（VGT/SMH 等 ETF），105 = 纳斯达克
@@ -99,6 +134,7 @@ export async function handlePrice(request, url) {
     );
     const data = await response.json();
     await ensureHistory(data, quoteSymbol);
+    mergeLatestQuote(data);
     const body = { ok: true, data };
     // 必须 await：Worker 一旦返回响应，没跑完的异步写入会被取消（缓存就白写了）
     await edgePutJson(url.origin, edgeKey, body, ttl);
