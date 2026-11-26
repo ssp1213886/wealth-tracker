@@ -180,6 +180,7 @@ const chartUi = await ev(() => ({
   states: document.querySelectorAll('#trendChart .trend-state').length,
   yLabels: document.querySelectorAll('#trendChart .trend-axis-label').length,
   rangeTabs: document.querySelectorAll('#trendChart [data-trendrange]').length,
+  rangeHeights: [...document.querySelectorAll('#trendChart [data-trendrange]')].map((el) => el.getBoundingClientRect().height),
   area: !!document.querySelector('#trendChart .trend-area'),
   hoverLayer: !!document.querySelector('#trendChart .trend-hover'),
   trendTabs: document.querySelectorAll('#trendTabs [data-trendtab]').length,
@@ -191,6 +192,7 @@ const chartUi = await ev(() => ({
 if (!chartUi.svg || !chartUi.price || !chartUi.sma50 || !chartUi.sma200 || !chartUi.area) failures.push('趋势图线条或面积没有完整渲染');
 if (!(chartUi.states >= 200)) failures.push('趋势状态历史不足：' + chartUi.states);
 if (chartUi.yLabels !== 4 || chartUi.rangeTabs !== 3 || !chartUi.hoverLayer) failures.push('趋势图坐标轴、范围或悬停层缺失：' + JSON.stringify(chartUi));
+if (chartUi.rangeHeights.some((height) => height < 40)) failures.push('移动端趋势范围按钮触控高度不足：' + JSON.stringify(chartUi.rangeHeights));
 if (chartUi.trendTabs !== 3 || chartUi.activeTrend !== 'VGT') failures.push('趋势图缺少三标的切换：' + JSON.stringify(chartUi));
 const rangeDates = chartUi.rangeLabels.map((label) => (label.match(/\d{4}\/(0[1-9]|1[0-2])\/\d{2}/) || [])[0] || '');
 if (chartUi.rangeLabels.length !== 2 || !/^开始 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[0]) || !/^截至 \d{4}\/(0[1-9]|1[0-2])\/\d{2}$/.test(chartUi.rangeLabels[1]) || rangeDates.some((date) => date.endsWith('/01/21')) || rangeDates[0] === rangeDates[1]) {

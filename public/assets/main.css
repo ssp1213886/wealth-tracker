@@ -3004,7 +3004,7 @@ html[data-theme="dark"] .sym-badge.is-letter{background:color-mix(in srgb,var(--
   .trend-toolbar{gap:7px}
   .trend-source{display:none}
   .trend-range-chips{margin-left:auto}
-  .trend-range-chip{height:28px}
+  .trend-range-chip{height:40px;min-width:44px;padding:0 9px}
   .trend-tooltip{top:39px}
 }
 @media(max-width:560px){
