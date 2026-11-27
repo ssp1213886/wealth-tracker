@@ -3287,6 +3287,7 @@ body.sheet-open{overflow:hidden}
   #tab-analysis #watchCard{grid-column:1/5;margin:0}
   #tab-analysis .market-trend-card{grid-column:5/-1;margin:0}
   #tab-analysis .equity-card{grid-column:1/-1;margin:0}
+#tab-analysis .daily-pnl-card{grid-column:1/-1;margin:0}
   #tab-analysis .analysis-risk-grid{grid-column:1/-1;display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.2fr);gap:14px;align-items:start}
   #tab-analysis .analysis-risk-grid>.card,#tab-analysis .analysis-risk-grid>#exposureSlot .card{margin:0}
 }
