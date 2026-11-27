@@ -1,5 +1,5 @@
-// Service Worker v447 - 导航分支只让 App 壳子走壳子缓存（/guide 这类同作用域页面不再被顶掉）
-var CACHE = 'wealth-v447';
+// Service Worker v448 - 导航分支只让 App 壳子走壳子缓存（/guide 这类同作用域页面不再被顶掉）
+var CACHE = 'wealth-v448';
 var PRECACHE = ['/', '/manifest.json', '/assets/main.css', '/assets/app.js'];
 
 function cacheResponse(request, response) {

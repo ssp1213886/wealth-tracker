@@ -476,7 +476,8 @@ export function equityCurveHtml(series) {
       equityMoney(pts[lastIndex].value) +
     '</span>' +
   '</div>' +
-  (hasBenchmark ? '<p class="eq-benchmark-note">目标基准 = 同样的净入金，按 ' + benchmarkNote + ' 买入并每年 12 月再平衡的模拟曲线，用来看"有没有按计划执行"，不是收益预测。</p>' : '');
+  /* v447：说明默认收起，避免把资产曲线挤成一团；点开才展开口径解释 */
+  (hasBenchmark ? '<details class="eq-help"><summary>目标基准是什么？</summary><p class="eq-benchmark-note">目标基准 = 同样的净入金，按 ' + benchmarkNote + ' 买入并每年 12 月再平衡的模拟曲线，用来看"有没有按计划执行"，不是收益预测。</p></details>' : '');
 }
 
 export function bindEquityCurve(host) {

@@ -88,7 +88,7 @@ var FX_LOCAL_CACHE='wealth_fx_usd_cny_v1';
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v447';var APP_DATA_VERSION=6;
+var APP_BUILD='v448';var APP_DATA_VERSION=6;
 
 
 function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
@@ -1231,7 +1231,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=447',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=448',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1721,34 +1721,38 @@ function computeDailyPnlFromSeries(seriesBySym){
   }
   return out;
 }
-function dailyPnlLevel(pnl,maxAbs){
-  var r=maxAbs>0?Math.abs(pnl)/maxAbs:0,lv=r<=0.25?1:r<=0.5?2:r<=0.75?3:4;
-  return (pnl>=0?'u':'d')+lv;
-}
+var dailyPnlMonth='',dailyPnlPick='';
+function dailyPnlLevel(pnl,maxAbs){var r=maxAbs>0?Math.abs(pnl)/maxAbs:0,lv=r<=0.25?1:r<=0.5?2:r<=0.75?3:4;return (pnl>=0?'u':'d')+lv}
+function fmtSignedMoney(n){return (n>=0?'+':'-')+fmtFull(Math.abs(n)).replace(/^[+-]/,'')}
+/* 券商风格月历：7 列（周一起），格子里放日期数字，颜色深浅表示当天盈亏。 */
 function renderDailyPnl(){
-  var grid=document.getElementById('dailyPnlGrid'),meta=document.getElementById('dailyPnlMeta');
+  var grid=document.getElementById('dailyPnlGrid'),meta=document.getElementById('dailyPnlMeta'),monthEl=document.getElementById('dailyPnlMonth');
   if(!grid)return;
   var days=(dailyPnlCache.days||[]).filter(function(x){return x.pnl!==null});
-  if(days.length<2){grid.innerHTML='<div class="ds-empty ds-empty-compact"><span class="ds-empty-title">数据不足</span><span class="ds-empty-hint">需要至少两个交易日的行情才能算每日收益</span></div>';if(meta)meta.textContent='';return}
+  if(!days.length){grid.innerHTML='<div class="ds-empty ds-empty-compact" style="grid-column:1/-1"><span class="ds-empty-title">数据不足</span><span class="ds-empty-hint">需要至少两个交易日的行情才能算每日收益</span></div>';if(meta)meta.textContent='';return}
   var byDate={};days.forEach(function(x){byDate[x.date]=x});
-  var last=new Date(days[days.length-1].date+'T00:00:00'),start=new Date(last.getTime()-89*86400000);
-  var pad=start.getDay(),cells=[],i;
-  for(i=0;i<pad;i+=1)cells.push(null);
-  var cursor=new Date(start);
-  while(cursor<=last){
-    var ym=cursor.getFullYear()+'-'+String(cursor.getMonth()+1).padStart(2,'0')+'-'+String(cursor.getDate()).padStart(2,'0');
-    cells.push(byDate[ym]||null);cursor.setDate(cursor.getDate()+1);
+  var firstYm=days[0].date.slice(0,7),lastYm=days[days.length-1].date.slice(0,7);
+  if(!dailyPnlMonth||dailyPnlMonth<firstYm||dailyPnlMonth>lastYm)dailyPnlMonth=lastYm;
+  var y=Number(dailyPnlMonth.slice(0,4)),m=Number(dailyPnlMonth.slice(5,7));
+  if(monthEl)monthEl.textContent=y+'年'+m+'月';
+  var prevBtn=document.getElementById('dailyPnlPrev'),nextBtn=document.getElementById('dailyPnlNext');
+  if(prevBtn)prevBtn.disabled=dailyPnlMonth<=firstYm;
+  if(nextBtn)nextBtn.disabled=dailyPnlMonth>=lastYm;
+  var lead=(new Date(y,m-1,1).getDay()+6)%7,total=new Date(y,m,0).getDate(),cells=[],maxAbs=0,monthSum=0,wins=0,n=0,i;
+  for(i=1;i<=total;i+=1){var ds=dailyPnlMonth+'-'+String(i).padStart(2,'0'),rec=byDate[ds];if(rec){maxAbs=Math.max(maxAbs,Math.abs(rec.pnl));monthSum+=rec.pnl;n+=1;if(rec.pnl>0)wins+=1}}
+  var today=marketDate();
+  for(i=0;i<lead;i+=1)cells.push('<span class="daily-pnl-cell is-blank" aria-hidden="true"></span>');
+  for(i=1;i<=total;i+=1){
+    var d=dailyPnlMonth+'-'+String(i).padStart(2,'0'),r=byDate[d];
+    var cls='daily-pnl-cell'+(d===today?' is-today':'')+(d===dailyPnlPick?' is-picked':'')+(r?'':' is-empty');
+    var lv=r?dailyPnlLevel(r.pnl,maxAbs):'';
+    var tip=r?(d+' · '+fmtSignedMoney(r.pnl)+(r.pct==null?'':'（'+(r.pct>=0?'+':'')+r.pct.toFixed(2)+'%）')):(d+' · 无行情');
+    cells.push('<button type="button" class="'+cls+'" data-date="'+d+'"'+(lv?' data-lv="'+lv+'"':'')+' title="'+tip+'" aria-label="'+tip+'">'+i+'</button>');
   }
-  var maxAbs=0;days.slice(-91).forEach(function(x){maxAbs=Math.max(maxAbs,Math.abs(x.pnl))});
-  grid.innerHTML=cells.map(function(c){
-    if(!c)return '<span class="daily-pnl-cell is-empty" aria-hidden="true"></span>';
-    var txt=c.date.slice(5).replace('-','/')+' · '+(c.pnl>=0?'+':'-')+fmtCurrentFull(Math.abs(c.pnl)).replace(/^[+-]/,'')+(c.pct==null?'':'（'+(c.pct>=0?'+':'')+c.pct.toFixed(2)+'%）');
-    return '<button type="button" class="daily-pnl-cell" data-lv="'+dailyPnlLevel(c.pnl,maxAbs)+'" data-date="'+c.date+'" title="'+txt+'" aria-label="'+txt+'"></button>';
-  }).join('');
-  var recent=days.slice(-30),sum=0,wins=0,best=null,worst=null;
-  recent.forEach(function(x){sum+=x.pnl;if(x.pnl>0)wins+=1;if(!best||x.pnl>best.pnl)best=x;if(!worst||x.pnl<worst.pnl)worst=x});
+  grid.innerHTML=cells.join('');
   if(meta){
-    meta.innerHTML='<span>近 30 个交易日 <b class="'+(sum>=0?'pnl-pos':'pnl-neg')+'">'+(sum>=0?'+':'-')+fmtCurrentFull(Math.abs(sum)).replace(/^[+-]/,'')+'</b></span><span>胜率 <b>'+Math.round(wins/Math.max(1,recent.length)*100)+'%</b></span>'+(best?'<span>最好 <b class="pnl-pos">'+fmtCurrentFull(best.pnl)+'</b> '+best.date.slice(5)+'</span>':'')+(worst?'<span>最差 <b class="pnl-neg">'+fmtCurrentFull(worst.pnl)+'</b> '+worst.date.slice(5)+'</span>':'')+'<span class="daily-pnl-pick" id="dailyPnlPick"></span>';
+    var pick=dailyPnlPick&&byDate[dailyPnlPick]?byDate[dailyPnlPick]:null;
+    meta.innerHTML='<span>本月 <b class="'+(monthSum>=0?'pnl-pos':'pnl-neg')+'">'+fmtSignedMoney(monthSum)+'</b></span><span>胜率 <b>'+Math.round(wins/Math.max(1,n)*100)+'%</b></span><span>交易 '+n+' 天</span>'+(pick?'<span class="daily-pnl-pick">'+pick.date.slice(5).replace('-','/')+' <b class="'+(pick.pnl>=0?'pnl-pos':'pnl-neg')+'">'+fmtSignedMoney(pick.pnl)+'</b></span>':'<span class="daily-pnl-pick">点一天看明细</span>');
   }
 }
 function loadDailyPnl(){
@@ -1771,7 +1775,9 @@ function loadDailyPnl(){
   }).catch(function(e){logSwallowed('loadDailyPnl',e)});
 }
 function scheduleDailyPnl(delay){try{clearTimeout(dailyPnlTimer)}catch(e){logSwallowed('scheduleDailyPnl',e)}dailyPnlTimer=setTimeout(loadDailyPnl,delay===undefined?600:delay)}
-document.addEventListener('click',function(e){try{var c=e.target&&e.target.closest?e.target.closest('.daily-pnl-cell[data-date]'):null;if(!c)return;var pick=document.getElementById('dailyPnlPick');if(pick)pick.textContent='· '+c.getAttribute('title')}catch(err){logSwallowed('dailyPnlPick',err)}});
+document.addEventListener('click',function(e){try{var c=e.target&&e.target.closest?e.target.closest('.daily-pnl-cell[data-date]'):null;if(!c)return;dailyPnlPick=c.getAttribute('data-date');renderDailyPnl()}catch(err){logSwallowed('dailyPnlPick',err)}});
+(function initDailyPnlNav(){try{var pb=document.getElementById('dailyPnlPrev'),nb=document.getElementById('dailyPnlNext');if(!pb||!nb)return;pb.addEventListener('click',function(){shiftDailyPnlMonth(-1)});nb.addEventListener('click',function(){shiftDailyPnlMonth(1)})}catch(e){logSwallowed('initDailyPnlNav',e)}})();
+function shiftDailyPnlMonth(delta){if(!dailyPnlMonth)return;var y=Number(dailyPnlMonth.slice(0,4)),m=Number(dailyPnlMonth.slice(5,7))+delta;if(m<1){m=12;y-=1}if(m>12){m=1;y+=1}dailyPnlMonth=y+'-'+String(m).padStart(2,'0');renderDailyPnl()}
 /* ===== 市场趋势 =====
    保留原趋势图能力，但它只描述市场和均线，不关联任何交易操作。 */
 var MARKET_SYMBOLS=CORE_SYMBOLS.slice();
