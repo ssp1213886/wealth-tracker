@@ -65,6 +65,13 @@ export function seriesFromChartPayload(payload) {
   return { closes: closes, timestamps: timestamps };
 }
 
+/** 趋势均线只接受日线；缺失粒度也不能默认为日线。 */
+export function chartDataGranularity(payload) {
+  const root = payload && payload.data ? payload.data : payload;
+  const result = root && root.chart && root.chart.result && root.chart.result[0];
+  return String(result && result.meta && result.meta.dataGranularity || '').toLowerCase();
+}
+
 /** 给当前状态补一句可读原因，避免只显示“中性/强势/弱势”而不知道依据。 */
 export function regimeReason(info, regime) {
   const d = info || {};

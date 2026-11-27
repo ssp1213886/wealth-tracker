@@ -309,15 +309,20 @@ const server = http.createServer((req, res) => {
     const sym = String(url.searchParams.get('symbol') || '').toUpperCase();
     if (['QQQM', 'VGT', 'SMH'].includes(sym)) {
       const rangeName = url.searchParams.get('range');
-      const length = rangeName === 'max' ? 1400 : rangeName === '3y' ? 751 : rangeName === '2y' ? 501 : 251;
+      const length = rangeName === 'max' ? 321 : rangeName === '3y' ? 751 : rangeName === '2y' ? 501 : 251;
       const end = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
-      const start = end - (length - 1) * 86400000;
+      const step = rangeName === 'max' ? 7 * 86400000 : 86400000;
+      const start = end - (length - 1) * step;
       const closes = Array.from({ length }, (_, i) => (rangeName === 'max' ? 100 + i * 0.015 : (i < length - 100 ? 100 : 120)));
-      const timestamps = Array.from({ length }, (_, i) => (start + i * 86400000) / 1000);
+      const timestamps = Array.from({ length }, (_, i) => (start + i * step) / 1000);
       res.writeHead(200, cors);
       return res.end(JSON.stringify({
         ok: true,
-        data: { chart: { result: [{ timestamp: timestamps, indicators: { quote: [{ close: closes }] } }] } },
+        data: { chart: { result: [{
+          meta: { dataGranularity: rangeName === 'max' ? '1wk' : '1d', range: rangeName },
+          timestamp: timestamps,
+          indicators: { quote: [{ close: closes }] },
+        }] } },
       }));
     }
   }

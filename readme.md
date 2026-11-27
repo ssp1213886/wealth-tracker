@@ -123,7 +123,7 @@ QQQM + VGT + SMH 长期核心仓、持续定投和年度再平衡，Cloudflare W
 | 前端 | 原生 HTML/CSS/JS（无框架）。源码模块化在 `src/app/`，esbuild 打包成单文件产物 `public/assets/app.js` |
 | 后端 | Cloudflare Worker（`src/worker.js` + `src/lib/`） |
 | 存储 | localStorage（带 schema 版本与迁移链），键常量集中在 `src/app/store.js` |
-| 行情 | 股票：Yahoo Finance（Worker 代理绕 CORS），失败降级东方财富，支持手动录入并标注来源；加密：Yahoo 交易对为主，兜底链 **Binance.US → Kraken → CoinGecko**（v324 实测：币安全球站在 Cloudflare 出口 403、CoinGecko 429） |
+| 行情 | 股票：Yahoo Finance（Worker 代理绕 CORS），失败降级东方财富，支持手动录入并标注来源；`max` 历史由近 10 年日线覆盖、更早区间用周线补充，避免月度边界错位；加密：Yahoo 交易对为主，兜底链 **Binance.US → Kraken → CoinGecko**（v324 实测：币安全球站在 Cloudflare 出口 403、CoinGecko 429） |
 | 汇率 | `/api/fx` 通过 Worker 代理 Yahoo `CNY=X`；当前汇率边缘缓存 30 分钟，历史汇率缓存 24 小时，失败时显示缓存状态或“汇率不可用” |
 | 同步 | Cloudflare D1（单 token 鉴权 + 版本冲突检测） |
 | 部署 | Cloudflare Workers（静态资源由 `ASSETS` binding 提供） |

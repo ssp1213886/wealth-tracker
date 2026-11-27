@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cleanCloses, simpleMovingAverage, classifyRegime, regimeFromChartPayload,
-  seriesFromChartPayload, regimeReason, REGIME_LABELS,
+  seriesFromChartPayload, chartDataGranularity, regimeReason, REGIME_LABELS,
 } from '../src/app/regime.js';
 
 function series(before, after, split) {
@@ -49,6 +49,12 @@ test('regimeFromChartPayload：兼容 /api/price 的 {ok,data} 包装', () => {
   assert.equal(info.timestamps.length, 200);
   assert.deepEqual(seriesFromChartPayload(wrapped).timestamps.slice(0, 2), [1000, 1000 + 86400]);
   assert.equal(regimeFromChartPayload(null).regime, 'unknown');
+});
+
+test('chartDataGranularity：只读取 Yahoo 元数据，不猜测日线', () => {
+  const payload = { data: { chart: { result: [{ meta: { dataGranularity: '1wk' } }] } } };
+  assert.equal(chartDataGranularity(payload), '1wk');
+  assert.equal(chartDataGranularity({ data: { chart: { result: [{}] } } }), '');
 });
 
 test('regimeReason：说明当前状态，尤其解释中性为何不是弱势', () => {

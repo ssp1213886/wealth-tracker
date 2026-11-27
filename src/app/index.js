@@ -7,7 +7,7 @@ import {escapeHtml, emptyStateHTML, renderAlertItem, alertSignature} from './ren
 import {searchSymbols} from './symbols.js';
 import {PLAN_DEFAULTS, WD_FIELDS, readPlan as readPlanOf, setPlanText, computeWithdrawal} from './plan.js';
 import {renderMarketRegime} from './market-trend-view.js';
-import {regimeFromChartPayload} from './regime.js';
+import {regimeFromChartPayload, chartDataGranularity} from './regime.js';
 import {renderTrendChart} from './trend-chart.js';
 import {SETTINGS_PANEL_IDS, SETTINGS_FOCUS_IDS, parseSyncConfig, syncHealthSummary} from './settings.js';
 import {pushedKeysOf as pushedKeysList, pendingDirtyKeys, shouldSkipPush, planPullSync, planConflictHeal} from './sync-engine.js';
@@ -16,6 +16,7 @@ import {brandBadgeHTML} from './brand-mark.js';
 import {CORE_SYMBOLS, CORE_TARGETS, TARGET_STATE, LEG_STATE_KEY, PRICE_SYMBOLS, ETF_NAMES as CORE_ETF_NAMES, ETF_COLOR_TOKENS} from './portfolio-config.js';
 import {parseDcaBatch} from './dca-batch.js';
 import {policyBenchmarkSeries, benchmarkComparison} from './policy-benchmark.js';
+import {firstCloseInYear, lastCloseInYear} from './price-history.js';
 
 /** 标的的"代表色"：持仓标的用资产色，其它（比如加密现货）用中性色。
     原先只写在观察列表那个 IIFE 里，搜索结果行够不着 —— 提到顶层共用。 */
@@ -87,7 +88,7 @@ var FX_LOCAL_CACHE='wealth_fx_usd_cny_v1';
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v438';var APP_DATA_VERSION=6;
+var APP_BUILD='v439';var APP_DATA_VERSION=6;
 
 
 function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
@@ -1227,7 +1228,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=438',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=439',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1647,8 +1648,9 @@ try{document.getElementById("hmDividend").addEventListener("click",function(){va
 /* range=max 是历史数据：同一个标的只请求一次，年初/年末两个口径共用（原先一次开屏要打 6 次） */
 var maxPriceReq={};
 function fetchMaxData(sym){var k=String(sym);if(maxPriceReq[k])return maxPriceReq[k];var p=fetchWithTimeout('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=max').then(function(r){return r.json()}).catch(function(){return null});maxPriceReq[k]=p;return p}
-function fetchYearStartPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0];var ts=r.timestamp||[];var cs=r.indicators.quote[0].close||[];var tgt=year+'-01-01';for(var i=0;i<ts.length;i++){var d2=marketDate(new Date(ts[i]*1000));if(d2>=tgt&&cs[i]!=null)return cs[i]}return cs[cs.length-1]||0}).catch(function(){return null})}
-function fetchYearEndPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0];var ts=r.timestamp||[];var cs=r.indicators.quote[0].close||[];var tgt=year+'-12-31';var last=null;for(var i=0;i<ts.length;i++){var d2=marketDate(new Date(ts[i]*1000));if(d2>tgt)break;if(d2<=tgt&&cs[i]!=null)last=cs[i]}return last||cs[cs.length-1]||0}).catch(function(){return null})}
+var trendPriceReq={};function fetchTrendData(sym,force){var k=String(sym),cached=trendPriceReq[k];if(!force&&cached&&Date.now()-cached.at<5*60*1000)return cached.promise;var p=fetchWithTimeout('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=3y').then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).catch(function(){return null});trendPriceReq[k]={at:Date.now(),promise:p};return p}
+function fetchYearStartPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0],quote=r.indicators&&r.indicators.quote&&r.indicators.quote[0];return firstCloseInYear(r.timestamp||[],quote&&quote.close||[],year)}).catch(function(){return null})}
+function fetchYearEndPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0],quote=r.indicators&&r.indicators.quote&&r.indicators.quote[0];return lastCloseInYear(r.timestamp||[],quote&&quote.close||[],year)}).catch(function(){return null})}
 function calcAttribution(year){var yS=year+'-01-01',yE=year+'-12-31';
   /* 年初/年末的持仓、现金、买入/卖出累计全部走共享快照 portfolioStateAt() —— 不再自己算一套。
      （以前这里独立实现了一遍资产口径，改动时容易只改一处，正是"同一个数两处算"的典型。） */
@@ -1672,15 +1674,12 @@ var regimeBySym={};
 var regimeStatus={loading:false,loadedAt:0,error:''};
 var marketSymbol=CORE_SYMBOLS[0];
 var trendRange='1y';
-async function fetchMarketRegime(sym){
+async function fetchMarketRegime(sym,force){
   try{
-    var j=await fetchMaxData(sym);
-    if(!j){
-      var r=await fetchWithTimeout('/api/price?symbol='+encodeURIComponent(sym)+'&range=3y');
-      if(!r.ok)return{ok:false,error:'HTTP '+r.status};
-      j=await r.json();
-    }
+    var j=await fetchTrendData(sym,force);
     if(!j||!j.ok)return{ok:false,error:(j&&j.error)||'payload'};
+    var granularity=chartDataGranularity(j);
+    if(granularity!=='1d')return{ok:false,error:'趋势数据不是日线（'+(granularity||'未知粒度')+'）'};
     var info=regimeFromChartPayload(j);
     if(!info||info.regime==='unknown')return{ok:false,error:'日线不足 200 个交易日',info:info};
     return{ok:true,info:info};
@@ -1701,7 +1700,7 @@ async function refreshMarketTrend(force){
   if(!force&&hasAny&&Date.now()-regimeStatus.loadedAt<ttl)return;
   regimeStatus.loading=true;regimeStatus.error='';
   renderMarketTrend();
-  var results=await Promise.all(MARKET_SYMBOLS.map(fetchMarketRegime));
+  var results=await Promise.all(MARKET_SYMBOLS.map(function(sym){return fetchMarketRegime(sym,force)}));
   var errs=[];
   MARKET_SYMBOLS.forEach(function(sym,i){
     var res=results[i]||{};

@@ -187,7 +187,9 @@ const analysis = await ev(() => {
     leaders: document.querySelectorAll('#holdExpose .conc-leader-list span').length,
     effective: (document.querySelector('#holdExpose .conc-grid') || {}).textContent || '',
     overflow: document.body.scrollWidth > innerWidth,
-    threeYearRequests: performance.getEntriesByType('resource').filter((entry) => /\/api\/price\?[^#]*range=3y/.test(entry.name)).length,
+    threeYearSymbols: performance.getEntriesByType('resource')
+      .filter((entry) => /\/api\/price\?[^#]*range=3y/.test(entry.name))
+      .map((entry) => new URL(entry.name).searchParams.get('symbol')),
   };
 });
 if (!analysis.benchmarkLine || !analysis.benchmarkLegend || !/目标基准/.test(analysis.meta) || !/执行差异/.test(analysis.meta) || !/^¥/.test(analysis.endLabel)) {
@@ -195,7 +197,9 @@ if (!analysis.benchmarkLine || !analysis.benchmarkLegend || !/目标基准/.test
 }
 if (!(analysis.leaders > 0) || !/有效独立暴露/.test(analysis.effective)) failures.push('集中度结论没有前置：' + JSON.stringify(analysis));
 if (analysis.overflow) failures.push('分析页出现横向溢出');
-if (analysis.threeYearRequests !== 0) failures.push('市场趋势仍在重复请求 3y 历史，未复用 max 数据：' + analysis.threeYearRequests);
+if (analysis.threeYearSymbols.length !== 3 || new Set(analysis.threeYearSymbols).size !== 3) {
+  failures.push('市场趋势日线请求必须每个核心标的一次，不能重复：' + JSON.stringify(analysis.threeYearSymbols));
+}
 await ev(() => document.querySelector('#currencySwitch [data-currency="USD"]').click());
 await p.waitForTimeout(600);
 

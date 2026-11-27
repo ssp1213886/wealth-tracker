@@ -321,13 +321,31 @@ const equityUi = await ev(() => {
 if (!equityUi.ready || !/^-?\$/.test(equityUi.label)) failures.push('资产曲线缺少固定当前值标签：' + JSON.stringify(equityUi));
 if (equityUi.tooltipHidden || !/资产/.test(equityUi.tooltip) || !/净入金/.test(equityUi.tooltip) || !/收益率/.test(equityUi.tooltip)) failures.push('资产曲线悬停详情不完整：' + JSON.stringify(equityUi));
 if (equityUi.userSelect !== 'none') failures.push('资产曲线仍允许选择文字：' + equityUi.userSelect);
-await ev(() => document.querySelector('#trendChart [data-trendrange="2y"]').click());
-await p.waitForTimeout(450);
-const trend2y = await ev(() => ({
-  active: (document.querySelector('#trendChart [data-trendrange].is-on') || {}).dataset?.trendrange || '',
-  states: document.querySelectorAll('#trendChart .trend-state').length,
-}));
-if (trend2y.active !== '2y' || trend2y.states < 480) failures.push('趋势图 2 年窗口异常：' + JSON.stringify(trend2y));
+const trendRanges = {};
+for (const range of ['6m', '1y', '2y']) {
+  await ev((value) => [...document.querySelectorAll('[data-trendrange]')].find((button) => button.dataset.trendrange === value)?.click(), range);
+  await p.waitForTimeout(350);
+  trendRanges[range] = await ev(() => {
+    const shell = document.querySelector('#trendChart .trend-chart-shell');
+    let points = [];
+    try { points = JSON.parse(decodeURIComponent(shell?.dataset.trendPoints || '')); } catch (e) {}
+    return {
+      active: (document.querySelector('#trendChart [data-trendrange].is-on') || {}).dataset?.trendrange || '',
+      states: document.querySelectorAll('#trendChart .trend-state').length,
+      first: points[0] ? new Date(points[0][0]).toISOString().slice(0, 10) : '',
+      last: points.length ? new Date(points[points.length - 1][0]).toISOString().slice(0, 10) : '',
+    };
+  });
+}
+const expectedRangeCounts = { '6m': 126, '1y': 252, '2y': 504 };
+for (const range of Object.keys(expectedRangeCounts)) {
+  if (trendRanges[range].active !== range || trendRanges[range].states !== expectedRangeCounts[range]) {
+    failures.push('趋势图 ' + range + ' 窗口点数异常：' + JSON.stringify(trendRanges[range]));
+  }
+}
+if (new Set(Object.values(trendRanges).map((item) => item.first)).size !== 3) {
+  failures.push('趋势图切换时间范围后起始日期没有变化：' + JSON.stringify(trendRanges));
+}
 await ev(() => document.querySelector('#trendChart [data-trendrange="1y"]').click());
 await p.waitForTimeout(300);
 await ev(() => document.querySelector('#trendTabs [data-trendtab="VGT"]').click());

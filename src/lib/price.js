@@ -10,7 +10,7 @@ const SHORT_HISTORY_TTL_SECONDS = 15 * 60;
 const LONG_HISTORY_TTL_SECONDS = 24 * 60 * 60;
 const HISTORY_RANGES = new Set(['1y', '2y', '3y', '5y', '10y', 'ytd', 'max']);
 const SHORT_HISTORY_RANGES = new Set(['1y', '2y', '3y', 'ytd']);
-const PRICE_CACHE_VERSION = 'v3';
+const PRICE_CACHE_VERSION = 'v4';
 
 /** 近期区间的缓存时长；其它历史区间维持一天。 */
 export function priceHistoryTtlSeconds(range) {
@@ -57,6 +57,58 @@ export function mergeLatestQuote(data) {
     if (Array.isArray(quote[key])) quote[key].push(key === 'close' ? price : null);
   });
   return data;
+}
+
+/**
+ * Yahoo 对 range=max 会自动降采样到周线。近期月度/年度计算需要日线精度：
+ * 用近 10 年日线覆盖 max 的同日期段，只把更早的周线作为旧历史补充。
+ */
+export function mergeHistoricalDaily(dailyPayload, legacyPayload) {
+  const dailyResult = dailyPayload && dailyPayload.chart && dailyPayload.chart.result && dailyPayload.chart.result[0];
+  const legacyResult = legacyPayload && legacyPayload.chart && legacyPayload.chart.result && legacyPayload.chart.result[0];
+  if (!dailyResult) return legacyPayload;
+  if (!legacyResult) return dailyPayload;
+  const dailyTimes = Array.isArray(dailyResult.timestamp) ? dailyResult.timestamp : [];
+  const dailyCloses = dailyResult.indicators && dailyResult.indicators.quote && dailyResult.indicators.quote[0]
+    ? dailyResult.indicators.quote[0].close || []
+    : [];
+  const legacyTimes = Array.isArray(legacyResult.timestamp) ? legacyResult.timestamp : [];
+  const legacyCloses = legacyResult.indicators && legacyResult.indicators.quote && legacyResult.indicators.quote[0]
+    ? legacyResult.indicators.quote[0].close || []
+    : [];
+  const dailyStart = Number(dailyTimes[0]) || Infinity;
+  const timestamp = [];
+  const close = [];
+  legacyTimes.forEach(function (value, index) {
+    const ts = Number(value);
+    const price = Number(legacyCloses[index]);
+    if (ts > 0 && ts < dailyStart && price > 0) {
+      timestamp.push(ts);
+      close.push(price);
+    }
+  });
+  dailyTimes.forEach(function (value, index) {
+    const ts = Number(value);
+    const price = Number(dailyCloses[index]);
+    if (ts > 0 && price > 0) {
+      timestamp.push(ts);
+      close.push(price);
+    }
+  });
+  return {
+    chart: {
+      result: [{
+        meta: Object.assign({}, dailyResult.meta || {}, {
+          range: 'max',
+          dataGranularity: '1d',
+          legacyBeforeDaily: timestamp.length > dailyTimes.length ? '1wk' : '',
+        }),
+        timestamp: timestamp,
+        indicators: { quote: [{ close: close }] },
+      }],
+      error: null,
+    },
+  };
 }
 
 // 东方财富市场号：107 = NYSE Arca（VGT/SMH 等 ETF），105 = 纳斯达克
@@ -129,11 +181,25 @@ export async function handlePrice(request, url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const response = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(quoteSymbol)}?interval=1d&range=${range}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: controller.signal },
-    );
-    const data = await response.json();
+    const fetchRange = async function (nextRange) {
+      const response = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(quoteSymbol)}?interval=1d&range=${nextRange}`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: controller.signal },
+      );
+      if (!response.ok) throw new Error('Yahoo HTTP ' + response.status);
+      return response.json();
+    };
+    let data;
+    if (range === 'max') {
+      const results = await Promise.all([
+        fetchRange('10y').catch(function () { return null; }),
+        fetchRange('max').catch(function () { return null; }),
+      ]);
+      if (!results[0] && !results[1]) throw new Error('Yahoo unavailable');
+      data = mergeHistoricalDaily(results[0], results[1]);
+    } else {
+      data = await fetchRange(range);
+    }
     await ensureHistory(data, quoteSymbol);
     mergeLatestQuote(data);
     const body = { ok: true, data };
