@@ -153,9 +153,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=445');
+  assert.equal(manifest.start_url, '/?v=446');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v445/);
+  assert.match(serviceWorker, /wealth-v446/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -169,7 +169,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=445',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=446',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -847,7 +847,7 @@ test('v443：每日收益日历要有网格、计算函数和刷新入口', () =
   assert.match(html, /id="dailyPnlGrid"/);
   assert.match(indexSource, /function computeDailyPnlFromSeries\(/);
   assert.match(indexSource, /function scheduleDailyPnl\(/);
-  assert.match(indexSource, /setTimeout\(function\(\)\{scheduleDailyPnl\(800\)\},1600\)/, '启动时要预热日历');
+  assert.match(indexSource, /if\(tab==='analysis'\)scheduleDailyPnl\(400\)/, '切到分析页时才加载日历');
   assert.match(indexSource, /refreshAttribution\(\);scheduleDailyPnl\(\);/, '云端拉取后要刷新');
 });
 
