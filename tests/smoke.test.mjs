@@ -153,9 +153,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=439');
+  assert.equal(manifest.start_url, '/?v=440');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v439/);
+  assert.match(serviceWorker, /wealth-v440/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -169,7 +169,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=439',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=440',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -658,6 +658,14 @@ test('「组合值多少钱」只有一处口径：月末快照与年度归因�
   assert.doesNotMatch(indexSource, /hasAny\?totalV\+nc:nc/, '不要再内联算 totalV+nc');
 });
 
+test('v440：当前年度归因的年末价必须与首页实时价同源', () => {
+  assert.match(
+    indexSource,
+    /function fetchYearEndPrice\(sym,year\)\{ if\(Number\(year\)===Number\(marketDate\(\)\.slice\(0,4\)\)&&Number\(livePrices\[sym\]\)>0\) return Promise\.resolve\(Number\(livePrices\[sym\]\)\)/,
+    '当年的年末价要复用 livePrices，否则年度归因读的是 24 小时缓存的 max 数据'
+  );
+});
+
 test('v370：行情自动刷新 —— 定时器与"切回前台"都要刷（不能只刷加密那条链路）', () => {
   assert.match(indexSource, /setInterval\(autoRefreshQuotes,300000\)/, '定时器必须接 autoRefreshQuotes');
   assert.doesNotMatch(indexSource, /setInterval\(refreshPrices,/,
@@ -740,4 +748,22 @@ test('v371：角标数 = 提醒列表条数（不许再按 severity 过滤 —�
     'badgeCountOf 里不许出现 severity：它是排序/配色用的，不是催办判据（v370 就是这么错的）');
   assert.match(alertsViewSource, /const items = list \|\| \[\];[\s\S]*?const count = badgeCountOf\(items\)/,
     '手机端铃铛角标必须与主屏角标共用同一个计数函数');
+});
+
+/* ===== v441：云同步 409 死循环 ===== */
+test('v441：待确认的冲突键不许自动重推，冲突弹窗必须真的弹出来', () => {
+  assert.match(indexSource, /var pc=st\.pendingConflicts\|\|\[\];/, 'buildPushData 要读 pendingConflicts');
+  assert.match(indexSource, /pc\.forEach\(function\(k\)\{delete payload\[k\];/, '冲突键要从 payload 里剔除');
+  assert.match(indexSource, /if\(diff\.length\)st\.pendingConflicts=Array\.from\(new Set\(\(st\.pendingConflicts\|\|\[\]\)\.concat\(diff\)\)\);/, 'heal 检出差异必须先登记冲突');
+  assert.match(indexSource, /showSyncConflict\(diff,r\.data\)/, 'heal 检出差异要直接弹冲突框，不能回到 autoPull 无限重试');
+  assert.match(indexSource, /coreMigrationV4\)==='1'&&!\(loadSyncState\(\)\.pendingConflicts\|\|\[\]\)\.length/, '迁移短路必须给未解决冲突让路');
+});
+
+test('v441：冲突解决后 dirty 与失败计数都要归零', () => {
+  const start = indexSource.indexOf('function pushKeysForce');
+  const body = indexSource.slice(start, indexSource.indexOf('\n', start));
+  assert.ok(body.indexOf('clearDirty(k)') >= 0 && body.indexOf('var st=loadSyncState();') > body.indexOf('clearDirty(k)'),
+    'pushKeysForce 必须先清脏再读快照，否则会把 dirty=true 写回去');
+  assert.match(indexSource, /_cs\.failStreak=0;_cs\.lastSyncErrorAt=0;_cs\.lastSyncError=''/, '选择云端后要清失败计数');
+  assert.match(indexSource, /SYNC_KEYS\.every\(function\(k\)\{return !\(s&&s\.dirty&&s\.dirty\[k\]\)\}\)\)removeKey\(KEYS\.coreMigrationV4\)/, '全部干净后要清掉迁移标记');
 });

@@ -133,6 +133,10 @@ export function planConflictHeal(opts) {
       if (ts) cloudTs[key] = ts;
       return;
     }
+    /* v441：内容不一致的键也要记下"我看到的云端版本"。
+       否则下一次自动推送仍然带旧版本号，会永远撞 409 —— 线上就是这样把同步打成死循环的。 */
+    const ts = normalizeTs(meta[key]);
+    if (ts) cloudTs[key] = ts;
     diff.push(key);
   });
   return { diff: diff, dirty: dirty, cloudTs: cloudTs };

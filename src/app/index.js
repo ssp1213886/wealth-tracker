@@ -88,7 +88,7 @@ var FX_LOCAL_CACHE='wealth_fx_usd_cny_v1';
    累计收益率只能有一个口径（portfolioTotals），两处各算一遍迟早对不上。 */
 var lastPortfolioTotals=null;
 
-var APP_BUILD='v439';var APP_DATA_VERSION=6;
+var APP_BUILD='v440';var APP_DATA_VERSION=6;
 
 
 function normalizeTrades(list){return normalizeTradesIn(list,ETF_SYMS)}
@@ -1228,7 +1228,7 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;repor
 
 document.addEventListener('focusin',function(e){var el=e.target;if(!el||!el.tagName)return;var tg=el.tagName;if(tg!=='INPUT'&&tg!=='SELECT'&&tg!=='TEXTAREA')return;if(el.type==='checkbox'||el.type==='radio'||el.type==='range'||el.type==='file')return;if(window.innerWidth>800)return;clearTimeout(window.__kbScrollT);window.__kbScrollT=setTimeout(function(){try{var r=el.getBoundingClientRect();var vh=window.innerHeight||document.documentElement.clientHeight;if(r.bottom>vh*0.55||r.top<56){el.scrollIntoView({block:'center',behavior:'smooth'})}}catch(err){logSwallowed("copyDiagnostics",err)}},320)},true);
 window.addEventListener('DOMContentLoaded',function(){renderSyncHealth();var source=document.getElementById('syncStatus');if(source)new MutationObserver(renderSyncHealth).observe(source,{childList:true,characterData:true,subtree:true})});
-if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=439',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
+if('serviceWorker' in navigator){/* v315：以前"新版接管只提示、不刷新"，实测部署后第一次打开仍是旧版，要再开一次才生效；连着部署几次就会一直卡在旧版。现在自愈：控制本页的 SW 不是这一版 → 自动刷一次；新版接管（controllerchange）→ 也刷一次。最多连刷两次，稳定 6 秒后清零，不会打转。 */var SW_RELOAD_KEY='wealth_sw_reload_v1';var swHadController=!!navigator.serviceWorker.controller;function swIsOldBuild(){try{var c=navigator.serviceWorker.controller;if(!c||!c.scriptURL)return false;return c.scriptURL.indexOf('v='+APP_BUILD.replace(/^v/,''))<0}catch(e){return false}}function swReloadOnce(why){var n=0;try{n=Number(sessionStorage.getItem(SW_RELOAD_KEY)||0)}catch(e){logSwallowed('swReload',e)}if(n>=2)return;try{sessionStorage.setItem(SW_RELOAD_KEY,String(n+1))}catch(e){logSwallowed('swReload',e)}try{console.warn('[wealth] 自动刷新到 '+APP_BUILD+'（'+why+'）')}catch(e){logSwallowed('swReload',e)}location.reload()}navigator.serviceWorker.addEventListener('controllerchange',function(){if(!swHadController)return;swReloadOnce('controllerchange')});setTimeout(function(){try{sessionStorage.removeItem(SW_RELOAD_KEY)}catch(e){logSwallowed('swReload',e)}},6000);navigator.serviceWorker.register('/sw.js?v=440',{updateViaCache:'none'}).then(function(reg){return reg.update()}).then(function(){setTimeout(function(){if(swIsOldBuild())swReloadOnce('stale-controller')},1500)}).catch(function(){})}
 
 
 /* ===== Toast 通知 ===== */
@@ -1299,7 +1299,7 @@ document.getElementById('btnClearActivity').addEventListener('click',function(){
 var SYNC_STATE_KEY=KEYS.syncState;
 var SYNC_KEYS=SYNC_FIELDS.slice();   // 与 payload 组装共用同一份清单，避免再次漂移
 function loadSyncState(){try{var s=JSON.parse(readRaw(SYNC_STATE_KEY)||'{}');s.dirty=s.dirty||{};s.cloudTs=s.cloudTs||{};s.pendingConflicts=Array.isArray(s.pendingConflicts)?s.pendingConflicts:[];s.lastSyncAt=Number(s.lastSyncAt)||0;s.lastSyncErrorAt=Number(s.lastSyncErrorAt)||0;s.lastSyncDirection=s.lastSyncDirection||'';s.lastPushAt=Number(s.lastPushAt)||0;s.lastPullAt=Number(s.lastPullAt)||0;return s}catch(e){return{dirty:{},cloudTs:{},pendingConflicts:[],lastSyncAt:0,lastSyncErrorAt:0,lastSyncDirection:'',lastPushAt:0,lastPullAt:0}}}
-function saveSyncState(s){try{LS.setItem(SYNC_STATE_KEY,JSON.stringify(s))}catch(e){logSwallowed("saveSyncState",e)}if(document.readyState!=='loading')renderSyncHealth()}
+function saveSyncState(s){try{LS.setItem(SYNC_STATE_KEY,JSON.stringify(s))}catch(e){logSwallowed("saveSyncState",e)}/* v441：迁移标记只在"确实还有没推上去的键"时才有意义。全部干净了还不清掉，autoPull 会被永久短路成 autoPush —— 设备就再也拉不到云端更新。 */try{if(readRaw(KEYS.coreMigrationV4)==='1'&&SYNC_KEYS.every(function(k){return !(s&&s.dirty&&s.dirty[k])}))removeKey(KEYS.coreMigrationV4)}catch(e){logSwallowed("clearCoreMigration",e)}if(document.readyState!=='loading')renderSyncHealth()}
 function recordSyncSuccess(direction,timestamp){try{var s=loadSyncState();s.lastSyncAt=Number(timestamp)||Date.now();s.lastSyncDirection=direction||'check';if(s.lastSyncDirection==='push')s.lastPushAt=s.lastSyncAt;else if(s.lastSyncDirection==='pull')s.lastPullAt=s.lastSyncAt;s.lastSyncErrorAt=0;s.lastSyncError='';s.failStreak=0;saveSyncState(s);renderSyncHealth()}catch(e){logSwallowed("recordSyncSuccess",e)}}
 function recordSyncFailure(timestamp,message){try{var s=loadSyncState();s.lastSyncErrorAt=Number(timestamp)||Date.now();s.lastSyncError=String(message||'').slice(0,200);s.failStreak=(Number(s.failStreak)||0)+1;saveSyncState(s);renderSyncHealth()}catch(e){logSwallowed("recordSyncFailure",e)}}
 function setSyncConflicts(conflicts){var s=loadSyncState();s.pendingConflicts=Array.from(new Set(conflicts||[]));saveSyncState(s);renderSyncHealth()}
@@ -1347,7 +1347,7 @@ function applyCloudVal(key,val){
 }
 function buildPushData(dirtyOnly){
   var st=loadSyncState();
-  return buildSyncPayload({dirtyOnly:!!dirtyOnly,dirty:st.dirty||{},cloudTs:st.cloudTs||{},read:{
+  var payload=buildSyncPayload({dirtyOnly:!!dirtyOnly,dirty:st.dirty||{},cloudTs:st.cloudTs||{},read:{
     trades:function(){return trades},
     cashBalance:function(){return cashBalance},
     cashLog:function(){return cashLog},
@@ -1356,6 +1356,11 @@ function buildPushData(dirtyOnly){
     exit_portfolio:function(){return readRaw('exit_portfolio')||''},
     watchlist:function(){return watchList}
   },readPrices:function(){return JSON.parse(readRaw(PRICE_KEY)||'{}')}});
+  /* v441：还没被用户确认的冲突键不许自动重推 —— 否则每次重试都带旧版本号撞 409，
+     重试链会退化成每秒一次的同步死循环（线上实测 failStreak 一路涨到 70+）。 */
+  var pc=st.pendingConflicts||[];
+  if(pc.length)pc.forEach(function(k){delete payload[k];if(payload.__expectedVersions)delete payload.__expectedVersions[k]});
+  return payload;
 }
 
 /* 退出登录：清掉服务端的会话 cookie，然后回登录页（/login 不走 SW 缓存） */
@@ -1471,7 +1476,7 @@ function showSyncConflict(conflicts,pendingCloud){
   setSyncConflicts(conflicts);
   openConflictModal({doc:document,conflicts:conflicts,labels:SYNC_KEY_LABELS,
     onAllLocal:function(modal){var payload={};try{SYNC_KEYS.forEach(function(k){payload[k]=localValOf(k)})}catch(e){logSwallowed("showSyncConflict",e)}showBusyToast('正在以本机数据覆盖云端');syncFetchWithoutHealth('POST',payload).then(function(){conflicts.forEach(function(k){try{clearDirty(k)}catch(e){logSwallowed("showSyncConflict",e)}});var st=loadSyncState();st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);modal.remove();showToast('已用本机数据覆盖云端','ok');renderSyncHealth()}).catch(function(e){showToast('上传失败：'+(e&&e.message?e.message:'未知错误'),'err')})},
-    onConfirm:function(modal,picks){var applied=[],kept=[];conflicts.forEach(function(k){if(picks[k]==='cloud'){applyCloudVal(k,pendingCloud[k]);clearDirty(k);applied.push(k)}else{markDirty(k);kept.push(k)}});setSyncConflicts([]);modal.remove();if(applied.length){initTradeIds();updatePortfolio();updateSidebar();renderCashLog();showToast('已使用云端: '+applied.map(function(k){return SYNC_KEY_LABELS[k]||k}).join(', '),'ok');autoPushDebounce()}if(kept.length)pushKeysForce(kept,'已用本机数据覆盖云端');else if(!applied.length)showToast('已保留本地数据','ok')}})
+    onConfirm:function(modal,picks){var applied=[],kept=[];conflicts.forEach(function(k){if(picks[k]==='cloud'){applyCloudVal(k,pendingCloud[k]);clearDirty(k);applied.push(k)}else{markDirty(k);kept.push(k)}});setSyncConflicts([]);modal.remove();if(applied.length){/* v441：选了云端就是"冲突已解决"，失败计数必须清零，否则数据健康会一直挂着"同步需重试"。 */var _cs=loadSyncState();_cs.failStreak=0;_cs.lastSyncErrorAt=0;_cs.lastSyncError='';saveSyncState(_cs);initTradeIds();updatePortfolio();updateSidebar();renderCashLog();showToast('已使用云端: '+applied.map(function(k){return SYNC_KEY_LABELS[k]||k}).join(', '),'ok');autoPushDebounce()}if(kept.length)pushKeysForce(kept,'已用本机数据覆盖云端');else if(!applied.length)showToast('已保留本地数据','ok')}})
 }
 
 function stableStr(v){if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';if(v&&typeof v==='object'){return '{'+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+':'+stableStr(v[k])}).join(',')+'}'}return JSON.stringify(v)}var autoPushTimer=null;function autoPushDebounce(){if(!syncCfg||!syncCfg.url)return;clearTimeout(autoPushTimer);autoPushTimer=setTimeout(autoPush,700)}
@@ -1482,11 +1487,16 @@ function setSyncBar(state,text){clearTimeout(syncBarTimer);var r=applySyncBar(do
 function syncClockText(){return syncClockTime()}
 function pushPendingSoon(delay){try{if(pendingDirtyKeys(loadSyncState(),SYNC_KEYS).length>0)pushSoon(delay)}catch(e){logSwallowed("pushPendingSoon",e)}}
 function pushedKeysOf(data){return pushedKeysList(data,SYNC_KEYS)}
-function pushKeysForce(keys,label){if(!keys||!keys.length)return;if(!syncCfg||!syncCfg.url)return;var payload={};keys.forEach(function(k){payload[k]=localValOf(k)});setSyncBar('busy','正在覆盖云端…');syncFetchWithoutHealth('POST',payload).then(function(r){var st=loadSyncState();keys.forEach(function(k){clearDirty(k);if(r&&r.ts)setCloudTs(k,r.ts)});st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);setSyncBar('ok','已覆盖云端 '+syncClockText());showToast(label||'已用本机数据覆盖云端','ok')}).catch(function(e){setSyncBar('err','覆盖失败：'+((e&&e.message)||'未知错误'))})}
+function pushKeysForce(keys,label){if(!keys||!keys.length)return;if(!syncCfg||!syncCfg.url)return;var payload={};keys.forEach(function(k){payload[k]=localValOf(k)});setSyncBar('busy','正在覆盖云端…');syncFetchWithoutHealth('POST',payload).then(function(r){keys.forEach(function(k){clearDirty(k);if(r&&r.ts)setCloudTs(k,r.ts)});/* v441：快照必须在清脏之后再读 —— 先读后清会把 dirty=true 原样写回去，界面就一直卡在"等待云同步"。 */var st=loadSyncState();st.pendingConflicts=[];st.lastSyncErrorAt=0;st.lastSyncError='';st.failStreak=0;saveSyncState(st);setSyncConflicts([]);setSyncBar('ok','已覆盖云端 '+syncClockText());showToast(label||'已用本机数据覆盖云端','ok')}).catch(function(e){setSyncBar('err','覆盖失败：'+((e&&e.message)||'未知错误'))})}
 function healPushConflict(data){var sent=pushedKeysOf(data);if(!syncCfg||!syncCfg.url){autoPull();return}setSyncBar('busy','正在核对…');syncFetchWithoutHealth('GET').then(function(r){if(!r||!r.data){setSyncBar('');autoPull();showToast('云端已有更新，请确认冲突','err');return}var meta=r.meta||{},st=loadSyncState();
 var heal=planConflictHeal({sentKeys:sent,cloudData:r.data,meta:meta,state:st,normalizeTs:normalizeSyncTs,equal:function(key){return syncContentEqual(key,localValOf(key),r.data[key],normalizeState)}});
 var diff=heal.diff;st.dirty=heal.dirty;st.cloudTs=heal.cloudTs;
-  saveSyncState(st);if(diff.length){setSyncBar('');autoPull();showToast('云端已有更新，请确认冲突','err')}else{setSyncBar('ok','已对齐云端 '+syncClockText());showToast('云端内容与本机一致，已自动对齐','ok')}}).catch(function(){setSyncBar('');autoPull();showToast('云端已有更新，请确认冲突','err')})}
+  /* v441：先把冲突键登记下来（buildPushData 会跳过它们），再去拉取并弹窗。
+     登记必须在 pull 之前，否则两次渲染之间的定时推送还会带着旧版本号再撞一次。 */
+  if(diff.length)st.pendingConflicts=Array.from(new Set((st.pendingConflicts||[]).concat(diff)));
+  saveSyncState(st);if(diff.length){setSyncBar('');showSyncConflict(diff,r.data);showToast('云端已有更新，请确认冲突','err')}else{setSyncBar('ok','已对齐云端 '+syncClockText());showToast('云端内容与本机一致，已自动对齐','ok')}}).catch(function(){setSyncBar('');pullForConflict();showToast('云端已有更新，请确认冲突','err')})}
+/* v441：冲突时的拉取必须走"真拉取"。迁移期的 autoPull 短路成 autoPush，用它处理 409 会无限循环。 */
+function pullForConflict(){try{if(typeof coreAutoPullBase==='function')return coreAutoPullBase()}catch(e){logSwallowed('pullForConflict',e)}return autoPull()}
 function flushDirtyOnHide(){try{if(!syncCfg||!syncCfg.url)return;var st=loadSyncState();if(!pendingDirtyKeys(st,SYNC_KEYS).length)return;var payload=buildPushData(true);delete payload.__expectedVersions;var body=JSON.stringify(payload);if(!body||body.length>60000)return;fetch((syncCfg.url||location.origin).replace(/\/$/,'')+'/api/sync',{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':syncCfg.token},body:body,keepalive:true}).catch(function(){})}catch(e){logSwallowed("flushDirtyOnHide",e)}}
 
 (function initPendingPush(){var run=function(){pushPendingSoon(1500)};if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',run)}else{run()}})();
@@ -1503,7 +1513,9 @@ ss.dirty=plan.dirty;ss.cloudTs=plan.cloudTs;saveSyncState(ss);
    推送成功后 dirty 会被清掉，再移除一次性标记；失败则保留标记，下次联网继续推。 */
 var coreAutoPullBase=autoPull;
 autoPull=function(){
-  if(readRaw(KEYS.coreMigrationV4)==='1'){autoPush();return}
+  /* v441：只要还有没解决完的冲突，迁移短路就必须让路 ——
+     否则 autoPull 被替换成 autoPush，冲突弹窗永远弹不出来，409 会一直循环。 */
+  if(readRaw(KEYS.coreMigrationV4)==='1'&&!(loadSyncState().pendingConflicts||[]).length){autoPush();return}
   return coreAutoPullBase.apply(this,arguments);
 };
 var coreSyncPushBase=syncPushImpl;
@@ -1650,7 +1662,7 @@ var maxPriceReq={};
 function fetchMaxData(sym){var k=String(sym);if(maxPriceReq[k])return maxPriceReq[k];var p=fetchWithTimeout('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=max').then(function(r){return r.json()}).catch(function(){return null});maxPriceReq[k]=p;return p}
 var trendPriceReq={};function fetchTrendData(sym,force){var k=String(sym),cached=trendPriceReq[k];if(!force&&cached&&Date.now()-cached.at<5*60*1000)return cached.promise;var p=fetchWithTimeout('/api/price?symbol='+encodeURIComponent(PRICE_SYMBOLS[sym]||sym)+'&range=3y').then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).catch(function(){return null});trendPriceReq[k]={at:Date.now(),promise:p};return p}
 function fetchYearStartPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0],quote=r.indicators&&r.indicators.quote&&r.indicators.quote[0];return firstCloseInYear(r.timestamp||[],quote&&quote.close||[],year)}).catch(function(){return null})}
-function fetchYearEndPrice(sym,year){return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0],quote=r.indicators&&r.indicators.quote&&r.indicators.quote[0];return lastCloseInYear(r.timestamp||[],quote&&quote.close||[],year)}).catch(function(){return null})}
+function fetchYearEndPrice(sym,year){ if(Number(year)===Number(marketDate().slice(0,4))&&Number(livePrices[sym])>0) return Promise.resolve(Number(livePrices[sym])); return fetchMaxData(sym).then(function(d){if(!d||!d.ok||!d.data||!d.data.chart||!d.data.chart.result||!d.data.chart.result[0])return null;var r=d.data.chart.result[0],quote=r.indicators&&r.indicators.quote&&r.indicators.quote[0];return lastCloseInYear(r.timestamp||[],quote&&quote.close||[],year)}).catch(function(){return null})}
 function calcAttribution(year){var yS=year+'-01-01',yE=year+'-12-31';
   /* 年初/年末的持仓、现金、买入/卖出累计全部走共享快照 portfolioStateAt() —— 不再自己算一套。
      （以前这里独立实现了一遍资产口径，改动时容易只改一处，正是"同一个数两处算"的典型。） */

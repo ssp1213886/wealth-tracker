@@ -131,6 +131,7 @@ test('planConflictHeal：一致→静默对齐；不一致→进 diff；云端�
   assert.equal(heal.cloudTs.trades, 1234);
   assert.equal(heal.dirty.cashLog, true, '云端没有该行 → 标脏等重建');
   assert.equal('cashLog' in heal.cloudTs, false);
+  assert.equal(heal.cloudTs.state, 99, '内容不一致的键也要记下云端版本，否则下次推送仍带旧版本号 → 永久 409');
 });
 
 test('推送辅助：pushedKeysOf / pendingDirtyKeys / shouldSkipPush', () => {
