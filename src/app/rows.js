@@ -118,7 +118,7 @@ export function buildCashLogRow(l) {
   return '<tr><td data-cell="date">' + dt + '</td>' +
     '<td data-cell="type"><span style="display:inline-block;' + cashTypeStyle(l.type) + '">' + type + '</span></td>' +
     '<td data-cell="amount" class="' + (sign < 0 ? 'cash-neg' : 'cash-pos') + '">' +
-    (sign < 0 ? '-' : '+') + fmtFull(Math.abs(l.amount)) + '</td>' +
+    (sign < 0 ? '-' : '+') + fmtNativeFull(Math.abs(l.amount)) + '</td>' +
     '<td data-cell="actions"><button class="trade-del" data-clog="' + l.id + '" aria-label="删除流水">×</button></td></tr>';
 }
 

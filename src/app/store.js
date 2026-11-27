@@ -159,7 +159,11 @@ export function runMigrations(onError) {
         watchlist: readRaw(KEYS.watchlist),
         prices: readRaw(KEYS.prices),
       };
-      writeRaw(KEYS.legacyCoreV4, JSON.stringify(archive));
+      /* v442：归档写不进去（配额满 / 无痕模式）时绝不能继续删旧数据 ——
+         否则用户既没有归档、也丢了交易，而且 schema 一旦推进就再也不会重跑。 */
+      if (writeRaw(KEYS.legacyCoreV4, JSON.stringify(archive)) !== true) {
+        throw new Error('legacy archive write failed: ' + KEYS.legacyCoreV4);
+      }
 
       const nextState = Object.assign({}, current && typeof current === 'object' ? current : {}, TARGET_STATE);
       delete nextState.btc;
@@ -211,14 +215,19 @@ export function runMigrations(onError) {
     },
   };
 
+  /* v442：某一步失败就停在失败的那一版，schema 不推进 —— 下次启动还能重跑，
+     不会出现"归档失败但数据已删、且永远不再迁移"的死局。 */
+  let reached = from;
   for (let v = from + 1; v <= DATA_SCHEMA; v += 1) {
     try {
       if (steps[v]) steps[v]();
+      reached = v;
     } catch (error) {
       if (typeof onError === 'function') onError('migration v' + v, error && error.stack);
+      break;
     }
   }
 
-  writeRaw(KEYS.schema, String(DATA_SCHEMA));
-  return DATA_SCHEMA;
+  writeRaw(KEYS.schema, String(reached));
+  return reached;
 }

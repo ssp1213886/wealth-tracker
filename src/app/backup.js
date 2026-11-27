@@ -67,13 +67,18 @@ export function planBackupImport(data, ctx) {
   }
   const hasNotes = 'activities' in data || 'notes' in data;
   const exitValue = data.exitPortfolio !== undefined ? data.exitPortfolio : data.exit_portfolio;
+  /* v442：导入时被过滤掉的交易必须明说。旧备份里的 IBIT 等标的会被静默丢弃，
+     用户以为恢复完整了，实际少了几笔。 */
+  const rawTrades = Array.isArray(data.trades) ? data.trades : [];
+  const normalizedTrades = 'trades' in data ? normalizeTrades(data.trades, cfg.etfSymbols) : cur.trades;
+  const skippedTrades = 'trades' in data ? Math.max(0, rawTrades.length - normalizedTrades.length) : 0;
   const next = {
-    trades: 'trades' in data ? normalizeTrades(data.trades, cfg.etfSymbols) : cur.trades,
+    trades: normalizedTrades,
     cashLog: 'cashLog' in data ? normalizeCashLogs(data.cashLog) : cur.cashLog,
     activities: hasNotes ? normalizeActivities(data.activities || data.notes) : normalizeActivities(cur.activitiesRaw),
     watchlist: 'watchlist' in data ? normalizeWatchlist(data.watchlist) : normalizeWatchlist(cur.watchlist),
   };
-  const summary = '交易 ' + next.trades.length + ' 笔\n'
+  const summary = '交易 ' + next.trades.length + ' 笔' + (skippedTrades ? '（跳过 ' + skippedTrades + ' 笔：标的不在核心仓）' : '') + '\n'
     + '资金流水 ' + next.cashLog.length + ' 条\n'
     + '操作日志 ' + next.activities.length + ' 条\n'
     + '观察列表 ' + next.watchlist.length + ' 项';

@@ -11,7 +11,7 @@ await fetch(CLOUD + '/_reset').catch(() => {});
 await fetch(CLOUD + '/api/sync', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', Cookie: 'wt_uid=' + UID },
-  body: JSON.stringify({ trades: [{ id: 9, date: '2026-09-02', symbol: 'VGT', shares: 5, price: 100 }], cashBalance: 999 }),
+  body: JSON.stringify({ trades: [{ id: 9, date: '2026-09-02', symbol: 'VGT', shares: 5, price: 100 }], cashBalance: 999, watchlist: [{ sym: 'NVDA', enabled: true }] }),
 });
 
 const p = await context.newPage();
@@ -37,6 +37,13 @@ await p.evaluate(async () => {
   localStorage.setItem('wealth_cash_v2', '0');
   localStorage.setItem('wealth_cashlog_v2', '[]');
   localStorage.setItem('wealth_activity_v1', '[]');
+  /* v442：清除必须连观察列表 / 记录分段 / v433 归档 / 汇率与市值缓存一起清 */
+  const NS = 'u2:';
+  localStorage.setItem(NS + 'wealth_watchlist_v1', JSON.stringify([{ sym: 'NVDA', enabled: true }]));
+  localStorage.setItem(NS + 'wealth_records_segment_v1', 'logs');
+  localStorage.setItem(NS + 'wealth_legacy_core_v4', JSON.stringify({ trades: [] }));
+  localStorage.setItem(NS + 'wealth_fx_usd_cny_v1', JSON.stringify({ rate: 7.1 }));
+  localStorage.setItem(NS + 'wealth_marketcap_v3', JSON.stringify({ caps: { NVDA: 1 }, at: Date.now() }));
 });
 await p.goto(BASE + '?clear=' + Date.now(), { waitUntil: 'domcontentloaded' });
 await p.waitForTimeout(4000);
@@ -74,10 +81,17 @@ await p.waitForTimeout(2500);
 const after = await cloudGet();
 if (Array.isArray(after.trades) && after.trades.length) failures.push('云端交易没被清掉：' + JSON.stringify(after.trades).slice(0, 80));
 if (Number(after.cashBalance) !== 0) failures.push('云端现金没归零：' + after.cashBalance);
+if (Array.isArray(after.watchlist) && after.watchlist.length) failures.push('云端观察列表没被清掉：' + JSON.stringify(after.watchlist).slice(0, 60));
 
 await p.waitForTimeout(3000);
 const localTrades = await p.evaluate(() => JSON.parse(localStorage.getItem('wealth_trades_v2') || '[]').length);
 if (localTrades !== 0) failures.push('清除后本地又被云端拉回来了：' + localTrades + ' 笔');
+const leftovers = await p.evaluate(() => ({
+  watch: JSON.parse(localStorage.getItem('u2:wealth_watchlist_v1') || '[]').filter((w) => w && w.sym === 'NVDA').length,
+  legacy: localStorage.getItem('u2:wealth_legacy_core_v4') !== null,
+}));
+if (leftovers.watch) failures.push('清除后观察列表里的 NVDA 又回来了');
+if (leftovers.legacy) failures.push('旧核心仓归档 wealth_legacy_core_v4 没被清掉');
 
 await p.evaluate(() => { localStorage.removeItem('wealth_sync_cfg'); localStorage.removeItem('wealth_sync_state'); });
 await p.close();

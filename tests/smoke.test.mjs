@@ -153,9 +153,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=440');
+  assert.equal(manifest.start_url, '/?v=441');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v440/);
+  assert.match(serviceWorker, /wealth-v441/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -169,7 +169,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=440',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=441',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -756,7 +756,9 @@ test('v441：待确认的冲突键不许自动重推，冲突弹窗必须真的�
   assert.match(indexSource, /pc\.forEach\(function\(k\)\{delete payload\[k\];/, '冲突键要从 payload 里剔除');
   assert.match(indexSource, /if\(diff\.length\)st\.pendingConflicts=Array\.from\(new Set\(\(st\.pendingConflicts\|\|\[\]\)\.concat\(diff\)\)\);/, 'heal 检出差异必须先登记冲突');
   assert.match(indexSource, /showSyncConflict\(diff,r\.data\)/, 'heal 检出差异要直接弹冲突框，不能回到 autoPull 无限重试');
-  assert.match(indexSource, /coreMigrationV4\)==='1'&&!\(loadSyncState\(\)\.pendingConflicts\|\|\[\]\)\.length/, '迁移短路必须给未解决冲突让路');
+  assert.match(indexSource, /if\(readRaw\(KEYS\.coreMigrationV4\)==='1'\)\{/, '迁移短路必须带条件判断');
+  assert.match(indexSource, /if\(!pendingDirtyKeys\(_mst,SYNC_KEYS\)\.length\)/, '没有待推键时必须清标记走真拉取');
+  assert.match(indexSource, /if\(!\(_mst\.pendingConflicts\|\|\[\]\)\.length\)\{autoPush\(\);return\}/, '迁移短路必须给未解决冲突让路');
 });
 
 test('v441：冲突解决后 dirty 与失败计数都要归零', () => {
@@ -766,4 +768,64 @@ test('v441：冲突解决后 dirty 与失败计数都要归零', () => {
     'pushKeysForce 必须先清脏再读快照，否则会把 dirty=true 写回去');
   assert.match(indexSource, /_cs\.failStreak=0;_cs\.lastSyncErrorAt=0;_cs\.lastSyncError=''/, '选择云端后要清失败计数');
   assert.match(indexSource, /SYNC_KEYS\.every\(function\(k\)\{return !\(s&&s\.dirty&&s\.dirty\[k\]\)\}\)\)removeKey\(KEYS\.coreMigrationV4\)/, '全部干净后要清掉迁移标记');
+});
+
+/* ===== v442：交接文档 P0/P1/P2 修复 ===== */
+test('v442：清除全部数据要覆盖 watchlist 与本地归档/缓存', () => {
+  assert.match(indexSource, /var empty=\{trades:\[\],cashBalance:0,cashLog:\[\],state:\{\},activities:\[\],exit_portfolio:'',prices:\{\},watchlist:\[\]\}/);
+  const start = indexSource.indexOf('function clearAllData');
+  const body = indexSource.slice(start, start + 4000);
+  ['wealth_watchlist_v1', 'wealth_records_segment_v1', 'wealth_legacy_core_v4', 'wealth_fx_usd_cny_v1', 'wealth_marketcap_v3']
+    .forEach((k) => { assert.ok(body.indexOf(k) >= 0, k + ' 必须一起清掉'); });
+  assert.ok(body.indexOf('wealth_clear_snapshot_v1') < 0, '24 小时撤销快照不能被清掉');
+});
+
+test('v442：schema.sql 必须是 user_id + key 复合主键', () => {
+  const sql = fs.readFileSync('schema.sql', 'utf8');
+  assert.match(sql, /user_id INTEGER NOT NULL/);
+  assert.match(sql, /PRIMARY KEY \(user_id, key\)/);
+  assert.doesNotMatch(sql, /DROP TABLE IF EXISTS data/);
+});
+
+test('v442：交易类金额一律美元，只有估值走 CNY 换算', () => {
+  assert.match(indexSource, /function updateDataPage\(\)\{[^}]*fmtNativeFull\(totals\.deposit\)/);
+  assert.match(indexSource, /fmtNativeFull\(Math\.abs\(d\.diff\)\)/);
+  assert.match(indexSource, /<span>均价<\/span><strong>'\+fmtNativeFull\(avg\)/);
+  assert.match(rowsSource, /fmtNativeFull\(Math\.abs\(l\.amount\)\)/);
+});
+
+test('v442：QQQM 要进间接持有与市值预取', () => {
+  assert.doesNotMatch(indexSource, /\['VGT','SMH'\]/);
+  assert.match(indexSource, /ETF_SYMS\.forEach\(function\(etf\)/);
+  assert.match(indexSource, /ETF_SYMS\.forEach\(function\(k\)\{var d=holdingsData\[k\]/);
+});
+
+test('v442：年度归因补回卖出所得', () => {
+  assert.match(indexSource, /as\[t\.symbol\]\+=Math\.abs\(t\.shares\)\*t\.price/);
+  assert.match(indexSource, /-ac\[s\]\+as\[s\]/);
+});
+
+test('v442：monthlyDCA=0 不能被 || 回退成 2000', () => {
+  assert.doesNotMatch(indexSource, /state\.monthlyDCA\|\|2000/);
+  assert.match(indexSource, /\(state\.monthlyDCA===undefined\|\|state\.monthlyDCA===null\)\?2000/);
+});
+
+test('v442：历史行情失败可重试、range=max 不冒充日线', () => {
+  assert.match(indexSource, /maxPriceReq\[k\]=null;return null/);
+  const priceSource = fs.readFileSync('src/lib/price.js', 'utf8');
+  assert.match(priceSource, /const dailyUsable = dailyTimes\.length > 0/);
+  assert.match(priceSource, /if \(!dailyUsable\) return legacyResult/);
+});
+
+test('v442：搜索覆盖操作日志、DCA/快照弹层支持 Esc', () => {
+  const search = fs.readFileSync('src/app/table-search.js', 'utf8');
+  assert.match(search, /id: 'activityLog'/);
+  assert.match(indexSource, /else if\(open\.id==='dcaSheet'\)closeDcaSheet\(\)/);
+  assert.match(indexSource, /else if\(open\.id==='snapshotSheet'\)closeSnapshotSheet\(\)/);
+});
+
+test('v442：备份导入要说明被跳过的交易', () => {
+  const backup = fs.readFileSync('src/app/backup.js', 'utf8');
+  assert.match(backup, /skippedTrades/);
+  assert.match(backup, /跳过 ' \+ skippedTrades \+ ' 笔/);
 });

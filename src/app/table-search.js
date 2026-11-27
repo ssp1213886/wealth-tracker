@@ -2,16 +2,29 @@ import { matchRowText, searchCountText } from './rows.js';
 
 let query = '';
 
+/* v442：搜索范围 = 三张明细表 + 操作日志。
+   以前只扫 holdBody/tradeBody/cashLogBody，README 说"跨两段生效"，日志分段却永远搜不到。 */
+const SEARCH_HOSTS = [
+  { id: 'holdBody', selector: 'tr' },
+  { id: 'tradeBody', selector: 'tr' },
+  { id: 'cashLogBody', selector: 'tr' },
+  { id: 'activityLog', selector: '.activity-item' },
+];
+
+function isPlaceholder(el) {
+  return !!(el.querySelector && (el.querySelector('.table-empty') || el.querySelector('.ds-empty')));
+}
+
 export function applyTableSearch() {
   const q = query.trim().toLowerCase();
   let total = 0;
   let matched = 0;
   let first = null;
-  ['holdBody', 'tradeBody', 'cashLogBody'].forEach((id) => {
-    const body = document.getElementById(id);
+  SEARCH_HOSTS.forEach((host) => {
+    const body = document.getElementById(host.id);
     if (!body) return;
-    Array.from(body.querySelectorAll('tr')).forEach((row) => {
-      if (row.querySelector('.table-empty') || row.querySelector('.ds-empty')) return;
+    Array.from(body.querySelectorAll(host.selector)).forEach((row) => {
+      if (isPlaceholder(row)) return;
       total += 1;
       const hit = matchRowText(row.textContent, q);
       row.style.display = hit ? '' : 'none';
@@ -67,8 +80,8 @@ export function initTableSearch() {
       input.focus();
     });
   }
-  ['holdBody', 'tradeBody', 'cashLogBody'].forEach((id) => {
-    const body = document.getElementById(id);
+  SEARCH_HOSTS.forEach((host) => {
+    const body = document.getElementById(host.id);
     if (body && window.MutationObserver) {
       new MutationObserver(() => applyTableSearch()).observe(body, { childList: true });
     }

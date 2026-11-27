@@ -69,6 +69,11 @@ export function mergeHistoricalDaily(dailyPayload, legacyPayload) {
   if (!dailyResult) return legacyPayload;
   if (!legacyResult) return dailyPayload;
   const dailyTimes = Array.isArray(dailyResult.timestamp) ? dailyResult.timestamp : [];
+  /* v442：日线拿不到（或被降采样）时绝不能冒充日线。
+     以前这里无条件写 dataGranularity:'1d'，趋势层就会用周线去算 50/200 日均线。 */
+  const dailyGranularity = String((dailyResult.meta && dailyResult.meta.dataGranularity) || '');
+  const dailyUsable = dailyTimes.length > 0 && (dailyGranularity === '' || dailyGranularity === '1d');
+  if (!dailyUsable) return legacyResult;
   const dailyCloses = dailyResult.indicators && dailyResult.indicators.quote && dailyResult.indicators.quote[0]
     ? dailyResult.indicators.quote[0].close || []
     : [];

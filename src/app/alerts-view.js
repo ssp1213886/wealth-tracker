@@ -3,7 +3,7 @@
 
 import { removeKey } from './store.js';
 import { marketDate } from './time.js';
-import { fmtFull, logSwallowed } from './util.js';
+import { fmtFull, fmtNativeFull, logSwallowed } from './util.js';
 import { emptyStateHTML, renderAlertItem, alertSignature } from './render.js';
 
 const ALERT_SEVERITY_SCORE = { critical: 4, high: 3, medium: 2, low: 1 };
@@ -112,7 +112,7 @@ export function buildAlerts(ctx) {
       id: 'dca:' + now,
       type: 'accent',
       severity: 'low',
-      title: '本月定投还差 ' + fmtFull(gap),
+      title: '本月定投还差 ' + fmtNativeFull(gap),
       detail: '在券商成交后批量记录',
       action: 'dca',
     });

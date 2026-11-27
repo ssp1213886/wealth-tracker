@@ -5,11 +5,13 @@ import assert from 'node:assert/strict';
 
 const memory = new Map();
 let failWrites = false;
+/* v442：按 key 精确制造写入失败（模拟"归档写不下、其它键还能写"的配额场景） */
+const failKeys = new Set();
 
 globalThis.localStorage = {
   getItem: (key) => (memory.has(key) ? memory.get(key) : null),
   setItem: (key, value) => {
-    if (failWrites) {
+    if (failWrites || failKeys.has(key)) {
       const error = new Error('quota exceeded');
       error.name = 'QuotaExceededError';
       throw error;
@@ -27,7 +29,28 @@ const {
 const reset = () => {
   memory.clear();
   failWrites = false;
+  failKeys.clear();
 };
+
+test('runMigrations：归档写失败时必须保留旧交易/现金，且 schema 不推进（v442）', () => {
+  reset();
+  memory.set(KEYS.schema, '3');
+  memory.set(KEYS.dashboard, JSON.stringify({ vgt: 50, smh: 30, ibit: 20 }));
+  memory.set(KEYS.trades, JSON.stringify([{ id: 1, symbol: 'VGT', shares: 1 }]));
+  memory.set(KEYS.cash, '1000');
+  memory.set(KEYS.cashLog, JSON.stringify([{ id: 2, type: 'DEP', amount: 500 }]));
+  failKeys.add(KEYS.legacyCoreV4);
+  const errors = [];
+
+  const reached = runMigrations((scope) => errors.push(scope));
+
+  assert.equal(reached, 3, '失败时停在上一版');
+  assert.equal(readRaw(KEYS.schema), '3', 'schema 不能推进，否则再也不会重试');
+  assert.ok(readRaw(KEYS.trades), '归档没写成，旧交易必须还在');
+  assert.equal(readRaw(KEYS.cash), '1000');
+  assert.ok(readRaw(KEYS.cashLog));
+  assert.equal(errors.length, 1);
+});
 
 test('readRaw / writeRaw：基本读写', () => {
   reset();

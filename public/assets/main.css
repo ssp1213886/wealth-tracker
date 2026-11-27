@@ -2969,7 +2969,6 @@ body.sheet-open{overflow:hidden}
      不会再出现"两块各自被压扁、文字压住 + 按钮"（v391 的线上 bug）。 */
   .prob-card .prob-controls{gap:6px 8px}
   .regime-rules summary{min-height:44px;margin:0 -2px;padding:0 2px}
-  .ma-cross-ack{min-height:44px}
 }
 
 /* ===== v326 到期日历 + 行权价参考的备注 ===== */

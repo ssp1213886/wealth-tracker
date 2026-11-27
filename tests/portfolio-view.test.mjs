@@ -108,7 +108,7 @@ test('renderMetricsPnl：今日涨跌与总盈亏的正负着色', () => {
   assert.doesNotMatch(hpp.innerHTML, /\(\+7\.8%\)/, '小字行不再重复百分比');
   assert.match(hpp.innerHTML, /浮动 \+\$88\.75/);
   assert.match(hpp.innerHTML, /已实现 -\$12\.00/, '负数时符号在 $ 前面（v319）');
-  assert.match(hpp.innerHTML, /权利金 \+\$120\.00/);
+  assert.doesNotMatch(hpp.innerHTML, /权利金/, '期权已下线，不再显示权利金徽章');
 });
 
 test('renderMetricsPnl：跌的时候走 pnl-neg', () => {
@@ -128,7 +128,7 @@ test('renderMetricsPnl：跌的时候走 pnl-neg', () => {
   assert.equal(hp.className, 'm-val pnl-neg');
   assert.equal(pill.textContent, '-5.0%');
   assert.equal(pill.className, 'm-pct is-neg');
-  assert.match(hpp.innerHTML, /权利金 -\$30\.00/);
+  assert.doesNotMatch(hpp.innerHTML, /权利金/, '期权已下线，不再显示权利金徽章');
 });
 
 test('renderMetricsPnl：没有实时价时不加方向类，并点名需要设价的标的', () => {
