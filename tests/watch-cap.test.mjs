@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { configureWatchUI, capText } from '../src/app/watch-ui.js';
+import { configureCurrency } from '../src/app/util.js';
 
 test('capText：美元两位小数，不再舍成整数 B', () => {
   configureWatchUI({ capBasePrice: {}, livePrices: {}, watchQuotes: {}, capsFetchedAt: 0 });
@@ -23,4 +24,12 @@ test('capText：有抓取时间就带上"截至 MM/DD"', () => {
   configureWatchUI({ capBasePrice: {}, livePrices: {}, watchQuotes: {}, capsFetchedAt: at });
   assert.match(capText(100e9, 'NVDA'), /^\$100\.00B · 11\/28$/);
   configureWatchUI({ capBasePrice: {}, livePrices: {}, watchQuotes: {}, capsFetchedAt: 0 });
+});
+
+test('capText：人民币视图连前缀一起换（不能数值换算完还挂着 $）', () => {
+  configureWatchUI({ capBasePrice: {}, livePrices: {}, watchQuotes: {}, capsFetchedAt: 0 });
+  configureCurrency('CNY', 7.12);
+  assert.equal(capText(100e9, 'X'), '¥712.00B');
+  configureCurrency('USD', 7.12);
+  assert.equal(capText(100e9, 'X'), '$100.00B');
 });
