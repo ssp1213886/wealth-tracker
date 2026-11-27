@@ -10,7 +10,7 @@ QQQM + VGT + SMH 长期核心仓、持续定投和年度再平衡，Cloudflare W
 
 > 前端**已经不是单文件**了。改前端请改 `src/app/*`，**永远不要直接编辑 `public/assets/app.js`** —— 它是 esbuild 的构建产物，下次构建就被覆盖。
 
-- **前端源码**：`src/app/`（`index.js` 页面逻辑 + 23 个模块：纯逻辑、视图层、存储与同步）
+- **前端源码**：`src/app/`（`index.js` 页面逻辑 + 37 个模块：纯逻辑、视图层、存储与同步）
 - **前端产物**：`public/assets/app.js`（由 `npm run build` 生成）；`public/assets/main.css` 是手写的
 - **改完必须构建**：`npm run build`，否则线上不会有任何变化
 - **后端**：`src/worker.js` + `src/lib/*`
@@ -39,7 +39,7 @@ QQQM + VGT + SMH 长期核心仓、持续定投和年度再平衡，Cloudflare W
 |------|------|
 | 仪表盘 | 总资产指标、定投进度、20 年旅程、目标进度条、待办、仓位盈亏、持仓分布环形图 |
 | 操作台 | 股票买卖录入（QQQM/VGT/SMH）、年度再平衡（换仓/注资，仅 12/31 解锁）、手动刷新行情 |
-| 分析 | 观察列表、市场趋势、资产曲线、高点回撤、集中度与底层资产敞口 |
+| 分析 | 观察列表、市场趋势、资产曲线与目标策略基准、高点回撤、集中度与底层资产敞口 |
 | 记录 | **明细**分段（现金管理 / 持仓明细 / 交易历史 / 资金流水 / 年度收益归因）+ **日志**分段（操作日志 / 纪律打卡 / 年度复盘矩阵 / 投资规划），顶部搜索框跨两段生效 |
 
 ### 移动端
@@ -83,7 +83,11 @@ QQQM + VGT + SMH 长期核心仓、持续定投和年度再平衡，Cloudflare W
 
 **提醒与交互**
 
-- 待办提醒（移动端右上角铃铛、或快捷操作面板）：本月定投差额提示
+- 待办提醒（移动端右上角铃铛、或快捷操作面板）：本月定投差额提示，点击直接进入“券商成交后的批量记账”
+- 批量定投记账：填写券商实际成交日期、股数和成交价，空行跳过，一次保存、一次同步、整批撤销；不生成订单，不预填股数
+- 计价币种：设置中可切换 USD / CNY；只改变资产估值与分析显示，交易录入和交易历史始终保留美元
+- 策略基准：使用同一历史现金流、目标比例和年度再平衡计算目标策略曲线，显示实际执行差异
+- 集中度结论：前五大底层资产、共同重仓、HHI 与有效独立风险暴露
 - 记录页搜索：按标的 / 日期 / 金额搜索，自动展开命中的卡片
 - 删除类操作统一走确认弹窗 + **8 秒可撤销** Toast
 - Toast 毛玻璃 + 弹性弹入；成功 3 秒、普通提示 2.5 秒
@@ -120,6 +124,7 @@ QQQM + VGT + SMH 长期核心仓、持续定投和年度再平衡，Cloudflare W
 | 后端 | Cloudflare Worker（`src/worker.js` + `src/lib/`） |
 | 存储 | localStorage（带 schema 版本与迁移链），键常量集中在 `src/app/store.js` |
 | 行情 | 股票：Yahoo Finance（Worker 代理绕 CORS），失败降级东方财富，支持手动录入并标注来源；加密：Yahoo 交易对为主，兜底链 **Binance.US → Kraken → CoinGecko**（v324 实测：币安全球站在 Cloudflare 出口 403、CoinGecko 429） |
+| 汇率 | `/api/fx` 通过 Worker 代理 Yahoo `CNY=X`；当前汇率边缘缓存 30 分钟，历史汇率缓存 24 小时，失败时显示缓存状态或“汇率不可用” |
 | 同步 | Cloudflare D1（单 token 鉴权 + 版本冲突检测） |
 | 部署 | Cloudflare Workers（静态资源由 `ASSETS` binding 提供） |
 
@@ -137,7 +142,7 @@ npm run preview:lan  # 局域网静态预览，手机可访问（调移动端用
 
 ```bash
 npm run build        # 打包 src/app/* → public/assets/app.js（改完前端必跑）
-npm test             # 单元测试（491 项）
+npm test             # 当前全量单元测试
 npm run lint         # 语法检查 + !important 预算守卫（当前上限 1511，只减不增）
 npm run audit        # 静态审计：死 id / 死按钮 / 空 catch / 跨模块漏 import
 npm run e2e          # 无头端到端（自带假云端，不碰生产数据）
@@ -168,9 +173,9 @@ npm run deploy
 | `public/icon.png` | 应用图标 |
 | `src/worker.js` | Worker 入口（路由 + 鉴权 + 限流） |
 | `src/lib/` | 后端模块：auth / assets / http / price / quotes / holdings / marketcap / sync / **snapshots** / logs / events / rate-limit |
-| `src/app/` | **前端源码**：`index.js`（页面逻辑与装配）+ 纯逻辑（calc / portfolio / options / plan / rows / records-import / symbols / charts / time / util）+ 视图层（sync-view / settings-view / watch-ui / portfolio-view / alerts-view）+ 数据（store / sync / sync-engine / backup / watch / watch-view / settings） |
+| `src/app/` | **前端源码**：`index.js`（页面逻辑与装配）+ 纯逻辑（calc / portfolio / policy-benchmark / dca-batch / concentration / plan / rows / records-import / symbols / charts / time / util）+ 视图层（sync-view / settings-view / watch-ui / portfolio-view / alerts-view）+ 数据（store / sync / sync-engine / backup / watch / watch-view / settings） |
 | `scripts/` | bundle / bump / lint / build / lan-preview + e2e 与专项测试脚本 |
-| `tests/` | 单元测试（`node --test`，**491 项**） |
+| `tests/` | 单元测试（`node --test`，当前全量） |
 | `schema.sql` | D1 建表语句 |
 | `wrangler.toml` | Cloudflare Workers 配置 |
 | `INVESTMENT_STRATEGY.md` | 投资策略定义（AI 助手读取） |
@@ -184,7 +189,7 @@ npm run deploy
 | --- | --- | --- |
 | 单元测试 | `npm test` | 工具函数、持仓计算与成本结转、组合/计划纯计算、存储容错、迁移链、同步 payload 与 409 分类、备份导入计划、待办判定、转义安全、时区与交易日、**今日收益口径**、**并发取价去重**、**云端快照读写与账号隔离**、**同步请求的 15 秒硬超时**、**失败文案四分类（离线/超时/HTTP/其它）**、**客户端网络调用必须有截止时间**、**安全响应头**、**场景脚本不许漏挂**、**行情自动刷新的过期判定**、**资产曲线口径与月度收益一致** |
 | 静态审计 | `npm run audit` | 死 id / 死按钮 / 未导出的 inline onclick / 空 catch / 跨模块漏 import，纯 Node，CI 会跑 |
-| 端到端（无头） | `npm run e2e` | **7 个场景**：全页爬查零报错 / 数据流（买入·入金落库并同步）/ 交互流（搜索·撤销·备份·操作台弹层·刷新反馈）/ 市值与敞口（含**行情一致性护栏**）/ 使用文档可达性 / 登录门禁 / 清除数据 |
+| 端到端（无头） | `npm run e2e` | **8 个场景**：全页爬查零报错 / 数据流（买入·入金落库并同步）/ 交互流（搜索·撤销·备份·操作台弹层·刷新反馈）/ 新功能验收（批量定投·策略基准·集中度·USD/CNY·四种宽度双主题·慢网恢复）/ 市值与敞口（含**行情一致性护栏**）/ 使用文档可达性 / 登录门禁 / 清除数据 |
 | 端到端回归 | `node scripts/e2e/driver.mjs --file scripts/e2e-full.mjs` | 仪表盘 / 操作台 / 市场趋势 / 记录页 / 侧边栏 / 主题 / 响应式 |
 | 常跑总入口 | `npm run e2e:all` | 主套件 + 全站回归 + 备份 / 分析卡专项 + 同步全链路（含 409/401）+ 真机模拟触摸端；**已接进 CI** |
 | 专项验证 | `scripts/test-backup.mjs` 等 | 备份往返、分析卡片数值与手算比对 |

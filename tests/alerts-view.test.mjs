@@ -13,7 +13,7 @@ test('buildAlerts：本月尚未定投时只生成定投差额提醒', () => {
   const alerts = buildAlerts(ctx());
   assert.equal(alerts.length, 1);
   assert.equal(alerts[0].id, 'dca:2026-11');
-  assert.equal(alerts[0].action, 'console');
+  assert.equal(alerts[0].action, 'dca');
   assert.match(alerts[0].title, /本月定投还差/);
 });
 

@@ -1,7 +1,7 @@
 // 图表的数据整形（纯逻辑）：纪律热力图的月度数据、年度矩阵、甜甜圈切片、热力色阶。
 // 只做"算数据"，画布/HTML 仍留在 index.js；因此这些数字可以离线单测。
 import { marketDate } from './time.js';
-import { cashSigned } from './util.js';
+import { cashSigned, fmtCurrentFull } from './util.js';
 import { CORE_SYMBOLS } from './portfolio-config.js';
 
 /**
@@ -376,10 +376,15 @@ export function equityCurveSvg(series) {
   usable.forEach(function (p) {
     const v = Number(p.value) || 0;
     const iv = Number(p.netInvested) || 0;
+    const bv = Number(p.benchmark);
     if (v < min) min = v;
     if (v > max) max = v;
     if (iv < min) min = iv;
     if (iv > max) max = iv;
+    if (isFinite(bv) && p.benchmark != null) {
+      if (bv < min) min = bv;
+      if (bv > max) max = bv;
+    }
   });
   if (!isFinite(min) || !isFinite(max)) return '';
   const span = max - min > 0 ? max - min : 1;
@@ -387,13 +392,25 @@ export function equityCurveSvg(series) {
   const yAt = function (v) { return VH - PAD - ((Number(v) || 0) - min) / span * (VH - PAD * 2); };
   let line = '';
   let invested = '';
+  let benchmark = '';
   let pen = false;
+  let benchPen = false;
   pts.forEach(function (p, i) {
-    if (p.gap) { pen = false; return; }
+    if (p.gap) {
+      pen = false;
+      benchPen = false;
+      return;
+    }
     const cmd = pen ? 'L' : 'M';
     line += cmd + xAt(i).toFixed(2) + ' ' + yAt(p.value).toFixed(2) + ' ';
     invested += cmd + xAt(i).toFixed(2) + ' ' + yAt(p.netInvested).toFixed(2) + ' ';
     pen = true;
+    if (p.benchmark != null && Number.isFinite(Number(p.benchmark))) {
+      benchmark += (benchPen ? 'L' : 'M') + xAt(i).toFixed(2) + ' ' + yAt(p.benchmark).toFixed(2) + ' ';
+      benchPen = true;
+    } else {
+      benchPen = false;
+    }
   });
   /* 填充只在"一条不断线"时画：断了以后连首尾会把缺口也填上，反而像数据齐的 */
   const hasGap = pts.some(function (p) { return p.gap; });
@@ -407,6 +424,7 @@ export function equityCurveSvg(series) {
   return '<svg class="eq-svg" viewBox="0 0 ' + VW + ' ' + VH + '" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
     grid +
     area +
+    (benchmark.trim() ? '<path class="eq-benchmark" d="' + benchmark.trim() + '" vector-effect="non-scaling-stroke"/>' : '') +
     '<path class="eq-invested" d="' + invested.trim() + '" vector-effect="non-scaling-stroke"/>' +
     '<path class="eq-line" d="' + line.trim() + '" vector-effect="non-scaling-stroke"/>' +
     '</svg>';
@@ -415,13 +433,13 @@ export function equityCurveSvg(series) {
 function equityMoney(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '—';
-  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  return fmtCurrentFull(n);
 }
 
 function equitySignedMoney(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '—';
-  return (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  return (n >= 0 ? '+' : '-') + fmtCurrentFull(Math.abs(n));
 }
 
 export function equityCurveHtml(series) {
@@ -440,9 +458,14 @@ export function equityCurveHtml(series) {
   const xPct = pts.length <= 1 ? 50 : 4 / 300 * 100 + (lastIndex / (pts.length - 1)) * (292 / 300 * 100);
   const yPct = (96 - 4 - ((Number(pts[lastIndex].value) || 0) - min) / span * (96 - 8)) / 96 * 100;
   const payload = encodeURIComponent(JSON.stringify(pts.map(function (p) {
-    return [String(p.ym || '').replace(/[^0-9-]/g, ''), Number(p.value) || 0, Number(p.netInvested) || 0, !!p.gap];
+    return [String(p.ym || '').replace(/[^0-9-]/g, ''), Number(p.value) || 0, Number(p.netInvested) || 0, !!p.gap,
+      p.benchmark == null ? null : Number(p.benchmark)];
   })));
-  return '<div class="eq-shell" data-eq-points="' + payload + '">' +
+  const hasBenchmark = pts.some(function (p) { return p.benchmark != null && Number.isFinite(Number(p.benchmark)); });
+  return '<div class="eq-legend"><span class="eq-legend-actual">总资产</span>' +
+    (hasBenchmark ? '<span class="eq-legend-benchmark">目标基准</span>' : '') +
+    '<span class="eq-legend-invested">累计净入金</span></div>' +
+    '<div class="eq-shell" data-eq-points="' + payload + '">' +
     svg +
     '<i class="eq-crosshair" hidden></i>' +
     '<div class="eq-tooltip" role="status" hidden></div>' +
@@ -490,8 +513,13 @@ export function bindEquityCurve(host) {
       }
       const pct = prev && prev[1] > 0 && gain != null ? gain / prev[1] * 100 : null;
       const gainClass = gain == null ? '' : gain >= 0 ? ' class="pnl-pos"' : ' class="pnl-neg"';
+      const benchmark = point[4] == null ? null : Number(point[4]);
+      const benchmarkDelta = benchmark == null ? null : point[1] - benchmark;
+      const benchmarkClass = benchmarkDelta == null ? '' : benchmarkDelta >= 0 ? ' class="pnl-pos"' : ' class="pnl-neg"';
       tooltip.innerHTML = '<strong>' + point[0] + '</strong>' +
         '<span>资产 <b>' + equityMoney(point[1]) + '</b></span>' +
+        '<span>目标基准 <b>' + (benchmark == null ? '—' : equityMoney(benchmark)) + '</b></span>' +
+        '<span>执行差异 <b' + benchmarkClass + '>' + (benchmarkDelta == null ? '—' : equitySignedMoney(benchmarkDelta)) + '</b></span>' +
         '<span>净入金 <b>' + equityMoney(point[2]) + '</b></span>' +
         '<span>较上月收益 <b' + gainClass + '>' + (gain == null ? '—' : equitySignedMoney(gain)) + '</b></span>' +
         '<span>收益率 <b' + gainClass + '>' + (pct == null ? '—' : (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%') + '</b></span>';

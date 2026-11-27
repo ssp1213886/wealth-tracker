@@ -5,6 +5,7 @@
 import { toWatchRows, toHoldingRows, toExposureRows, toggleWatch, moveWatch, removeWatch, normalizeWatchlist } from './watch.js';
 import { concentrationSummary, concentrationHtml } from './concentration.js';
 import { escapeHtml } from './render.js';
+import { fmtCompact, currencySymbol, displayMoney } from './util.js';
 import { syncClockText } from './sync-view.js';
 import { logSwallowed, sparklinePath } from './util.js';
 import { brandBadgeHTML } from './brand-mark.js';
@@ -33,7 +34,7 @@ export function configureWatchUI(host) {
 let watchSort = 'default';
 
 /** 公司总市值 → 显示用短文案（$5.48T / $449B / —）；拿不到就显示「—」，绝不猜。 */
-export function capText(value){if(value===undefined)return '…';var n=Number(value);if(!Number.isFinite(n)||n<=0)return '—';if(n>=1e12)return '$'+(n/1e12).toFixed(2)+'T';if(n>=1e9)return '$'+Math.round(n/1e9)+'B';if(n>=1e6)return '$'+Math.round(n/1e6)+'M';return '$'+Math.round(n)}
+export function capText(value){if(value===undefined)return '…';var n=displayMoney(value);if(!Number.isFinite(n)||n<=0)return '—';var sym=currencySymbol();if(n>=1e12)return sym+(n/1e12).toFixed(2)+'T';if(n>=1e9)return sym+Math.round(n/1e9)+'B';if(n>=1e6)return sym+Math.round(n/1e6)+'M';return sym+Math.round(n)}
 
 /** 市值格子：先渲染成「…」或已知值，拿到数据后由 updateCapCells 就地替换（详情不重排）。 */
 export function capCellHTML(sym){var s=String(sym||'').toUpperCase();return s?'<strong data-cap-sym="'+escapeHtml(s)+'">'+capText(S.watchCaps&&S.watchCaps[s])+'</strong>':'<strong>—</strong>'}
@@ -72,7 +73,7 @@ function renderHoldings() {
   var valueByEtf={};S.ETF_SYMS.forEach(function(sym){valueByEtf[sym]=(shx[sym]||0)*(S.livePrices[sym]||0)});
   var ex=toExposureRows(S.holdingsData,valueByEtf,10,[]);
   var conc=concentrationSummary({rows:ex.allRows||ex.rows,etfRest:ex.etfRest,base:ex.base,valueByEtf:valueByEtf});
-  var m$=function(n){return '$'+Math.round(n).toLocaleString('en-US')};
+        var m$=function(n){return fmtCompact(n)};
   var rh=function(label,note,amount,share,cls,sym){
     var direct=String(note||'').indexOf('\u76f4\u63a5\u6301\u6709')>=0||String(note||'').indexOf('1:1')>=0;
     var kind=cls==='exp-rest'?'rest':(direct?'direct':'pierce');

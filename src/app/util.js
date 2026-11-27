@@ -5,13 +5,50 @@ export function safeNum(n){return isNaN(n)||n===null||n===undefined||!isFinite(n
 
 export function cleanText(v,max){return String(v==null?'':v).replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,max||160)}
 
+let displayCurrency = 'USD';
+let displayUsdCnyRate = 0;
+
+/** 只控制只读金额的展示币种；交易与报价仍以美元作为原始币种。 */
+export function configureCurrency(code, usdCnyRate) {
+  displayCurrency = String(code || 'USD').toUpperCase() === 'CNY' ? 'CNY' : 'USD';
+  const rate = Number(usdCnyRate);
+  displayUsdCnyRate = rate > 0 ? rate : 0;
+}
+
+export function currencyCode() { return displayCurrency; }
+export function currencySymbol() { return displayCurrency === 'CNY' ? '¥' : '$'; }
+export function currencyRate() { return displayUsdCnyRate; }
+
+export function displayMoney(usdValue) {
+  const value = safeNum(usdValue);
+  if (displayCurrency !== 'CNY') return value;
+  return displayUsdCnyRate > 0 ? value * displayUsdCnyRate : NaN;
+}
+
 /**
  * 金额格式化：负数把负号放在 $ 前面（-$1,234.50，而不是 $-1,234.50）。
  *
  * 这不只是好看：`updateMobStatusBar` 用 `textContent.indexOf('-') === 0` 判断盈亏正负来染色，
  * 老写法下负号在第 2 位，于是"亏损"会被当成正数染成绿色（数字是负的、颜色是绿的）。
  */
-export function fmtFull(n){n=safeNum(n);return(n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+export function fmtNativeFull(n){n=safeNum(n);return(n<0?'-$':'$')+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+export function fmtCurrentFull(n){
+  n=Number(n);
+  if(!isFinite(n))return currencySymbol()+'—';
+  const sign=n<0?'-':'';
+  return sign+currencySymbol()+Math.abs(n).toLocaleString(displayCurrency==='CNY'?'zh-CN':'en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+export function fmtFull(n){return fmtCurrentFull(displayMoney(n))}
+
+export function fmtCompact(n){
+  n=displayMoney(n);
+  if(!isFinite(n))return currencySymbol()+'—';
+  if(Math.abs(n)>=1e6)return currencySymbol()+(n/1e6).toFixed(2)+'M';
+  if(Math.abs(n)>=1e3)return currencySymbol()+(n/1e3).toFixed(0)+'K';
+  return currencySymbol()+n.toLocaleString(displayCurrency==='CNY'?'zh-CN':'en-US',{maximumFractionDigits:0});
+}
 
 export function fmtShares(n){var v=Math.abs(Number(n)||0);if(!isFinite(v))v=0;var s=v.toFixed(4);if(s.indexOf('.')>=0)s=s.replace(/0+$/,'').replace(/\.$/,'');return s||'0'}
 

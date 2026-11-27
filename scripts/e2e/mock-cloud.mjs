@@ -293,7 +293,19 @@ const server = http.createServer((req, res) => {
   }
   // 趋势图与资产曲线测试专用：中长周期日线返回确定性行情。
   // 只拦这些范围，避免改变其它行情场景对 1mo / 实时快照的预期。
-  if (url.pathname === '/api/price' && ['1y', '2y', '3y', 'max'].includes(url.searchParams.get('range'))) {
+      if (url.pathname === '/api/fx') {
+        res.writeHead(200, cors);
+        const body = { ok: true, base: 'USD', quote: 'CNY', rate: 7.12, asOf: Date.now() };
+        if (url.searchParams.get('range') === 'max') {
+          const now = new Date();
+          body.history = Array.from({ length: 24 }, (_, i) => {
+            const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (23 - i), 1));
+            return { date: d.toISOString().slice(0, 10), rate: 7 + i * 0.005 };
+          });
+        }
+        return res.end(JSON.stringify(body));
+      }
+      if (url.pathname === '/api/price' && ['1y', '2y', '3y', 'max'].includes(url.searchParams.get('range'))) {
     const sym = String(url.searchParams.get('symbol') || '').toUpperCase();
     if (['QQQM', 'VGT', 'SMH'].includes(sym)) {
       const rangeName = url.searchParams.get('range');

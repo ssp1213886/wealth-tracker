@@ -318,7 +318,7 @@ const equityUi = await ev(() => {
     userSelect: getComputedStyle(shell).userSelect,
   };
 });
-if (!equityUi.ready || !/^\$/.test(equityUi.label)) failures.push('资产曲线缺少固定当前值标签：' + JSON.stringify(equityUi));
+if (!equityUi.ready || !/^-?\$/.test(equityUi.label)) failures.push('资产曲线缺少固定当前值标签：' + JSON.stringify(equityUi));
 if (equityUi.tooltipHidden || !/资产/.test(equityUi.tooltip) || !/净入金/.test(equityUi.tooltip) || !/收益率/.test(equityUi.tooltip)) failures.push('资产曲线悬停详情不完整：' + JSON.stringify(equityUi));
 if (equityUi.userSelect !== 'none') failures.push('资产曲线仍允许选择文字：' + equityUi.userSelect);
 await ev(() => document.querySelector('#trendChart [data-trendrange="2y"]').click());

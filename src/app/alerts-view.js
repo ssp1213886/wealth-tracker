@@ -113,8 +113,8 @@ export function buildAlerts(ctx) {
       type: 'accent',
       severity: 'low',
       title: '本月定投还差 ' + fmtFull(gap),
-      detail: '完成后保持目标资产配比',
-      action: 'console',
+      detail: '在券商成交后批量记录',
+      action: 'dca',
     });
   }
   return alerts;

@@ -190,7 +190,7 @@
 <div class="settings-meta" id="accountStatus"></div>
 </section>
 <section class="settings-panel" id="settingsData"><div class="settings-panel-head"><strong>数据与备份</strong><small>本机数据</small></div><div class="settings-action-grid"><button class="settings-action" id="btnImportData" onclick="document.getElementById('fileImport').click()"><svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>导入备份</button><button class="settings-action" id="btnExportData"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>导出备份</button><button class="settings-action settings-action-wide" id="btnImportCSV" onclick="document.getElementById('csvImport').click()"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>导入券商 CSV</button><button class="settings-action settings-action-wide" id="btnCloudSnapshots"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>云端快照（可回退）</button></div><input type="file" id="fileImport" accept=".json" hidden><input type="file" id="csvImport" accept=".csv" hidden><label class="toggle-wrap" style="margin-top:9px;"><input type="checkbox" id="cbAutoBackup"><span class="toggle-sw"></span>自动备份</label><div class="settings-meta" id="lastBackupTime"></div><div class="settings-sub">手动行情 · 仅覆盖本地报价</div><div class="settings-inline"><input class="settings-input" id="hmManualSym" placeholder="QQQM" aria-label="手动行情标的"><input class="settings-input" id="hmManualPrice" type="number" inputmode="decimal" step="any" placeholder="价格" aria-label="手动行情价格"><button class="btn btn-out btn-sm" id="hmManualSet">设价</button></div></section>
-      <section class="settings-panel" id="settingsPreferences"><div class="settings-panel-head"><strong>投资参数</strong><small>长期计划基准</small></div><label class="settings-field"><span>每月基准 $</span><input class="settings-input" type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100"></label><div class="settings-parameter-note">本月临时调整请在仪表盘操作</div><label class="settings-field"><span>定投起点</span><span class="settings-split"><select class="settings-input" id="roadmapStartYear" aria-label="定投起点年份"></select><select class="settings-input" id="roadmapStartMonth" aria-label="定投起点月份"></select></span></label><label class="settings-field"><span>起点年龄</span><input class="settings-input" type="number" id="roadmapAgeInput" value="27" min="18" max="70"></label><label class="settings-field"><span>目标 $</span><input class="settings-input" type="number" id="targetGoalInput" value="2500000" min="100000" max="10000000" step="100000"></label><label class="toggle-wrap" style="margin-top:9px;"><input type="checkbox" id="cbAlertBadge"><span class="toggle-sw"></span>到期提醒角标</label><div class="settings-meta" id="alertBadgeNote">开启后，主屏图标会显示"需要动手"的提醒条数</div></section>
+<section class="settings-panel" id="settingsPreferences"><div class="settings-panel-head"><strong>投资参数</strong><small>长期计划基准</small></div><label class="settings-field"><span>每月基准 $</span><input class="settings-input" type="number" id="monthlyDCAInput" value="2000" min="0" max="50000" step="100"></label><div class="settings-parameter-note">本月临时调整请在仪表盘操作</div><div class="settings-field"><span>计价币种</span><div class="settings-currency" id="currencySwitch" role="group" aria-label="计价币种"><button type="button" data-currency="USD" aria-pressed="true">USD</button><button type="button" data-currency="CNY" aria-pressed="false">CNY</button></div><div class="settings-parameter-note" id="currencyRateNote">只切换资产估值与分析显示；成交录入仍使用美元</div></div><label class="settings-field"><span>定投起点</span><span class="settings-split"><select class="settings-input" id="roadmapStartYear" aria-label="定投起点年份"></select><select class="settings-input" id="roadmapStartMonth" aria-label="定投起点月份"></select></span></label><label class="settings-field"><span>起点年龄</span><input class="settings-input" type="number" id="roadmapAgeInput" value="27" min="18" max="70"></label><label class="settings-field"><span>目标 $</span><input class="settings-input" type="number" id="targetGoalInput" value="2500000" min="100000" max="10000000" step="100000"></label><label class="toggle-wrap" style="margin-top:9px;"><input type="checkbox" id="cbAlertBadge"><span class="toggle-sw"></span>到期提醒角标</label><div class="settings-meta" id="alertBadgeNote">开启后，主屏图标会显示"需要动手"的提醒条数</div></section>
 </div></div></div><div class="sb-footer-links"><a href="/guide">使用文档</a><span class="sb-build" id="sbBuild"></span><br><a href="javascript:void(0)" onclick="clearAllData()" style="color:#ff4d4f;margin-top:6px;display:inline-block;font-size:11.5px;">清除所有数据</a></div>
 
 
@@ -214,7 +214,7 @@
 
 <div class="mob-status-bar" id="mobStatusBar">
   <div class="ms-header"><button class="ms-brand" id="msPageTitle" onclick="openMobileSettings()" aria-label="打开设置">My Portfolio</button><span class="ms-sync"><i></i><span id="msSyncText">本地已保存</span></span><button class="ms-tool ms-bell" onclick="qaToggle()" aria-label="查看提醒"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button><button class="ms-tool ms-theme" onclick="toggleTheme()" aria-label="切换明暗主题"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg></button></div>
-  <div class="ms-hero"><span class="ms-left"><span class="ms-label">总资产 <button class="ms-eye" onclick="togglePrivacy()" aria-label="隐藏或显示金额"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></span><span class="ms-val" id="msTotal">$0</span><span class="ms-daily" id="msDaily">今日 --</span></span><span class="ms-prices" id="msPrices"></span></div>
+<div class="ms-hero"><span class="ms-left"><span class="ms-label">总资产 <button class="ms-eye" onclick="togglePrivacy()" aria-label="隐藏或显示金额"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></span><span class="ms-val" id="msTotal">$0</span><span class="ms-daily" id="msDaily">今日 --</span><span class="ms-cny" id="msTotalCny">≈ ¥-- · 汇率加载中</span></span><span class="ms-prices" id="msPrices"></span></div>
 <div class="ms-summary"><div><span>可用现金</span><strong id="msCash">$0</strong></div><div><span>累计收益</span><strong id="msPnl">$0</strong><small class="ms-pnl-pct" id="msPnlPct">—</small></div></div>
 </div>
 
@@ -280,7 +280,7 @@
 
 
 
-    <div class="metric metric-total"><div class="m-label"><span>总资产</span><i class="metric-glyph wallet" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h14a2 2 0 0 1 2 2v10H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h13"/><path d="M15 10h6v5h-6a2.5 2.5 0 0 1 0-5Z"/></svg></i></div><div class="m-val" id="hmTotal">$0.00</div><div class="m-sub metric-daily"><span id="hmUnreal">$0</span><span id="hmUnrealPct"></span></div></div>
+<div class="metric metric-total"><div class="m-label"><span>总资产</span><i class="metric-glyph wallet" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h14a2 2 0 0 1 2 2v10H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h13"/><path d="M15 10h6v5h-6a2.5 2.5 0 0 1 0-5Z"/></svg></i></div><div class="m-val" id="hmTotal">$0.00</div><div class="m-cny" id="hmCnyEquivalent">≈ ¥-- · 汇率加载中</div><div class="m-sub metric-daily"><span id="hmUnreal">$0</span><span id="hmUnrealPct"></span></div></div>
 
 
 
@@ -310,7 +310,7 @@
 
 
 
-    <div class="card dca-card"><div class="mobile-dca"><div class="dca-heading"><h3>本月定投</h3><small id="dcaBaseAmt">每月计划</small></div><div class="mobile-dca-value"><span><strong id="mobileDcaInvested">$0</strong> / <span id="mobileDcaTarget">$2,000</span></span><b>完成率 <em id="mobileDcaPct">0%</em></b></div><div class="mobile-dca-track"><i id="mobileDcaProgress"></i></div><div class="mobile-dca-pills"><div class="qqqm"><i></i><span>QQQM</span><small id="mobileDcaQqqmAmt">$1,000</small><strong id="mobileDcaQqqmPct">50%</strong></div><div class="vgt"><i></i><span>VGT</span><small id="mobileDcaVgtAmt">$600</small><strong id="mobileDcaVgtPct">30%</strong></div><div class="smh"><i></i><span>SMH</span><small id="mobileDcaSmhAmt">$400</small><strong id="mobileDcaSmhPct">20%</strong></div></div><input id="dcaOverride" class="dca-override" type="number" aria-label="本月定投临时金额" placeholder="$2,000" min="0" step="100"><div class="desktop-dca-data" aria-hidden="true"><span id="dcaQQQM">$1,000</span><span id="dcaVGT">$600</span><span id="dcaSMH">$400</span><span id="dcaStatus">检测中...</span></div></div></div>
+<div class="card dca-card"><div class="mobile-dca"><div class="dca-heading"><h3>本月定投</h3><div class="dca-head-actions"><small id="dcaBaseAmt">每月计划</small><button type="button" class="dca-record-btn" id="btnDcaBatch">记录成交</button></div></div><div class="mobile-dca-value"><span><strong id="mobileDcaInvested">$0</strong> / <span id="mobileDcaTarget">$2,000</span></span><b>完成率 <em id="mobileDcaPct">0%</em></b></div><div class="mobile-dca-track"><i id="mobileDcaProgress"></i></div><div class="mobile-dca-pills"><div class="qqqm"><i></i><span>QQQM</span><small id="mobileDcaQqqmAmt">$1,000</small><strong id="mobileDcaQqqmPct">50%</strong></div><div class="vgt"><i></i><span>VGT</span><small id="mobileDcaVgtAmt">$600</small><strong id="mobileDcaVgtPct">30%</strong></div><div class="smh"><i></i><span>SMH</span><small id="mobileDcaSmhAmt">$400</small><strong id="mobileDcaSmhPct">20%</strong></div></div><input id="dcaOverride" class="dca-override" type="number" aria-label="本月定投临时金额" placeholder="$2,000" min="0" step="100"><div class="desktop-dca-data" aria-hidden="true"><span id="dcaQQQM">$1,000</span><span id="dcaVGT">$600</span><span id="dcaSMH">$400</span><span id="dcaStatus">检测中...</span></div></div></div>
 
 
 
@@ -451,11 +451,11 @@
 
 
 
-  <div class="card collapsible-card"><div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>持仓明细</h3></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>标的</th><th>持仓</th><th>均价</th><th>市值</th><th>盈亏</th><th>收益率</th><th></th></tr></thead><tbody id="holdBody"><tr><td colspan="7" class="table-empty">暂无持仓<br><button onclick="switchTab('console')" class="btn btn-pri btn-sm">去操作台录入</button></td></tr></tbody></table></div></div>
+  <div class="card collapsible-card"><div class="collapsible-header"><span class="collapse-arrow">▼</span><h3>持仓明细</h3></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>标的</th><th>持仓</th><th>均价 USD</th><th>市值</th><th>盈亏</th><th>收益率</th><th></th></tr></thead><tbody id="holdBody"><tr><td colspan="7" class="table-empty">暂无持仓<br><button onclick="switchTab('console')" class="btn btn-pri btn-sm">去操作台录入</button></td></tr></tbody></table></div></div>
 
 
 
-  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>交易历史</h3></div><div class="header-tools"><select id="tradeFilterSym"><option value="">全部</option><option>QQQM</option><option>VGT</option><option>SMH</option></select><button class="btn btn-out btn-sm destructive" id="btnClearTrades">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格</th><th>金额</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
+  <div class="card collapsible-card collapsed"><div class="collapsible-header"><div class="header-title"><span class="collapse-arrow">▼</span><h3>交易历史</h3></div><div class="header-tools"><select id="tradeFilterSym"><option value="">全部</option><option>QQQM</option><option>VGT</option><option>SMH</option></select><button class="btn btn-out btn-sm destructive" id="btnClearTrades">清空</button></div></div><div class="collapsible-body"><table class="trade-table"><thead><tr><th>日期</th><th>标的</th><th>数量</th><th>价格 USD</th><th>金额 USD</th><th></th></tr></thead><tbody id="tradeBody"><tr><td colspan="6" class="table-empty">在操作台录入第一笔交易</td></tr></tbody></table></div></div>
 
 
 
@@ -557,6 +557,43 @@
 </div>
 
 <button class="qa-fab" id="qaFab" onclick="qaToggle()" aria-label="快捷操作"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+<div class="qa-sheet" id="dcaSheet" onclick="if(event.target===this)closeDcaSheet()">
+  <div class="qa-panel">
+    <div class="qa-title">记录本月定投成交</div>
+    <form class="dca-batch-form console-form" id="dcaBatchForm" onsubmit="return false">
+      <div class="dca-batch-note">这里只记录券商已经完成的实际成交，金额均为美元；不生成订单，也不预填股数。空行会自动跳过。</div>
+      <div class="tf-group"><label for="dcaBatchDate">成交日期</label><input type="date" id="dcaBatchDate" aria-label="定投成交日期"></div>
+      <div class="dca-batch-head" aria-hidden="true"><span>标的</span><span>股数</span><span>成交价</span><span>金额</span></div>
+      <div class="dca-batch-rows">
+        <div class="dca-batch-row" data-dca-symbol="QQQM">
+          <strong class="dca-batch-sym"><i></i>QQQM</strong>
+          <input type="number" inputmode="decimal" step="any" min="0" id="dcaSharesQQQM" data-dca-shares aria-label="QQQM 实际成交股数" placeholder="股数">
+          <input type="number" inputmode="decimal" step="any" min="0" id="dcaPriceQQQM" data-dca-price aria-label="QQQM 实际成交价" placeholder="成交价">
+          <output class="dca-batch-amount" data-dca-amount aria-live="polite">$0.00</output>
+        </div>
+        <div class="dca-batch-row" data-dca-symbol="VGT">
+          <strong class="dca-batch-sym"><i></i>VGT</strong>
+          <input type="number" inputmode="decimal" step="any" min="0" id="dcaSharesVGT" data-dca-shares aria-label="VGT 实际成交股数" placeholder="股数">
+          <input type="number" inputmode="decimal" step="any" min="0" id="dcaPriceVGT" data-dca-price aria-label="VGT 实际成交价" placeholder="成交价">
+          <output class="dca-batch-amount" data-dca-amount aria-live="polite">$0.00</output>
+        </div>
+        <div class="dca-batch-row" data-dca-symbol="SMH">
+          <strong class="dca-batch-sym"><i></i>SMH</strong>
+          <input type="number" inputmode="decimal" step="any" min="0" id="dcaSharesSMH" data-dca-shares aria-label="SMH 实际成交股数" placeholder="股数">
+          <input type="number" inputmode="decimal" step="any" min="0" id="dcaPriceSMH" data-dca-price aria-label="SMH 实际成交价" placeholder="成交价">
+          <output class="dca-batch-amount" data-dca-amount aria-live="polite">$0.00</output>
+        </div>
+      </div>
+      <div class="dca-batch-summary" aria-live="polite">
+        <div><small>本月计划</small><strong id="dcaBatchPlan">$2,000.00</strong></div>
+        <div><small>本次成交</small><strong id="dcaBatchTotal">$0.00</strong></div>
+        <div><small>差额</small><strong id="dcaBatchDiff">-$2,000.00</strong></div>
+      </div>
+      <div class="dca-batch-error" id="dcaBatchError" role="alert"></div>
+      <button class="btn btn-pri" id="btnSaveDcaBatch" type="button">保存本次成交</button>
+    </form>
+  </div>
+</div>
 <div class="qa-sheet" id="tradeSheet" onclick="if(event.target===this)closeTradeSheet()">
   <div class="qa-panel">
     <div class="qa-title">记录买卖</div>
@@ -579,7 +616,7 @@
         <div class="tf-group"><label for="tfPrice">价格</label><input type="number" inputmode="decimal" id="tfPrice" step="any" min="0" placeholder="输入成交价"></div>
         <div class="tf-group"><label for="tfShares">数量</label><input type="number" inputmode="decimal" id="tfShares" step="any" min="0" placeholder="10"></div>
       </div>
-      <div class="trade-summary"><span>预计金额</span><strong id="tfEstimated">$0.00</strong></div>
+      <div class="trade-summary"><span>预计金额（USD）</span><strong id="tfEstimated">$0.00</strong></div>
       <div class="trade-impact" id="tradeImpact" aria-live="polite"></div>
       <button class="btn btn-pri" id="btnAddTrade" type="button">添加交易</button>
     </form>

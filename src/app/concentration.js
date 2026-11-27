@@ -40,10 +40,12 @@ export function concentrationSummary(input) {
   const techShare = base > 0 ? Number((techValue / base * 100).toFixed(1)) : null;
   return {
     max: rows[0] || null,
+    topCompanies: rows.slice(0, 5),
     top3: sumShares(rows, 3),
     top5: sumShares(rows, 5),
     top10: top10,
     hhi: hhi,
+    effectiveBets: hhi > 0 ? Number((10000 / hhi).toFixed(1)) : null,
     hhiLabel: concentrationLabel(top10, techShare),
     overlapShare: overlapShare,
     overlapCount: overlaps.length,
@@ -60,6 +62,9 @@ export function concentrationHtml(summary) {
     return '<div class="conc-overlap-row"><b>' + escapeHtml(row.sym || row.name || '') + '</b>' +
       '<span>' + pct(row.share) + '</span><small>' + escapeHtml((row.parts || []).join(' + ')) + '</small></div>';
   }).join('');
+  const leaders = (s.topCompanies || []).map(function (row) {
+    return '<span><b>' + escapeHtml(row.sym || row.name || '') + '</b><small>' + pct(row.share) + '</small></span>';
+  }).join('');
   return '<div class="concentration-summary">' +
     '<div class="conc-head"><strong>集中度摘要</strong><span class="conc-badge">' + escapeHtml(s.hhiLabel || '—') + '</span></div>' +
     '<div class="conc-grid">' +
@@ -69,7 +74,9 @@ export function concentrationHtml(summary) {
       '<div><small>前 10 大</small><b>' + pct(s.top10) + '</b></div>' +
       '<div><small>重叠成分股</small><b>' + pct(s.overlapShare) + '</b></div>' +
       '<div><small>HHI</small><b>' + (Number(s.hhi) || 0) + '</b></div>' +
+      '<div><small>有效独立暴露</small><b>' + (s.effectiveBets == null ? '—' : s.effectiveBets.toFixed(1)) + '</b></div>' +
     '</div>' +
+    (leaders ? '<div class="conc-leaders"><div class="conc-sub">前五大底层资产</div><div class="conc-leader-list">' + leaders + '</div></div>' : '') +
     (overlap ? '<div class="conc-overlaps"><div class="conc-sub">主要重叠 · ' + (Number(s.overlapCount) || 0) + ' 只</div>' + overlap + '</div>' : '') +
     (s.techShare != null ? '<div class="conc-foot">VGT + SMH 占持仓市值 ' + pct(s.techShare) + '</div>' : '') +
   '</div>';

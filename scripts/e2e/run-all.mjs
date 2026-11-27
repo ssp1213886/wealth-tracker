@@ -69,8 +69,8 @@ const DRIVER = path.join(HERE, 'driver.mjs');
 const ENGINE = path.join(HERE, 'driver-engine.mjs');
 const all = [];
 
-// ① 主套件（crawl / 数据流 / 交互流 / 市值与敞口 / 使用文档 / 登录门禁 / 清除数据）
-process.stdout.write('\n=== 主套件（7 场景）===\n');
+// ① 主套件（crawl / 数据流 / 交互流 / 新功能 / 市值与敞口 / 使用文档 / 登录门禁 / 清除数据）
+process.stdout.write('\n=== 主套件（8 场景）===\n');
 const mainSuite = await runNode([path.join(HERE, 'run.mjs')], { E2E_PORT: '8790' });
 if (mainSuite.out) console.log(mainSuite.out);
 all.push({ name: '主套件 npm run e2e', ok: mainSuite.code === 0 });

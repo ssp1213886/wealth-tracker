@@ -165,6 +165,8 @@ if (conflictModal) {
 }
 
 /* ---------- ⑤ 令牌错误 → 明确报错且不改云端 ---------- */
+// 先让上一轮冲突处理后的补推彻底落定，避免把 B 的延迟推送误判成坏令牌改了云端。
+await B2.page.waitForTimeout(1500);
 const C = await boot(await browser.newContext(), 'wrong-token', [{ id: 1, date: '2026-09-01', symbol: 'VGT', shares: 1, price: 100 }]);
 const beforeBad = await cloudLog();
 await ev(C.page, () => {
@@ -176,7 +178,8 @@ await ev(C.page, () => {
     document.getElementById('hmDeposit').click();
   }
 });
-await C.page.waitForTimeout(3000);
+await C.page.waitForFunction(() => location.pathname === '/login', null, { timeout: 8000 }).catch(() => {});
+await C.page.waitForTimeout(500);
 /* v321 起：坏令牌 → /api/* 回 401 → guardUnauthorized 直接把页面送去 /login（设计行为）。
    这里以前断言的是"留在 App 里、状态条写同步失败"——那是登录门禁之前的老行为，早已不成立。 */
 const badState = await ev(C.page, () => ({

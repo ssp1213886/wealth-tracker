@@ -26,6 +26,8 @@ test('concentrationSummary：最大资产、Top N、重叠、HHI、科技仓位'
   assert.ok(s.hhi > 0);
   assert.equal(s.hhiLabel, '高度集中', '科技 ETF 占 80% 时应提示高度集中，不能只看 HHI 数字');
   assert.equal(s.techShare, 80);
+  assert.ok(s.effectiveBets > 0);
+  assert.equal(s.topCompanies[0].sym, '比特币');
 });
 
 test('concentrationHtml：摘要与重叠来源可见', () => {
@@ -41,4 +43,6 @@ test('concentrationHtml：摘要与重叠来源可见', () => {
   assert.match(html, /NVDA/);
   assert.match(html, /VGT 17\.74% \+ SMH 19\.28%/);
   assert.match(html, /VGT \+ SMH 占持仓市值 80\.0%/);
+  assert.match(html, /有效独立暴露/);
+  assert.match(html, /前五大底层资产/);
 });

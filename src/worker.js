@@ -1,6 +1,7 @@
 import { serveAsset } from './lib/assets.js';
 import { corsHeaders, json } from './lib/http.js';
 import { handlePrice } from './lib/price.js';
+import { handleFx } from './lib/fx.js';
 import { handleSyncGet, handleSyncPost } from './lib/sync.js';
 import { listSnapshots, restoreSnapshot } from './lib/snapshots.js';
 import { createRateLimiter } from './lib/rate-limit.js';
@@ -365,6 +366,10 @@ async function handleRequest(request, env, ctx) {
 
     if (url.pathname === '/api/price') {
       const result = await handlePrice(request, url);
+      return json(result.body, result.status);
+    }
+    if (url.pathname === '/api/fx') {
+      const result = await handleFx(request, url);
       return json(result.body, result.status);
     }
     if (url.pathname === '/api/log') {

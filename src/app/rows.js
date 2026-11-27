@@ -1,6 +1,6 @@
 // 列表行渲染：把"数据 → HTML"这段最容易出错的逻辑抽成纯函数。
 // 只依赖传入的参数，不读全局状态，因此可以直接单测（结构、转义、符号、空态）。
-import { fmtFull, fmtShares, cashSigned } from './util.js';
+import { fmtFull, fmtNativeFull, fmtShares, cashSigned } from './util.js';
 import { emptyStateHTML, escapeHtml } from './render.js';
 
 /* ---------------- 交易历史 ---------------- */
@@ -27,7 +27,7 @@ export function buildTradeRow(t) {
     '<td data-cell="sym">' + sym + '</td>' +
     '<td data-cell="qty">' + direction + '<span class="trade-qty">' + fmtShares(t.shares) + ' 股</span></td>' +
     '<td data-cell="price">$' + t.price.toFixed(2) + '</td>' +
-    '<td data-cell="amount">' + fmtFull(Math.abs(t.shares) * t.price) + '</td>' +
+    '<td data-cell="amount">' + fmtNativeFull(Math.abs(t.shares) * t.price) + '</td>' +
     '<td data-cell="actions"><button class="trade-del" data-id="' + t.id + '">×</button></td></tr>';
 }
 

@@ -153,9 +153,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=437');
+  assert.equal(manifest.start_url, '/?v=438');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v437/);
+  assert.match(serviceWorker, /wealth-v438/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -169,7 +169,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=437',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=438',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -679,9 +679,12 @@ test('v370：资产曲线卡挂在仪表盘，且复用 range=max 的历史（�
   assert.match(html, /id="equityChart"/);
   assert.match(html, /id="equityRange"/);
   assert.match(appSource, /function refreshEquityCurve\(\)\{/);
-  assert.match(appSource,
-    /equitySeries\(\{months:months,trades:trades,cashLog:cashLog,priceByMonth:buildPriceByMonth\(list,ETF_SYMS,months\)\}\)/,
-    '曲线必须走共享的 equitySeries + 同一份月度价格（口径只有一处）');
+  assert.match(appSource, /var priceByMonth=buildPriceByMonth\(list,ETF_SYMS,months\)/,
+    '曲线必须只构建一份月度价格');
+  assert.match(appSource, /equitySeries\(\{months:months,trades:trades,cashLog:cashLog,priceByMonth:priceByMonth\}\)/,
+    '曲线必须走共享的 equitySeries');
+  assert.match(appSource, /policyBenchmarkSeries\(\{months:months,cashLog:cashLog,priceByMonth:priceByMonth/,
+    '策略基准必须复用同一份月度价格');
   assert.match(appSource, /Promise\.all\(ETF_SYMS\.map\(function\(s\)\{return fetchMaxData\(s\)/,
     '历史只认 fetchMaxData（请求级缓存，页面开一次只打一次）');
   assert.match(css, /#tab-analysis \.equity-card\{grid-column:1\/-1/,

@@ -384,9 +384,22 @@ test('equityCurveSvg：有缺口的月份要断开（多段），且不画填充
 
 test('equityCurveHtml：提供交叉线与固定当前值标签', () => {
   const html = equityCurveHtml(equitySeries(CURVE_WORLD));
-  assert.match(html, /^<div class="eq-shell" data-eq-points="/);
+  assert.match(html, /^<div class="eq-legend"/);
+  assert.match(html, /class="eq-shell" data-eq-points="/);
   assert.match(html, /class="eq-crosshair" hidden/);
   assert.match(html, /class="eq-tooltip" role="status" hidden/);
   assert.match(html, /class="eq-end-label"/);
   assert.match(html, /\$12,180/);
+});
+
+test('equityCurveSvg：可选目标基准线不改变资产与净入金主口径', () => {
+  const series = equitySeries(CURVE_WORLD);
+  series.points[0].benchmark = 10000;
+  series.points[1].benchmark = 11900;
+  const svg = equityCurveSvg(series);
+  assert.match(svg, /class="eq-benchmark"/);
+  assert.equal((svg.match(/class="eq-line"/g) || []).length, 1);
+  assert.equal((svg.match(/class="eq-invested"/g) || []).length, 1);
+  const html = equityCurveHtml(series);
+  assert.match(html, /目标基准/);
 });
