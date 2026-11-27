@@ -153,9 +153,9 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.equal(manifest.id, '/');
   assert.equal(manifest.scope, '/');
   assert.match(manifest.start_url, /^\//);
-  assert.equal(manifest.start_url, '/?v=442');
+  assert.equal(manifest.start_url, '/?v=443');
   assert.equal(manifest.background_color, '#f5f6f3');
-  assert.match(serviceWorker, /wealth-v442/);
+  assert.match(serviceWorker, /wealth-v443/);
   assert.match(serviceWorker, /暂时无法连接/);
   // v273：导航改成「缓存优先 + 后台更新」——以前是网络优先 + 3.5 秒竞速，
   // 冷启动（iOS 重开 PWA）要等满超时才回落缓存，用户看到的就是白屏。
@@ -169,7 +169,7 @@ test('PWA metadata and worker quote boundary stay valid', () => {
   assert.doesNotMatch(appSource, /controllerchange[\s\S]{0,200}location\.reload/);
   // iOS 独立 PWA 的启动画面：缺了它冷启动就是一片纯白
   assert.match(html, /rel="apple-touch-startup-image"/);
-  assert.match(appMarkup, /register\('\/sw\.js\?v=442',\{updateViaCache:'none'\}\)/);
+  assert.match(appMarkup, /register\('\/sw\.js\?v=443',\{updateViaCache:'none'\}\)/);
   assert.doesNotMatch(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
 });
@@ -273,7 +273,9 @@ test('mobile portfolio and quick actions prioritize active investing work', () =
   assert.doesNotMatch(appMarkup, /onclick="qaDividend\(\)"/);
   assert.doesNotMatch(appMarkup, /function qaDividend\(/);
   assert.match(html, /id="hmDividend"/);
-  assert.match(appMarkup, /\.qa-grid\{display:grid!important;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+  /* v443：快捷操作从 3 个变 4 个（入金/买入/卖出/记定投），网格同步改成四等分 */
+  assert.match(appMarkup, /\.qa-grid\{display:grid!important;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)!important/);
+  assert.match(html, /onclick="qaDca\(\)"/, '快捷操作里必须有"记定投"入口');
 });
 
 test('reminders deduplicate and sort by severity without snooze controls', () => {
@@ -787,13 +789,17 @@ test('v442：schema.sql 必须是 user_id + key 复合主键', () => {
   assert.doesNotMatch(sql, /DROP TABLE IF EXISTS data/);
 });
 
-test('v442：交易类金额一律美元，只有估值走 CNY 换算', () => {
-  assert.match(indexSource, /function updateDataPage\(\)\{[^}]*fmtNativeFull\(totals\.deposit\)/);
-  assert.match(indexSource, /fmtNativeFull\(Math\.abs\(d\.diff\)\)/);
-  assert.match(indexSource, /<span>均价<\/span><strong>'\+fmtNativeFull\(avg\)/);
-  assert.match(rowsSource, /fmtNativeFull\(Math\.abs\(l\.amount\)\)/);
+test('v444：所有金额统一换算，底层数据永远美元', () => {
+  /* 展示层：任何美元金额都走 fmtFull（CNY 模式统一换算） */
+  assert.match(rowsSource, /fmtFull\(Math\.abs\(l\.amount\)\)/);
+  assert.match(indexSource, /<span>均价<\/span><strong>'\+fmtFull\(avg\)/);
+  assert.doesNotMatch(indexSource, /fmtNativeFull\(/, '展示层不再输出美元硬编码');
+  /* 存储层：state 里币种永远 USD；切换只改展示 */
+  assert.match(indexSource, /displayCurrency:'USD'/);
+  assert.doesNotMatch(indexSource, /state\.displayCurrency=next;saveState\(\)/);
+  assert.match(indexSource, /configureCurrency\('USD',0\)/, '启动默认美元视图，不等汇率');
+  assert.match(indexSource, /正在换算/, '缺汇率时要有正在换算提示');
 });
-
 test('v442：QQQM 要进间接持有与市值预取', () => {
   assert.doesNotMatch(indexSource, /\['VGT','SMH'\]/);
   assert.match(indexSource, /ETF_SYMS\.forEach\(function\(etf\)/);
@@ -834,4 +840,33 @@ test('v442：云端数据到位后年度归因要自动重算（不能停在 0�
   assert.match(indexSource, /function refreshAttribution\(\)\{[^}]*calcAttribution\(ay\.value\)/);
   assert.match(indexSource, /renderCashLog\(\);renderActivity\(\);refreshAttribution\(\);/, '拉取应用完必须重算年度归因');
   assert.match(indexSource, /renderHoldings\(\);refreshAttribution\(\)/, '切换币种后归因的格式化也要刷新');
+});
+
+/* ===== v443：市值口径 / 每日收益日历 / 敞口精简 / 按压反馈 ===== */
+test('v443：每日收益日历要有网格、计算函数和刷新入口', () => {
+  assert.match(html, /id="dailyPnlGrid"/);
+  assert.match(indexSource, /function computeDailyPnlFromSeries\(/);
+  assert.match(indexSource, /function scheduleDailyPnl\(/);
+  assert.match(indexSource, /setTimeout\(function\(\)\{scheduleDailyPnl\(800\)\},1600\)/, '启动时要预热日历');
+  assert.match(indexSource, /refreshAttribution\(\);scheduleDailyPnl\(\);/, '云端拉取后要刷新');
+});
+
+test('v443：目标基准要有解释文案', () => {
+  assert.match(chartsSource, /eq-benchmark-note/);
+  assert.match(chartsSource, /不是收益预测/);
+  assert.match(chartsSource, /每年 12 月再平衡/);
+});
+
+test('v443：敞口显示前 15 家，且不再重复"前五大底层资产"', () => {
+  const watchUi = fs.readFileSync('src/app/watch-ui.js', 'utf8');
+  assert.match(watchUi, /toExposureRows\(S\.holdingsData,valueByEtf,15,/);
+  const conc = fs.readFileSync('src/app/concentration.js', 'utf8');
+  assert.doesNotMatch(conc, /前五大底层资产/);
+});
+
+test('v443：全局按压反馈与市值随价滚动', () => {
+  assert.match(appMarkup, /\.is-pressed\{transform:scale\(\.97\)/, '按下要有缩放反馈');
+  assert.match(indexSource, /function pressFeedback\(\)/);
+  const watchUi = fs.readFileSync('src/app/watch-ui.js', 'utf8');
+  assert.match(watchUi, /capBasePrice\[key\]/, '市值要按抓取时的基准价滚动');
 });

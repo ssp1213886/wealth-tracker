@@ -1457,7 +1457,7 @@ input,select,textarea,button{font-family:var(--font);-webkit-tap-highlight-color
   .qa-panel{max-width:none!important;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))!important;border-radius:24px 24px 0 0!important;background:var(--card-bg)!important;box-shadow:0 -18px 48px rgba(0,0,0,.18)!important}
   .qa-panel:before{content:''!important;display:block!important;width:38px!important;height:5px!important;margin:4px auto 14px!important;border-radius:99px!important;background:color-mix(in srgb,var(--fg) 18%,transparent)!important}
   .qa-title{margin:0 0 14px!important;font-size:13.5px;font-weight:650!important;letter-spacing:-.014em!important;color:var(--fg)!important}
-  .qa-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+  .qa-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important}
   .qa-item{min-width:0!important;min-height:80px!important;padding:12px 5px!important;border-radius:16px!important;background:var(--surface)!important;transition:transform .12s var(--ios-ease),background-color .12s var(--ios-ease)!important}
   .qa-item:active{transform:scale(.95)!important;background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important}
   .qa-icon{width:38px!important;height:38px!important;border-radius:13px!important;font-size:.95rem}
@@ -3279,7 +3279,7 @@ body.sheet-open{overflow:hidden}
 .market-trend-card{min-width:0;padding:var(--ds-card-padding);border:1px solid var(--rule);border-radius:var(--ds-card-radius);background:var(--card-bg);box-shadow:none}
 .market-trend-card .opt-card-head{margin-bottom:10px}
 .market-trend-card #trendChart{min-width:0;overflow:hidden}
-#qaSheet .qa-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#qaSheet .qa-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(min-width:801px){
   #tab-holding .goal-row{display:block!important}
   #tab-analysis.active{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:start;max-width:1180px}
@@ -3297,7 +3297,7 @@ body.sheet-open{overflow:hidden}
   .market-trend-card .opt-card-head{align-items:flex-start;gap:10px;flex-wrap:wrap}
   .market-trend-card .card-sub{display:block;margin-top:3px}
 }
-@media(max-width:360px){#qaSheet .qa-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:360px){#qaSheet .qa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .analysis-section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:2px 2px 0;color:var(--fg)}
 .analysis-section-heading>span{font-size:14px;font-weight:650;letter-spacing:-.012em}
@@ -3315,3 +3315,28 @@ body.sheet-open{overflow:hidden}
 .mobile-dca-pills .smh{border-color:color-mix(in srgb,var(--blue) 40%,var(--rule))}
 .mobile-dca-pills .smh i{background:var(--blue)}
 .ms-cny,.m-cny{margin-top:3px;color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}.m-cny{font-size:11px}.privacy-mode .ms-cny,.privacy-mode .m-cny{filter:blur(6px);user-select:none}
+
+/* ===== v443：资产曲线"目标基准"说明 + 每日收益日历 ===== */
+.eq-benchmark-note{margin:6px 2px 0;color:var(--muted);font-size:11px;line-height:1.5}
+.eq-legend-benchmark{cursor:help}
+.daily-pnl-card{margin-bottom:14px}
+.daily-pnl-grid{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;gap:3px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:thin}
+.daily-pnl-cell{width:12px;height:12px;border-radius:3px;background:var(--rule);border:none;padding:0;cursor:pointer}
+.daily-pnl-cell[data-lv="u1"]{background:color-mix(in srgb,var(--ok) 28%,transparent)}
+.daily-pnl-cell[data-lv="u2"]{background:color-mix(in srgb,var(--ok) 52%,transparent)}
+.daily-pnl-cell[data-lv="u3"]{background:color-mix(in srgb,var(--ok) 76%,transparent)}
+.daily-pnl-cell[data-lv="u4"]{background:var(--ok)}
+.daily-pnl-cell[data-lv="d1"]{background:color-mix(in srgb,var(--red) 26%,transparent)}
+.daily-pnl-cell[data-lv="d2"]{background:color-mix(in srgb,var(--red) 50%,transparent)}
+.daily-pnl-cell[data-lv="d3"]{background:color-mix(in srgb,var(--red) 74%,transparent)}
+.daily-pnl-cell[data-lv="d4"]{background:var(--red)}
+.daily-pnl-cell.is-empty{background:transparent;cursor:default}
+.daily-pnl-cell:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 70%,#fff);outline-offset:1px}
+.daily-pnl-meta{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;color:var(--muted);font-size:11.5px}
+.daily-pnl-meta b{color:var(--fg);font-variant-numeric:tabular-nums}
+@media(max-width:640px){.daily-pnl-grid{grid-template-rows:repeat(7,10px)}.daily-pnl-cell{width:10px;height:10px}}
+
+/* ===== v443：全局按压反馈（对齐原生 app 的按下手感） ===== */
+button,a,[role="button"],.watch-row,.asset-row,.collapsible-header,.price-pill,.seg,.record-seg{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button.is-pressed,a.is-pressed,[role="button"].is-pressed,.watch-row.is-pressed,.asset-row.is-pressed,.collapsible-header.is-pressed,.price-pill.is-pressed,.seg.is-pressed,.record-seg.is-pressed{transform:scale(.97)!important;filter:brightness(.94);transition:transform 90ms ease,filter 90ms ease}
+@media(prefers-reduced-motion:reduce){button.is-pressed,a.is-pressed,[role="button"].is-pressed,.watch-row.is-pressed,.asset-row.is-pressed,.collapsible-header.is-pressed{transform:none!important;filter:brightness(.95)}}

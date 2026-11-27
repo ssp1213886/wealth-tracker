@@ -34,19 +34,21 @@ export function configureWatchUI(host) {
 let watchSort = 'default';
 
 /** 公司总市值 → 显示用短文案（$5.48T / $449B / —）；拿不到就显示「—」，绝不猜。 */
-export function capText(value){if(value===undefined)return '…';var n=displayMoney(value);if(!Number.isFinite(n)||n<=0)return '—';var sym=currencySymbol();if(n>=1e12)return sym+(n/1e12).toFixed(2)+'T';if(n>=1e9)return sym+Math.round(n/1e9)+'B';if(n>=1e6)return sym+Math.round(n/1e6)+'M';return sym+Math.round(n)}
+export function capText(value,sym){if(value===undefined)return '…';var n=Number(value);if(!Number.isFinite(n)||n<=0)return '—';/* v443：市值随价格实时变化 —— 用抓取时的基准价把缓存值按当前价滚动，避免"显示的是几天前的市值"。 */var key=String(sym||'').toUpperCase();var base=Number(S&&S.capBasePrice&&S.capBasePrice[key]);var live=Number((S&&S.livePrices&&S.livePrices[key])||(S&&S.watchQuotes&&S.watchQuotes[key]&&S.watchQuotes[key].price));if(base>0&&live>0)n=n*(live/base);n=displayMoney(n);var txt=n>=1e12?'$'+(n/1e12).toFixed(2)+'T':n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M':'$'+Math.round(n).toLocaleString('en-US');var at=Number(S&&S.capsFetchedAt)||0;if(at>0){var d=new Date(at);txt+=' · '+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')}return txt}
 
 /** 市值格子：先渲染成「…」或已知值，拿到数据后由 updateCapCells 就地替换（详情不重排）。 */
-export function capCellHTML(sym){var s=String(sym||'').toUpperCase();return s?'<strong data-cap-sym="'+escapeHtml(s)+'">'+capText(S.watchCaps&&S.watchCaps[s])+'</strong>':'<strong>—</strong>'}
+export function capCellHTML(sym){var s=String(sym||'').toUpperCase();return s?'<strong data-cap-sym="'+escapeHtml(s)+'">'+capText(S.watchCaps&&S.watchCaps[s],s)+'</strong>':'<strong>—</strong>'}
 
 /** 就地刷新所有「总市值」格子（观察行详情 + 敞口行详情可能同时开着）。 */
-export function updateCapCells(sym){var s=String(sym||'').toUpperCase();if(!s)return;var els=document.querySelectorAll('[data-cap-sym="'+s+'"]');for(var i=0;i<els.length;i+=1)els[i].textContent=capText(S.watchCaps&&S.watchCaps[s])}
+export function updateCapCells(sym){var s=String(sym||'').toUpperCase();if(!s)return;var els=document.querySelectorAll('[data-cap-sym="'+s+'"]');for(var i=0;i<els.length;i+=1)els[i].textContent=capText(S.watchCaps&&S.watchCaps[s],s)}
 
 /** 详情里那只标的还没市值时按需补一次（单只几百毫秒），拿到后就地更新。 */
 function bindCap(sym){if(!S.ensureCap||!sym)return;S.ensureCap(sym,function(){updateCapCells(sym)})}
 
 /** 行详情里的「总市值」一行（敞口卡与观察列表共用）。 */
-function capRowHTML(sym){return '<div class="rd-mkt"><span>总市值</span>'+capCellHTML(sym)+'</div>'}
+/* v443：ETF 的"总市值"其实是基金规模（AUM），标签要写清楚，否则和个股市值混着看必然对不上。 */
+export function capLabelFor(sym){var s=String(sym||'').toUpperCase();var etfs=(S&&S.ETF_SYMS)||[];return etfs.indexOf(s)>=0?'基金规模 (AUM)':'总市值'}
+function capRowHTML(sym){return '<div class="rd-mkt"><span>'+capLabelFor(sym)+'</span>'+capCellHTML(sym)+'</div>'}
 
 /** 榜单日期 "Sep 26, 2026" → "09/26"。 */
 function shortAsOf(text){var m=String(text||'').match(/^([A-Z][a-z]{2})[a-z]* (\d{1,2}),/);if(!m)return String(text||'');var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m[1])+1;if(mo<1)return String(text||'');return (mo<10?'0':'')+mo+'/'+(Number(m[2])<10?'0':'')+Number(m[2])}
@@ -71,7 +73,7 @@ function renderHoldings() {
   if(!exBox)return;
   var shx={};S.trades.forEach(function(t){shx[t.symbol]=(shx[t.symbol]||0)+Number(t.shares||0)});
   var valueByEtf={};S.ETF_SYMS.forEach(function(sym){valueByEtf[sym]=(shx[sym]||0)*(S.livePrices[sym]||0)});
-  var ex=toExposureRows(S.holdingsData,valueByEtf,10,[]);
+  var ex=toExposureRows(S.holdingsData,valueByEtf,15,[]);
   var conc=concentrationSummary({rows:ex.allRows||ex.rows,etfRest:ex.etfRest,base:ex.base,valueByEtf:valueByEtf});
         var m$=function(n){return fmtCompact(n)};
   var rh=function(label,note,amount,share,cls,sym){

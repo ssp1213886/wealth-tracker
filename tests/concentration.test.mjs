@@ -44,5 +44,6 @@ test('concentrationHtml：摘要与重叠来源可见', () => {
   assert.match(html, /VGT 17\.74% \+ SMH 19\.28%/);
   assert.match(html, /VGT \+ SMH 占持仓市值 80\.0%/);
   assert.match(html, /有效独立暴露/);
-  assert.match(html, /前五大底层资产/);
+  assert.doesNotMatch(html, /前五大底层资产/, 'v443：与下方条形图重复，已删除');
+  assert.match(html, /重叠最多的 3 只/);
 });

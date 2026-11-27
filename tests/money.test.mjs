@@ -26,13 +26,12 @@ test('money：CNY 汇率不可用时显示明确占位，不把美元误标成�
   assert.equal(fmtFull(100), '$100.00');
 });
 
-test('money：CNY 模式只换算估值，交易历史金额仍保留美元', () => {
+test('money：CNY 模式所有金额统一换算（底层仍存美元）', () => {
   configureCurrency('CNY', 7.12);
   const trade = buildTradeRow({ id: 1, symbol: 'VGT', date: '2026-11-01', time: '10:00', shares: 2, price: 100 });
   const cash = buildCashLogRow({ id: 2, date: '2026-11-01', type: '入金', amount: 100 });
-  assert.match(trade, /\$200\.00/);
-  assert.doesNotMatch(trade, /¥/);
-  assert.match(cash, /\$100\.00/, '资金流水是美元入账事实，不能换算成人民币');
-  assert.doesNotMatch(cash, /¥/, '资金流水里不该出现人民币符号');
+  assert.match(trade, /\$100\.00/, '每股价保持原始美元');
+  assert.match(trade, /¥1,424\.00/, '成交金额统一换算成人民币');
+  assert.match(cash, /¥712\.00/, 'v444：展示层统一换算，流水金额也显示人民币');
   configureCurrency('USD', 7.12);
 });

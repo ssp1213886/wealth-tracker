@@ -27,7 +27,7 @@ export function buildTradeRow(t) {
     '<td data-cell="sym">' + sym + '</td>' +
     '<td data-cell="qty">' + direction + '<span class="trade-qty">' + fmtShares(t.shares) + ' 股</span></td>' +
     '<td data-cell="price">$' + t.price.toFixed(2) + '</td>' +
-    '<td data-cell="amount">' + fmtNativeFull(Math.abs(t.shares) * t.price) + '</td>' +
+    '<td data-cell="amount">' + fmtFull(Math.abs(t.shares) * t.price) + '</td>' +
     '<td data-cell="actions"><button class="trade-del" data-id="' + t.id + '">×</button></td></tr>';
 }
 
@@ -118,7 +118,7 @@ export function buildCashLogRow(l) {
   return '<tr><td data-cell="date">' + dt + '</td>' +
     '<td data-cell="type"><span style="display:inline-block;' + cashTypeStyle(l.type) + '">' + type + '</span></td>' +
     '<td data-cell="amount" class="' + (sign < 0 ? 'cash-neg' : 'cash-pos') + '">' +
-    (sign < 0 ? '-' : '+') + fmtNativeFull(Math.abs(l.amount)) + '</td>' +
+    (sign < 0 ? '-' : '+') + fmtFull(Math.abs(l.amount)) + '</td>' +
     '<td data-cell="actions"><button class="trade-del" data-clog="' + l.id + '" aria-label="删除流水">×</button></td></tr>';
 }
 

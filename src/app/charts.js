@@ -2,7 +2,7 @@
 // 只做"算数据"，画布/HTML 仍留在 index.js；因此这些数字可以离线单测。
 import { marketDate } from './time.js';
 import { cashSigned, fmtCurrentFull } from './util.js';
-import { CORE_SYMBOLS } from './portfolio-config.js';
+import { CORE_SYMBOLS, CORE_TARGETS } from './portfolio-config.js';
 
 /**
  * 纪律热力图：最近 N 个月（默认 12）的定投完成情况 + 连续完成月数。
@@ -462,8 +462,11 @@ export function equityCurveHtml(series) {
       p.benchmark == null ? null : Number(p.benchmark)];
   })));
   const hasBenchmark = pts.some(function (p) { return p.benchmark != null && Number.isFinite(Number(p.benchmark)); });
+  /* v443："目标基准"以前只图例四个字，没人知道是什么。这里把口径写死到文案里。 */
+  const benchmarkNote = CORE_SYMBOLS.map(function (s) { return s + ' ' + Math.round((Number(CORE_TARGETS[s]) || 0) * 100) + '%'; }).join(' / ');
+  const benchmarkTip = '目标基准：与你相同的月末净入金，按 ' + benchmarkNote + ' 买入、每年 12 月再平衡的模拟组合；衡量执行，不是收益预测';
   return '<div class="eq-legend"><span class="eq-legend-actual">总资产</span>' +
-    (hasBenchmark ? '<span class="eq-legend-benchmark">目标基准</span>' : '') +
+    (hasBenchmark ? '<span class="eq-legend-benchmark" title="' + benchmarkTip + '">目标基准 ⓘ</span>' : '') +
     '<span class="eq-legend-invested">累计净入金</span></div>' +
     '<div class="eq-shell" data-eq-points="' + payload + '">' +
     svg +
@@ -472,7 +475,8 @@ export function equityCurveHtml(series) {
     '<span class="eq-end-label" style="left:' + xPct.toFixed(2) + '%;top:' + yPct.toFixed(2) + '%">' +
       equityMoney(pts[lastIndex].value) +
     '</span>' +
-  '</div>';
+  '</div>' +
+  (hasBenchmark ? '<p class="eq-benchmark-note">目标基准 = 同样的净入金，按 ' + benchmarkNote + ' 买入并每年 12 月再平衡的模拟曲线，用来看"有没有按计划执行"，不是收益预测。</p>' : '');
 }
 
 export function bindEquityCurve(host) {

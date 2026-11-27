@@ -436,6 +436,12 @@
   <div class="analysis-section-heading"><span>组合分析</span><small>资产曲线、回撤与底层敞口</small></div>
   <div class="card equity-card" id="equityCard"><div class="mobile-section-title"><span>资产曲线 <small id="equityRange">月末总资产</small></span></div><div class="equity-chart" id="equityChart"></div><div class="equity-meta" id="equityMeta"></div></div>
 
+  <div class="card daily-pnl-card" id="dailyPnlCard">
+    <div class="mobile-section-title"><span>每日收益日历 <small id="dailyPnlRange">近 13 周</small></span></div>
+    <div class="daily-pnl-grid" id="dailyPnlGrid" role="img" aria-label="每日收益日历"></div>
+    <div class="daily-pnl-meta" id="dailyPnlMeta"></div>
+  </div>
+
   <div class="analysis-risk-grid">
     <div class="card drawdown-card"><div class="drawdown-heading"><h3>高点回撤</h3><span id="hmDrawdownWorst">最大 --</span></div><div id="hmDrawdown" class="ds-empty ds-empty-compact"><span class="ds-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M6 15l4-4 3 3 5-6"/></svg></span><span class="ds-empty-title">添加价格后显示回撤曲线</span></div><div class="drawdown-scale" id="hmDrawdownSub"><span>当前价</span><span>52周高点</span></div></div>
     <div id="exposureSlot"></div>
@@ -649,6 +655,7 @@
       <button class="qa-item" onclick="qaDeposit()"><span class="qa-icon" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)">+</span><span class="qa-label">入金</span></button>
       <button class="qa-item" onclick="qaBuy()"><span class="qa-icon" style="background:rgba(55,138,221,.15);color:#378add"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></span><span class="qa-label">买入</span></button>
       <button class="qa-item" onclick="qaSell()"><span class="qa-icon" style="background:rgba(217,69,53,.15);color:var(--red)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span><span class="qa-label">卖出</span></button>
+<button class="qa-item" onclick="qaDca()" aria-label="记录本月定投成交"><span class="qa-icon" style="background:rgba(89,120,255,.15);color:#5b78f0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="m9 15 2.2 2.2L15.5 13"/></svg></span><span class="qa-label">记定投</span></button>
     </div>
   </div>
 </div>

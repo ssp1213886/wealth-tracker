@@ -91,8 +91,9 @@ const currencyCny = await ev(() => ({
 }));
 if (!/人民币计价/.test(currencyCny.mobile) || !/^¥/.test(currencyCny.total) || !/^¥/.test(currencyCny.holdings) ||
   !/^¥/.test(currencyCny.cash) || !/^¥/.test(currencyCny.goalGap) || !/^¥/.test(currencyCny.dcaTarget) ||
-  currencyCny.stored !== 'CNY' || currencyCny.pressed !== 'true') {
-  failures.push('CNY 开关没有持久化或没有切换主金额：' + JSON.stringify(currencyCny));
+/* v444：币种只做展示，不再写进 state（每次打开默认美元），所以这里只验证主金额确实换算 */
+currencyCny.pressed !== 'true') {
+failures.push('CNY 开关没有切换主金额：' + JSON.stringify(currencyCny));
 }
 await ev(() => document.getElementById('mobHamburger').click());
 await p.waitForTimeout(300);
@@ -130,7 +131,7 @@ const preview = await ev(() => ({
   total: document.getElementById('dcaBatchTotal').textContent,
   button: document.getElementById('btnSaveDcaBatch').textContent,
 }));
-if (preview.total !== '$385.00' || !/2 笔/.test(preview.button)) failures.push('CNY 模式下批量成交录入没有保持美元：' + JSON.stringify(preview));
+if (!/^¥/.test(preview.total) || !/2 笔/.test(preview.button)) failures.push('CNY 模式下批量成交金额应统一换算：' + JSON.stringify(preview));
 await ev(() => document.getElementById('btnSaveDcaBatch').click());
 await p.waitForTimeout(1400);
 const afterBatch = await ev(() => ({
@@ -176,7 +177,7 @@ await p.evaluate(() => {
   closeDcaSheet();
   document.querySelector('.tab-btn[data-tab="analysis"]').click();
 });
-await p.waitForTimeout(2600);
+await p.waitForTimeout(9000);
 const analysis = await ev(() => {
   const shell = document.querySelector('#equityChart .eq-shell');
   return {
@@ -195,7 +196,8 @@ const analysis = await ev(() => {
 if (!analysis.benchmarkLine || !analysis.benchmarkLegend || !/目标基准/.test(analysis.meta) || !/执行差异/.test(analysis.meta) || !/^¥/.test(analysis.endLabel)) {
   failures.push('策略基准线或摘要没有渲染：' + JSON.stringify(analysis));
 }
-if (!(analysis.leaders > 0) || !/有效独立暴露/.test(analysis.effective)) failures.push('集中度结论没有前置：' + JSON.stringify(analysis));
+if (analysis.leaders > 0) failures.push('v443：重复的前五大底层资产 chips 应已删除');
+if (!/有效独立暴露/.test(analysis.effective)) failures.push('集中度摘要缺失：' + JSON.stringify(analysis));
 if (analysis.overflow) failures.push('分析页出现横向溢出');
 if (analysis.threeYearSymbols.length !== 3 || new Set(analysis.threeYearSymbols).size !== 3) {
   failures.push('市场趋势日线请求必须每个核心标的一次，不能重复：' + JSON.stringify(analysis.threeYearSymbols));

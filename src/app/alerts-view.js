@@ -112,7 +112,7 @@ export function buildAlerts(ctx) {
       id: 'dca:' + now,
       type: 'accent',
       severity: 'low',
-      title: '本月定投还差 ' + fmtNativeFull(gap),
+      title: '本月定投还差 ' + fmtFull(gap),
       detail: '在券商成交后批量记录',
       action: 'dca',
     });

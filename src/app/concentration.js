@@ -58,12 +58,9 @@ export function concentrationSummary(input) {
 export function concentrationHtml(summary) {
   const s = summary || {};
   const max = s.max;
-  const overlap = (s.overlaps || []).map(function (row) {
+  const overlap = (s.overlaps || []).slice(0, 3).map(function (row) {
     return '<div class="conc-overlap-row"><b>' + escapeHtml(row.sym || row.name || '') + '</b>' +
       '<span>' + pct(row.share) + '</span><small>' + escapeHtml((row.parts || []).join(' + ')) + '</small></div>';
-  }).join('');
-  const leaders = (s.topCompanies || []).map(function (row) {
-    return '<span><b>' + escapeHtml(row.sym || row.name || '') + '</b><small>' + pct(row.share) + '</small></span>';
   }).join('');
   return '<div class="concentration-summary">' +
     '<div class="conc-head"><strong>集中度摘要</strong><span class="conc-badge">' + escapeHtml(s.hhiLabel || '—') + '</span></div>' +
@@ -76,8 +73,8 @@ export function concentrationHtml(summary) {
       '<div><small>HHI</small><b>' + (Number(s.hhi) || 0) + '</b></div>' +
       '<div><small>有效独立暴露</small><b>' + (s.effectiveBets == null ? '—' : s.effectiveBets.toFixed(1)) + '</b></div>' +
     '</div>' +
-    (leaders ? '<div class="conc-leaders"><div class="conc-sub">前五大底层资产</div><div class="conc-leader-list">' + leaders + '</div></div>' : '') +
-    (overlap ? '<div class="conc-overlaps"><div class="conc-sub">主要重叠 · ' + (Number(s.overlapCount) || 0) + ' 只</div>' + overlap + '</div>' : '') +
+    /* v443：前五大"chips"和下方条形列表讲的是同一件事，删掉；重叠只留前 3 只，避免同一只票出现三次。 */
+    (overlap ? '<div class="conc-overlaps"><div class="conc-sub">重叠最多的 ' + Math.min(3, Number(s.overlapCount) || 0) + ' 只</div>' + overlap + '</div>' : '') +
     (s.techShare != null ? '<div class="conc-foot">VGT + SMH 占持仓市值 ' + pct(s.techShare) + '</div>' : '') +
   '</div>';
 }

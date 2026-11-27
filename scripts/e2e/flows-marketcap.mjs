@@ -61,7 +61,7 @@ const watchDetail = await ev(() => {
   const detail = row.nextElementSibling;
   if (!detail || !detail.classList.contains('row-detail')) return { ok: false, why: '点开没有出现行详情' };
   const text = detail.innerText.replace(/\s+/g, ' ');
-  return { ok: true, text, hasCap: text.includes('总市值') };
+return { ok: true, text, hasCap: /总市值|基金规模/.test(text) };
 });
 if (!watchDetail.ok) failures.push('观察列表行详情：' + watchDetail.why);
 else if (!watchDetail.hasCap) failures.push('观察列表行详情里没有「总市值」：' + watchDetail.text.slice(0, 80));
@@ -118,7 +118,7 @@ const exposure = await ev(() => {
   const detail = row.nextElementSibling;
   if (!detail || !detail.classList.contains('row-detail')) return { ok: false, why: '敞口行点开没有出现详情', syms };
   const text = detail.innerText.replace(/\s+/g, ' ');
-  return { ok: true, syms, text, hasCap: text.includes('总市值'), conc: conc ? conc.innerText.replace(/\s+/g, ' ') : '' };
+return { ok: true, syms, text, hasCap: /总市值|基金规模/.test(text), conc: conc ? conc.innerText.replace(/\s+/g, ' ') : '' };
 });
 if (!exposure.ok) failures.push('底层资产敞口：' + exposure.why + (exposure.syms ? '（现有 ' + exposure.syms.join(',') + '）' : ''));
 else {
@@ -188,7 +188,7 @@ else if (Math.abs(busConsistency.pillPrice - busConsistency.rowPrice) > 0.011) {
 /* G) v399：缓存过期 + 上游全部失败 → 已拿到的旧值必须保留，不能改成「—」。
    线上事故：刷新失败把 null 写进缓存，NVDA/AAPL/MSFT 一整天都是「—」。 */
 const cacheHadNvda = await ev(() => {
-  const key = Object.keys(localStorage).find((x) => /wealth_marketcap_v3$/.test(x)) || 'wealth_marketcap_v3';
+const key = Object.keys(localStorage).find((x) => /wealth_marketcap_v(3|4)$/.test(x)) || 'wealth_marketcap_v4';
   const v = JSON.parse(localStorage.getItem(key) || '{}');
   const had = !!(v.caps && Number(v.caps.NVDA) > 0);
   v.at = Date.now() - 7 * 60 * 60 * 1000; // 超过 6h → 开机后会自动刷新
