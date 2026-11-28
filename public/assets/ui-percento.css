@@ -1369,3 +1369,59 @@ body #watchCard .watch-sym small{
 }
 body #watchCard .watch-price,
 body #watchCard .watch-chg{ align-self: center !important; }
+
+/* ============================================================================
+   31. 总资产 hero：主题色回补（软底但更有品牌感）
+   ========================================================================== */
+:root{
+  --ui-tint-1: color-mix(in srgb, var(--accent) 26%, var(--card-bg));
+  --ui-tint-2: color-mix(in srgb, var(--accent) 9%, var(--card-bg));
+}
+
+body .metric.metric-total,
+body .mob-status-bar .ms-hero{
+  background-image:
+    radial-gradient(120% 92% at 88% -6%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 60%),
+    linear-gradient(158deg,
+      color-mix(in srgb, var(--accent) 26%, var(--card-bg)),
+      color-mix(in srgb, var(--accent) 9%, var(--card-bg)) 62%,
+      color-mix(in srgb, var(--accent) 5%, var(--card-bg))) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent) !important;
+}
+
+body .metric.metric-total .m-label,
+body .mob-status-bar .ms-label{
+  color: color-mix(in srgb, var(--accent) 62%, var(--fg)) !important;
+}
+body .metric.metric-total .m-label svg,
+body .mob-status-bar .ms-eye svg{
+  stroke: color-mix(in srgb, var(--accent) 70%, var(--fg)) !important;
+}
+
+body .mob-status-bar .ms-hero:after{ opacity: .28 !important; }
+
+/* 再提一档：26% → 31%，光晕也同步加强一点 */
+:root{
+  --ui-tint-1: color-mix(in srgb, var(--accent) 31%, var(--card-bg));
+  --ui-tint-2: color-mix(in srgb, var(--accent) 11%, var(--card-bg));
+}
+body .metric.metric-total,
+body .mob-status-bar .ms-hero{
+  background-image:
+    radial-gradient(120% 92% at 88% -6%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 62%),
+    linear-gradient(158deg,
+      color-mix(in srgb, var(--accent) 31%, var(--card-bg)),
+      color-mix(in srgb, var(--accent) 11%, var(--card-bg)) 62%,
+      color-mix(in srgb, var(--accent) 6%, var(--card-bg))) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent) !important;
+}
+
+/* 渐变下缘不再掉到 6%，改成 30% → 20% 的"均匀淡主题色"，整块看起来更有颜色 */
+body .metric.metric-total,
+body .mob-status-bar .ms-hero{
+  background-image:
+    radial-gradient(120% 92% at 88% -6%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%),
+    linear-gradient(158deg,
+      color-mix(in srgb, var(--accent) 32%, var(--card-bg)),
+      color-mix(in srgb, var(--accent) 20%, var(--card-bg))) !important;
+}
