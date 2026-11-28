@@ -1055,3 +1055,200 @@ body .sidebar .sb-mini-donut:after{ border-radius: 50% !important; }
   .hold-list .hold-li.is-hidden-row{ display: none !important; }
   .hold-list .hold-li.is-search-hit{ background: color-mix(in srgb, var(--accent) 12%, transparent) !important; border-radius: 10px; }
 }
+
+/* ============================================================================
+   27. P0 修复：桌面日历格子宽度被 aspect-ratio 锁成 56px，与表头错位
+   ========================================================================== */
+@media (min-width: 801px){
+  body .daily-pnl-week,
+  body .daily-pnl-grid{
+    max-width: 560px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  body .daily-pnl-grid{ gap: 4px !important; }
+  body .daily-pnl-week{ margin-bottom: 4px !important; }
+  body .daily-pnl-cell{
+    width: 100% !important;
+    height: 52px !important;
+    min-height: 0 !important;
+    aspect-ratio: auto !important;
+    border-radius: 10px !important;
+  }
+  body .daily-pnl-head{ margin-bottom: 10px !important; }
+}
+
+/* ============================================================================
+   28. 分析页重排：观察 / 收益 / 敞口 三个主角
+   ========================================================================== */
+
+/* --- 28.1 观察：列表满宽置顶，趋势图在下方满宽 --- */
+@media (min-width: 801px){
+  body #tab-analysis[data-aview="trend"] > .watch-card{
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    margin-bottom: 14px !important;
+  }
+  body #tab-analysis[data-aview="trend"] > .market-trend-card{
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+  }
+}
+
+/* --- 28.2 收益：日历 7 栏 + 曲线 5 栏 --- */
+@media (min-width: 801px){
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card{
+    grid-column: 1 / 8 !important;
+    align-self: start !important;
+  }
+  body #tab-analysis[data-aview="alloc"] > .equity-card{
+    grid-column: 8 / -1 !important;
+    align-self: start !important;
+    margin-top: 0 !important;
+  }
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card .daily-pnl-week,
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card .daily-pnl-grid{
+    max-width: none !important;
+  }
+}
+
+/* --- 28.3 敞口：敞口卡在前，回撤在底部（次要素材） --- */
+body #tab-analysis[data-aview="alloc"] .drawdown-card{ display: none !important; }
+body #tab-analysis[data-aview="exposure"] .drawdown-card{ display: block !important; }
+
+@media (min-width: 801px){
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid{
+    display: block !important;
+    grid-column: 1 / -1 !important;
+  }
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid > #exposureSlot{
+    display: block !important;
+    width: 100% !important;
+  }
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid > .drawdown-card{
+    width: 100% !important;
+    margin-top: 14px !important;
+  }
+}
+
+/* --- 28.4 观察列表：满宽 4 列行 --- */
+body #watchCard .watch-row{
+  grid-template-columns: minmax(0,1fr) 64px 96px 66px !important;
+  grid-template-rows: auto !important;
+  column-gap: 12px !important;
+  padding: 13px 4px !important;
+  border-radius: 12px !important;
+  transition: background-color .16s var(--ease-out);
+}
+body #watchCard .watch-spark{
+  grid-column: auto !important;
+  grid-row: auto !important;
+  justify-self: end !important;
+  margin-top: 0 !important;
+}
+body #watchCard .watch-spark svg{ width: 58px !important; height: 22px !important; }
+body #watchCard .watch-spark-none{ width: 58px !important; }
+body #watchCard .watch-price{ font-size: 13.5px !important; font-weight: 600 !important; }
+body #watchCard .watch-chg{ font-size: 12px !important; font-weight: 600 !important; }
+body #watchCard .watch-name{ font-size: 13.5px !important; font-weight: 650 !important; }
+body #watchCard .watch-sym small{ font-size: 11px !important; }
+
+/* 选中行 */
+body #watchCard .watch-row.is-selected{
+  background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+body #watchCard .watch-row:active{
+  background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+}
+
+/* 观察行的状态 badge：不再常驻红色 */
+body #watchCard .watch-cap.is-warn{ color: var(--muted) !important; background: transparent !important; }
+
+/* 图表标的 chips 收起来（选择入口统一到观察列表），但保留 DOM 供无障碍/测试使用 */
+body #trendTabs{
+  display: none !important;
+}
+
+/* --- 28.5 网格定位修正（胶囊被挤到末尾 / 收益两卡错行 / 回撤跑到敞口前面） --- */
+@media (min-width: 801px){
+  body #tab-analysis > .aview-seg{ grid-row: 1 !important; grid-column: 1 / -1 !important; }
+  body #tab-analysis[data-aview="trend"] > .watch-card{ grid-row: 2 !important; }
+  body #tab-analysis[data-aview="trend"] > .market-trend-card{ grid-row: 3 !important; }
+
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card{ grid-row: 2 !important; grid-column: 1 / 8 !important; }
+  body #tab-analysis[data-aview="alloc"] > .equity-card{ grid-row: 2 !important; grid-column: 8 / -1 !important; }
+
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid{
+    grid-row: 2 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid > #exposureSlot{ order: 1 !important; }
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid > .drawdown-card{ order: 2 !important; margin-top: 0 !important; }
+}
+
+/* 趋势图：满宽后 SVG 会按比例长高，限制可见高度 */
+body #trendChart .trend-chart-shell{ min-height: 0 !important; }
+body #trendChart svg{ max-height: 340px !important; }
+body #trendChart .tc-svg, body #trendChart .trend-svg{ max-height: 340px !important; }
+
+/* --- 28.6 手机端顺序：收益=日历→曲线；敞口=敞口→回撤 --- */
+@media (max-width: 800px){
+  body #tab-analysis[data-aview="alloc"]{
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card{ order: 1 !important; }
+  body #tab-analysis[data-aview="alloc"] > .equity-card{ order: 2 !important; margin-top: 12px !important; }
+
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid{
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid > #exposureSlot{ order: 1 !important; }
+  body #tab-analysis[data-aview="exposure"] > .analysis-risk-grid > .drawdown-card{ order: 2 !important; }
+}
+
+/* --- 28.7 手机端观察行：空间不够，隐藏 sparkline，回到 标的/价格/涨跌 三列 --- */
+@media (max-width: 800px){
+  body #watchCard .watch-row{
+    grid-template-columns: minmax(0,1fr) 86px 62px !important;
+    column-gap: 10px !important;
+    padding: 14px 2px !important;
+    align-items: center !important;
+  }
+  body #watchCard .watch-spark{ display: none !important; }
+  body #watchCard .watch-sym{ flex-wrap: nowrap !important; min-width: 0 !important; }
+  body #watchCard .watch-sym small{
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* --- 28.8 敞口：去掉"盒子里再套盒子"，摘要压成一行 --- */
+body .concentration-summary{
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 4px 0 10px !important;
+}
+body .conc-grid{
+  grid-template-columns: repeat(7, minmax(0,1fr)) !important;
+  gap: 10px !important;
+}
+body .conc-grid > div{
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+body .conc-grid small{ font-size: 10px !important; }
+body .conc-grid b{ font-size: 14px !important; margin-top: 3px !important; }
+
+@media (max-width: 800px){
+  body .conc-grid{ grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 12px 16px !important; }
+  body .conc-grid b{ font-size: 13.5px !important; }
+}
