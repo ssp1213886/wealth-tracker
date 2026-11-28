@@ -1252,3 +1252,79 @@ body .conc-grid b{ font-size: 14px !important; margin-top: 3px !important; }
   body .conc-grid{ grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 12px 16px !important; }
   body .conc-grid b{ font-size: 13.5px !important; }
 }
+
+/* --- 29. 观察行分隔线：圆角让 border-bottom 两端上翘，看起来像一排挤着的胶囊 --- */
+body #watchCard .watch-row{
+  border-radius: 0 !important;
+  border-top: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 72%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body #watchCard .watch-row:last-child{ border-bottom: 0 !important; }
+
+body #watchCard .watch-row.is-selected{
+  border-radius: 10px !important;
+  border-bottom-color: transparent !important;
+  background: color-mix(in srgb, var(--accent) 9%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--accent) !important;
+}
+
+@media (max-width: 800px){
+  body #watchCard .watch-row{ padding: 16px 4px !important; }
+  body #watchCard .watch-row + .watch-row{ margin-top: 0 !important; }
+}
+
+/* is-held 的圆角规则比基础行更具体，会把直角改回去 —— 一并压平 */
+body #watchCard .watch-row.is-held,
+body #watchCard .watch-row.is-held + .watch-row{
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body #watchCard .watch-row.is-held{border-bottom: 1px solid color-mix(in srgb, var(--rule) 72%, transparent) !important;}
+body #watchCard .watch-row.is-held:last-child{border-bottom: 0 !important;}
+body #watchCard .watch-row.is-held.is-selected{
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--accent) 9%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--accent) !important;
+  border-bottom-color: transparent !important;
+}
+
+/* 用一条背景渐变画分隔线，彻底绕开 border + 圆角 + 伪元素的相互影响 */
+body #watchCard .watch-row,
+body #watchCard .watch-row.is-held{
+  border-bottom: 0 !important;
+  background-image: linear-gradient(to bottom,
+    transparent calc(100% - 1px),
+    color-mix(in srgb, var(--rule) 78%, transparent) calc(100% - 1px)) !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+}
+body #watchCard .watch-row:last-child,
+body #watchCard .watch-row.is-held:last-child{
+  background-image: none !important;
+}
+body #watchCard .watch-row.is-selected,
+body #watchCard .watch-row.is-held.is-selected{
+  background-image: none !important;
+}
+
+/* 最终取舍：观察行不画分隔线（圆角/边框/伪元素互相打架，画出来总有毛刺），
+   改用行距 + 品牌徽标撑起节奏，按下/选中才出现底色。 */
+body #watchCard .watch-row,
+body #watchCard .watch-row.is-held{
+  border: 0 !important;
+  background-image: none !important;
+  padding: 15px 6px !important;
+}
+body #watchCard .watch-row + .watch-row{ margin-top: 2px !important; }
+
+/* 窄屏（≤380）：观察卡头部标题与状态挤成两行，状态文案先收起来 */
+@media (max-width: 380px){
+  body #watchCard .watch-cap{ display: none !important; }
+  body #watchCard .watch-head h3{ font-size: 17px !important; }
+  body #watchCard .watch-tools{ gap: 6px !important; }
+}
