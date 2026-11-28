@@ -511,3 +511,278 @@ body #allocationRow{
     flex: 0 0 100%;
   }
 }
+
+/* ============================================================================
+   18. 通用：标题、表格、表格头
+   ========================================================================== */
+body .section-heading,
+body .main .opt-card-head h3,
+body .main .log-card-header h3,
+body .main .collapse-arrow + h3{
+  font-size: 15px !important;
+  font-weight: 650 !important;
+  letter-spacing: -.02em !important;
+  color: var(--fg) !important;
+}
+body .trade-table{
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+body .trade-table th{
+  font-size: 11px !important;
+  font-weight: 550 !important;
+  color: var(--muted) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  padding: 8px 10px !important;
+  border-bottom: 1px solid var(--rule) !important;
+  background: transparent !important;
+}
+body .trade-table td{
+  font-size: 13px !important;
+  padding: 11px 10px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 75%, transparent) !important;
+  background: transparent !important;
+}
+body .trade-table tbody tr:last-child td{ border-bottom: 0 !important; }
+body .trade-table td strong, body .trade-table td b{ font-size: 13px !important; font-weight: 600 !important; }
+body .trade-table td small{ font-size: 11px !important; color: var(--muted) !important; }
+
+/* ============================================================================
+   19. 分析页
+   ========================================================================== */
+body .watch-card{ padding: 16px 18px !important; }
+body .watch-head h3{ font-size: 16px !important; font-weight: 680 !important; letter-spacing: -.025em !important; }
+body .watch-group-head{ padding: 8px 0 !important; }
+body .wg-name{ font-size: 13px !important; font-weight: 600 !important; }
+body .wg-count{
+  font-size: 10.5px !important;
+  background: color-mix(in srgb, var(--fg) 6%, transparent) !important;
+  border-radius: 99px !important;
+  padding: 1px 6px !important;
+  color: var(--muted) !important;
+}
+body .watch-row{
+  padding: 10px 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  gap: 10px !important;
+}
+body .watch-row:last-child{ border-bottom: 0 !important; }
+body .watch-sym{ font-size: 13.5px !important; font-weight: 650 !important; letter-spacing: -.01em !important; }
+body .watch-name{ font-size: 11px !important; }
+body .watch-meta{ font-size: 11px !important; color: var(--muted) !important; }
+
+body .market-trend-card{ padding: 18px 20px !important; }
+body .market-trend-card .opt-card-head{ margin-bottom: 6px !important; }
+body #marketRegime{
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 6px 0 2px !important;
+  margin: 0 0 6px !important;
+  display: block !important;
+}
+body #marketRegime .regime-main{
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+}
+body #marketRegime .regime-detail{
+  font-size: 11.5px !important;
+  color: var(--muted) !important;
+  margin-top: 4px !important;
+}
+body #marketRegime .regime-reason{
+  font-size: 11.5px !important;
+  color: color-mix(in srgb, var(--muted) 90%, transparent) !important;
+  margin-top: 2px !important;
+  line-height: 1.45 !important;
+}
+body #marketRegime .regime-rules{
+  margin-top: 6px !important;
+  font-size: 11px !important;
+  color: var(--muted) !important;
+}
+body #marketRegime .regime-rules summary{ font-size: 11px !important; color: var(--muted) !important; }
+body #trendChart .trend-chart-shell{
+  border: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+body .trend-toolbar{ margin-top: 8px !important; }
+
+/* 每日盈亏格：桌面 147px → 56px */
+@media (min-width: 801px){
+  body .daily-pnl-grid{ gap: 4px !important; }
+  body .daily-pnl-cell{
+    min-height: 56px !important;
+    height: 56px !important;
+    border-radius: 10px !important;
+    padding: 5px 8px !important;
+  }
+  body .daily-pnl-cell .dp-day, body .daily-pnl-cell strong{ font-size: 11px !important; }
+  body .daily-pnl-cell small, body .daily-pnl-cell span{ font-size: 9.5px !important; }
+}
+
+/* ============================================================================
+   20. 操作台
+   ========================================================================== */
+body .console-entry-card > .collapsible-header{ padding: 16px 20px 8px !important; }
+body .console-entry-card > .collapsible-body{ padding: 0 20px 16px !important; }
+body .price-list{ display: flex !important; flex-direction: column !important; gap: 0 !important; }
+body .price-list .price-pill{
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 2px !important;
+  border: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 75%, transparent) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body .price-list .price-pill:last-child{ border-bottom: 0 !important; }
+body .price-pill .pp-sym{ font-size: 13.5px !important; font-weight: 650 !important; }
+body .price-pill strong{ font-size: 13.5px !important; font-weight: 650 !important; margin-left: auto !important; }
+body .price-pill .pp-chg{ font-size: 12px !important; font-weight: 600 !important; }
+body .price-pill small{ font-size: 11px !important; color: var(--muted) !important; }
+body .price-meta-row{ font-size: 11px !important; color: var(--muted) !important; margin-top: 8px !important; }
+
+body .cash-card{ padding: 18px 20px !important; }
+body .cash-balance-row{
+  background: color-mix(in srgb, var(--accent) 8%, var(--card-bg)) !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  margin: 12px 0 10px !important;
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+}
+body .cash-balance-row span{ font-size: 12px !important; color: var(--muted) !important; }
+body .cash-balance-row strong{ font-size: 22px !important; font-weight: 700 !important; letter-spacing: -.03em !important; }
+body .cash-summary{ font-size: 11.5px !important; color: var(--muted) !important; }
+
+body #rebalLockMsg{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 8px 0 0 !important;
+  font-size: 12px !important;
+  color: var(--muted) !important;
+}
+body #rebalLockBadge{
+  background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+  color: var(--accent) !important;
+  border: 0 !important;
+  border-radius: 99px !important;
+  font-size: 11px !important;
+  padding: 3px 9px !important;
+}
+
+/* ============================================================================
+   21. 记录页
+   ========================================================================== */
+body .record-toolbar{
+  background: color-mix(in srgb, var(--fg) 5%, var(--bg)) !important;
+  border: 0 !important;
+  border-radius: 99px !important;
+  padding: 3px !important;
+  gap: 2px !important;
+  height: 44px !important;
+  display: flex !important;
+}
+body .record-seg{
+  border: 0 !important;
+  border-radius: 99px !important;
+  background: transparent !important;
+  font-size: 12.5px !important;
+  font-weight: 550 !important;
+  color: var(--muted) !important;
+  height: 38px !important;
+}
+body .record-seg.active{
+  background: var(--card-bg) !important;
+  color: var(--fg) !important;
+  font-weight: 650 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08) !important;
+}
+body .ds-search-card{
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 10px 0 !important;
+}
+body .ds-search{
+  background: var(--card-bg) !important;
+  border-radius: 99px !important;
+  border: 0 !important;
+  height: 44px !important;
+}
+body .ds-search input{ font-size: 13px !important; }
+body .record-group .collapsible-header{ padding: 14px 20px !important; }
+body .record-group .collapsible-body{ padding: 0 20px 16px !important; }
+
+/* ============================================================================
+   22. 修正：卡片 padding 归零后，折叠头原来的负 margin 会把它顶出卡片
+   ========================================================================== */
+body .card > .collapsible-header,
+body .holdings-card > .collapsible-header{
+  margin: 0 !important;
+  background: transparent !important;
+  border-radius: 26px 26px 0 0 !important;
+  min-height: 0 !important;
+}
+
+/* 操作台价格行：去掉灰色容器，改成纯行 */
+body #hmPricesCompact{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  gap: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+body #hmPricesCompact > *{
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 75%, transparent) !important;
+  min-height: 46px !important;
+  padding: 0 2px !important;
+}
+body #hmPricesCompact > *:last-child{ border-bottom: 0 !important; }
+body #hmPricesCompact > .is-picked{
+  background: color-mix(in srgb, var(--accent) 7%, transparent) !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================================
+   23. 记录页：分段控件与表格底色
+   ========================================================================== */
+body .record-toolbar .record-seg{
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  line-height: 38px !important;
+  padding: 0 12px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+body .trade-table tr,
+body .trade-table tbody tr,
+body .trade-table tbody tr:nth-child(even),
+body .trade-table tbody tr:nth-child(odd){
+  background: transparent !important;
+}
+body .trade-table tbody tr:hover{ background: color-mix(in srgb, var(--fg) 3%, transparent) !important; }
+body .trade-table{ background: transparent !important; }
+body .trade-table td:first-child, body .trade-table th:first-child{ padding-left: 4px !important; }
+body .trade-table td:last-child, body .trade-table th:last-child{ padding-right: 4px !important; }
