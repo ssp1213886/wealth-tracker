@@ -1,0 +1,513 @@
+/* ============================================================================
+   Percento 风格 UI 层 (v449)
+   说明：
+   - 只做覆盖，不改 main.css；出问题删掉 index.html 里这一行引用即可回退。
+   - 主题色仍然来自 main.css 的 --accent / --bg / --card-bg / --fg / --muted。
+   - 设计规则：卡片无边框、26px 圆角、灰底托白卡；字号五档；数字等宽。
+   ========================================================================== */
+
+:root{
+  --ui-r-card: 26px;
+  --ui-r-inner: 18px;
+  --ui-r-chip: 999px;
+  --ui-tiny: 11px;
+  --ui-sub: 12.5px;
+  --ui-title: 15px;
+  --ui-stat: 17px;
+  --ui-num: 26px;
+  --ui-hero: 44px;
+  --ui-tint-1: color-mix(in srgb, var(--accent) 15%, var(--card-bg));
+  --ui-tint-2: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+}
+
+body{ font-variant-numeric: tabular-nums; }
+
+/* ---------- 1. 表面：去边框、统一圆角 ---------- */
+body .card,
+body .chart-card,
+body .holdings-card,
+body .dca-card,
+body .mobile-attention,
+body .goal-row,
+body .equity-card,
+body .cc-overview,
+body .empty,
+body .panel{
+  border: 0 !important;
+  border-radius: var(--ui-r-card) !important;
+  box-shadow: none !important;
+  background: var(--card-bg) !important;
+}
+body .card{ padding: 18px 20px !important; }
+body .card:has(> .collapsible-header){ padding: 0 !important; }
+
+/* 卡片标题：统一 15px/650 */
+body .main .card > h3,
+body .main .chart-card > h3,
+body .main .card .collapsible-header h3,
+body .main .holdings-card .collapsible-header h3,
+body .mobile-section-title{
+  font-size: var(--ui-title) !important;
+  font-weight: 650 !important;
+  letter-spacing: -.02em !important;
+  color: var(--fg) !important;
+}
+
+/* ---------- 2. 指标区：总资产独占一行 ---------- */
+body .metric{ border: 0 !important; box-shadow: none !important; background: transparent !important; }
+body .metric::before{ display: none !important; }
+body .metric-glyph{ display: none !important; }
+body .metric .m-label{
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: var(--ui-sub) !important;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
+}
+body .metric:not(.metric-total) .m-val{
+  font-size: var(--ui-stat) !important;
+  font-weight: 650 !important;
+  letter-spacing: -.022em !important;
+}
+body .metric:not(.metric-total) .m-sub{
+  font-size: var(--ui-tiny) !important;
+  color: color-mix(in srgb, var(--muted) 88%, transparent) !important;
+  margin-top: 3px !important;
+  min-height: 0 !important;
+}
+
+/* 总资产 hero */
+body .metric-total{
+  position: relative;
+  border-radius: var(--ui-r-card) !important;
+  background:
+    linear-gradient(158deg, var(--ui-tint-1), var(--ui-tint-2) 62%, color-mix(in srgb, var(--accent) 3%, var(--card-bg))) !important;
+  padding: 22px 24px 20px !important;
+}
+body .metric-total .m-label{
+  margin-bottom: 8px !important;
+  color: color-mix(in srgb, var(--fg) 78%, transparent) !important;
+}
+body .metric-total .m-val{
+  font-size: var(--ui-hero) !important;
+  font-weight: 700 !important;
+  letter-spacing: -.04em !important;
+  line-height: 1.04 !important;
+}
+body .metric-total .m-cny{ font-size: var(--ui-tiny) !important; margin-top: 6px !important; }
+body .metric-total .metric-daily{ margin-top: 8px !important; }
+body .metric-total .metric-daily .m-val{ font-size: 13.5px !important; font-weight: 620 !important; letter-spacing: -.01em !important; }
+body .metric-total #hmUnreal{ font-size: 13.5px !important; font-weight: 620 !important; }
+
+/* ---------- 3. 平板/手机 ---------- */
+@media (max-width: 800px){
+  body .metrics{
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    gap: 0 !important;
+    margin: 0 0 14px !important;
+  }
+  body .metrics .metric:not(.metric-total){
+    padding: 2px 0 2px 12px !important;
+    border-left: 1px solid var(--rule) !important;
+    min-height: 0 !important;
+    background: transparent !important;
+  }
+  body .metrics .metric-total{
+    grid-column: 1 / -1;
+    margin-bottom: 14px;
+    padding: 18px 20px 16px !important;
+  }
+  body .metrics .metric-total .m-val{ font-size: 38px !important; }
+  body .metric:not(.metric-total) .m-val{ font-size: 15px !important; }
+  body .card{ padding: 15px 16px !important; }
+  body .card:has(> .collapsible-header){ padding: 0 !important; }
+}
+
+/* ---------- 4. 桌面 ---------- */
+@media (min-width: 801px){
+  #holdMetrics{
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    height: auto !important;
+    gap: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+  #holdMetrics .metric{
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  #holdMetrics .metric-total{
+    grid-column: 1 / -1;
+    margin-bottom: 16px;
+    padding: 24px 26px !important;
+  }
+  #holdMetrics .metric-total .m-val{ font-size: var(--ui-hero) !important; }
+  #holdMetrics .metric:not(.metric-total){
+    padding: 4px 0 4px 22px !important;
+    border-left: 1px solid var(--rule) !important;
+  }
+  #holdMetrics .metric:nth-child(2){
+    padding-left: 0 !important;
+    border-left: 0 !important;
+  }
+  #holdMetrics .metric .m-label{ margin-bottom: 6px !important; font-size: var(--ui-sub) !important; }
+  #holdMetrics .metric:not(.metric-total) .m-val{ font-size: var(--ui-stat) !important; }
+  #holdMetrics .metric .m-sub{ margin-top: 3px !important; }
+}
+
+/* ---------- 5. 按钮与胶囊 ---------- */
+body .btn, body .btn-pri, body .btn-out, body .btn-sm{
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+}
+body .btn-pri{ background: var(--accent) !important; border-color: var(--accent) !important; }
+body .dca-record-btn{
+  border-radius: var(--ui-r-chip) !important;
+  font-weight: 600 !important;
+}
+
+/* 定投标的三块：改成大色块 */
+body .mobile-dca-pills{ gap: 6px !important; }
+body .mobile-dca-pills > div{
+  border: 0 !important;
+  border-radius: 14px !important;
+  padding: 9px 10px !important;
+  min-height: 48px !important;
+  background: color-mix(in srgb, var(--fg) 4%, var(--card-bg)) !important;
+}
+
+/* ---------- 6. 底部抽屉 ---------- */
+body .qa-panel{
+  border-radius: 28px 28px 0 0 !important;
+}
+body .qa-item{
+  border-radius: 20px !important;
+  background: transparent !important;
+}
+body .qa-icon{
+  width: 34px !important; height: 34px !important;
+  border-radius: 50% !important;
+  font-size: 15px !important;
+}
+body .qa-label{ font-size: 11.5px !important; font-weight: 550 !important; }
+
+/* ---------- 7. 底部导航 ---------- */
+@media (max-width: 800px){
+  body .bottom-bar{
+    background: color-mix(in srgb, var(--card-bg) 88%, transparent) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 6%, transparent) !important;
+  }
+  body .bb-btn{ font-size: 10px !important; font-weight: 550 !important; }
+  body .bb-btn.active{ font-weight: 650 !important; }
+}
+
+/* ---------- 8. 桌面页签 ---------- */
+@media (min-width: 801px){
+  body .tabs{
+    border: 0 !important;
+    border-radius: var(--ui-r-chip) !important;
+    background: color-mix(in srgb, var(--fg) 4%, var(--bg)) !important;
+    padding: 3px !important;
+    height: 42px !important;
+    gap: 2px !important;
+  }
+  body .tab-btn{
+    border: 0 !important;
+    border-radius: var(--ui-r-chip) !important;
+    color: var(--muted) !important;
+    font-weight: 550 !important;
+  }
+  body .tab-btn.active{
+    background: var(--card-bg) !important;
+    color: var(--fg) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08) !important;
+    border-bottom: 0 !important;
+  }
+}
+
+/* ============================================================================
+   9. 修正：桌面 hero 的优先级（main.css 用 #holdMetrics .metric 置透明）
+   ========================================================================== */
+@media (min-width: 801px){
+  #holdMetrics .metric.metric-total{
+    background:
+      linear-gradient(158deg, var(--ui-tint-1), var(--ui-tint-2) 62%, color-mix(in srgb, var(--accent) 3%, var(--card-bg))) !important;
+    padding: 24px 26px !important;
+    margin-bottom: 16px !important;
+    overflow: visible !important;
+  }
+  #holdMetrics .metric.metric-total .m-label{ margin-bottom: 8px !important; }
+  #holdMetrics .metric.metric-total .m-val{ font-size: 44px !important; font-weight: 700 !important; letter-spacing: -.04em !important; }
+  #holdMetrics .metric.metric-total .m-cny{ margin-top: 6px !important; }
+  #holdMetrics .metric.metric-total .metric-daily{ margin-top: 9px !important; }
+  #holdMetrics{ margin-bottom: 4px !important; }
+}
+
+/* ============================================================================
+   10. 手机端：总资产 hero（.mob-status-bar）改软色底
+   ========================================================================== */
+@media (max-width: 800px){
+  .mob-status-bar .ms-hero{
+    background: linear-gradient(158deg, var(--ui-tint-1), var(--ui-tint-2) 62%, color-mix(in srgb, var(--accent) 3%, var(--card-bg))) !important;
+    box-shadow: none !important;
+    color: var(--fg) !important;
+    border-radius: var(--ui-r-card) !important;
+    padding: 18px 20px 16px !important;
+    min-height: 0 !important;
+    margin: 2px 0 0 !important;
+  }
+  .mob-status-bar .ms-hero:after{
+    background: radial-gradient(120% 82% at 86% 0%, color-mix(in srgb, #fff 55%, transparent), transparent 58%) !important;
+    opacity: .5;
+  }
+  .mob-status-bar .ms-label{ color: color-mix(in srgb, var(--fg) 72%, transparent) !important; font-size: 12.5px !important; }
+  .mob-status-bar .ms-val{ color: var(--fg) !important; font-size: 2.35rem !important; font-weight: 700 !important; letter-spacing: -.042em !important; margin-top: 6px !important; }
+  .mob-status-bar .ms-daily{ color: var(--ok) !important; font-size: 13.5px !important; font-weight: 600 !important; margin-top: 7px !important; }
+  .mob-status-bar .ms-daily.negative{ color: var(--red) !important; }
+  .mob-status-bar .ms-cny{ color: color-mix(in srgb, var(--muted) 85%, transparent) !important; font-size: 11px !important; }
+  .mob-status-bar .ms-eye svg{ stroke: color-mix(in srgb, var(--fg) 62%, transparent) !important; }
+
+  /* 摘要：从"贴在 hero 下方的白条"改成独立的一行无框三列 */
+  .mob-status-bar .ms-summary{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 0 !important;
+    margin: 12px 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+  }
+  .mob-status-bar .ms-summary:before{ display: none !important; }
+  .mob-status-bar .ms-summary > div{
+    padding: 0 0 0 14px !important;
+    border-left: 1px solid var(--rule) !important;
+  }
+  .mob-status-bar .ms-summary > div:first-child{ padding-left: 0 !important; border-left: 0 !important; }
+  .mob-status-bar .ms-summary span{ font-size: 11px !important; color: var(--muted) !important; }
+  .mob-status-bar .ms-summary strong{ font-size: 16px !important; font-weight: 650 !important; letter-spacing: -.03em !important; }
+}
+
+/* ============================================================================
+   11. 卡片内边距：折叠卡与持仓卡单独处理
+   ========================================================================== */
+body .holdings-card,
+body .card.collapsible-card{ padding: 0 !important; }
+body .card.collapsible-card > .collapsible-header{ padding: 16px 20px !important; }
+body .card.collapsible-card > .collapsible-body{ padding: 0 20px 18px !important; }
+body .holdings-card > .collapsible-header{ padding: 16px 20px !important; }
+
+/* ============================================================================
+   12. 桌面：强制解除 #holdMetrics 的固定高度与裁切
+   ========================================================================== */
+@media (min-width: 801px){
+  #tab-holding > #holdMetrics{
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    align-items: start !important;
+    margin: 0 0 6px !important;
+  }
+  #tab-holding > #holdMetrics > .metric{
+    height: auto !important;
+    min-height: 0 !important;
+    align-self: start !important;
+  }
+  #tab-holding > #holdMetrics > .metric.metric-total{
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+  #tab-holding > #holdMetrics > .metric.metric-total .m-label{
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+  }
+  #tab-holding > #holdMetrics > .metric:not(.metric-total){
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+  }
+}
+/* 骨架占位在空仓时不占高度，避免把三列撑歪 */
+@media (min-width: 801px){
+  #holdMetrics .m-val.is-skeleton{ min-height: 22px !important; border-radius: 8px !important; }
+}
+
+/* ============================================================================
+   13. 桌面：父级 #tab-holding 用了固定行高 172px，会裁掉 hero —— 第 1 行改自适应
+   ========================================================================== */
+@media (min-width: 801px){
+  #tab-holding.active{
+    grid-template-rows: min-content auto auto auto auto !important;
+    align-items: start !important;
+  }
+  #tab-holding.active > .card,
+  #tab-holding.active > .holdings-card{ align-self: stretch !important; }
+}
+
+/* ============================================================================
+   14. 修正：hero 里的今日变化不该继承 44px；手机端定投卡被固定高度裁掉
+   ========================================================================== */
+@media (min-width: 801px){
+  #holdMetrics .metric.metric-total > .m-val{ font-size: 44px !important; }
+  #holdMetrics .metric.metric-total .metric-daily .m-val,
+  #holdMetrics .metric.metric-total .metric-daily span.m-val{
+    font-size: 13.5px !important;
+    font-weight: 620 !important;
+    letter-spacing: -.01em !important;
+  }
+  #holdMetrics .metric.metric-total .metric-daily{ color: var(--ok) !important; }
+  #holdMetrics .metric.metric-total .metric-daily .m-pct{ font-size: 12.5px !important; }
+}
+@media (max-width: 800px){
+  .dca-card, #dashWidgets, #dashWidgets > .card{ height: auto !important; min-height: 0 !important; }
+  .ms-summary small.ms-pnl-pct{ display: inline !important; margin-left: 6px; font-size: 11px !important; }
+  .ms-summary strong{ display: inline !important; }
+}
+
+/* ============================================================================
+   15. 修正：定投标的块恢复 48px 高（加高会溢出卡片）；折叠卡标题下不画横线
+   ========================================================================== */
+body .mobile-dca-pills > div{
+  min-height: 48px !important;
+  padding: 10px 11px !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: color-mix(in srgb, var(--fg) 4%, var(--card-bg)) !important;
+}
+body .card > .collapsible-header,
+body .holdings-card > .collapsible-header,
+body .collapsible-header{
+  border-bottom: 0 !important;
+}
+
+/* ============================================================================
+   16. 持仓与分布：环形图 → 三块大色块（Percento 的招牌表达）
+   ========================================================================== */
+body .allocation-card .chart-wrap{ display: none !important; }
+body .allocation-card .allocation-body{ display: block !important; }
+body #allocationRow{ margin: 0 !important; }
+body #donutLegend{ padding: 0 !important; display: block !important; }
+
+.alloc-blocks{
+  display: flex;
+  gap: 6px;
+  margin: 14px 0 4px;
+}
+.alloc-block{
+  flex: 1 1 0;
+  min-width: 0;
+  height: 72px;
+  border-radius: 14px;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: color-mix(in srgb, var(--c) 22%, var(--card-bg));
+  color: color-mix(in srgb, var(--c) 35%, var(--fg));
+}
+.alloc-block b{
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -.035em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.alloc-block span{
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  opacity: .72;
+}
+@media (max-width: 800px){
+  .alloc-block{ height: 64px; border-radius: 13px; }
+  .alloc-block b{ font-size: 17px; }
+}
+
+/* 明细行：Percento 的"名称 + 小字 + 右侧数值" */
+body .holdings-card .asset-row{
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 80%, transparent) !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
+}
+body .holdings-card .asset-row:last-child{ border-bottom: 0 !important; }
+body .holdings-card .asset-identity > span{ font-size: 13.5px !important; font-weight: 600 !important; letter-spacing: -.01em; }
+body .holdings-card .asset-identity small{ font-size: 11px !important; }
+
+/* ============================================================================
+   17. 持仓与分布：桌面端把"色块 + 明细"改成上下两段（原来左右分栏）
+   ========================================================================== */
+body .holdings-card .collapsible-body{
+  display: block !important;
+  padding: 0 20px 18px !important;
+}
+body .holdings-card .collapsible-body > #allocationRow{
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+body .holdings-card .collapsible-body > #allocationRow .allocation-card{
+  width: auto !important;
+  height: auto !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+body .holdings-card .collapsible-body > #allocationRow .allocation-body{
+  display: block !important;
+  padding: 0 !important;
+  width: auto !important;
+}
+body .holdings-card .collapsible-body > #pnlSummary{
+  width: auto !important;
+  margin-top: 8px !important;
+}
+body .holdings-card .holdings-foot{
+  margin-top: 10px !important;
+  font-size: 11px !important;
+  color: color-mix(in srgb, var(--muted) 85%, transparent) !important;
+  text-align: right !important;
+}
+/* 明细行右侧：占比与市值的层次 */
+body .holdings-card .asset-row .asset-result strong{ font-size: 13.5px !important; font-weight: 650 !important; letter-spacing: -.02em; }
+
+/* 去掉色块外层的残留描边 */
+body .holdings-card .chart-row,
+body .holdings-card .chart-row > *,
+body .holdings-card .allocation-card,
+body .holdings-card .allocation-body,
+body #allocationRow{
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 手机：累计收益百分比跟金额同一行 */
+@media (max-width: 800px){
+  .mob-status-bar .ms-summary > div{
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: baseline !important;
+    gap: 0 6px !important;
+  }
+  .mob-status-bar .ms-summary > div > span:first-child{
+    flex: 0 0 100%;
+  }
+}
