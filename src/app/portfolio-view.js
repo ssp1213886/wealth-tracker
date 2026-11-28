@@ -79,8 +79,38 @@ var hu=doc.getElementById('hmUnreal');if(hu){hu.textContent=m.hasPriced?fmtPnLFu
 }
 
 /** 持仓表：每行的资产色、股数、均价、市值、盈亏。 */
+/**
+ * 手机端持仓列表（div 行）。
+ * 为什么单独渲染一份：持仓明细在移动端是一张 <table>，main.css 用 display:block!important +
+ * 写死的 grid-column + 伪元素色条把它锁成卡片，纯 CSS 改不动；这里给同一条数据再画一份行式列表，
+ * 桌面端仍然用表格（#holdBody 保留，测试与搜索都还认它）。
+ */
+function renderHoldList(doc, rows) {
+  var hl = doc.getElementById('holdList');
+  if (!hl) return;
+  if (!rows.length) {
+    hl.innerHTML = emptyStateHTML({ title: '暂无持仓', hint: '录入第一笔交易后会显示在这里', compact: true, icon: '<svg viewBox="0 0 24 24"><path d="M4 19V6"/><path d="M4 19h16"/><path d="m8 15 3-3 3 3 4-6"/></svg>' });
+    return;
+  }
+  hl.innerHTML = rows.map(function (r) {
+    var pnlCls = r.priced && r.unrealPnL != null ? (r.unrealPnL >= 0 ? 'pos' : 'neg') : '';
+    var pnlTxt = r.priced && r.unrealPnL != null ? fmtPnLFull(r.unrealPnL) : '-';
+    var pctTxt = r.priced && r.pnlPct != null ? ((r.pnlPct >= 0 ? '+' : '') + (r.pnlPct * 100).toFixed(1) + '%') : '';
+    var subTxt = Math.abs(r.shares).toFixed(2) + ' 股 · 均价 ' + '$' + r.avgCost.toFixed(2);
+    var valTxt = r.priced ? fmtFull(r.value) : '-';
+    return '<div class="hold-li" style="--row-accent:' + deps.getAssetColor(r.sym) + '">'
+      + '<span class="hl-bar" aria-hidden="true"></span>'
+      + '<div class="hl-top"><strong class="hl-sym">' + escapeHtml(r.sym) + '</strong><strong class="hl-val">' + valTxt + '</strong>'
+      + '<button type="button" class="trade-del hl-del" data-hold="' + escapeHtml(r.sym) + '" title="清仓" aria-label="清仓该标的">×</button></div>'
+      + '<div class="hl-bot"><small class="hl-sub">' + subTxt + '</small>'
+      + '<small class="hl-pnl ' + pnlCls + '">' + pnlTxt + (pctTxt ? ' · ' + pctTxt : '') + '</small></div>'
+      + '</div>';
+  }).join('');
+}
+
 export function renderHoldingsBody(doc, rows) {
   var hb=doc.getElementById('holdBody');
+  renderHoldList(doc, rows);
   if(hb)hb.innerHTML=rows.length?rows.map(function(r){return'<tr style="--row-accent:'+deps.getAssetColor(r.sym)+'"><td data-cell="sym">'+r.sym+'</td><td data-cell="shares">'+Math.abs(r.shares).toFixed(2)+'</td><td data-cell="avg">$'+r.avgCost.toFixed(2)+'</td><td data-cell="value">'+(r.priced?fmtFull(r.value):'<span style="color:orange;">-</span>')+'</td><td data-cell="pnl" class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.unrealPnL!=null?fmtPnLFull(r.unrealPnL):'-')+'</td><td data-cell="pct" class="'+(r.priced&&r.unrealPnL!=null?(r.unrealPnL>=0?'pnl-pos':'pnl-neg'):'')+'">'+(r.priced&&r.pnlPct!=null?((r.pnlPct>=0?'+':'')+(r.pnlPct*100).toFixed(1)+'%'):'-')+'</td><td data-cell="actions"><button class="trade-del" data-hold="'+r.sym+'" title="清仓" aria-label="清仓该标的">×</button></td></tr>'}).join(''):'<tr><td colspan="7">'+emptyStateHTML({title:'暂无持仓',hint:'录入第一笔交易后会显示在这里',compact:true,icon:'<svg viewBox="0 0 24 24"><path d="M4 19V6"/><path d="M4 19h16"/><path d="m8 15 3-3 3 3 4-6"/></svg>'})+'</td></tr>';
 }
 

@@ -5,11 +5,22 @@ let query = '';
 /* v442：搜索范围 = 三张明细表 + 操作日志。
    以前只扫 holdBody/tradeBody/cashLogBody，README 说"跨两段生效"，日志分段却永远搜不到。 */
 const SEARCH_HOSTS = [
-  { id: 'holdBody', selector: 'tr' },
+  // 手机端持仓明细是 div 行（#holdList），桌面端是表格（#holdBody）—— 按视口只扫可见的那一份，
+  // 否则计数会把同一只标的算两遍。
+  { id: 'holdBody', selector: 'tr', desktopOnly: true },
+  { id: 'holdList', selector: '.hold-li', mobileOnly: true },
   { id: 'tradeBody', selector: 'tr' },
   { id: 'cashLogBody', selector: 'tr' },
   { id: 'activityLog', selector: '.activity-item' },
 ];
+
+function skipHost(host) {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  const mobile = window.matchMedia('(max-width: 800px)').matches;
+  if (host.mobileOnly && !mobile) return true;
+  if (host.desktopOnly && mobile) return true;
+  return false;
+}
 
 function isPlaceholder(el) {
   return !!(el.querySelector && (el.querySelector('.table-empty') || el.querySelector('.ds-empty')));
@@ -21,6 +32,7 @@ export function applyTableSearch() {
   let matched = 0;
   let first = null;
   SEARCH_HOSTS.forEach((host) => {
+    if (skipHost(host)) return;
     const body = document.getElementById(host.id);
     if (!body) return;
     Array.from(body.querySelectorAll(host.selector)).forEach((row) => {
