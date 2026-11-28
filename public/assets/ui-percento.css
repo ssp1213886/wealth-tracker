@@ -1786,3 +1786,247 @@ body #qaFab .ms-bell-badge{
     font-weight: 600 !important;
   }
 }
+
+/* ============================================================================
+   39. 打磨批次 1：圆角 / 间距 / 字号收敛
+   ========================================================================== */
+:root{
+  --ui-r-card: 26px;
+  --ui-r-ctl: 16px;
+  --ui-r-pill: 999px;
+  --ui-gap: 12px;
+  --ui-fs-hero: 30px;
+  --ui-fs-title: 16.5px;
+  --ui-fs-val: 15px;
+  --ui-fs-body: 13px;
+  --ui-fs-cap: 11px;
+  --ui-up: var(--ok);
+  --ui-down: var(--red);
+  --ui-warn: #b8791b;
+}
+
+/* 所有卡片统一 26 圆角 */
+body .card,
+body .holdings-card,
+body .dca-card,
+body .equity-card,
+body .daily-pnl-card,
+body .watch-card,
+body .market-trend-card,
+body .cash-card,
+body .console-entry-card,
+body .pnl-total-card{
+  border-radius: var(--ui-r-card) !important;
+}
+
+/* 卡片内的小块统一 16 */
+body .alloc-block,
+body .mobile-dca-pills > div,
+body .quick button,
+body .qa-item,
+body .empty,
+body .ds-empty{
+  border-radius: var(--ui-r-ctl) !important;
+}
+
+/* 手机端：卡片间距与左右边距统一 */
+@media (max-width: 800px){
+  body .main > .card,
+  body .tab-panel > .card,
+  body #dashWidgets > .card{
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    margin-top: var(--ui-gap) !important;
+  }
+  /* 卡片标题 */
+  body .main .card > h3,
+  body .main .card .collapsible-header h3,
+  body .main .mobile-section-title,
+  body .main .chart-card > h3{
+    font-size: var(--ui-fs-title) !important;
+    font-weight: 650 !important;
+    letter-spacing: -.022em !important;
+  }
+  /* 数值与说明 */
+  body .metric:not(.metric-total) .m-val,
+  body .an-pnl-breakdown b{ font-size: var(--ui-fs-val) !important; }
+  body .tiny, body .card small{ font-size: var(--ui-fs-cap) !important; }
+}
+
+@media (min-width: 801px){
+  body .main .card > h3,
+  body .main .card .collapsible-header h3,
+  body .main .mobile-section-title,
+  body .main .chart-card > h3{
+    font-size: 15.5px !important;
+    font-weight: 650 !important;
+    letter-spacing: -.022em !important;
+  }
+}
+
+/* ============================================================================
+   40. 打磨批次 2：状态色收敛 + 动效与按压
+   ========================================================================== */
+/* 涨跌统一到两个变量（主题色只表达主操作/选中） */
+body .pos, body .pnl-pos, body .hl-val small.pos{ color: var(--ui-up) !important; }
+body .neg, body .pnl-neg, body .hl-val small.neg{ color: var(--ui-down) !important; }
+body .warn, body .is-warn{ color: var(--ui-warn) !important; }
+
+/* 页面切换：轻微上移淡入 */
+@keyframes uiPageIn{
+  from{ opacity: .001; transform: translateY(4px); }
+  to{ opacity: 1; transform: none; }
+}
+body .tab-panel.active{ animation: uiPageIn .18s var(--ease-out) both; }
+
+/* 抽屉 / 弹层：弹簧感 */
+body .qa-panel{
+  transition: transform .28s cubic-bezier(.32,.72,0,1), opacity .2s ease !important;
+}
+
+/* 按压反馈统一 scale(.97) / 120ms */
+body .card:active,
+body .asset-row:active,
+body .qa-item:active,
+body .btn:active,
+body .btn-pri:active,
+body .btn-out:active,
+body .bb-btn:active,
+body .quick button:active,
+body .hold-list .hold-li:active,
+body .watch-row:active,
+body .daily-pnl-cell:active{
+  transform: scale(.97) !important;
+  transition: transform .12s var(--ease-out) !important;
+}
+@media (prefers-reduced-motion: reduce){
+  body .tab-panel.active{ animation: none !important; }
+  body .card:active, body .asset-row:active, body .qa-item:active,
+  body .btn:active, body .btn-pri:active, body .btn-out:active, body .bb-btn:active,
+  body .quick button:active, body .hold-list .hold-li:active, body .watch-row:active,
+  body .daily-pnl-cell:active{ transform: none !important; }
+}
+
+/* ============================================================================
+   41. 打磨批次 3：骨架屏 / 空态 / 移动端细节 / 桌面端
+   ========================================================================== */
+/* 骨架屏：金额位先闪，数据到了再显示真实数字 */
+@keyframes uiShimmer{
+  0%{ background-position: -160px 0; }
+  100%{ background-position: 200px 0; }
+}
+body .is-skeleton,
+body .m-val.is-skeleton{
+  color: transparent !important;
+  border-radius: 6px !important;
+  background-image: linear-gradient(90deg,
+    color-mix(in srgb, var(--fg) 6%, transparent) 0%,
+    color-mix(in srgb, var(--fg) 12%, transparent) 50%,
+    color-mix(in srgb, var(--fg) 6%, transparent) 100%) !important;
+  background-size: 200px 100% !important;
+  background-repeat: no-repeat !important;
+  animation: uiShimmer 1.2s linear infinite !important;
+}
+
+/* 空态统一：图标 40、标题 14、说明 12、居中、最多两行 */
+body .table-empty,
+body .ds-empty,
+body .empty{
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  text-align: center !important;
+  padding: 28px 16px !important;
+  color: var(--muted) !important;
+  font-size: 12px !important;
+}
+body .ds-empty-icon svg,
+body .table-empty svg{ width: 40px !important; height: 40px !important; opacity: .55; }
+body .ds-empty-title{ font-size: 14px !important; font-weight: 600 !important; color: var(--fg) !important; }
+body .ds-empty-hint{ font-size: 12px !important; }
+
+@media (max-width: 800px){
+  /* 内容不再被底部导航/FAB 压住 */
+  body .main{
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  /* 顶部栏：滚动时毛玻璃 + 底线（用 sticky 包裹现有状态条） */
+  body .mob-status-bar{
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 900 !important;
+    background: color-mix(in srgb, var(--bg) 88%, transparent) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    border-bottom: 1px solid color-mix(in srgb, var(--fg) 6%, transparent) !important;
+  }
+  /* 观察列表分组头吸顶 */
+  body #watchCard .watch-group-head{
+    position: sticky !important;
+    top: 96px !important;
+    z-index: 5 !important;
+    background: var(--card-bg) !important;
+  }
+  /* 输入框聚焦：主题色描边 + 轻微上移 */
+  body input:focus,
+  body select:focus,
+  body textarea:focus{
+    border-color: color-mix(in srgb, var(--accent) 70%, transparent) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  }
+}
+
+@media (min-width: 801px){
+  /* 主内容限宽居中，避免超宽屏右侧留白不均 */
+  body .main{
+    max-width: 1320px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+  }
+  /* 卡片 hover：1px 主题色 ring */
+  body .main .card:hover{
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent) !important;
+    transition: box-shadow .18s var(--ease-out) !important;
+  }
+  /* 侧栏行高与组标题 */
+  body .sidebar .sb-section h3{ font-size: 11.5px !important; }
+  body .sidebar .sb-quick-menu > button{ min-height: 34px !important; }
+}
+
+/* 撤回吸顶顶部栏：它和外面的固定汉堡按钮打架，导致顶部错位 */
+@media (max-width: 800px){
+  body .mob-status-bar{
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-bottom: 0 !important;
+  }
+  body #watchCard .watch-group-head{
+    position: static !important;
+    top: auto !important;
+    background: transparent !important;
+  }
+}
+
+/* 手机端左右对齐：hero 与统计卡和下面的卡片保持同一 16px 内缩 */
+@media (max-width: 800px){
+  body .mob-status-bar .ms-hero,
+  body .mob-status-bar .ms-summary{
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+  }
+}
+
+/* 记录/操作台里的卡片被更高优先级的规则加了描边（含"危险操作"粉色边），统一去掉 */
+body #tab-data .card,
+body #tab-console .card,
+body #tab-holding .card,
+body #tab-analysis .card{
+  border: 0 !important;
+  box-shadow: none !important;
+}
