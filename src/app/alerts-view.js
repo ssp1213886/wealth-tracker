@@ -34,7 +34,7 @@ function markAlertsSeen(sig) {
 }
 
 function updateBellBadge(list) {
-  const bell = document.querySelector('.ms-bell');
+  const bell = document.querySelector('.ms-bell') || document.querySelector('#qaFab');
   if (!bell) return;
   const items = list || [];
   const count = badgeCountOf(items);

@@ -1662,3 +1662,127 @@ body #mobileAttention{ display: none !important; }
   body #tab-holding #dashWidgets{ grid-column: 1 / -1 !important; }
   body #tab-holding .dca-card{ min-height: 0 !important; height: auto !important; }
 }
+
+/* ============================================================================
+   37. 统计卡：只在仪表盘显示，改三列"标签在上、数值在下"
+   ========================================================================== */
+@media (max-width: 800px){
+  body:not([data-active-tab="holding"]) .mob-status-bar .ms-summary{ display: none !important; }
+
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary{
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+    gap: 0 !important;
+    margin: 10px 0 0 !important;
+    padding: 16px 4px 15px !important;
+    border-radius: 22px !important;
+    background: var(--card-bg) !important;
+    background-image: none !important;
+    border-top: 0 !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary > div{
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    padding: 0 12px !important;
+    border-left: 1px solid var(--rule) !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary > div:first-child{
+    border-left: 0 !important;
+    padding-left: 14px !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary span{
+    font-size: 11px !important;
+    color: var(--muted) !important;
+    letter-spacing: 0 !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary strong{
+    font-size: 15px !important;
+    font-weight: 660 !important;
+    letter-spacing: -.03em !important;
+    color: var(--fg) !important;
+    white-space: nowrap !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary small.ms-pnl-pct{
+    display: block !important;
+    margin: 0 !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    color: var(--ok) !important;
+  }
+}
+
+/* ============================================================================
+   38. 顶部币种切换按钮（替代铃铛）
+   ========================================================================== */
+body .ms-cur{
+  min-width: 44px !important;
+  padding: 0 9px !important;
+  height: 30px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+  color: var(--accent) !important;
+  font-family: inherit !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+}
+body .ms-cur:active{ transform: scale(.94); }
+
+body #qaFab .ms-bell-badge{
+  position: absolute !important;
+  top: -3px !important;
+  right: -3px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  border-radius: 99px !important;
+  background: var(--red) !important;
+  color: #fff !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  line-height: 18px !important;
+  text-align: center !important;
+  padding: 0 5px !important;
+  box-shadow: 0 0 0 2px var(--bg) !important;
+}
+
+/* 统计卡：用 block 强制堆叠（flex-direction 在这条链路上不稳定） */
+@media (max-width: 800px){
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary > div{
+    display: block !important;
+    padding: 0 12px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary > div > span{
+    display: block !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    color: var(--muted) !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary > div > strong{
+    display: block !important;
+    margin-top: 4px !important;
+    font-size: 15px !important;
+    line-height: 1.2 !important;
+    font-weight: 660 !important;
+    letter-spacing: -.03em !important;
+    color: var(--fg) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  body[data-active-tab="holding"] .mob-status-bar .ms-summary > div > small{
+    display: block !important;
+    margin-top: 2px !important;
+    font-size: 10.5px !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+  }
+}
