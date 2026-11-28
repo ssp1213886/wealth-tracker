@@ -1613,3 +1613,52 @@ body .sb-section h3{
   body #settingsDrawer .sb-header{ padding-left: 44px !important; }
   body #settingsDrawer .sb-portfolio-grid > div:nth-child(n+3){ border-top: 0 !important; }
 }
+
+/* ============================================================================
+   35. 总资产回到"只放一个数字"，统计单独一张白卡
+   ========================================================================== */
+@media (max-width: 800px){
+  body .mob-status-bar .ms-hero{
+    border-radius: 26px !important;
+    padding: 20px 20px 18px !important;
+    background-color: color-mix(in srgb, var(--accent) 24%, var(--card-bg)) !important;
+  }
+  body .mob-status-bar .ms-summary{
+    margin: 12px 0 0 !important;
+    padding: 14px 18px !important;
+    border-radius: 26px !important;
+    border-top: 0 !important;
+    background: var(--card-bg) !important;
+    background-image: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 0 18px !important;
+  }
+  body .mob-status-bar .ms-summary > div{
+    border-left: 1px solid var(--rule) !important;
+    padding-left: 16px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+  }
+  body .mob-status-bar .ms-summary > div:first-child{ border-left: 0 !important; padding-left: 0 !important; }
+  body .mob-status-bar .ms-summary span{ color: var(--muted) !important; font-size: 11px !important; }
+  body .mob-status-bar .ms-summary strong{
+    color: var(--fg) !important;
+    font-size: 16px !important;
+    font-weight: 660 !important;
+    letter-spacing: -.03em !important;
+  }
+  body .mob-status-bar .ms-summary small.ms-pnl-pct{ color: var(--ok) !important; }
+}
+
+/* ============================================================================
+   36. 「需要关注」整块去掉（期权下线后只剩定投提醒，和定投卡重复）
+   ========================================================================== */
+body .card.mobile-attention,
+body #mobileAttention{ display: none !important; }
+
+@media (min-width: 801px){
+  body #tab-holding #dashWidgets{ grid-column: 1 / -1 !important; }
+  body #tab-holding .dca-card{ min-height: 0 !important; height: auto !important; }
+}
