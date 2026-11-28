@@ -786,3 +786,119 @@ body .trade-table tbody tr:hover{ background: color-mix(in srgb, var(--fg) 3%, t
 body .trade-table{ background: transparent !important; }
 body .trade-table td:first-child, body .trade-table th:first-child{ padding-left: 4px !important; }
 body .trade-table td:last-child, body .trade-table th:last-child{ padding-right: 4px !important; }
+
+/* ============================================================================
+   25. 分析页：顶部胶囊切换（趋势 / 配置 / 敞口）
+   ========================================================================== */
+body .aview-seg{
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 0 0 12px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--fg) 5%, var(--bg));
+  max-width: 360px;
+}
+body .aview-btn{
+  flex: 1 1 0;
+  border: 0;
+  background: transparent;
+  border-radius: 99px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color .16s var(--ease-out), color .16s var(--ease-out);
+}
+body .aview-btn.is-on{
+  background: var(--card-bg);
+  color: var(--fg);
+  font-weight: 650;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+body .aview-btn:active{ transform: scale(.97); }
+
+body #tab-analysis .analysis-section-heading{ display: none !important; }
+
+body #tab-analysis[data-aview="trend"] .equity-card,
+body #tab-analysis[data-aview="trend"] .daily-pnl-card,
+body #tab-analysis[data-aview="trend"] .drawdown-card,
+body #tab-analysis[data-aview="trend"] #exposureSlot{ display: none !important; }
+
+body #tab-analysis[data-aview="alloc"] .watch-card,
+body #tab-analysis[data-aview="alloc"] .market-trend-card,
+body #tab-analysis[data-aview="alloc"] #exposureSlot{ display: none !important; }
+
+body #tab-analysis[data-aview="exposure"] .watch-card,
+body #tab-analysis[data-aview="exposure"] .market-trend-card,
+body #tab-analysis[data-aview="exposure"] .equity-card,
+body #tab-analysis[data-aview="exposure"] .daily-pnl-card,
+body #tab-analysis[data-aview="exposure"] .drawdown-card{ display: none !important; }
+
+body #tab-analysis[data-aview="exposure"] .analysis-risk-grid{ display: block !important; margin-top: 0 !important; }
+body #tab-analysis[data-aview="alloc"] .analysis-risk-grid{ margin-top: 0 !important; }
+
+body #tab-analysis[data-aview="trend"] .market-trend-card{ margin-top: 2px; }
+@media (max-width: 800px){
+  body .aview-seg{ max-width: none; margin: 2px 0 10px; }
+  body .aview-btn{ padding: 9px 8px; font-size: 13px; }
+}
+
+/* 胶囊容器在 flex 父级里会被压扁 → 固定最小宽度并禁止换行 */
+body .aview-seg{
+  width: 100% !important;
+  max-width: 360px !important;
+  align-self: flex-start !important;
+  flex: none !important;
+  min-height: 40px;
+}
+body .aview-btn{
+  white-space: nowrap !important;
+  min-width: 0 !important;
+  line-height: 1.2 !important;
+  height: 34px !important;
+  padding: 0 10px !important;
+}
+@media (max-width: 800px){
+  body .aview-seg{ max-width: none !important; }
+  body .aview-btn{ height: 36px !important; }
+}
+
+/* 桌面端 #tab-analysis 是 12 列网格：胶囊必须横跨整行 */
+@media (min-width: 801px){
+  body #tab-analysis > .aview-seg{
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+    width: 360px !important;
+    max-width: 360px !important;
+    margin-bottom: 14px !important;
+  }
+  body #tab-analysis[data-aview="trend"] > .market-trend-card{
+    grid-column: 4 / -1 !important;
+  }
+  body #tab-analysis[data-aview="trend"] > .watch-card{
+    grid-column: 1 / 4 !important;
+  }
+}
+
+/* 趋势视图恢复 4 / 8 分栏（上一版给窄了） */
+@media (min-width: 801px){
+  body #tab-analysis[data-aview="trend"] > .watch-card{ grid-column: 1 / 5 !important; }
+  body #tab-analysis[data-aview="trend"] > .market-trend-card{ grid-column: 5 / -1 !important; }
+}
+
+/* 配置视图：回撤卡占满整行，避免半宽留白 */
+@media (min-width: 801px){
+  body #tab-analysis[data-aview="alloc"] > .analysis-risk-grid{
+    display: block !important;
+  }
+  body #tab-analysis[data-aview="alloc"] > .analysis-risk-grid > .drawdown-card{
+    width: 100% !important;
+  }
+}
+
+/* 设置抽屉里的目标配比：8px 圆角在 186px 的圆环上像方块，改回正圆 */
+body .sidebar .sb-mini-donut{ border-radius: 50% !important; }
+body .sidebar .sb-mini-donut:after{ border-radius: 50% !important; }

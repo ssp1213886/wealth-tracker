@@ -299,6 +299,9 @@ if (trendHover.tooltipDisplay !== 'none' || !/现价/.test(trendHover.readoutTex
 }
 await ev(() => document.querySelector('.tab-btn[data-tab="analysis"]').click());
 await p.waitForTimeout(350);
+// 资产曲线现在在「配置」视图下，先切过去再验悬停
+await ev(() => { if (window.setAnalysisView) window.setAnalysisView('alloc'); });
+await p.waitForTimeout(600);
 await p.waitForFunction(() => !!document.querySelector('#equityChart .eq-shell'), null, { timeout: 12000 }).catch(() => {});
 const equityUi = await ev(() => {
   const shell = document.querySelector('#equityChart .eq-shell');
@@ -321,6 +324,9 @@ const equityUi = await ev(() => {
 if (!equityUi.ready || !/^-?\$/.test(equityUi.label)) failures.push('资产曲线缺少固定当前值标签：' + JSON.stringify(equityUi));
 if (equityUi.tooltipHidden || !/资产/.test(equityUi.tooltip) || !/净入金/.test(equityUi.tooltip) || !/收益率/.test(equityUi.tooltip)) failures.push('资产曲线悬停详情不完整：' + JSON.stringify(equityUi));
 if (equityUi.userSelect !== 'none') failures.push('资产曲线仍允许选择文字：' + equityUi.userSelect);
+// 验完曲线切回「趋势」，后面的 320px 断言依赖趋势卡可见
+await ev(() => { if (window.setAnalysisView) window.setAnalysisView('trend'); });
+await p.waitForTimeout(600);
 const trendRanges = {};
 for (const range of ['6m', '1y', '2y']) {
   await ev((value) => [...document.querySelectorAll('[data-trendrange]')].find((button) => button.dataset.trendrange === value)?.click(), range);
