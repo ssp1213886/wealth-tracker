@@ -75,6 +75,25 @@ var hu=doc.getElementById('hmUnreal');if(hu){hu.textContent=m.hasPriced?fmtPnLFu
       hppill.setAttribute('aria-label','累计收益率 '+ptxt+'（对累计入金）');
     }else{hppill.textContent='';hppill.className='m-pct';hppill.title='';hppill.setAttribute('aria-label','');}
   }
+  // 收益页的「累计收益」卡（与分析页同一份口径，不另算一套）
+  var anTotal = doc.getElementById('anTotalPnl');
+  if (anTotal) {
+    var hasPnl = !!(m.hasPriced && m.totalPnL != null);
+    anTotal.textContent = hasPnl ? fmtPnLFull(m.totalPnL) : '—';
+    anTotal.className = hasPnl ? (m.totalPnL >= 0 ? 'pos' : 'neg') : '';
+  }
+  var anPct = doc.getElementById('anTotalPct');
+  if (anPct) {
+    var hasPct = !!(m.hasPriced && m.totalPct != null);
+    anPct.textContent = hasPct ? ((m.totalPct >= 0 ? '+' : '') + (m.totalPct * 100).toFixed(1) + '%') : '—';
+    anPct.className = 'an-pnl-pct' + (hasPct ? (m.totalPct >= 0 ? ' pos' : ' neg') : '');
+  }
+  var anU = doc.getElementById('anPnlUnreal');
+  if (anU) anU.textContent = fmtPnLFull(m.totalPnLUnreal || 0);
+  var anR = doc.getElementById('anPnlRealized');
+  if (anR) anR.textContent = fmtPnLFull(m.totalRealized || 0);
+  var anD = doc.getElementById('anPnlDividend');
+  if (anD) anD.textContent = fmtPnLFull(Number(m.dividendTotal) || 0);
   var hpp=doc.getElementById('hmPnLPct');if(hpp){var s='';if(!(m.hasPriced&&m.totalPct!=null)&&m.unpriced.length>0){s+='需设价:'+m.unpriced.join(',')+'<br>'}var uc=m.totalPnLUnreal||0,rc=m.totalRealized;s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin:2px 3px 0 0;background:'+(uc>=0?'var(--accent-l)':'rgba(229,57,53,.1)')+';color:'+(uc>=0?'var(--accent-d)':'#b53a2a')+';">浮动 '+fmtPnLFull(uc)+'</span>';s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(rc>=0?'rgba(22,153,74,.1)':'rgba(229,57,53,.08)')+';color:'+(rc>=0?'var(--accent-d)':'#b53a2a')+';">已实现 '+fmtPnLFull(rc)+'</span>';/* 股息只在非零时占一个标签，免得总分和可见标签对不上 */var dv=Number(m.dividendTotal)||0;if(dv!==0){s+='<span style="display:inline-block;padding:1px 6px;border-radius:8px;font-size:11.5px;margin-top:2px;background:'+(dv>=0?'var(--accent-l)':'rgba(229,57,53,.08)')+';color:'+(dv>=0?'var(--accent-d)':'#b53a2a')+';">股息 '+fmtPnLFull(dv)+'</span>'}hpp.innerHTML=s;}
 }
 

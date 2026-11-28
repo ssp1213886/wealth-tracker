@@ -1425,3 +1425,191 @@ body .mob-status-bar .ms-hero{
       color-mix(in srgb, var(--accent) 32%, var(--card-bg)),
       color-mix(in srgb, var(--accent) 20%, var(--card-bg))) !important;
 }
+
+/* ============================================================================
+   32. 总资产：去掉美元/人民币换算行，统计行并入 hero
+   ========================================================================== */
+body .m-cny,
+body .ms-cny{ display: none !important; }
+
+@media (max-width: 800px){
+  body .mob-status-bar .ms-hero{
+    border-radius: 26px 26px 0 0 !important;
+    padding-bottom: 14px !important;
+    background-color: color-mix(in srgb, var(--accent) 24%, var(--card-bg)) !important;
+  }
+  body .mob-status-bar .ms-summary{
+    margin: 0 !important;
+    padding: 13px 20px 15px !important;
+    border-radius: 0 0 26px 26px !important;
+    border-top: 1px solid color-mix(in srgb, var(--accent) 16%, transparent) !important;
+    background-color: color-mix(in srgb, var(--accent) 24%, var(--card-bg)) !important;
+    background-image: none !important;
+  }
+  body .mob-status-bar .ms-summary > div{
+    border-left: 1px solid color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  }
+  body .mob-status-bar .ms-summary > div:first-child{ border-left: 0 !important; }
+  body .mob-status-bar .ms-summary span{ font-size: 11px !important; color: color-mix(in srgb, var(--accent) 45%, var(--muted)) !important; }
+  body .mob-status-bar .ms-summary strong{ font-size: 15.5px !important; font-weight: 660 !important; }
+}
+
+/* ============================================================================
+   33. 收益页：累计收益卡
+   ========================================================================== */
+body .pnl-total-card{ padding: 18px 20px 16px !important; }
+body .pnl-total-card .mobile-section-title{ margin-bottom: 6px; }
+body .an-pnl-main{
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 2px 0 0;
+}
+body .an-pnl-main strong{
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+body .an-pnl-main strong.pos{ color: var(--ok); }
+body .an-pnl-main strong.neg{ color: var(--red); }
+body .an-pnl-pct{
+  font-size: 13px;
+  font-weight: 650;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+body .an-pnl-pct.pos{ background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+body .an-pnl-pct.neg{ background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
+
+body .an-pnl-breakdown{
+  display: flex;
+  gap: 22px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 75%, transparent);
+}
+body .an-pnl-breakdown > div{ display: flex; flex-direction: column; gap: 2px; }
+body .an-pnl-breakdown span{ font-size: 11px; color: var(--muted); }
+body .an-pnl-breakdown b{ font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+@media (min-width: 801px){
+  body #tab-analysis[data-aview="alloc"] > .pnl-total-card{ grid-column: 1 / -1 !important; grid-row: 2 !important; }
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card{ grid-row: 3 !important; grid-column: 1 / 8 !important; }
+  body #tab-analysis[data-aview="alloc"] > .equity-card{ grid-row: 3 !important; grid-column: 8 / -1 !important; }
+  body .an-pnl-breakdown{ gap: 40px; }
+}
+@media (max-width: 800px){
+  body #tab-analysis[data-aview="alloc"] > .pnl-total-card{ order: 1 !important; }
+  body #tab-analysis[data-aview="alloc"] > .daily-pnl-card{ order: 2 !important; margin-top: 12px !important; }
+  body #tab-analysis[data-aview="alloc"] > .equity-card{ order: 3 !important; margin-top: 12px !important; }
+  body .an-pnl-main strong{ font-size: 27px; }
+}
+/* 其它视图不显示这张卡 */
+body #tab-analysis[data-aview="trend"] .pnl-total-card,
+body #tab-analysis[data-aview="exposure"] .pnl-total-card{ display: none !important; }
+
+/* ============================================================================
+   34. 侧边栏 / 设置抽屉：从"卡片堆"收成一组分节列表
+   ========================================================================== */
+/* 标题前的圆形图标胶囊全部去掉，只留文字 */
+body .sb-section h3 .sb-h3-icon,
+body .sb-section .sb-h3-icon{ display: none !important; }
+body .sb-section h3{
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: .02em !important;
+  text-transform: none !important;
+  color: var(--muted) !important;
+  margin-bottom: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+@media (max-width: 800px){
+  body #settingsDrawer{
+    background: var(--bg) !important;
+    padding: 10px 12px 26px !important;
+  }
+  body #settingsDrawer .sb-header{
+    margin: 0 4px 12px !important;
+    padding: 4px 2px 10px !important;
+    border-bottom: 1px solid var(--rule) !important;
+  }
+  body #settingsDrawer .sb-brand h1{ font-size: 17px !important; letter-spacing: -.02em !important; }
+  body #settingsDrawer .drawer-context{ font-size: 11px !important; color: var(--muted) !important; }
+
+  body #settingsDrawer > .sb-section{
+    background: var(--card-bg) !important;
+    border: 0 !important;
+    border-radius: 18px !important;
+    box-shadow: none !important;
+    margin: 0 0 10px !important;
+    padding: 4px 14px !important;
+  }
+  /* 行：标签左、值右，行间发丝线 */
+  body #settingsDrawer .sb-portfolio-grid{ gap: 0 !important; margin-top: 6px !important; }
+  body #settingsDrawer .sb-portfolio-grid > div{
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 9px 0 !important;
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+  }
+  body #settingsDrawer .sb-portfolio-grid > div:nth-child(n+3){
+    border-top: 1px solid color-mix(in srgb, var(--rule) 75%, transparent) !important;
+  }
+  body #settingsDrawer .sb-portfolio-grid span{ font-size: 12px !important; color: var(--muted) !important; }
+  body #settingsDrawer .sb-portfolio-grid strong{ font-size: 13.5px !important; font-weight: 650 !important; }
+
+  /* 目标配比：环形图缩小，图例贴右 */
+  body #settingsDrawer .sb-mini-donut{ width: 64px !important; height: 64px !important; flex-basis: 64px !important; }
+  body #settingsDrawer .sb-mini-donut:after{ inset: 15px !important; }
+  body #settingsDrawer .sb-allocation-body{ gap: 14px !important; }
+  body #settingsDrawer .sb-mini-legend{ gap: 6px !important; }
+  body #settingsDrawer .sb-mini-legend span{ font-size: 12px !important; }
+
+  /* 行情行：去掉卡片感，只留发丝线 */
+  body #settingsDrawer .sb-price-row{
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    border-top: 1px solid color-mix(in srgb, var(--rule) 72%, transparent) !important;
+    margin: 0 !important;
+  }
+  body #settingsDrawer .sb-price-row:first-of-type{ border-top: 0 !important; }
+}
+
+/* 抽屉细节修正：资产概览两列间距、关闭按钮贴进头部 */
+@media (max-width: 800px){
+  body #settingsDrawer .sb-portfolio-grid{
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    column-gap: 22px !important;
+    row-gap: 0 !important;
+  }
+  body #settingsDrawer .sb-portfolio-grid > div{
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+  body #settingsDrawer .sb-portfolio-grid strong{
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  body:has(#settingsDrawer.open) #mobHamburger{
+    top: 26px !important;
+    left: 20px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+  body #settingsDrawer .sb-header{ padding-left: 44px !important; }
+  body #settingsDrawer .sb-portfolio-grid > div:nth-child(n+3){ border-top: 0 !important; }
+}

@@ -436,7 +436,16 @@
   <div class="card market-trend-card"><div class="opt-card-head"><h3>市场趋势<span class="card-sub"><b id="trendSymbol">QQQM</b> · <span id="trendRangeLabel">1 年</span> · 截至 <span id="trendAsOf">读取中</span></span></h3><div class="prob-chips" id="trendTabs"></div></div><div class="market-regime" id="marketRegime" aria-live="polite"><div class="regime-main"><span class="regime-kicker">市场状态</span><span class="regime-badge is-unknown">读取中</span><strong class="regime-advice">读取 2 年日线…</strong></div></div><div id="trendChart"><div class="ds-empty is-loading ds-empty-compact" role="status"><span class="ds-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg></span><span class="ds-empty-title">正在读取趋势数据</span><span class="ds-empty-hint">准备 200 日均线所需的历史日线</span></div></div></div>
 
   <div class="analysis-section-heading"><span>组合分析</span><small>资产曲线、回撤与底层敞口</small></div>
-  <div class="card equity-card" id="equityCard"><div class="mobile-section-title"><span>资产曲线 <small id="equityRange">月末总资产</small></span></div><div class="equity-chart" id="equityChart"></div><div class="equity-meta" id="equityMeta"></div></div>
+  <div class="card pnl-total-card" id="anPnlCard">
+  <div class="mobile-section-title"><span>累计收益 <small>对累计入金</small></span></div>
+  <div class="an-pnl-main"><strong id="anTotalPnl">—</strong><span class="an-pnl-pct" id="anTotalPct">—</span></div>
+  <div class="an-pnl-breakdown">
+    <div><span>浮动</span><b id="anPnlUnreal">—</b></div>
+    <div><span>已实现</span><b id="anPnlRealized">—</b></div>
+    <div><span>股息</span><b id="anPnlDividend">—</b></div>
+  </div>
+</div>
+<div class="card equity-card" id="equityCard"><div class="mobile-section-title"><span>资产曲线 <small id="equityRange">月末总资产</small></span></div><div class="equity-chart" id="equityChart"></div><div class="equity-meta" id="equityMeta"></div></div>
 
   <div class="card daily-pnl-card" id="dailyPnlCard">
     <div class="mobile-section-title"><span>每日收益日历 <small id="dailyPnlRange">月度</small></span></div>
